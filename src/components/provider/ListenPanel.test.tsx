@@ -4,7 +4,6 @@ import { light } from "../../theme/tokens";
 import type { Provider } from "../../types";
 import type { MicrophoneState } from "../../hooks/useMicrophone";
 
-// Mock useMicrophone hook — produces a full MicrophoneState to satisfy the type.
 const makeMicState = (overrides: Partial<MicrophoneState> = {}): MicrophoneState => ({
   isListening: false,
   transcript: "",

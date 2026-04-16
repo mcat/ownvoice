@@ -40,3 +40,7 @@ public/models/
 
 # Pipeline-verify script outputs — regenerated on each run
 scripts/pipeline-verify/*.wav
+
+# Python bytecode
+__pycache__/
+*.pyc

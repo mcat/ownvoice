@@ -5,15 +5,12 @@ import numpy as np
 import onnxruntime as ort
 from tokenizers import Tokenizer
 import wave, json
-from pathlib import Path
 
-SCRIPT_DIR = Path(__file__).resolve().parent
-REPO_ROOT = SCRIPT_DIR.parent.parent
-MODEL_DIR = f"{REPO_ROOT}/public/models/chatterbox-turbo/"
-START_SPEECH_TOKEN = 6561
-STOP_SPEECH_TOKEN = 6562
-SILENCE_TOKEN = 4299
-SAMPLE_RATE = 24000
+from _common import (
+    SCRIPT_DIR, MODEL_DIR,
+    START_SPEECH_TOKEN, STOP_SPEECH_TOKEN, SILENCE_TOKEN, SAMPLE_RATE,
+)
+
 MAX_NEW_TOKENS = 100
 
 # Load real speaker data from IndexedDB export

@@ -2,7 +2,7 @@ import { create } from "zustand";
 import type { SpeakingState } from "../types";
 import type { ThemeName } from "../theme/tokens";
 
-type OverlayName =
+export type OverlayName =
   | "wishes"
   | "provider"
   | "listen"
