@@ -18,7 +18,7 @@ export const light = {
   headerBg: "#FFFFFF",
   tabBg: "#FFFFFF",
   speakBg: "linear-gradient(135deg,#1E293B,#334155)",
-  threadMeta: "#DBEAFE", // 10.2:1 on #2563EB (blue bubbles) — light blue, AAA pass
+  threadMeta: "#FFFFFF", // 5.33:1 on #2563EB (blue bubbles) — AA pass for 11px text
   threadMetaProvider: "#6B7280", // 4.9:1 on #FFFFFF (white bubbles)
 } as const;
 
@@ -34,7 +34,7 @@ export const dark = {
   headerBg: "#1C1C1E",
   tabBg: "#1C1C1E",
   speakBg: "linear-gradient(135deg,#0F172A,#1E293B)",
-  threadMeta: "#DBEAFE", // 10.2:1 on #2563EB (blue bubbles) — light blue, AAA pass
+  threadMeta: "#FFFFFF", // 5.33:1 on #2563EB (blue bubbles) — AA pass for 11px text
   threadMetaProvider: "#8B929B", // 5.3:1 on #1C1C1E
 } as const;
 

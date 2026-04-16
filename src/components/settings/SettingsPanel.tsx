@@ -119,6 +119,10 @@ export function SettingsPanel({
       {/* Backdrop */}
       <div
         onClick={onClose}
+        onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}
+        role="button"
+        tabIndex={-1}
+        aria-label="Close settings"
         style={{
           position: "absolute",
           inset: 0,
@@ -188,18 +192,20 @@ export function SettingsPanel({
         <div style={{ padding: "0 24px" }}>
           {/* Patient info section */}
           <Section label="Patient Information" t={t}>
-            <label style={labelStyle(t)}>Name</label>
+            <label htmlFor="settings-name" style={labelStyle(t)}>Name</label>
             <input
+              id="settings-name"
               type="text"
               value={name}
               onInput={(e) => setName((e.target as HTMLInputElement).value)}
               style={inputStyle(t, isDark)}
             />
 
-            <label style={{ ...labelStyle(t), marginTop: 16 }}>
+            <label htmlFor="settings-bed" style={{ ...labelStyle(t), marginTop: 16 }}>
               Bed / Room
             </label>
             <input
+              id="settings-bed"
               type="text"
               value={bed}
               onInput={(e) => setBed((e.target as HTMLInputElement).value)}
@@ -223,7 +229,7 @@ export function SettingsPanel({
             </div>
 
             <div style={{ marginTop: 16 }}>
-              <label style={labelStyle(t)}>Voice</label>
+              <div style={labelStyle(t)}>Voice</div>
               <VoiceCapture
                 label="Patient"
                 hasVoice={patientVoice}
@@ -249,7 +255,7 @@ export function SettingsPanel({
             </div>
 
             <div style={{ marginTop: 20 }}>
-              <label style={labelStyle(t)}>Backup voice</label>
+              <div style={labelStyle(t)}>Backup voice</div>
               <p style={{ fontSize: 13, color: t.muted, margin: "0 0 10px" }}>
                 System voice used while the voice clone loads.
                 Tap to preview.
@@ -376,7 +382,8 @@ export function SettingsPanel({
               <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
                 {/* Emoji selector */}
                 <div style={{ position: "relative" }}>
-                  <label
+                  <div
+                    id="new-provider-icon-label"
                     style={{
                       display: "block",
                       fontSize: 12,
@@ -386,8 +393,9 @@ export function SettingsPanel({
                     }}
                   >
                     Icon
-                  </label>
+                  </div>
                   <button
+                    aria-labelledby="new-provider-icon-label"
                     onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                     style={{
                       width: 44,
@@ -456,6 +464,7 @@ export function SettingsPanel({
                 {/* Name input */}
                 <div style={{ flex: 1 }}>
                   <label
+                    htmlFor="new-provider-name"
                     style={{
                       display: "block",
                       fontSize: 12,
@@ -467,6 +476,7 @@ export function SettingsPanel({
                     Name
                   </label>
                   <input
+                    id="new-provider-name"
                     type="text"
                     value={newProvName}
                     onInput={(e) =>

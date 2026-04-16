@@ -328,8 +328,9 @@ function StepPatient({
         Let's set up your communication board. Everything stays on this device.
       </p>
 
-      <label style={labelStyle}>Patient name</label>
+      <label htmlFor="setup-name" style={labelStyle}>Patient name</label>
       <input
+        id="setup-name"
         type="text"
         value={name}
         onInput={(e) => setName((e.target as HTMLInputElement).value)}
@@ -337,8 +338,9 @@ function StepPatient({
         style={inputStyle}
       />
 
-      <label style={{ ...labelStyle, marginTop: 20 }}>Bed / Room</label>
+      <label htmlFor="setup-bed" style={{ ...labelStyle, marginTop: 20 }}>Bed / Room</label>
       <input
+        id="setup-bed"
         type="text"
         value={bed}
         onInput={(e) => setBed((e.target as HTMLInputElement).value)}
@@ -346,7 +348,8 @@ function StepPatient({
         style={inputStyle}
       />
 
-      <label style={{ ...labelStyle, marginTop: 20 }}>Language</label>
+      {/* "Language" labels a group of buttons, not a single input — use <div> */}
+      <div style={{ ...labelStyle, marginTop: 20 }}>Language</div>
       <div
         style={{
           display: "grid",
@@ -556,8 +559,9 @@ function StepCareTeam({
         <div style={{ display: "flex", gap: 10, alignItems: "flex-end" }}>
           {/* Emoji selector */}
           <div style={{ position: "relative" }}>
-            <label style={{ ...labelStyle, fontSize: 13 }}>Icon</label>
+            <div id="setup-provider-icon-label" style={{ ...labelStyle, fontSize: 13 }}>Icon</div>
             <button
+              aria-labelledby="setup-provider-icon-label"
               onClick={() => setShowEmojiPicker(!showEmojiPicker)}
               style={{
                 width: 56,
@@ -619,8 +623,9 @@ function StepCareTeam({
 
           {/* Name input */}
           <div style={{ flex: 1 }}>
-            <label style={{ ...labelStyle, fontSize: 13 }}>Name</label>
+            <label htmlFor="setup-new-provider-name" style={{ ...labelStyle, fontSize: 13 }}>Name</label>
             <input
+              id="setup-new-provider-name"
               type="text"
               value={newProvName}
               onInput={(e) =>
@@ -725,7 +730,7 @@ function StepConfirm({
 
       {/* PIN */}
       <div style={{ marginTop: 28 }}>
-        <label style={labelStyle}>Staff PIN (optional)</label>
+        <label htmlFor="setup-pin" style={labelStyle}>Staff PIN (optional)</label>
         <p
           style={{
             fontSize: 14,
@@ -736,6 +741,7 @@ function StepConfirm({
           Set a 4-digit PIN to protect provider settings.
         </p>
         <input
+          id="setup-pin"
           type="text"
           inputMode="numeric"
           maxLength={4}

@@ -99,20 +99,39 @@ export function PainFlow({ onSelect, t, theme, locale = "en" }: PainFlowProps) {
                 {">"}
               </span>
             )}
-            <span
-              class="font-sans"
-              onClick={isPast ? () => goToStep(s) : undefined}
-              style={{
-                fontSize: 16,
-                fontWeight: isCurrent ? 700 : 400,
-                color: isCurrent ? t.text : isPast ? (theme === "dark" ? "#FCA5A5" : "#991B1B") : t.muted,
-                cursor: isPast ? "pointer" : "default",
-                textDecoration: isPast ? "underline" : "none",
-                userSelect: "none",
-              }}
-            >
-              {STEP_LABELS[s]}
-            </span>
+            {isPast ? (
+              <button
+                type="button"
+                class="font-sans"
+                onClick={() => goToStep(s)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  padding: 0,
+                  fontFamily: "inherit",
+                  fontSize: 16,
+                  fontWeight: 400,
+                  color: theme === "dark" ? "#FCA5A5" : "#991B1B",
+                  cursor: "pointer",
+                  textDecoration: "underline",
+                  userSelect: "none",
+                }}
+              >
+                {STEP_LABELS[s]}
+              </button>
+            ) : (
+              <span
+                class="font-sans"
+                style={{
+                  fontSize: 16,
+                  fontWeight: isCurrent ? 700 : 400,
+                  color: isCurrent ? t.text : t.muted,
+                  userSelect: "none",
+                }}
+              >
+                {STEP_LABELS[s]}
+              </span>
+            )}
           </span>
         );
       })}
