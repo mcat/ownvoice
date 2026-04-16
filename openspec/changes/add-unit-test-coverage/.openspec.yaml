@@ -1,0 +1,20 @@
+name: add-unit-test-coverage
+description: Add Vitest test framework and achieve 100% unit test coverage across all source files — stores, hooks, utilities, workers, data files, and components
+status: proposed
+created: 2026-04-12
+artifacts:
+  - id: proposal
+    type: proposal
+    status: done
+    path: proposal.md
+  - id: design
+    type: design
+    status: done
+    path: design.md
+    dependencies: [proposal]
+  - id: tasks
+    type: tasks
+    status: done
+    path: tasks.md
+    dependencies: [proposal, design]
+applyRequires: [tasks]

@@ -1,0 +1,20 @@
+name: adopt-zustand-state
+description: Replace useState + custom hooks state management with Zustand stores for settings, conversation, UI, and speaking state
+status: proposed
+created: 2026-04-12
+artifacts:
+  - id: proposal
+    type: proposal
+    status: done
+    path: proposal.md
+  - id: design
+    type: design
+    status: done
+    path: design.md
+    dependencies: [proposal]
+  - id: tasks
+    type: tasks
+    status: done
+    path: tasks.md
+    dependencies: [proposal, design]
+applyRequires: [tasks]

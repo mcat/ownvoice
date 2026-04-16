@@ -1,0 +1,122 @@
+@import "tailwindcss";
+
+
+@font-face {
+  font-family: "Atkinson Hyperlegible Next";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/atkinson-next-400.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Atkinson Hyperlegible Next";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/atkinson-next-700.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Source Serif 4";
+  font-style: normal;
+  font-weight: 600 700;
+  font-display: swap;
+  src: url("/fonts/source-serif-600-700.woff2") format("truetype");
+}
+
+@theme {
+  /* ── OwnVoice color tokens (light mode defaults) ── */
+  --color-ov-bg: #FAFAF8;
+  --color-ov-bg-secondary: #FFFFFF;
+  --color-ov-card: #FFFFFF;
+  --color-ov-text: #1A1A1A;
+  --color-ov-sub: #4B5563;
+  --color-ov-muted: #6B7280;
+  --color-ov-border: rgba(0, 0, 0, 0.07);
+  --color-ov-active-bg: rgba(0, 0, 0, 0.03);
+
+  /* ── Semantic colors (constant across themes) ── */
+  --color-ov-patient: #2563EB;
+  --color-ov-patient-dark: #3B82F6;
+  --color-ov-provider: #059669;
+  --color-ov-urgent: #DC2626;
+  --color-ov-purple: #7C3AED;
+  --color-ov-amber: #D97706;
+
+  /* ── Pain scale: colorblind-safe indigo ramp ── */
+  --color-pain-0: #C7D2FE;
+  --color-pain-2: #B4BFFA;
+  --color-pain-4: #A1ABF5;
+  --color-pain-6: #8B93EF;
+  --color-pain-8: #6366F1;
+  --color-pain-10: #3316A0;
+
+  /* ── Font families ── */
+  --font-sans: "Atkinson Hyperlegible Next", system-ui, sans-serif;
+  --font-brand: "Source Serif 4", serif;
+
+  /* ── Touch target sizing ── */
+  --size-target: 64px;
+  --size-target-critical: 80px;
+  --spacing-target-gap: 12px;
+}
+
+/* ── Base resets ── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+
+::-webkit-scrollbar {
+  width: 0;
+}
+
+button {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* ── Animations ── */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pulseGlow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(37, 99, 235, 0);
+  }
+}

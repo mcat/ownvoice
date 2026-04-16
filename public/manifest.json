@@ -1,0 +1,17 @@
+{
+  "name": "OwnVoice",
+  "short_name": "OwnVoice",
+  "description": "In-patient AAC with personal voice",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#FAFAF8",
+  "theme_color": "#2563EB",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='96' fill='%232563EB'/><text x='256' y='370' font-size='320' text-anchor='middle' fill='white' font-family='serif' font-weight='bold'>V</text></svg>",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

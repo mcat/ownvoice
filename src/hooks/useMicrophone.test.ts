@@ -1,0 +1,668 @@
+import { renderHook, act } from "@testing-library/preact";
+import { useMicrophone } from "./useMicrophone";
+
+// Mock getModelManager
+const mockWorker = {
+  postMessage: vi.fn(),
+  addEventListener: vi.fn(),
+  removeEventListener: vi.fn(),
+};
+
+const mockModelManager = {
+  isReady: vi.fn(),
+  getWorker: vi.fn(),
+};
+
+vi.mock("../models/modelManager", () => ({
+  getModelManager: vi.fn(() => mockModelManager),
+}));
+
+// Helper: create a mock MediaStream
+function createMockStream(): MediaStream {
+  const track = { stop: vi.fn(), kind: "audio" } as unknown as MediaStreamTrack;
+  return {
+    getTracks: vi.fn(() => [track]),
+    getAudioTracks: vi.fn(() => [track]),
+    getVideoTracks: vi.fn(() => []),
+    addTrack: vi.fn(),
+    removeTrack: vi.fn(),
+    clone: vi.fn(),
+    active: true,
+    id: "mock-stream",
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+    onaddtrack: null,
+    onremovetrack: null,
+  } as unknown as MediaStream;
+}
+
+// Helper: set up AudioContext to provide createMediaStreamSource + createScriptProcessor
+function setupAudioContextMock() {
+  const mockProcessor = {
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+    onaudioprocess: null as ((e: unknown) => void) | null,
+  };
+  const mockSource = {
+    connect: vi.fn(),
+  };
+  const mockCtx = {
+    createMediaStreamSource: vi.fn(() => mockSource),
+    createScriptProcessor: vi.fn(() => mockProcessor),
+    destination: {},
+    sampleRate: 44100,
+    state: "running" as AudioContextState,
+    close: vi.fn(() => Promise.resolve()),
+    resume: vi.fn(),
+  };
+
+  // Must be a proper constructor (class-like) so `new AudioContext()` works
+  globalThis.AudioContext = class {
+    createMediaStreamSource = mockCtx.createMediaStreamSource;
+    createScriptProcessor = mockCtx.createScriptProcessor;
+    destination = mockCtx.destination;
+    sampleRate = mockCtx.sampleRate;
+    state = mockCtx.state;
+    close = mockCtx.close;
+    resume = mockCtx.resume;
+  } as unknown as typeof AudioContext;
+
+  return { mockCtx, mockProcessor, mockSource };
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  mockModelManager.isReady.mockReturnValue(false);
+  mockModelManager.getWorker.mockReturnValue(null);
+});
+
+describe("useMicrophone", () => {
+  describe("initial state", () => {
+    it("starts with isListening=false, empty transcript, no error", () => {
+      const { result } = renderHook(() => useMicrophone());
+
+      expect(result.current.isListening).toBe(false);
+      expect(result.current.transcript).toBe("");
+      expect(result.current.error).toBeNull();
+    });
+  });
+
+  describe("startCapture", () => {
+    it("sets error when STT model is not ready", async () => {
+      mockModelManager.isReady.mockReturnValue(false);
+
+      const { result } = renderHook(() => useMicrophone());
+
+      await act(async () => {
+        await result.current.startCapture();
+      });
+
+      expect(result.current.error).toBe("Speech-to-text model is not loaded yet");
+      expect(result.current.isListening).toBe(false);
+    });
+
+    it("sets error when STT worker is not available", async () => {
+      mockModelManager.isReady.mockReturnValue(true);
+      mockModelManager.getWorker.mockReturnValue(null);
+
+      const { result } = renderHook(() => useMicrophone());
+
+      await act(async () => {
+        await result.current.startCapture();
+      });
+
+      expect(result.current.error).toBe("Speech-to-text worker not available");
+      expect(result.current.isListening).toBe(false);
+    });
+
+    it("sets error when microphone permission is denied", async () => {
+      mockModelManager.isReady.mockReturnValue(true);
+      mockModelManager.getWorker.mockReturnValue(mockWorker);
+
+      const domError = new DOMException("Permission denied", "NotAllowedError");
+      vi.mocked(navigator.mediaDevices.getUserMedia).mockRejectedValueOnce(domError);
+
+      const { result } = renderHook(() => useMicrophone());
+
+      await act(async () => {
+        await result.current.startCapture();
+      });
+
+      expect(result.current.error).toBe(
+        "Microphone access denied. Please allow microphone access in your browser settings.",
+      );
+      expect(result.current.isListening).toBe(false);
+      // Should clean up worker listener
+      expect(mockWorker.removeEventListener).toHaveBeenCalledWith(
+        "message",
+        expect.any(Function),
+      );
+    });
+
+    it("sets error with generic message for non-permission errors", async () => {
+      mockModelManager.isReady.mockReturnValue(true);
+      mockModelManager.getWorker.mockReturnValue(mockWorker);
+
+      vi.mocked(navigator.mediaDevices.getUserMedia).mockRejectedValueOnce(
+        new Error("Device not found"),
+      );
+
+      const { result } = renderHook(() => useMicrophone());
+
+      await act(async () => {
+        await result.current.startCapture();
+      });
+
+      expect(result.current.error).toBe("Device not found");
+    });
+
+    it("calls getUserMedia and sets isListening on success", async () => {
+      mockModelManager.isReady.mockReturnValue(true);
+      mockModelManager.getWorker.mockReturnValue(mockWorker);
+      setupAudioContextMock();
+
+      const mockStream = createMockStream();
+      vi.mocked(navigator.mediaDevices.getUserMedia).mockResolvedValueOnce(mockStream);
+
+      const { result } = renderHook(() => useMicrophone());
+
+      await act(async () => {
+        await result.current.startCapture();
+      });
+
+      expect(navigator.mediaDevices.getUserMedia).toHaveBeenCalledWith({ audio: true });
+      expect(result.current.isListening).toBe(true);
+      expect(result.current.error).toBeNull();
+    });
+
+    it("registers a worker message listener", async () => {
+      mockModelManager.isReady.mockReturnValue(true);
+      mockModelManager.getWorker.mockReturnValue(mockWorker);
+      setupAudioContextMock();
+
+      const mockStream = createMockStream();
+      vi.mocked(navigator.mediaDevices.getUserMedia).mockResolvedValueOnce(mockStream);
+
+      renderHook(() => useMicrophone());
+
+      await act(async () => {
+        // Need to get result from hook and call startCapture
+      });
+
+      const { result } = renderHook(() => useMicrophone());
+      await act(async () => {
+        await result.current.startCapture();
+      });
+
+      expect(mockWorker.addEventListener).toHaveBeenCalledWith(
+        "message",
+        expect.any(Function),
+      );
+    });
+  });
+
+  describe("clearTranscript", () => {
+    it("resets transcript to empty string", () => {
+      const { result } = renderHook(() => useMicrophone());
+
+      act(() => {
+        result.current.clearTranscript();
+      });
+
+      expect(result.current.transcript).toBe("");
+    });
+  });
+
+  describe("stopCapture", () => {
+    it("sets isListening to false", async () => {
+      mockModelManager.isReady.mockReturnValue(true);
+      mockModelManager.getWorker.mockReturnValue(mockWorker);
+      setupAudioContextMock();
+
+      const mockStream = createMockStream();
+      vi.mocked(navigator.mediaDevices.getUserMedia).mockResolvedValueOnce(mockStream);
+
+      const { result } = renderHook(() => useMicrophone());
+
+      await act(async () => {
+        await result.current.startCapture();
+      });
+      expect(result.current.isListening).toBe(true);
+
+      act(() => {
+        result.current.stopCapture();
+      });
+      expect(result.current.isListening).toBe(false);
+    });
+
+    it("stops media stream tracks", async () => {
+      mockModelManager.isReady.mockReturnValue(true);
+      mockModelManager.getWorker.mockReturnValue(mockWorker);
+      setupAudioContextMock();
+
+      const mockStream = createMockStream();
+      vi.mocked(navigator.mediaDevices.getUserMedia).mockResolvedValueOnce(mockStream);
+
+      const { result } = renderHook(() => useMicrophone());
+
+      await act(async () => {
+        await result.current.startCapture();
+      });
+
+      act(() => {
+        result.current.stopCapture();
+      });
+
+      const tracks = mockStream.getTracks();
+      for (const track of tracks) {
+        expect(track.stop).toHaveBeenCalled();
+      }
+    });
+
+    it("disconnects the ScriptProcessorNode and closes AudioContext", async () => {
+      mockModelManager.isReady.mockReturnValue(true);
+      mockModelManager.getWorker.mockReturnValue(mockWorker);
+      const { mockCtx, mockProcessor } = setupAudioContextMock();
+
+      const mockStream = createMockStream();
+      vi.mocked(navigator.mediaDevices.getUserMedia).mockResolvedValueOnce(mockStream);
+
+      const { result } = renderHook(() => useMicrophone());
+
+      await act(async () => {
+        await result.current.startCapture();
+      });
+
+      act(() => {
+        result.current.stopCapture();
+      });
+
+      expect(mockProcessor.disconnect).toHaveBeenCalled();
+      expect(mockCtx.close).toHaveBeenCalled();
+    });
+
+    it("removes the worker message listener on stop", async () => {
+      mockModelManager.isReady.mockReturnValue(true);
+      mockModelManager.getWorker.mockReturnValue(mockWorker);
+      setupAudioContextMock();
+
+      const mockStream = createMockStream();
+      vi.mocked(navigator.mediaDevices.getUserMedia).mockResolvedValueOnce(mockStream);
+
+      const { result } = renderHook(() => useMicrophone());
+
+      await act(async () => {
+        await result.current.startCapture();
+      });
+
+      act(() => {
+        result.current.stopCapture();
+      });
+
+      expect(mockWorker.removeEventListener).toHaveBeenCalledWith(
+        "message",
+        expect.any(Function),
+      );
+    });
+
+    it("is safe to call stopCapture when not listening", () => {
+      const { result } = renderHook(() => useMicrophone());
+
+      // stopCapture should not throw when nothing is active
+      act(() => {
+        result.current.stopCapture();
+      });
+
+      expect(result.current.isListening).toBe(false);
+    });
+  });
+
+  describe("audio processing and VAD", () => {
+    it("accumulates audio chunks and sends to STT on the streaming interval", async () => {
+      vi.useFakeTimers();
+
+      mockModelManager.isReady.mockReturnValue(true);
+      mockModelManager.getWorker.mockReturnValue(mockWorker);
+      const { mockProcessor } = setupAudioContextMock();
+
+      const mockStream = createMockStream();
+      vi.mocked(navigator.mediaDevices.getUserMedia).mockResolvedValueOnce(mockStream);
+
+      const { result } = renderHook(() => useMicrophone());
+
+      await act(async () => {
+        await result.current.startCapture();
+      });
+
+      // Simulate audio processing
+      const samples = new Float32Array(4096).fill(0.05);
+      const mockInputBuffer = {
+        getChannelData: vi.fn(() => samples),
+      };
+      const audioEvent = { inputBuffer: mockInputBuffer };
+
+      act(() => {
+        mockProcessor.onaudioprocess?.(audioEvent);
+      });
+
+      // Advance past the 5s streaming interval (STREAM_INTERVAL_MS in useMicrophone.ts)
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(5100);
+      });
+
+      // Worker should have received a transcribe message
+      expect(mockWorker.postMessage).toHaveBeenCalledWith(
+        expect.objectContaining({ type: "transcribe" }),
+        expect.anything(),
+      );
+
+      vi.useRealTimers();
+    });
+
+    it("resets silence timer when active audio is detected", async () => {
+      vi.useFakeTimers();
+
+      mockModelManager.isReady.mockReturnValue(true);
+      mockModelManager.getWorker.mockReturnValue(mockWorker);
+      const { mockProcessor } = setupAudioContextMock();
+
+      const mockStream = createMockStream();
+      vi.mocked(navigator.mediaDevices.getUserMedia).mockResolvedValueOnce(mockStream);
+
+      const { result } = renderHook(() => useMicrophone());
+
+      await act(async () => {
+        await result.current.startCapture();
+      });
+
+      // Simulate silent audio
+      const silentSamples = new Float32Array(4096).fill(0.001);
+      act(() => {
+        mockProcessor.onaudioprocess?.({ inputBuffer: { getChannelData: () => silentSamples } });
+      });
+
+      // Advance 500ms (not yet past the 1500ms timeout)
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(500);
+      });
+
+      // Now simulate loud audio (above threshold)
+      const loudSamples = new Float32Array(4096).fill(0.5);
+      act(() => {
+        mockProcessor.onaudioprocess?.({ inputBuffer: { getChannelData: () => loudSamples } });
+      });
+
+      // Advance past original timeout — should NOT have flushed because silence timer was reset
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1100);
+      });
+
+      // Worker should NOT have been called yet (silence timer was reset)
+      expect(mockWorker.postMessage).not.toHaveBeenCalledWith(
+        expect.objectContaining({ type: "transcribe" }),
+        expect.anything(),
+      );
+
+      vi.useRealTimers();
+    });
+
+    it("flushes remaining audio on stopCapture", async () => {
+      mockModelManager.isReady.mockReturnValue(true);
+      mockModelManager.getWorker.mockReturnValue(mockWorker);
+      const { mockProcessor } = setupAudioContextMock();
+
+      const mockStream = createMockStream();
+      vi.mocked(navigator.mediaDevices.getUserMedia).mockResolvedValueOnce(mockStream);
+
+      const { result } = renderHook(() => useMicrophone());
+
+      await act(async () => {
+        await result.current.startCapture();
+      });
+
+      // Simulate loud audio (accumulate a chunk)
+      const loudSamples = new Float32Array(4096).fill(0.5);
+      act(() => {
+        mockProcessor.onaudioprocess?.({ inputBuffer: { getChannelData: () => loudSamples } });
+      });
+
+      // Stop capture should flush remaining audio
+      act(() => {
+        result.current.stopCapture();
+      });
+
+      expect(mockWorker.postMessage).toHaveBeenCalledWith(
+        expect.objectContaining({ type: "transcribe" }),
+        expect.anything(),
+      );
+    });
+  });
+
+  describe("STT worker message handling", () => {
+    it("updates transcript when worker sends transcript message", async () => {
+      mockModelManager.isReady.mockReturnValue(true);
+      mockModelManager.getWorker.mockReturnValue(mockWorker);
+      setupAudioContextMock();
+
+      const mockStream = createMockStream();
+      vi.mocked(navigator.mediaDevices.getUserMedia).mockResolvedValueOnce(mockStream);
+
+      // Capture the message handler that gets registered with the worker
+      let capturedHandler: ((e: MessageEvent) => void) | null = null;
+      mockWorker.addEventListener.mockImplementation(
+        (event: string, handler: (e: MessageEvent) => void) => {
+          if (event === "message") capturedHandler = handler;
+        },
+      );
+
+      const { result } = renderHook(() => useMicrophone());
+
+      await act(async () => {
+        await result.current.startCapture();
+      });
+
+      expect(capturedHandler).not.toBeNull();
+
+      // Simulate worker sending transcript
+      await act(async () => {
+        capturedHandler!({ data: { type: "transcript", text: "Hello world" } } as MessageEvent);
+      });
+
+      expect(result.current.transcript).toBe("Hello world");
+    });
+
+    it("replaces transcript on each transcript message (growing-window model)", async () => {
+      mockModelManager.isReady.mockReturnValue(true);
+      mockModelManager.getWorker.mockReturnValue(mockWorker);
+      setupAudioContextMock();
+
+      const mockStream = createMockStream();
+      vi.mocked(navigator.mediaDevices.getUserMedia).mockResolvedValueOnce(mockStream);
+
+      let capturedHandler: ((e: MessageEvent) => void) | null = null;
+      mockWorker.addEventListener.mockImplementation(
+        (event: string, handler: (e: MessageEvent) => void) => {
+          if (event === "message") capturedHandler = handler;
+        },
+      );
+
+      const { result } = renderHook(() => useMicrophone());
+
+      await act(async () => {
+        await result.current.startCapture();
+      });
+
+      // Each worker message contains the full transcript so far — the hook
+      // replaces instead of concatenating (see useMicrophone.ts:167-178).
+      await act(async () => {
+        capturedHandler!({ data: { type: "transcript", text: "Hello" } } as MessageEvent);
+      });
+      expect(result.current.transcript).toBe("Hello");
+
+      await act(async () => {
+        capturedHandler!({ data: { type: "transcript", text: "Hello world" } } as MessageEvent);
+      });
+      expect(result.current.transcript).toBe("Hello world");
+    });
+
+    it("ignores empty transcript text", async () => {
+      mockModelManager.isReady.mockReturnValue(true);
+      mockModelManager.getWorker.mockReturnValue(mockWorker);
+      setupAudioContextMock();
+
+      const mockStream = createMockStream();
+      vi.mocked(navigator.mediaDevices.getUserMedia).mockResolvedValueOnce(mockStream);
+
+      let capturedHandler: ((e: MessageEvent) => void) | null = null;
+      mockWorker.addEventListener.mockImplementation(
+        (event: string, handler: (e: MessageEvent) => void) => {
+          if (event === "message") capturedHandler = handler;
+        },
+      );
+
+      const { result } = renderHook(() => useMicrophone());
+
+      await act(async () => {
+        await result.current.startCapture();
+      });
+
+      await act(async () => {
+        capturedHandler!({ data: { type: "transcript", text: "   " } } as MessageEvent);
+      });
+
+      expect(result.current.transcript).toBe("");
+    });
+
+    it("sets error when worker sends error message", async () => {
+      mockModelManager.isReady.mockReturnValue(true);
+      mockModelManager.getWorker.mockReturnValue(mockWorker);
+      setupAudioContextMock();
+
+      const mockStream = createMockStream();
+      vi.mocked(navigator.mediaDevices.getUserMedia).mockResolvedValueOnce(mockStream);
+
+      let capturedHandler: ((e: MessageEvent) => void) | null = null;
+      mockWorker.addEventListener.mockImplementation(
+        (event: string, handler: (e: MessageEvent) => void) => {
+          if (event === "message") capturedHandler = handler;
+        },
+      );
+
+      const { result } = renderHook(() => useMicrophone());
+
+      await act(async () => {
+        await result.current.startCapture();
+      });
+
+      await act(async () => {
+        capturedHandler!({ data: { type: "error", message: "Transcription failed" } } as MessageEvent);
+      });
+
+      expect(result.current.error).toBe("Transcription failed");
+    });
+  });
+
+  describe("flushAudio edge cases", () => {
+    it("sets error when worker is null during flush", async () => {
+      // Start with a worker, then make it disappear before flush
+      const transientWorker = {
+        postMessage: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      };
+
+      // First call: isReady=true, getWorker=transientWorker
+      // During flush: getWorker returns null
+      let getWorkerCallCount = 0;
+      mockModelManager.isReady.mockReturnValue(true);
+      mockModelManager.getWorker.mockImplementation(() => {
+        getWorkerCallCount++;
+        // First call (startCapture worker check) returns the worker
+        // After that (flush, cleanup), return null
+        return getWorkerCallCount <= 1 ? transientWorker : null;
+      });
+
+      const { mockProcessor } = setupAudioContextMock();
+      const mockStream = createMockStream();
+      vi.mocked(navigator.mediaDevices.getUserMedia).mockResolvedValueOnce(mockStream);
+
+      const { result } = renderHook(() => useMicrophone());
+
+      await act(async () => {
+        await result.current.startCapture();
+      });
+
+      // Accumulate some audio
+      const samples = new Float32Array(4096).fill(0.5);
+      act(() => {
+        mockProcessor.onaudioprocess?.({ inputBuffer: { getChannelData: () => samples } });
+      });
+
+      // Stop capture — flush will try to use the worker but it's gone
+      act(() => {
+        result.current.stopCapture();
+      });
+
+      expect(result.current.error).toBe("Speech-to-text model not loaded");
+    });
+  });
+
+  describe("stopCapture with active silence timer", () => {
+    it("clears an active silence timer when stopping", async () => {
+      vi.useFakeTimers();
+
+      mockModelManager.isReady.mockReturnValue(true);
+      mockModelManager.getWorker.mockReturnValue(mockWorker);
+      const { mockProcessor } = setupAudioContextMock();
+
+      const mockStream = createMockStream();
+      vi.mocked(navigator.mediaDevices.getUserMedia).mockResolvedValueOnce(mockStream);
+
+      const { result } = renderHook(() => useMicrophone());
+
+      await act(async () => {
+        await result.current.startCapture();
+      });
+
+      // Trigger silent audio to start the silence timer
+      const silentSamples = new Float32Array(4096).fill(0.001);
+      act(() => {
+        mockProcessor.onaudioprocess?.({ inputBuffer: { getChannelData: () => silentSamples } });
+      });
+
+      // Don't wait for the timer — stop immediately
+      act(() => {
+        result.current.stopCapture();
+      });
+
+      // Advance timers to prove the silence timer was cleared (no double flush)
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(2000);
+      });
+
+      expect(result.current.isListening).toBe(false);
+
+      vi.useRealTimers();
+    });
+  });
+
+  describe("startCapture — non-Error, non-DOMException getUserMedia rejection", () => {
+    it("sets generic error message for non-Error getUserMedia rejection", async () => {
+      mockModelManager.isReady.mockReturnValue(true);
+      mockModelManager.getWorker.mockReturnValue(mockWorker);
+
+      vi.mocked(navigator.mediaDevices.getUserMedia).mockRejectedValueOnce(
+        "unknown rejection",
+      );
+
+      const { result } = renderHook(() => useMicrophone());
+
+      await act(async () => {
+        await result.current.startCapture();
+      });
+
+      expect(result.current.error).toBe("Failed to access microphone");
+    });
+  });
+});

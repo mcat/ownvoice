@@ -1,0 +1,187 @@
+import { render, screen, fireEvent } from "@testing-library/preact";
+import { PainFlow } from "./PainFlow";
+import { light } from "../../theme/tokens";
+import { getEmojiFPS, getBodyRegions, getPainDescriptors } from "../../data/phraseRegistry";
+
+const EMOJI_FPS = getEmojiFPS("en");
+const BODY_REGIONS = getBodyRegions("en");
+const PAIN_DESCRIPTORS = getPainDescriptors("en");
+
+const baseProps = {
+  onSelect: vi.fn(),
+  t: light,
+  theme: "light" as const,
+};
+
+describe("PainFlow", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe("severity step", () => {
+    it("starts at severity step with 6 faces", () => {
+      render(<PainFlow {...baseProps} />);
+      expect(screen.getByText("How much pain do you have?")).toBeInTheDocument();
+      // 6 emoji faces
+      for (const face of EMOJI_FPS) {
+        expect(screen.getByText(face.face)).toBeInTheDocument();
+      }
+    });
+
+    it("shows severity labels for each face", () => {
+      render(<PainFlow {...baseProps} />);
+      expect(screen.getByText("No hurt")).toBeInTheDocument();
+      expect(screen.getByText("Hurts worst")).toBeInTheDocument();
+    });
+
+    it("shows breadcrumb with Severity bold", () => {
+      render(<PainFlow {...baseProps} />);
+      const severity = screen.getByText("Severity");
+      expect(severity).toBeInTheDocument();
+      expect(severity.style.fontWeight).toBe("700");
+    });
+
+    it("does not show Back button on first step", () => {
+      render(<PainFlow {...baseProps} />);
+      expect(screen.queryByText("Back")).not.toBeInTheDocument();
+    });
+  });
+
+  describe("location step", () => {
+    it("advances to location step when a severity face is tapped", () => {
+      render(<PainFlow {...baseProps} />);
+      // Tap the first face (0 — No hurt)
+      fireEvent.click(screen.getByText(EMOJI_FPS[0].face));
+      expect(screen.getByText("Where is your pain?")).toBeInTheDocument();
+    });
+
+    it("shows all body regions on location step", () => {
+      render(<PainFlow {...baseProps} />);
+      fireEvent.click(screen.getByText(EMOJI_FPS[2].face)); // severity 4
+      for (const region of BODY_REGIONS) {
+        expect(screen.getByText(region)).toBeInTheDocument();
+      }
+    });
+
+    it("shows Back button on location step", () => {
+      render(<PainFlow {...baseProps} />);
+      fireEvent.click(screen.getByText(EMOJI_FPS[0].face));
+      expect(screen.getByText("Back")).toBeInTheDocument();
+    });
+  });
+
+  describe("descriptor step", () => {
+    it("advances to descriptor step when a body region is tapped", () => {
+      render(<PainFlow {...baseProps} />);
+      fireEvent.click(screen.getByText(EMOJI_FPS[3].face)); // severity 6
+      fireEvent.click(screen.getByText("Head"));
+      expect(
+        screen.getByText("What does the pain feel like?"),
+      ).toBeInTheDocument();
+    });
+
+    it("shows all pain descriptors", () => {
+      render(<PainFlow {...baseProps} />);
+      fireEvent.click(screen.getByText(EMOJI_FPS[0].face));
+      fireEvent.click(screen.getByText("Chest"));
+      for (const desc of PAIN_DESCRIPTORS) {
+        expect(screen.getByText(desc.text)).toBeInTheDocument();
+      }
+    });
+  });
+
+  describe("full flow: severity -> location -> descriptor -> onSelect", () => {
+    it("calls onSelect with composed sentence after all three steps", () => {
+      const onSelect = vi.fn();
+      render(<PainFlow {...baseProps} onSelect={onSelect} />);
+
+      // Step 1: Severity (8 — Hurts a whole lot)
+      fireEvent.click(screen.getByText(EMOJI_FPS[4].face));
+
+      // Step 2: Location
+      fireEvent.click(screen.getByText("Lower Back"));
+
+      // Step 3: Descriptor
+      fireEvent.click(screen.getByText("Sharp"));
+
+      expect(onSelect).toHaveBeenCalledWith(
+        "I have sharp pain in my Lower Back, level 8 out of 10",
+      );
+    });
+
+    it("resets to severity after completing the flow", () => {
+      const onSelect = vi.fn();
+      render(<PainFlow {...baseProps} onSelect={onSelect} />);
+
+      fireEvent.click(screen.getByText(EMOJI_FPS[0].face));
+      fireEvent.click(screen.getByText("Head"));
+      fireEvent.click(screen.getByText("Aching"));
+
+      // Should have reset back to severity step
+      expect(screen.getByText("How much pain do you have?")).toBeInTheDocument();
+    });
+  });
+
+  describe("back button", () => {
+    it("goes back from location to severity", () => {
+      render(<PainFlow {...baseProps} />);
+      fireEvent.click(screen.getByText(EMOJI_FPS[1].face)); // severity 2
+      expect(screen.getByText("Where is your pain?")).toBeInTheDocument();
+
+      fireEvent.click(screen.getByText("Back"));
+      expect(screen.getByText("How much pain do you have?")).toBeInTheDocument();
+    });
+
+    it("goes back from descriptor to location", () => {
+      render(<PainFlow {...baseProps} />);
+      fireEvent.click(screen.getByText(EMOJI_FPS[2].face)); // severity 4
+      fireEvent.click(screen.getByText("Neck"));
+      expect(
+        screen.getByText("What does the pain feel like?"),
+      ).toBeInTheDocument();
+
+      fireEvent.click(screen.getByText("Back"));
+      expect(screen.getByText("Where is your pain?")).toBeInTheDocument();
+    });
+  });
+
+  describe("breadcrumb goToStep", () => {
+    it("clicking Severity breadcrumb from descriptor resets to severity", () => {
+      render(<PainFlow {...baseProps} />);
+      // Advance to descriptor step
+      fireEvent.click(screen.getByText(EMOJI_FPS[3].face)); // severity 6
+      fireEvent.click(screen.getByText("Head"));
+      expect(screen.getByText("What does the pain feel like?")).toBeInTheDocument();
+
+      // Click "Severity" breadcrumb to go all the way back
+      fireEvent.click(screen.getByText("Severity"));
+      expect(screen.getByText("How much pain do you have?")).toBeInTheDocument();
+    });
+
+    it("clicking Location breadcrumb from descriptor goes to location", () => {
+      render(<PainFlow {...baseProps} />);
+      // Advance to descriptor step
+      fireEvent.click(screen.getByText(EMOJI_FPS[1].face)); // severity 2
+      fireEvent.click(screen.getByText("Chest"));
+      expect(screen.getByText("What does the pain feel like?")).toBeInTheDocument();
+
+      // Click "Location" breadcrumb
+      fireEvent.click(screen.getByText("Location"));
+      expect(screen.getByText("Where is your pain?")).toBeInTheDocument();
+    });
+
+    it("clicking current or future step breadcrumb does nothing", () => {
+      render(<PainFlow {...baseProps} />);
+      fireEvent.click(screen.getByText(EMOJI_FPS[0].face)); // severity 0
+      expect(screen.getByText("Where is your pain?")).toBeInTheDocument();
+
+      // Click "Describe" breadcrumb (future step) — should not navigate
+      fireEvent.click(screen.getByText("Describe"));
+      expect(screen.getByText("Where is your pain?")).toBeInTheDocument();
+
+      // Click "Location" breadcrumb (current step) — should not navigate
+      fireEvent.click(screen.getByText("Location"));
+      expect(screen.getByText("Where is your pain?")).toBeInTheDocument();
+    });
+  });
+});

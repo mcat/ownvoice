@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.tsbuildinfo
+
+# Vite
+.vite/
+
+# Test output
+coverage/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment — never commit secrets
+.env
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.idea/
+*.iml
+*.local
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# Model files — too large for git (~600+ MB)
+# Download with: ./scripts/download-models.sh
+public/models/
+
+# Pipeline-verify script outputs — regenerated on each run
+scripts/pipeline-verify/*.wav

@@ -1,0 +1,20 @@
+name: wire-real-models
+description: Download actual ONNX model files, inspect tensor shapes, replace TODO placeholders, verify end-to-end inference
+status: proposed
+created: 2026-04-12
+artifacts:
+  - id: proposal
+    type: proposal
+    status: done
+    path: proposal.md
+  - id: design
+    type: design
+    status: done
+    path: design.md
+    dependencies: [proposal]
+  - id: tasks
+    type: tasks
+    status: done
+    path: tasks.md
+    dependencies: [proposal, design]
+applyRequires: [tasks]

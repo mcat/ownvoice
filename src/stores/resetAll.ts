@@ -1,0 +1,45 @@
+import { useSettingsStore } from "./settingsStore";
+import { useConversationStore } from "./conversationStore";
+import { useUIStore } from "./uiStore";
+import { clearAll } from "../store";
+import { clearAudioCache } from "../models/audioCache";
+import { getModelManager } from "../models/modelManager";
+
+/**
+ * Full application reset — clears all persistent and in-memory state.
+ *
+ * Storage cleared:
+ *   - IndexedDB "ownvoice" / "kv" (settings, speaker data, conversation)
+ *   - OPFS "audio-cache" (pre-generated TTS clips)
+ *   - OPFS "models" (downloaded ONNX weights) + terminates workers
+ *   - Cache API (service worker cached responses including model files)
+ *   - Service worker registration
+ *   - localStorage "ov-theme" (theme preference)
+ *   - All in-memory Zustand stores
+ */
+export async function resetAll(): Promise<void> {
+  // 1. Persistent storage (IndexedDB, OPFS)
+  clearAll();
+  clearAudioCache();
+  getModelManager().clearAll();
+
+  // 2. In-memory Zustand stores
+  useSettingsStore.getState().reset();
+  useConversationStore.getState().clear();
+  useUIStore.getState().resetUI();
+
+  // 3. localStorage
+  localStorage.removeItem("ov-theme");
+
+  // 4. Service worker cache (includes cached model files ~1.2 GB)
+  if ("caches" in self) {
+    const keys = await caches.keys();
+    await Promise.all(keys.map((k) => caches.delete(k)));
+  }
+
+  // 5. Unregister service worker so the next load starts clean
+  if ("serviceWorker" in navigator) {
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(registrations.map((r) => r.unregister()));
+  }
+}

@@ -1,0 +1,222 @@
+import { MODEL_URLS } from "./types";
+
+// --- Mock modelManager ---
+const mockInit = vi.fn(() => Promise.resolve());
+const mockSetWorker = vi.fn();
+const mockSetReady = vi.fn();
+const mockSetError = vi.fn();
+const mockIsReady = vi.fn(() => false);
+
+vi.mock("./modelManager", () => ({
+  getModelManager: () => ({
+    init: mockInit,
+    setWorker: mockSetWorker,
+    setReady: mockSetReady,
+    setError: mockSetError,
+    isReady: mockIsReady,
+  }),
+}));
+
+// --- Mock Worker constructor ---
+// Capture created workers and their onmessage handlers
+interface MockWorker {
+  postMessage: ReturnType<typeof vi.fn>;
+  onmessage: ((e: { data: { type: string; message?: string } }) => void) | null;
+  onerror: ((e: { message: string }) => void) | null;
+  terminate: ReturnType<typeof vi.fn>;
+}
+const createdWorkers: MockWorker[] = [];
+
+class FakeWorker {
+  postMessage = vi.fn();
+  onmessage: ((e: { data: { type: string; message?: string } }) => void) | null = null;
+  onerror: ((e: { message: string }) => void) | null = null;
+  terminate = vi.fn();
+  constructor() {
+    createdWorkers.push(this as unknown as MockWorker);
+  }
+}
+
+vi.stubGlobal("Worker", FakeWorker);
+
+// Ensure import.meta.url does not cause issues
+beforeEach(() => {
+  vi.clearAllMocks();
+  createdWorkers.length = 0;
+  mockIsReady.mockReturnValue(false);
+});
+
+describe("bootModels", () => {
+  it("calls mgr.init() first", async () => {
+    const { bootModels } = await import("./bootModels");
+    await bootModels();
+    expect(mockInit).toHaveBeenCalledTimes(1);
+  });
+
+  it("creates 3 workers (TTS, LLM, STT)", async () => {
+    const { bootModels } = await import("./bootModels");
+    await bootModels();
+    // No navigator.gpu in jsdom → WASM path for STT
+    expect(createdWorkers).toHaveLength(3);
+  });
+
+  it("registers TTS and LLM workers with setWorker immediately", async () => {
+    const { bootModels } = await import("./bootModels");
+    await bootModels();
+
+    // TTS and LLM get setWorker immediately; STT defers until "ready"
+    expect(mockSetWorker).toHaveBeenCalledTimes(2);
+    const registeredIds = mockSetWorker.mock.calls.map(
+      (call: unknown[]) => call[0],
+    );
+    expect(registeredIds).toContain("tts");
+    expect(registeredIds).toContain("llm");
+  });
+
+  it("posts init message with correct model URLs", async () => {
+    const { bootModels } = await import("./bootModels");
+    await bootModels();
+
+    // Workers are created in order: TTS, LLM, STT
+    expect(createdWorkers[0].postMessage).toHaveBeenCalledWith({
+      type: "init",
+      modelUrl: MODEL_URLS.tts,
+    });
+    expect(createdWorkers[1].postMessage).toHaveBeenCalledWith({
+      type: "init",
+      modelUrl: MODEL_URLS.llm,
+    });
+    expect(createdWorkers[2].postMessage).toHaveBeenCalledWith({
+      type: "init",
+      modelUrl: MODEL_URLS.stt,
+    });
+  });
+
+  it("calls setReady when TTS worker sends ready message", async () => {
+    const { bootModels } = await import("./bootModels");
+    await bootModels();
+
+    createdWorkers[0].onmessage?.({ data: { type: "ready" } });
+    expect(mockSetReady).toHaveBeenCalledWith("tts");
+  });
+
+  it("calls setError when LLM worker sends error message", async () => {
+    const { bootModels } = await import("./bootModels");
+    await bootModels();
+
+    createdWorkers[1].onmessage?.({
+      data: { type: "error", message: "Model load failed" },
+    });
+    expect(mockSetError).toHaveBeenCalledWith("llm", "Model load failed");
+  });
+
+  it("calls setReady when LLM worker sends ready", async () => {
+    const { bootModels } = await import("./bootModels");
+    await bootModels();
+
+    createdWorkers[1].onmessage?.({ data: { type: "ready" } });
+    expect(mockSetReady).toHaveBeenCalledWith("llm");
+  });
+
+  it("calls setWorker and setReady together when STT worker sends ready", async () => {
+    const { bootModels } = await import("./bootModels");
+    await bootModels();
+
+    // STT worker (index 2, WASM path) sends "ready"
+    createdWorkers[2].onmessage?.({ data: { type: "ready" } });
+    expect(mockSetWorker).toHaveBeenCalledWith("stt", createdWorkers[2]);
+    expect(mockSetReady).toHaveBeenCalledWith("stt");
+  });
+
+  it("calls setError when TTS worker sends error during init", async () => {
+    const { bootModels } = await import("./bootModels");
+    await bootModels();
+
+    createdWorkers[0].onmessage?.({
+      data: { type: "error", message: "TTS init failed" },
+    });
+    expect(mockSetError).toHaveBeenCalledWith("tts", "TTS init failed");
+  });
+
+  it("calls setError when STT worker sends error", async () => {
+    const { bootModels } = await import("./bootModels");
+    await bootModels();
+
+    createdWorkers[2].onmessage?.({
+      data: { type: "error", message: "STT init failed" },
+    });
+    expect(mockSetError).toHaveBeenCalledWith("stt", "STT init failed");
+  });
+
+  it("handles TTS worker creation failure gracefully", async () => {
+    let callCount = 0;
+    vi.stubGlobal(
+      "Worker",
+      class {
+        postMessage = vi.fn();
+        onmessage: unknown = null;
+        onerror: unknown = null;
+        terminate = vi.fn();
+        constructor() {
+          callCount++;
+          if (callCount === 1) throw new Error("Worker creation failed");
+          createdWorkers.push(this as unknown as MockWorker);
+        }
+      },
+    );
+
+    const { bootModels } = await import("./bootModels");
+    await bootModels();
+
+    // Should still create LLM and STT workers (2 out of 3)
+    expect(createdWorkers).toHaveLength(2);
+  });
+
+  it("handles LLM worker creation failure gracefully", async () => {
+    let callCount = 0;
+    vi.stubGlobal(
+      "Worker",
+      class {
+        postMessage = vi.fn();
+        onmessage: unknown = null;
+        onerror: unknown = null;
+        terminate = vi.fn();
+        constructor() {
+          callCount++;
+          if (callCount === 2) throw new Error("LLM worker failed");
+          createdWorkers.push(this as unknown as MockWorker);
+        }
+      },
+    );
+
+    const { bootModels } = await import("./bootModels");
+    await bootModels();
+
+    // TTS and STT should still be created
+    expect(createdWorkers).toHaveLength(2);
+  });
+
+  it("handles STT worker creation failure gracefully", async () => {
+    let callCount = 0;
+    vi.stubGlobal(
+      "Worker",
+      class {
+        postMessage = vi.fn();
+        onmessage: unknown = null;
+        onerror: unknown = null;
+        terminate = vi.fn();
+        constructor() {
+          callCount++;
+          if (callCount === 3) throw new Error("STT worker failed");
+          createdWorkers.push(this as unknown as MockWorker);
+        }
+      },
+    );
+
+    const { bootModels } = await import("./bootModels");
+    await bootModels();
+
+    // TTS and LLM should still be created
+    expect(createdWorkers).toHaveLength(2);
+  });
+});
