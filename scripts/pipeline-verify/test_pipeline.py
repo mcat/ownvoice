@@ -2,30 +2,22 @@
 Verifies the models produce actual speech, independent of the browser runtime."""
 
 import numpy as np
-import onnxruntime as ort
 from tokenizers import Tokenizer
 import wave, struct, sys
-from pathlib import Path
 
-SCRIPT_DIR = Path(__file__).resolve().parent
-REPO_ROOT = SCRIPT_DIR.parent.parent
-MODEL_DIR = f"{REPO_ROOT}/public/models/chatterbox-turbo/"
-START_SPEECH_TOKEN = 6561
-STOP_SPEECH_TOKEN = 6562
-SILENCE_TOKEN = 4299
-SAMPLE_RATE = 24000
+from _common import (
+    SCRIPT_DIR, MODEL_DIR,
+    START_SPEECH_TOKEN, STOP_SPEECH_TOKEN, SILENCE_TOKEN, SAMPLE_RATE,
+    load_chatterbox_sessions,
+)
+
 MAX_NEW_TOKENS = 100  # More than browser's 50 but still fast
 
 # Load tokenizer
 tok = Tokenizer.from_file(MODEL_DIR + "tokenizer.json")
 
-# Load models
-print("Loading embed_tokens...")
-embed_sess = ort.InferenceSession(MODEL_DIR + "embed_tokens_q4f16.onnx", providers=["CPUExecutionProvider"])
-print("Loading language_model...")
-lm_sess = ort.InferenceSession(MODEL_DIR + "language_model_q4f16.onnx", providers=["CPUExecutionProvider"])
-print("Loading conditional_decoder...")
-dec_sess = ort.InferenceSession(MODEL_DIR + "conditional_decoder_q4f16.onnx", providers=["CPUExecutionProvider"])
+print("Loading models (concurrent)...")
+embed_sess, lm_sess, dec_sess = load_chatterbox_sessions()
 
 # Check model I/O
 print("\n=== embed_tokens inputs:", [i.name for i in embed_sess.get_inputs()])

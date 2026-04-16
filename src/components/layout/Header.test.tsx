@@ -3,7 +3,6 @@ import { Header } from "./Header";
 import { useUIStore } from "../../stores/uiStore";
 import type { AppSettings } from "../../types";
 
-// Mock useTheme to return stable light theme tokens
 vi.mock("../../hooks/useTheme", () => ({
   useTheme: () => ({
     theme: "light" as const,

@@ -9,6 +9,9 @@ export {};
  * (which installs self.onmessage), then exercise the message protocol.
  */
 
+const getHandler = () =>
+  (globalThis as unknown as { onmessage: (e: MessageEvent) => Promise<void> }).onmessage;
+
 // --- Mock onnxruntime-web ---
 const mockSessionCreate = vi.fn();
 
@@ -103,7 +106,7 @@ describe("sttWorker — message protocol", () => {
     vi.resetModules();
     await import("./sttWorker");
 
-    const handler = (globalThis as unknown as { onmessage: (e: MessageEvent) => Promise<void> }).onmessage;
+    const handler = getHandler();
     expect(handler).toBeDefined();
 
     await handler({ data: { type: "init", modelUrl: "/models/stt/" } } as MessageEvent);
@@ -119,7 +122,7 @@ describe("sttWorker — message protocol", () => {
     vi.resetModules();
     await import("./sttWorker");
 
-    const handler = (globalThis as unknown as { onmessage: (e: MessageEvent) => Promise<void> }).onmessage;
+    const handler = getHandler();
     await handler({ data: { type: "init", modelUrl: "/models/stt/" } } as MessageEvent);
 
     expect(mockPostMessage).toHaveBeenCalledWith(
@@ -215,7 +218,7 @@ describe("sttWorker — message protocol", () => {
     vi.resetModules();
     await import("./sttWorker");
 
-    const handler = (globalThis as unknown as { onmessage: (e: MessageEvent) => Promise<void> }).onmessage;
+    const handler = getHandler();
 
     // Init first
     await handler({ data: { type: "init", modelUrl: "/models/stt/" } } as MessageEvent);
@@ -247,7 +250,7 @@ describe("sttWorker — message protocol", () => {
     });
     await import("./sttWorker");
 
-    const handler = (globalThis as unknown as { onmessage: (e: MessageEvent) => Promise<void> }).onmessage;
+    const handler = getHandler();
 
     await handler({
       data: {
@@ -272,7 +275,7 @@ describe("sttWorker — message protocol", () => {
     });
     await import("./sttWorker");
 
-    const handler = (globalThis as unknown as { onmessage: (e: MessageEvent) => Promise<void> }).onmessage;
+    const handler = getHandler();
 
     await handler({ data: { type: "foobar" } } as MessageEvent);
 

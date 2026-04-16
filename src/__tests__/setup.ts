@@ -3,15 +3,14 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup } from "@testing-library/preact";
 import { afterEach, vi } from "vitest";
 
-// Clean up DOM and restore mocks after each test
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
 });
 
-// --- Global Web API mocks (not available in jsdom) ---
+// --- Global API mocks ---
 
-// window.matchMedia — jsdom omits this; uiStore reads prefers-color-scheme at init
+// uiStore reads prefers-color-scheme at module load
 Object.defineProperty(window, "matchMedia", {
   value: vi.fn((query: string) => ({
     matches: false,

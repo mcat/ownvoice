@@ -112,6 +112,10 @@ function setupFetchMocks() {
 }
 
 beforeEach(() => {
+  // Clear the captured handler so a test that forgets to re-import the worker
+  // module gets a clean "handler not registered" error instead of silently
+  // invoking the previous test's stale handler.
+  capturedMessageHandler = null;
   vi.clearAllMocks();
   mockPostMessage.mockClear();
   mockSessionCreate.mockReset();
