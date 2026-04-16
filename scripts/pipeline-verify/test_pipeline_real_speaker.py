@@ -2,13 +2,13 @@
 Uses condEmb + speaker embeddings (which are non-zero) but zero prompt tokens."""
 
 import numpy as np
-import onnxruntime as ort
 from tokenizers import Tokenizer
 import wave, json
 
 from _common import (
     SCRIPT_DIR, MODEL_DIR,
     START_SPEECH_TOKEN, STOP_SPEECH_TOKEN, SILENCE_TOKEN, SAMPLE_RATE,
+    load_chatterbox_sessions,
 )
 
 MAX_NEW_TOKENS = 100
@@ -18,12 +18,9 @@ MAX_NEW_TOKENS = 100
 # Actually, let's just use the JS console to dump it. For now, run the pipeline
 # with zero speaker data but MORE tokens to see if there's speech buried in the output.
 
-# Load models
-print("Loading models...")
+print("Loading models (concurrent)...")
 tok = Tokenizer.from_file(MODEL_DIR + "tokenizer.json")
-embed_sess = ort.InferenceSession(MODEL_DIR + "embed_tokens_q4f16.onnx", providers=["CPUExecutionProvider"])
-lm_sess = ort.InferenceSession(MODEL_DIR + "language_model_q4f16.onnx", providers=["CPUExecutionProvider"])
-dec_sess = ort.InferenceSession(MODEL_DIR + "conditional_decoder_q4f16.onnx", providers=["CPUExecutionProvider"])
+embed_sess, lm_sess, dec_sess = load_chatterbox_sessions()
 
 # Tokenize
 text = "Yes"

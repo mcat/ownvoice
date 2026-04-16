@@ -3,23 +3,7 @@ import { useTheme } from "./useTheme";
 import { useUIStore } from "../stores/uiStore";
 import { light, dark } from "../theme/tokens";
 import type { ThemeName } from "../theme/tokens";
-
-// Helper: set up matchMedia mock
-function mockMatchMedia(prefersDark: boolean) {
-  Object.defineProperty(window, "matchMedia", {
-    value: vi.fn((query: string) => ({
-      matches: prefersDark && query === "(prefers-color-scheme: dark)",
-      media: query,
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-      addListener: vi.fn(),
-      removeListener: vi.fn(),
-      onchange: null,
-      dispatchEvent: vi.fn(),
-    })),
-    writable: true,
-  });
-}
+import { mockMatchMedia } from "../__tests__/helpers";
 
 // Resync uiStore with current localStorage + matchMedia (the store evaluates
 // these once at module load, so tests that change them must re-seed the store).

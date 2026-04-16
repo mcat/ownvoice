@@ -1,13 +1,13 @@
 """Test pipeline with REAL speaker data exported from the browser."""
 
 import numpy as np
-import onnxruntime as ort
 from tokenizers import Tokenizer
 import wave, json
 
 from _common import (
     SCRIPT_DIR, MODEL_DIR,
     START_SPEECH_TOKEN, STOP_SPEECH_TOKEN, SILENCE_TOKEN, SAMPLE_RATE,
+    load_chatterbox_sessions,
 )
 
 MAX_NEW_TOKENS = 100
@@ -27,12 +27,9 @@ print(f"  promptToken: {prompt_token.shape}, nonzero={np.count_nonzero(prompt_to
 print(f"  speakerEmb: {speaker_emb.shape}, nonzero={np.count_nonzero(speaker_emb)}/{speaker_emb.size}")
 print(f"  speakerFeat: {speaker_feat.shape}, nonzero={np.count_nonzero(speaker_feat)}/{speaker_feat.size}")
 
-# Load models
-print("\nLoading models...")
+print("\nLoading models (concurrent)...")
 tok = Tokenizer.from_file(MODEL_DIR + "tokenizer.json")
-embed_sess = ort.InferenceSession(MODEL_DIR + "embed_tokens_q4f16.onnx", providers=["CPUExecutionProvider"])
-lm_sess = ort.InferenceSession(MODEL_DIR + "language_model_q4f16.onnx", providers=["CPUExecutionProvider"])
-dec_sess = ort.InferenceSession(MODEL_DIR + "conditional_decoder_q4f16.onnx", providers=["CPUExecutionProvider"])
+embed_sess, lm_sess, dec_sess = load_chatterbox_sessions()
 
 # Tokenize
 text = "Yes"
