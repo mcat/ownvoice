@@ -580,6 +580,19 @@ describe("llmWorker — caregiver-voice filter", () => {
     expect(completions).toEqual(["scared", "dizzy", "cold", "weak", "lonely"]);
   });
 
+  it("drops caregiver-action lines (I'm getting your X, I'll bring you Y)", async () => {
+    const raw = [
+      "right now",
+      "I'm getting your glasses now",
+      "please",
+      "I'll bring you some water",
+      "soon",
+      "I'm fetching your medication",
+    ].join("\n");
+    const completions = await runWithRaw(raw);
+    expect(completions).toEqual(["right now", "please", "soon"]);
+  });
+
   it("keeps patient-voice lines intact (first-person continuations)", async () => {
     const raw = [
       "scared",

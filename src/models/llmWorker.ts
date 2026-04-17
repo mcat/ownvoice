@@ -440,25 +440,42 @@ async function handleComplete(
  */
 const CAREGIVER_VOICE_PATTERNS: RegExp[] = [
   /\bthe patient\b/i,
-  /\byour (pain|condition|family|comfort|throat|body|chest|stomach|back|symptoms|vitals|breathing)\b/i,
-  /\byou (are|feel|need|should|might|can|will|want|look|seem) /i,
-  /\blet me (know|check|help)\b/i,
-  /\bI['’]?m here to (help|support|listen|assist)\b/i,
-  /\bI['’]?ll (stay|help|check|bring|call|assist|be)\b/i,
-  /\bI will (help|check|assist|bring|call|stay)\b/i,
-  /\btell me (what|how|if|about|where)\b/i,
-  /\b(we|we['’]re|we are) (going to|here|trying|working|reassess|['’]ll)\b/i,
+
+  // "your X" where X is something the patient has/experiences
+  /\byour (pain|condition|family|comfort|throat|body|chest|stomach|back|symptoms|vitals|breathing|glasses|water|blanket|medication|medicine|bed|call button|meal|room|IV|oxygen|dressing|bandage|chart|vitals|temperature)\b/i,
+
+  // "you (verb)" — caregiver addressing patient
+  /\byou (are|feel|need|should|might|can|will|want|look|seem|have|had|must|may|could) /i,
+
+  // Caregiver actions: "getting/bringing/fetching your X", "I'll (do thing for you)"
+  /\b(getting|bringing|fetching|grabbing|finding|preparing|calling) your\b/i,
+  /\bI['’]?ll (stay|help|check|bring|call|assist|be|get|fetch|find|grab|prepare)\b/i,
+  /\bI will (help|check|assist|bring|call|stay|get|fetch|find|grab|prepare)\b/i,
+  /\bI['’]?m (getting|bringing|fetching|grabbing|finding|preparing|calling) (your|the) /i,
+
+  // Caregiver dialogue openers
+  /\blet me (know|check|help|see|look|get|bring)\b/i,
+  /\bI['’]?m here (to|for) (help|support|listen|assist|you)/i,
+  /\btell me (what|how|if|about|where|when)\b/i,
+  /\bhow (are|do|is) you\b/i,
+  /\b(do you want to|do you need) (describe|tell|share|explain)\b/i,
+  /^let['’]?s\b/i,
+
+  // Plural / team voice ("we'll…", "we're here…")
+  /\b(we|we['’]re|we are) (going to|here|trying|working|reassess|['’]ll|going)\b/i,
   /\bwe['’]ll /i,
-  /\bthe nurse (is|will|says|should|can|came)\b/i,
-  /\bthe doctor (is|will|says|should|can|came)\b/i,
+
+  // Third-person hospital-staff references
+  /\bthe nurse (is|will|says|should|can|came|should be|is coming)\b/i,
+  /\bthe doctor (is|will|says|should|can|came|should be|is coming)\b/i,
+
+  // Generic "help/support the patient" phrasing
   /\bto (help|assist|support|comfort) (you|the patient)\b/i,
   /\btrying to (understand|help|support)\b/i,
   /\bmatters most\b/i,
-  /\b(you['’]?d|do you want to|do you need) (like|describe|tell|share)\b/i,
-  /\bhow (are|do) you\b/i,
-  /^let['’]?s\b/i,
-  /\bI need your help\b/i,
   /\bfind a way forward\b/i,
+  /\byour (comfort|safety|recovery|well[\s-]?being) (matters|is|comes)\b/i,
+  /\bI need your help\b/i,
 ];
 
 function isCaregiverVoice(s: string): boolean {
