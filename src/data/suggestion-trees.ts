@@ -439,6 +439,18 @@ export function buildLLMFewShot(partialKey: string): FewShotExample[] {
   return examples.slice(0, 6);
 }
 
+/**
+ * Monotonically increasing request ID. Each getLLMSuggestions call gets
+ * its own ID, which the worker echoes back on the completion/error reply.
+ * Without this, multiple overlapping calls (rapid typing) would attach
+ * multiple `message` listeners to the worker, each resolving its own
+ * promise on the FIRST completion it saw — even if that completion was
+ * for a different request. The result was every pending promise
+ * resolving with stale data and the latest useEffect picking up
+ * yesterday's answer.
+ */
+let nextLLMRequestId = 1;
+
 export async function getLLMSuggestions(
   partialKey: string,
   recentMessages: Message[],
@@ -466,6 +478,8 @@ export async function getLLMSuggestions(
     ? `${last3.map((m) => `${m.from === "provider" ? "Provider" : "Patient"}: ${m.text}`).join("; ")} (${timeContext})`
     : timeContext;
 
+  const requestId = nextLLMRequestId++;
+
   return new Promise<string[]>((resolve) => {
     const timer = setTimeout(() => {
       cleanup();
@@ -473,7 +487,10 @@ export async function getLLMSuggestions(
     }, 8000);
 
     function onMessage(event: MessageEvent) {
-      const { type, data, message } = event.data;
+      const { type, data, message, requestId: replyId } = event.data;
+      // Only react to the reply matching THIS call — older in-flight
+      // listeners must ignore unrelated completions.
+      if (replyId !== requestId) return;
       if (type === "completions") {
         cleanup();
         resolve(data as string[]);
@@ -496,6 +513,7 @@ export async function getLLMSuggestions(
       context,
       maxTokens: 64,
       fewShot: buildLLMFewShot(partialKey),
+      requestId,
     });
   });
 }

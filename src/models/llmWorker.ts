@@ -374,11 +374,12 @@ function sampleToken(
 async function handleComplete(
   partial: string,
   maxTokens: number,
-  context?: string,
-  fewShot?: FewShotExample[],
+  context: string | undefined,
+  fewShot: FewShotExample[] | undefined,
+  requestId: number | undefined,
 ): Promise<void> {
   if (!session || !tokenizer) {
-    self.postMessage({ type: "error", message: "Model not initialized" });
+    self.postMessage({ type: "error", message: "Model not initialized", requestId });
     return;
   }
 
@@ -461,11 +462,11 @@ async function handleComplete(
         `(${generatedIds.length} tokens) for: "${partial}"`,
     );
 
-    self.postMessage({ type: "completions", data: completions });
+    self.postMessage({ type: "completions", data: completions, requestId });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Inference failed";
     console.error(`${LOG_PREFIX} Completion error:`, err);
-    self.postMessage({ type: "error", message });
+    self.postMessage({ type: "error", message, requestId });
   }
 }
 
@@ -593,15 +594,16 @@ self.onmessage = async (event: MessageEvent) => {
     }
 
     case "complete": {
-      const { prompt, partial, context, maxTokens, fewShot } = event.data as {
+      const { prompt, partial, context, maxTokens, fewShot, requestId } = event.data as {
         type: "complete";
         prompt?: string;
         partial?: string;
         context?: string;
         maxTokens: number;
         fewShot?: FewShotExample[];
+        requestId?: number;
       };
-      await handleComplete(partial ?? prompt ?? "", maxTokens, context, fewShot);
+      await handleComplete(partial ?? prompt ?? "", maxTokens, context, fewShot, requestId);
       break;
     }
 

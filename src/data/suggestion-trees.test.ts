@@ -288,11 +288,18 @@ describe("getContextualSuggestions — generic fallback", () => {
 // =============================================================================
 describe("getLLMSuggestions", () => {
   it("returns completions from the LLM worker when ready", async () => {
+    // Capture the requestId from postMessage and echo it in the reply so
+    // the caller's id-filtered listener accepts the response.
+    let capturedId: number | undefined;
     const mockWorkerObj = {
-      postMessage: vi.fn(),
+      postMessage: vi.fn((msg: { requestId?: number }) => {
+        capturedId = msg.requestId;
+      }),
       addEventListener: vi.fn((event: string, handler: (e: MessageEvent) => void) => {
         setTimeout(() => {
-          handler({ data: { type: "completions", data: ["rest now", "go home"] } } as MessageEvent);
+          handler({
+            data: { type: "completions", data: ["rest now", "go home"], requestId: capturedId },
+          } as MessageEvent);
         }, 10);
       }),
       removeEventListener: vi.fn(),
@@ -308,6 +315,7 @@ describe("getLLMSuggestions", () => {
         type: "complete",
         partial: "i really want to",
         maxTokens: 64,
+        requestId: expect.any(Number),
       }),
     );
   });
@@ -333,11 +341,16 @@ describe("getLLMSuggestions", () => {
   });
 
   it("returns empty array when LLM worker returns an error", async () => {
+    let capturedId: number | undefined;
     const mockWorkerObj = {
-      postMessage: vi.fn(),
+      postMessage: vi.fn((msg: { requestId?: number }) => {
+        capturedId = msg.requestId;
+      }),
       addEventListener: vi.fn((event: string, handler: (e: MessageEvent) => void) => {
         setTimeout(() => {
-          handler({ data: { type: "error", message: "inference failed" } } as MessageEvent);
+          handler({
+            data: { type: "error", message: "inference failed", requestId: capturedId },
+          } as MessageEvent);
         }, 10);
       }),
       removeEventListener: vi.fn(),
@@ -348,5 +361,36 @@ describe("getLLMSuggestions", () => {
 
     const result = await getLLMSuggestions("something strange", [], 12);
     expect(result).toEqual([]);
+  });
+
+  it("ignores replies whose requestId does not match the caller", async () => {
+    // A stale completion from a previous request must not resolve the
+    // current getLLMSuggestions promise. This is the regression test for
+    // the "rapid typing shows stale completions" bug.
+    let capturedId: number | undefined;
+    const mockWorkerObj = {
+      postMessage: vi.fn((msg: { requestId?: number }) => {
+        capturedId = msg.requestId;
+      }),
+      addEventListener: vi.fn((event: string, handler: (e: MessageEvent) => void) => {
+        setTimeout(() => {
+          // First fire a STALE reply with wrong id → must be ignored
+          handler({
+            data: { type: "completions", data: ["stale"], requestId: (capturedId ?? 0) - 1 },
+          } as MessageEvent);
+          // Then the real reply with matching id
+          handler({
+            data: { type: "completions", data: ["fresh"], requestId: capturedId },
+          } as MessageEvent);
+        }, 10);
+      }),
+      removeEventListener: vi.fn(),
+    };
+
+    mockIsReady.mockReturnValue(true);
+    mockGetWorker.mockReturnValue(mockWorkerObj as unknown as Worker);
+
+    const result = await getLLMSuggestions("a new partial", [], 12);
+    expect(result).toEqual(["fresh"]);
   });
 });

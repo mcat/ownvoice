@@ -28,6 +28,7 @@ export type WorkerRequest =
       context?: string;
       maxTokens: number;
       fewShot?: FewShotExample[];
+      requestId?: number;
     }
   | { type: "transcribe"; audio: Float32Array; sampleRate: number };
 

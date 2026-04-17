@@ -60,7 +60,11 @@ export function SentenceBuilder({
     };
   }, [key, messages, hour]);
 
-  // Fetch LLM suggestions in parallel — fires on every text change
+  // Fetch LLM suggestions after a short debounce so rapid typing doesn't
+  // flood the worker queue (each keystroke would otherwise fire its own
+  // request; 6-letter word = 6 requests stacking up, 3-5s apiece, blowing
+  // past the 8s timeout). Refresh button taps are treated as an immediate
+  // fire by bumping `llmRefreshNonce` and letting the debounce apply.
   useEffect(() => {
     const id = ++llmRequestIdRef.current;
     let cancelled = false;
@@ -72,14 +76,18 @@ export function SentenceBuilder({
     }
 
     setLoadingLlm(true);
-    getLLMSuggestions(key, messages, hour).then((results) => {
-      if (cancelled || llmRequestIdRef.current !== id) return;
-      setLlmSuggestions(results);
-      setLoadingLlm(false);
-    });
+    const debounce = setTimeout(() => {
+      if (cancelled) return;
+      getLLMSuggestions(key, messages, hour).then((results) => {
+        if (cancelled || llmRequestIdRef.current !== id) return;
+        setLlmSuggestions(results);
+        setLoadingLlm(false);
+      });
+    }, 300);
 
     return () => {
       cancelled = true;
+      clearTimeout(debounce);
     };
   }, [key, messages, hour, llmRefreshNonce]);
 
