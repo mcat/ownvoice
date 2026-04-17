@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { polishSentence } from "./polishSentence";
+import { polishSentence, QUESTION_STARTERS } from "./polishSentence";
 
 describe("polishSentence", () => {
   describe("whitespace normalization", () => {
@@ -79,6 +79,14 @@ describe("polishSentence", () => {
     it("strips mid-sentence exclamations", () => {
       expect(polishSentence("help! I need water")).toBe("Help I need water.");
     });
+
+    it("inserts a space between words glued together by a terminal mark", () => {
+      // When the terminal mark sits directly between two word chars (no
+      // adjacent whitespace), the scrub MUST insert a space — otherwise
+      // the words fuse: "feel.please" → "feelplease".
+      expect(polishSentence("I feel.please help")).toBe("I feel please help.");
+      expect(polishSentence("can you help?me")).toBe("Can you help me?");
+    });
   });
 
   describe("trailing junk punctuation", () => {
@@ -89,6 +97,20 @@ describe("polishSentence", () => {
     it("strips a trailing semicolon or colon", () => {
       expect(polishSentence("I feel scared;")).toBe("I feel scared.");
       expect(polishSentence("I feel scared:")).toBe("I feel scared.");
+    });
+
+    it("strips a multi-character trailing junk run", () => {
+      // Without the "+" quantifier on [\s,;:]+$, only one char would be
+      // stripped. This test locks the quantifier in place.
+      expect(polishSentence("I feel scared,,,")).toBe("I feel scared.");
+      expect(polishSentence("I feel scared ;;,")).toBe("I feel scared.");
+    });
+
+    it("preserves mid-sentence commas (does not over-strip)", () => {
+      // Without the "$" anchor on [\s,;:]+$, a bare [\s,;:]+ would strip
+      // mid-sentence commas too, collapsing "I feel, scared" into
+      // "Ifeelscared". This test locks the anchor in place.
+      expect(polishSentence("I feel, scared")).toBe("I feel, scared.");
     });
   });
 
@@ -143,6 +165,27 @@ describe("polishSentence", () => {
       // "can't" with the apostrophe stripped becomes "cant" which isn't in
       // the question set — not ideal, but the apostrophe is preserved in
       // output. The fix is opener-level: we don't misclassify as a question.
+    });
+  });
+
+  describe("every question starter gets a '?' terminal", () => {
+    // Parameterized against the exported set so removing any starter causes
+    // its test to fail. Mutation testing flagged this as a big coverage gap.
+    for (const starter of QUESTION_STARTERS) {
+      it(`treats '${starter}' as a question opener`, () => {
+        // Build a test sentence that has no intrinsic terminal mark and
+        // whose first word is the starter.
+        const input = `${starter} my family arriving today`;
+        const result = polishSentence(input);
+        expect(result.endsWith("?")).toBe(true);
+        expect(result.startsWith(starter.charAt(0).toUpperCase() + starter.slice(1))).toBe(true);
+      });
+    }
+
+    it("does NOT add '?' for a non-question opener", () => {
+      expect(polishSentence("please help me")).toBe("Please help me.");
+      expect(polishSentence("I am cold")).toBe("I am cold.");
+      expect(polishSentence("my family arrived")).toBe("My family arrived.");
     });
   });
 
