@@ -593,6 +593,22 @@ describe("llmWorker — caregiver-voice filter", () => {
     expect(completions).toEqual(["right now", "please", "soon"]);
   });
 
+  it("drops listener-acknowledgment phrases (I understand, I hear you, etc.)", async () => {
+    const raw = [
+      "scared",
+      "I understand",
+      "I'm cold",
+      "I hear you",
+      "in pain",
+      "it's okay",
+      "don't worry",
+      "weak",
+      "you'll be okay",
+    ].join("\n");
+    const completions = await runWithRaw(raw);
+    expect(completions).toEqual(["scared", "I'm cold", "in pain", "weak"]);
+  });
+
   it("keeps patient-voice lines intact (first-person continuations)", async () => {
     const raw = [
       "scared",

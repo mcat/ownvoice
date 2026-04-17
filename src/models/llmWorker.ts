@@ -493,6 +493,19 @@ const CAREGIVER_VOICE_PATTERNS: RegExp[] = [
   /\bI will (help|check|assist|bring|call|stay|get|fetch|find|grab|prepare)\b/i,
   /\bI['’]?m (getting|bringing|fetching|grabbing|finding|preparing|calling) (your|the) /i,
 
+  // Acknowledgment-reflex phrases a listener says back (therapist/nurse
+  // mirroring), not words a patient would add to their own sentence.
+  /^I understand\b/i,
+  /^I hear (you|that)\b/i,
+  /^I see\b/i,
+  /^I get (it|that)\b/i,
+  /^(that|it)['’]?s (okay|ok|fine|alright)\b/i,
+  /^(don['’]?t|do not) (worry|be (scared|afraid))\b/i,
+  /^you['’]?ll be (okay|fine|alright)\b/i,
+  /^you are (not alone|safe|in good hands)\b/i,
+  /^take your time\b/i,
+  /^everything (will|is going to) be\b/i,
+
   // Caregiver dialogue openers
   /\blet me (know|check|help|see|look|get|bring)\b/i,
   /\bI['’]?m here (to|for) (help|support|listen|assist|you)/i,
