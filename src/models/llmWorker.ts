@@ -179,12 +179,21 @@ async function handleInit(modelUrl: string): Promise<void> {
  * prepends it automatically.
  */
 function buildPrompt(partial: string, context?: string): string {
+  // Normalize the partial to match the case of the few-shot examples.
+  // Without this, lowercase inputs ("i feel") push the model away from the
+  // few-shot patterns and toward chatbot-assistant voice ("I'm here to
+  // listen…"), which the caregiver filter then drops — leaving the UI's
+  // AI suggestion row empty.
+  const normalized =
+    partial.length > 0
+      ? partial.charAt(0).toUpperCase() + partial.slice(1)
+      : partial;
   const contextLine = context ? `[Context: ${context}]\n` : "";
   return (
     `${LFM2_CHAT_TOKENS.turnStart}system\n` +
     `${SYSTEM_PROMPT}${LFM2_CHAT_TOKENS.turnEnd}\n` +
     `${LFM2_CHAT_TOKENS.turnStart}user\n` +
-    `${contextLine}"${partial}" →${LFM2_CHAT_TOKENS.turnEnd}\n` +
+    `${contextLine}"${normalized}" →${LFM2_CHAT_TOKENS.turnEnd}\n` +
     `${LFM2_CHAT_TOKENS.turnStart}assistant\n`
   );
 }
