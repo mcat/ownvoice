@@ -49,8 +49,16 @@ const LOG_PREFIX = "[OwnVoice:LLM]";
  * multi-turn few-shot injected as real user/assistant exchanges in
  * buildPrompt() — instruct-tuned models follow that pattern far more
  * reliably than arrow-based examples embedded in the system prompt.
+ *
+ * Output format is a bare JSON array of strings. We enforce that via
+ * prompting + few-shot demonstrations rather than grammar-constrained
+ * sampling (not available in onnxruntime-web). parseCompletions() does
+ * JSON.parse first and falls back to heuristic parsing if the model
+ * emits malformed JSON.
  */
-const SYSTEM_PROMPT = `You complete a hospitalized patient's sentence. Given the start of a sentence, respond with 4-6 short ways (1-6 words each, comma-separated) it could continue. Each continuation must directly attach to the end of the given text as if you read them aloud together. Use only the patient's own first-person voice — never the nurse or doctor. Respond with ONLY the continuations, nothing else.`;
+const SYSTEM_PROMPT = `You complete a hospitalized patient's sentence. Given the start of a sentence, respond with 4-6 short ways (1-6 words each) it could continue. Each continuation must directly attach to the end of the given text as if you read them aloud together. Use only the patient's own first-person voice — never the nurse or doctor.
+
+Respond with ONLY a JSON array of strings, nothing else. No code fence, no explanation.`;
 
 /**
  * Fallback few-shot used when the caller doesn't supply its own. In normal
@@ -63,15 +71,15 @@ const SYSTEM_PROMPT = `You complete a hospitalized patient's sentence. Given the
 const FALLBACK_FEW_SHOT: FewShotExample[] = [
   {
     user: `Continue: "I feel"`,
-    assistant: `scared, dizzy, better today, cold, nauseous, weak, lonely`,
+    assistant: `["scared", "dizzy", "better today", "cold", "nauseous", "weak", "lonely"]`,
   },
   {
     user: `Continue: "I need"`,
-    assistant: `water, the nurse, my glasses, to use the bathroom, more blankets`,
+    assistant: `["water", "the nurse", "my glasses", "to use the bathroom", "more blankets"]`,
   },
   {
     user: `Continue: "can you"`,
-    assistant: `call my family, get the nurse, stay with me, adjust my bed, turn off the light`,
+    assistant: `["call my family", "get the nurse", "stay with me", "adjust my bed", "turn off the light"]`,
   },
 ];
 
@@ -536,41 +544,63 @@ function isCaregiverVoice(s: string): boolean {
 }
 
 /**
- * Parse the model's raw text output into individual completion strings.
+ * Try to extract a JSON array of strings from the model's raw output.
  *
- * Handles multiple formats the small model may produce:
- * - Newline-separated lines (ideal)
- * - Comma-separated items: "water, help, the nurse"
- * - Numbered items with dots/parens: "1. text" or "1) text"
- *
- * The `partial` parameter is used to strip echoed input from completions.
- * Small models often echo the partial: "I need a drink" instead of "a drink".
- * Stripping the partial recovers the actual continuation.
- *
- * Finally, a caregiver-voice post-filter drops items like "Your pain is…"
- * or "I'm here to help…" that defeat the patient-communication purpose.
+ * The prompt asks for ONLY a bare JSON array, but small models occasionally
+ * prepend/append commentary or wrap in a code fence. This pulls the first
+ * `[...]` block out (if any) and attempts to parse it. Returns null if
+ * nothing parseable was found.
  */
-function parseCompletions(rawOutput: string, partial?: string): string[] {
-  // Start with newline-split lines, then split further on commas. The model
-  // frequently groups short completions comma-separated within a line, which
-  // without this step would produce one huge pill per line.
+function tryParseJsonArray(raw: string): string[] | null {
+  // Strip code fences the model sometimes adds despite the "no code fence"
+  // instruction.
+  const stripped = raw.replace(/```(?:json)?/gi, "").trim();
+  const match = stripped.match(/\[[\s\S]*?\]/);
+  if (!match) return null;
+  try {
+    const parsed = JSON.parse(match[0]);
+    if (!Array.isArray(parsed)) return null;
+    return parsed.filter((x): x is string => typeof x === "string");
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Heuristic fallback for when the model emits something other than a
+ * valid JSON array. Walks through line-splitting, comma-splitting, and
+ * common list-prefix cleanup.
+ */
+function parseHeuristic(rawOutput: string): string[] {
   const lines = rawOutput.split("\n");
   let items: string[] = [];
   for (const line of lines) {
     if (line.includes(",") && !/[.?!]$/.test(line.trim())) {
-      // Looks like a list — split on commas
       items.push(...line.split(","));
     } else {
       items.push(line);
     }
   }
-
-  // Fallback if the entire output was one long line
   if (items.length <= 1 && rawOutput.length > 30) {
     const numbered = rawOutput.split(/(?=\d+[\.\)])/);
     if (numbered.length > 2) items = numbered;
   }
+  return items;
+}
 
+/**
+ * Parse the model's raw text output into individual completion strings.
+ *
+ * Primary path: the model returns a JSON array like `["scared", "dizzy"]`
+ * and we JSON.parse it. Fallback path: heuristic line/comma splitting for
+ * the cases where the model ignored the JSON instruction.
+ *
+ * Finally a cleanup pipeline: strip echoed partial, enforce length bounds,
+ * drop caregiver-voice and duplicates.
+ */
+function parseCompletions(rawOutput: string, partial?: string): string[] {
+  const json = tryParseJsonArray(rawOutput);
+  const items = json !== null ? json : parseHeuristic(rawOutput);
   const partialLower = partial?.toLowerCase().trim() ?? "";
 
   return items

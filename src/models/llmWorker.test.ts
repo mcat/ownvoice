@@ -593,6 +593,24 @@ describe("llmWorker — caregiver-voice filter", () => {
     expect(completions).toEqual(["right now", "please", "soon"]);
   });
 
+  it("parses a bare JSON array from the model", async () => {
+    const raw = `["scared", "dizzy", "cold", "tired", "weak"]`;
+    const completions = await runWithRaw(raw);
+    expect(completions).toEqual(["scared", "dizzy", "cold", "tired", "weak"]);
+  });
+
+  it("extracts a JSON array even when the model wraps it in prose or a code fence", async () => {
+    const raw = "Sure, here are some ideas:\n```json\n[\"scared\", \"dizzy\", \"cold\"]\n```";
+    const completions = await runWithRaw(raw);
+    expect(completions).toEqual(["scared", "dizzy", "cold"]);
+  });
+
+  it("falls back to line/comma parsing when the model returns plain text", async () => {
+    const raw = "scared\ndizzy, cold\ntired";
+    const completions = await runWithRaw(raw);
+    expect(completions).toEqual(["scared", "dizzy", "cold", "tired"]);
+  });
+
   it("drops listener-acknowledgment phrases (I understand, I hear you, etc.)", async () => {
     const raw = [
       "scared",

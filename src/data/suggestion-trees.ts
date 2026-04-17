@@ -415,7 +415,9 @@ export function buildLLMFewShot(partialKey: string): FewShotExample[] {
     const display = key.length > 0 ? key.charAt(0).toUpperCase() + key.slice(1) : key;
     examples.push({
       user: `Continue: "${display}"`,
-      assistant: completions.slice(0, 8).join(", "),
+      // JSON-array format: the worker's parseCompletions prefers JSON parsing,
+      // so demonstrating it here trains the model to emit the same shape.
+      assistant: JSON.stringify(completions.slice(0, 8)),
     });
   };
 
