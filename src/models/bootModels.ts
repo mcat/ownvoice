@@ -48,7 +48,7 @@ export async function bootModels(): Promise<void> {
     console.warn("[OwnVoice] Failed to create TTS worker:", err);
   }
 
-  // Boot LLM worker (Gemma 3 1B)
+  // Boot LLM worker (LFM2.5-1.2B-Instruct)
   try {
     const llmWorker = new Worker(
       new URL("./llmWorker.ts", import.meta.url),

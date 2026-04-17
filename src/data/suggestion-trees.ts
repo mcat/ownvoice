@@ -9,7 +9,7 @@ import { getSuggestionTree, t } from "./phraseRegistry";
  * - These trees handle ~80% of sentence starts
  * - Instant lookup (0ms), no model inference
  * - Clinically reviewable and deterministic
- * - Gemma 3 1B (Layer 2) fires only on cache miss
+ * - LFM2.5-1.2B-Instruct (Layer 2) fires only on cache miss
  *
  * Phrase text is sourced from the central phrase registry.
  */
@@ -319,7 +319,7 @@ export function buildCompletionPrompt(
  * Request completions from the LLM worker with a timeout.
  * Returns an array of completion strings, or [] on timeout/error.
  *
- * Timeout is generous (2s default) because on-device Gemma 3 1B
+ * Timeout is generous (2s default) because on-device LFM2.5-1.2B-Instruct
  * needs time to tokenize, run inference, and decode — especially
  * on the first request when the execution context is cold.
  */
