@@ -119,3 +119,15 @@ if (!navigator.mediaDevices) {
 } else {
   navigator.mediaDevices.getUserMedia = vi.fn();
 }
+
+// navigator.serviceWorker — jsdom doesn't provide this; resetAll() uses
+// `"serviceWorker" in navigator` guard and iterates registrations.
+Object.defineProperty(navigator, "serviceWorker", {
+  value: {
+    getRegistrations: vi.fn(async () => []),
+    register: vi.fn(),
+    ready: Promise.resolve({}),
+  },
+  writable: true,
+  configurable: true,
+});

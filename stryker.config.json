@@ -1,0 +1,20 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "_comment": "Baseline scope: pure data + Zustand stores. Expand only after this run produces a clean report.",
+  "packageManager": "npm",
+  "testRunner": "vitest",
+  "vitest": {
+    "configFile": "vitest.stryker.config.ts"
+  },
+  "reporters": ["html", "clear-text", "progress"],
+  "coverageAnalysis": "perTest",
+  "mutate": [
+    "src/data/**/*.ts",
+    "src/stores/**/*.ts",
+    "!src/**/*.test.{ts,tsx}",
+    "!src/data/locales/**"
+  ],
+  "incremental": false,
+  "timeoutMS": 60000,
+  "concurrency": 4
+}

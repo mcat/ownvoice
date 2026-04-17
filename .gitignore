@@ -11,6 +11,11 @@ dist/
 # Test output
 coverage/
 
+# Stryker mutation-testing output
+reports/
+.stryker-tmp/
+stryker-*.log
+
 # Logs
 *.log
 npm-debug.log*

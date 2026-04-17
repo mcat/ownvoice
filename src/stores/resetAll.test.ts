@@ -110,9 +110,29 @@ describe("resetAll", () => {
     expect(localStorage.getItem("ov-theme")).toBeNull();
   });
 
-  it("deletes all Cache API caches", async () => {
+  it("deletes every Cache API entry returned by caches.keys()", async () => {
+    vi.mocked(caches.keys).mockResolvedValueOnce(["models-v1", "audio-v2"]);
+    vi.mocked(caches.delete).mockResolvedValue(true);
+
     await resetAll();
-    expect(caches.keys).toBeDefined();
-    // caches.delete is called for each cache key (mocked in test env)
+
+    expect(caches.delete).toHaveBeenCalledWith("models-v1");
+    expect(caches.delete).toHaveBeenCalledWith("audio-v2");
+    expect(caches.delete).toHaveBeenCalledTimes(2);
+  });
+
+  it("unregisters every active service worker registration", async () => {
+    const unregisterA = vi.fn(() => Promise.resolve(true));
+    const unregisterB = vi.fn(() => Promise.resolve(true));
+    vi.mocked(navigator.serviceWorker.getRegistrations).mockResolvedValueOnce([
+      { unregister: unregisterA } as unknown as ServiceWorkerRegistration,
+      { unregister: unregisterB } as unknown as ServiceWorkerRegistration,
+    ]);
+
+    await resetAll();
+
+    expect(navigator.serviceWorker.getRegistrations).toHaveBeenCalledOnce();
+    expect(unregisterA).toHaveBeenCalledOnce();
+    expect(unregisterB).toHaveBeenCalledOnce();
   });
 });
