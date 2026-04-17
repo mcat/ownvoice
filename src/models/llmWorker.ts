@@ -23,7 +23,7 @@
 
 import * as ort from "onnxruntime-web/webgpu";
 import { buildBPETokenizer, type BPETokenizer } from "./bpeTokenizer";
-import { LFM2_CHAT_TOKENS, LFM2_SAMPLING } from "./types";
+import { LFM2_CHAT_TOKENS, LFM2_SAMPLING, type FewShotExample } from "./types";
 
 ort.env.logLevel = "error";
 if (ort.env?.wasm) {
@@ -53,44 +53,25 @@ const LOG_PREFIX = "[OwnVoice:LLM]";
 const SYSTEM_PROMPT = `You complete a hospitalized patient's sentence. Given the start of a sentence, respond with 4-6 short ways (1-6 words each, comma-separated) it could continue. Each continuation must directly attach to the end of the given text as if you read them aloud together. Use only the patient's own first-person voice — never the nurse or doctor. Respond with ONLY the continuations, nothing else.`;
 
 /**
- * Few-shot exchanges injected as real user/assistant turns. Each pair shows
- * the model exactly how to respond: starter sentence → comma-separated
- * short continuations that attach directly. The "I need my glasses" case is
- * deliberately included because longer partials were the weak spot — without
- * this example the model kept echoing the generic "I need" completions.
+ * Fallback few-shot used when the caller doesn't supply its own. In normal
+ * operation `getLLMSuggestions` in suggestion-trees.ts builds these
+ * dynamically from the curated tree — so the model sees clinically
+ * reviewed examples anchored on the patient's actual partial. This static
+ * fallback only fires for callers that don't pass `fewShot` (tests and
+ * any direct consumers that haven't migrated yet).
  */
-const FEW_SHOT_EXAMPLES: Array<{ user: string; assistant: string }> = [
+const FALLBACK_FEW_SHOT: FewShotExample[] = [
   {
     user: `Continue: "I feel"`,
     assistant: `scared, dizzy, better today, cold, nauseous, weak, lonely`,
   },
   {
-    user: `Continue: "I am"`,
-    assistant: `thirsty, tired, in pain, scared, cold, hungry, ready to rest`,
-  },
-  {
-    user: `Continue: "My pain is"`,
-    assistant: `getting worse, in my stomach, sharp, about a 7, unbearable, in my back`,
-  },
-  {
-    user: `Continue: "it hurts"`,
-    assistant: `when I breathe, a lot, every time I move, to swallow, less than before`,
-  },
-  {
     user: `Continue: "I need"`,
-    assistant: `water, the nurse, my glasses, to use the bathroom, more blankets, help sitting up`,
-  },
-  {
-    user: `Continue: "I need my glasses"`,
-    assistant: `to read, please, now, so I can see, they're on the table`,
+    assistant: `water, the nurse, my glasses, to use the bathroom, more blankets`,
   },
   {
     user: `Continue: "can you"`,
     assistant: `call my family, get the nurse, stay with me, adjust my bed, turn off the light`,
-  },
-  {
-    user: `Continue: "please"`,
-    assistant: `call my family, help me sit up, bring me water, get the doctor, stay with me`,
   },
 ];
 
@@ -218,7 +199,11 @@ async function handleInit(modelUrl: string): Promise<void> {
  * part of this string — the tokenizer's TemplateProcessing post-processor
  * prepends it automatically.
  */
-function buildPrompt(partial: string, context?: string): string {
+function buildPrompt(
+  partial: string,
+  context: string | undefined,
+  fewShot: FewShotExample[],
+): string {
   // Normalize the partial to sentence case so it matches the few-shot
   // examples. Without this, lowercase inputs ("i feel") push the model
   // away from the patterns and toward chatbot-assistant voice.
@@ -229,10 +214,11 @@ function buildPrompt(partial: string, context?: string): string {
 
   let prompt = `${LFM2_CHAT_TOKENS.turnStart}system\n${SYSTEM_PROMPT}${LFM2_CHAT_TOKENS.turnEnd}\n`;
 
-  // Few-shot exchanges as real turns — this matches how the instruct model
-  // was fine-tuned and gets much more reliable pattern-following than the
-  // same examples smashed into the system prompt.
-  for (const shot of FEW_SHOT_EXAMPLES) {
+  // Few-shot exchanges as real turns. Source is the curated tree for this
+  // partial (see suggestion-trees.ts:buildLLMFewShot). Real ChatML turns
+  // get much better pattern-following than the same examples jammed into
+  // the system prompt.
+  for (const shot of fewShot) {
     prompt +=
       `${LFM2_CHAT_TOKENS.turnStart}user\n${shot.user}${LFM2_CHAT_TOKENS.turnEnd}\n` +
       `${LFM2_CHAT_TOKENS.turnStart}assistant\n${shot.assistant}${LFM2_CHAT_TOKENS.turnEnd}\n`;
@@ -389,6 +375,7 @@ async function handleComplete(
   partial: string,
   maxTokens: number,
   context?: string,
+  fewShot?: FewShotExample[],
 ): Promise<void> {
   if (!session || !tokenizer) {
     self.postMessage({ type: "error", message: "Model not initialized" });
@@ -396,7 +383,11 @@ async function handleComplete(
   }
 
   try {
-    const fullPrompt = buildPrompt(partial, context);
+    const fullPrompt = buildPrompt(
+      partial,
+      context,
+      fewShot && fewShot.length > 0 ? fewShot : FALLBACK_FEW_SHOT,
+    );
     const inputIds = tokenizer.encode(fullPrompt);
 
     console.log(
@@ -602,14 +593,15 @@ self.onmessage = async (event: MessageEvent) => {
     }
 
     case "complete": {
-      const { prompt, partial, context, maxTokens } = event.data as {
+      const { prompt, partial, context, maxTokens, fewShot } = event.data as {
         type: "complete";
         prompt?: string;
         partial?: string;
         context?: string;
         maxTokens: number;
+        fewShot?: FewShotExample[];
       };
-      await handleComplete(partial ?? prompt ?? "", maxTokens, context);
+      await handleComplete(partial ?? prompt ?? "", maxTokens, context, fewShot);
       break;
     }
 

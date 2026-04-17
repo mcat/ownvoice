@@ -10,12 +10,25 @@ export interface LoadProgress {
   error?: string;
 }
 
+/** A single user/assistant exchange used as few-shot in the LLM prompt. */
+export interface FewShotExample {
+  user: string;
+  assistant: string;
+}
+
 /** Messages sent TO a model worker */
 export type WorkerRequest =
   | { type: "init"; modelUrl: string }
   | { type: "embed"; audio: Float32Array; sampleRate: number }
   | { type: "synthesize"; text: string; embedding: Float32Array }
-  | { type: "complete"; prompt: string; maxTokens: number }
+  | {
+      type: "complete";
+      partial?: string;
+      prompt?: string;
+      context?: string;
+      maxTokens: number;
+      fewShot?: FewShotExample[];
+    }
   | { type: "transcribe"; audio: Float32Array; sampleRate: number };
 
 /** Messages sent FROM a model worker */

@@ -1,4 +1,5 @@
 import type { Message } from "../types";
+import type { FewShotExample } from "../models/types";
 import { getModelManager } from "../models/modelManager";
 import { getSuggestionTree, t } from "./phraseRegistry";
 
@@ -370,6 +371,74 @@ export function requestLLMCompletions(
  * Passes the partial sentence and context separately to the worker
  * so the model sees the partial cleanly in its completion slot.
  */
+/**
+ * Anchor keys that should appear in every LLM prompt as diverse structural
+ * examples. Chosen to cover short statements, longer partials, requests,
+ * and help-phrases — so the model sees how to continue each shape.
+ *
+ * All must exist in BASE_SUGGESTIONS or they're silently skipped.
+ */
+const FEW_SHOT_ANCHOR_KEYS = [
+  "i feel",
+  "i am",
+  "i need",
+  "i need my",
+  "can you",
+  "please help me",
+];
+
+/**
+ * Build 4-6 few-shot examples from the curated tree, anchored on the
+ * user's current partial:
+ *
+ *   1. Exact match — if the tree has the partial verbatim, use it first.
+ *      This is the strongest possible signal: "the right answer IS in the
+ *      tree, here's a demonstration of what completions look like for
+ *      exactly this input."
+ *   2. Ancestors — "i need my glasses" → "i need my" → "i need". Shows
+ *      the model that completions can attach to partials at any depth.
+ *   3. Structural anchors (FEW_SHOT_ANCHOR_KEYS) — ensure the model
+ *      always sees a range of patterns (statement, question, request).
+ *
+ * Using the curated tree as the source keeps examples clinically reviewed
+ * and domain-consistent.
+ */
+export function buildLLMFewShot(partialKey: string): FewShotExample[] {
+  const examples: FewShotExample[] = [];
+  const used = new Set<string>();
+
+  const addExample = (key: string): void => {
+    if (used.has(key)) return;
+    const completions = BASE_SUGGESTIONS[key];
+    if (!completions || completions.length === 0) return;
+    used.add(key);
+    const display = key.length > 0 ? key.charAt(0).toUpperCase() + key.slice(1) : key;
+    examples.push({
+      user: `Continue: "${display}"`,
+      assistant: completions.slice(0, 8).join(", "),
+    });
+  };
+
+  const normalized = partialKey.toLowerCase().trim();
+
+  // 1. Exact match
+  if (normalized) addExample(normalized);
+
+  // 2. Ancestors (longest first → shortest)
+  const words = normalized.split(/\s+/).filter(Boolean);
+  for (let i = words.length - 1; i > 0; i--) {
+    addExample(words.slice(0, i).join(" "));
+  }
+
+  // 3. Structural anchors
+  for (const key of FEW_SHOT_ANCHOR_KEYS) {
+    if (examples.length >= 6) break;
+    addExample(key);
+  }
+
+  return examples.slice(0, 6);
+}
+
 export async function getLLMSuggestions(
   partialKey: string,
   recentMessages: Message[],
@@ -426,6 +495,7 @@ export async function getLLMSuggestions(
       partial: partialKey,
       context,
       maxTokens: 64,
+      fewShot: buildLLMFewShot(partialKey),
     });
   });
 }
