@@ -4,6 +4,7 @@ import {
   getContextualSuggestions,
   getLLMSuggestions,
 } from "../../data/suggestion-trees";
+import { polishSentence } from "../../utils/polishSentence";
 import type { Message } from "../../types";
 import type { ThemeTokens, ThemeName } from "../../theme/tokens";
 
@@ -109,9 +110,9 @@ export function SentenceBuilder({
   }
 
   function handleSpeak() {
-    const trimmed = text.trim();
-    if (!trimmed) return;
-    onSend(trimmed);
+    const polished = polishSentence(text);
+    if (!polished) return;
+    onSend(polished);
     setText("");
   }
 
