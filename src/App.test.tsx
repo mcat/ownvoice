@@ -44,12 +44,28 @@ vi.mock("./models/modelManager", () => ({
     init: vi.fn(),
     getWorker: vi.fn(() => null),
     clearAll: vi.fn(),
+    isReady: vi.fn(() => false),
+    onProgress: vi.fn(() => () => {}),
   }),
+}));
+
+// Mock the GPU TTS engine so App.tsx's init side effects are inert in tests
+vi.mock("./models/ttsEngine", () => ({
+  initGPU: vi.fn(() => Promise.resolve(false)),
+  isGPUReady: vi.fn(() => false),
+  onGPUReady: vi.fn(() => () => {}),
 }));
 
 // Mock resetAll
 vi.mock("./stores/resetAll", () => ({
   resetAll: vi.fn(),
+}));
+
+// Mock the audio cache runner — App only triggers it, doesn't need side effects
+vi.mock("./models/audioCacheRunner", () => ({
+  runPreGeneration: vi.fn(),
+  retryFailed: vi.fn(),
+  abort: vi.fn(),
 }));
 
 const makeCfg = (overrides?: Partial<AppSettings>): AppSettings => ({

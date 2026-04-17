@@ -11,6 +11,12 @@ vi.mock("./models/modelManager", () => ({
   }),
 }));
 
+// --- Mock audioCache ---
+const mockGetCachedAudio = vi.fn();
+vi.mock("./models/audioCache", () => ({
+  getCachedAudio: mockGetCachedAudio,
+}));
+
 // --- Helpers ---
 
 /** Build a minimal Speaker */
@@ -79,6 +85,8 @@ beforeEach(async () => {
   vi.useFakeTimers();
   mockIsReady.mockReturnValue(false);
   mockGetWorker.mockReturnValue(null);
+  mockGetCachedAudio.mockReset();
+  mockGetCachedAudio.mockResolvedValue(null);
 
   // Re-install AudioContext mock before each test
   audioCtxCtor = installAudioContextMock();
@@ -107,85 +115,74 @@ afterEach(() => {
 });
 
 // =============================================================================
-// Priority 1: Chatterbox Turbo (cloned voice)
+// Priority 0: Pre-generated audio cache
 // =============================================================================
-describe("speak — Priority 1: Chatterbox Turbo", () => {
-  it("uses TTS worker when model is ready and speaker has embedding", async () => {
-    mockIsReady.mockReturnValue(true);
+describe("speak — Priority 0: pre-generated cache", () => {
+  const embedding = new Float32Array([0.1, 0.2, 0.3, 0.4, 0.5]);
 
-    const fakeAudio = new Float32Array([0.1, 0.2, 0.3]);
+  it("plays cached audio and bypasses synthesis when present", async () => {
+    mockIsReady.mockReturnValue(true);
+    const cachedAudio = new Float32Array([0.5, 0.4, 0.3]);
+    mockGetCachedAudio.mockResolvedValue({ audio: cachedAudio, sampleRate: 24000 });
+
     const fakeWorker = {
-      addEventListener: vi.fn((_evt: string, handler: (e: MessageEvent) => void) => {
-        // Immediately respond with audio via microtask
-        queueMicrotask(() =>
-          handler({
-            data: { type: "audio", data: fakeAudio, sampleRate: 24000 },
-          } as unknown as MessageEvent),
-        );
-      }),
+      addEventListener: vi.fn(),
       removeEventListener: vi.fn(),
       postMessage: vi.fn(),
     };
     mockGetWorker.mockReturnValue(fakeWorker);
 
-    const speaker = makeSpeaker({ embedding: { some: "data" } });
-
-    const promise = speak("Hello", speaker);
-    // Let the microtask fire (worker responds with audio)
+    const promise = speak("Hello", makeSpeaker({ embedding }));
     await vi.advanceTimersByTimeAsync(0);
 
-    // playAudioBuffer creates a buffer source; its onended must fire
+    // Let playAudioBuffer complete via onended
     const ctx = audioCtxCtor.mock.results[audioCtxCtor.mock.results.length - 1]?.value;
     const source = ctx?.createBufferSource?.mock?.results?.[0]?.value;
     source?.onended?.();
-
     await promise;
 
-    // Worker was used
-    expect(fakeWorker.postMessage).toHaveBeenCalledWith(
-      expect.objectContaining({ type: "synthesize", text: "Hello" }),
-    );
-    // Web Speech API was NOT used
+    expect(mockGetCachedAudio).toHaveBeenCalledWith("Hello", embedding);
+    expect(fakeWorker.postMessage).not.toHaveBeenCalled();
     expect(globalThis.speechSynthesis.speak).not.toHaveBeenCalled();
   });
 
-  it("skips P1 when model is not ready", async () => {
-    mockIsReady.mockReturnValue(false);
-    const speaker = makeSpeaker({ embedding: { some: "data" } });
+  it("falls through to Web Speech API on cache miss (never live synth)", async () => {
+    mockGetCachedAudio.mockResolvedValue(null);
+
+    const fakeWorker = {
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      postMessage: vi.fn(),
+    };
+    mockGetWorker.mockReturnValue(fakeWorker);
 
     (globalThis.speechSynthesis.speak as ReturnType<typeof vi.fn>).mockImplementation(
-      (utt: { onend?: (() => void) | null }) => {
-        queueMicrotask(() => utt.onend?.());
-      },
+      (utt: { onend?: (() => void) | null }) => queueMicrotask(() => utt.onend?.()),
     );
 
-    const promise = speak("Hello", speaker);
+    const promise = speak("Hello", makeSpeaker({ embedding }));
     await vi.advanceTimersByTimeAsync(200);
     await promise;
 
+    // No synthesize message was posted — the tap path never touches the
+    // TTS worker now; pre-gen owns it exclusively.
+    expect(fakeWorker.postMessage).not.toHaveBeenCalled();
     expect(globalThis.speechSynthesis.speak).toHaveBeenCalledTimes(1);
   });
 
-  it("skips P1 when speaker has no embedding", async () => {
-    mockIsReady.mockReturnValue(true);
-    const speaker = makeSpeaker({ embedding: undefined });
-
+  it("skips cache lookup when speaker has no embedding", async () => {
     (globalThis.speechSynthesis.speak as ReturnType<typeof vi.fn>).mockImplementation(
-      (utt: { onend?: (() => void) | null }) => {
-        queueMicrotask(() => utt.onend?.());
-      },
+      (utt: { onend?: (() => void) | null }) => queueMicrotask(() => utt.onend?.()),
     );
 
-    const promise = speak("Hello", speaker);
-    await vi.advanceTimersByTimeAsync(200);
-    await promise;
+    await speak("Hello", makeSpeaker({ embedding: undefined }));
 
-    expect(globalThis.speechSynthesis.speak).toHaveBeenCalledTimes(1);
+    expect(mockGetCachedAudio).not.toHaveBeenCalled();
   });
 });
 
 // =============================================================================
-// Priority 2: Web Speech API
+// Priority 1: Web Speech API
 // =============================================================================
 describe("speak — Priority 2: Web Speech API", () => {
   it("calls cancel() before speaking to clear stuck queue", async () => {

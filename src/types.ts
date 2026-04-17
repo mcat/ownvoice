@@ -58,6 +58,8 @@ export interface Provider {
   name: string;
   hasVoice: boolean;
   emoji?: string;
+  /** Chatterbox Turbo speaker data for this provider's cloned voice */
+  embedding?: unknown;
 }
 
 export interface FallbackVoice {

@@ -1,4 +1,4 @@
-import { useEffect } from "preact/hooks";
+import { useEffect, useMemo } from "preact/hooks";
 import { useTheme } from "./hooks/useTheme";
 import { useSpeakActions } from "./hooks/useSpeakActions";
 import { useConversationStore } from "./stores/conversationStore";
@@ -23,9 +23,11 @@ import { PinGate } from "./components/shared/PinGate";
 import { Setup } from "./components/settings/Setup";
 import { getModelManager } from "./models/modelManager";
 import { bootModels } from "./models/bootModels";
-import { initGPU } from "./models/ttsEngine";
+import { initGPU, isGPUReady, onGPUReady } from "./models/ttsEngine";
 import { MODEL_URLS } from "./models/types";
 import { primeSpeechSynthesis, setFallbackVoice } from "./speak";
+import * as audioCacheRunner from "./models/audioCacheRunner";
+import { embeddingFingerprint } from "./models/audioCache";
 
 export function App() {
   // Theme state — useTheme attaches the system listener and syncs side effects.
@@ -56,6 +58,7 @@ export function App() {
   // Settings store — persisted to IndexedDB
   const cfg = useSettingsStore((s) => s.cfg);
   const setCfg = useSettingsStore((s) => s.setCfg);
+  const speakerData = useSettingsStore((s) => s.speakerData);
   const hasHydrated = useSettingsStore((s) => s._hasHydrated);
 
   // Initialize model manager and boot all on-device models (TTS, LLM, STT)
@@ -78,6 +81,48 @@ export function App() {
   useEffect(() => {
     setFallbackVoice(cfg?.fallbackVoice?.voiceURI ?? null);
   }, [cfg?.fallbackVoice?.voiceURI]);
+
+  // Pre-generate cloned-voice audio in the background whenever the set
+  // of embeddings or the patient locale changes. The runner aborts any
+  // in-flight work on each invocation, and `generateAllPhrases` skips
+  // already-cached phrases — so this is also the auto-resume path on
+  // page reload once the TTS model is ready.
+  const embeddingKey = useMemo(() => {
+    if (!cfg) return "";
+    const patientFp = embeddingFingerprint(speakerData);
+    const providerFps = cfg.providers
+      .map((p, i) => `${i}:${embeddingFingerprint(p.embedding)}`)
+      .join(",");
+    return `${cfg.patientLang}|${patientFp}|${providerFps}`;
+  }, [cfg, speakerData]);
+
+  useEffect(() => {
+    if (!cfg) return;
+    let cancelled = false;
+    const mgr = getModelManager();
+
+    function tryRun() {
+      if (cancelled || !cfg) return false;
+      // Start as soon as EITHER TTS path is ready. The audio cache's
+      // synthesizeBestAvailable prefers GPU and falls back to WASM —
+      // the GPU path is typically ready minutes before the WASM worker
+      // finishes downloading its ~1 GB of weights.
+      if (!isGPUReady() && !mgr.isReady("tts")) return false;
+      audioCacheRunner.runPreGeneration(cfg, speakerData);
+      return true;
+    }
+
+    if (tryRun()) return;
+
+    // Neither path is ready yet. Listen on both signals.
+    const unsubWasm = mgr.onProgress(() => { tryRun(); });
+    const unsubGpu = onGPUReady(() => { tryRun(); });
+    return () => {
+      cancelled = true;
+      unsubWasm();
+      unsubGpu();
+    };
+  }, [embeddingKey, cfg, speakerData]);
 
   // Wait for IndexedDB hydration before deciding setup vs main app
   if (!hasHydrated) return null;

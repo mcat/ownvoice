@@ -5,6 +5,8 @@ import {
   clearAudioCache,
   countCached,
   generateAllPhrases,
+  retryFailed,
+  embeddingFingerprint,
 } from "./audioCache";
 
 // Mock the modelManager for generateAllPhrases tests
@@ -129,6 +131,9 @@ beforeEach(() => {
 
 afterEach(() => {
   opfs.clear();
+  // Guard against one test's fake timers starving another's setTimeout-based
+  // mocks. Real timers is the safe default between tests.
+  vi.useRealTimers();
 });
 
 const EMBEDDING = new Float32Array([0.1, 0.2, 0.3, 0.4, 0.5]);
@@ -291,66 +296,71 @@ describe("audioCache — generateAllPhrases", () => {
     mockModelManager.isReady.mockReturnValue(true);
     mockModelManager.getWorker.mockReturnValue(mockWorker);
 
-    let callCount = 0;
+    // Retries hit synthesizeOne up to 3 times per phrase — key by text
+    // so "Fail phrase" fails on every attempt and "Success phrase"
+    // succeeds. addEventListener runs BEFORE postMessage, so capture
+    // pendingText inside the setTimeout callback (after postMessage sets it).
+    let pendingText = "";
+    mockWorker.postMessage.mockImplementation(
+      (msg: { text: string }) => {
+        pendingText = msg.text;
+      },
+    );
     mockWorker.addEventListener.mockImplementation(
       (_event: string, handler: (e: MessageEvent) => void) => {
-        callCount++;
         setTimeout(() => {
-          if (callCount === 1) {
-            // First phrase fails
+          if (pendingText === "Fail phrase") {
             handler({
               data: { type: "error", message: "synthesis failed" },
             } as unknown as MessageEvent);
           } else {
-            // Second phrase succeeds
             handler({
               data: { type: "audio", data: new Float32Array([0.2]) },
             } as unknown as MessageEvent);
           }
-        }, 5);
+        }, 1);
       },
     );
 
     const gen = generateAllPhrases(["Fail phrase", "Success phrase"], EMBEDDING);
-    const results: Array<{ phrase: string; current: number; total: number }> = [];
-    for await (const item of gen) {
-      results.push(item);
-    }
+    const results: Array<{ phrase: string; current: number; total: number; failed?: boolean }> = [];
+    for await (const item of gen) results.push(item);
 
-    // Both phrases yield progress, even though the first one failed
     expect(results).toHaveLength(2);
     expect(results[0].phrase).toBe("Fail phrase");
+    expect(results[0].failed).toBe(true);
     expect(results[1].phrase).toBe("Success phrase");
+    expect(results[1].failed).toBeUndefined();
   });
 
   it("handles TTS timeout for a phrase", async () => {
     mockModelManager.isReady.mockReturnValue(true);
     mockModelManager.getWorker.mockReturnValue(mockWorker);
 
-    // Worker never responds — the 10000ms timeout should fire
-    // But we'll use vi.useFakeTimers to speed it up
     vi.useFakeTimers();
 
     mockWorker.addEventListener.mockImplementation(() => {
-      // Never calls handler — simulates timeout
+      // Never calls handler — simulates a stuck worker
     });
 
     const gen = generateAllPhrases(["Timeout phrase"], EMBEDDING);
     const resultsPromise = (async () => {
       const results: unknown[] = [];
-      for await (const item of gen) {
-        results.push(item);
-      }
+      for await (const item of gen) results.push(item);
       return results;
     })();
 
-    // Advance timer past the 10000ms timeout
-    await vi.advanceTimersByTimeAsync(11000);
-
-    const results = await resultsPromise;
-    expect(results).toHaveLength(1); // Still yields progress even after timeout
-
-    vi.useRealTimers();
+    try {
+      // 3 retry attempts × 180s timeout each. advanceTimersByTimeAsync
+      // drains microtasks between expiries, so one long advance fires
+      // every scheduled timer in order.
+      await vi.advanceTimersByTimeAsync(555_000);
+      const results = await resultsPromise;
+      expect(results).toHaveLength(1);
+      expect((results[0] as { failed?: boolean }).failed).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
@@ -358,16 +368,195 @@ describe("audioCache — generateAllPhrases", () => {
 // Embedding fingerprint edge case
 // =============================================================================
 describe("audioCache — embedding fingerprint", () => {
-  it("uses 'empty' fingerprint for embeddings shorter than 4 elements", async () => {
+  it("refuses to cache when the embedding is too short to fingerprint", async () => {
     const shortEmbedding = new Float32Array([0.1, 0.2]); // < 4 elements
     await putCachedAudio("test phrase", shortEmbedding, AUDIO);
-    const result = await hasCachedAudio("test phrase", shortEmbedding);
-    expect(result).toBe(true);
+    // With no real fingerprint we don't write anything — so no read hit either.
+    expect(await hasCachedAudio("test phrase", shortEmbedding)).toBe(false);
+  });
 
-    // A different short embedding should also produce 'empty' fingerprint
-    const otherShort = new Float32Array([0.9, 0.8]);
-    const result2 = await hasCachedAudio("test phrase", otherShort);
-    // Both short embeddings map to "empty", so the cache hit happens
-    expect(result2).toBe(true);
+  it("exports embeddingFingerprint returning a stable string per embedding", () => {
+    const a = new Float32Array([0.11, 0.22, 0.33, 0.44, 0.55]);
+    const b = new Float32Array([0.11, 0.22, 0.33, 0.44, 0.55]);
+    const c = new Float32Array([0.99, 0.88, 0.77, 0.66, 0.55]);
+    expect(embeddingFingerprint(a)).toBe(embeddingFingerprint(b));
+    expect(embeddingFingerprint(a)).not.toBe(embeddingFingerprint(c));
+  });
+});
+
+// =============================================================================
+// generateAllPhrases — retries up to 3 times
+// =============================================================================
+describe("audioCache — generateAllPhrases retries", () => {
+  beforeEach(() => {
+    mockModelManager.isReady.mockReturnValue(true);
+    mockModelManager.getWorker.mockReturnValue(mockWorker);
+    mockWorker.postMessage.mockClear();
+    mockWorker.addEventListener.mockClear();
+    mockWorker.removeEventListener.mockClear();
+  });
+
+  it("retries up to 3 times and succeeds on the third attempt", async () => {
+    let attempts = 0;
+    mockWorker.addEventListener.mockImplementation(
+      (_event: string, handler: (e: MessageEvent) => void) => {
+        attempts++;
+        setTimeout(() => {
+          if (attempts < 3) {
+            handler({ data: { type: "error", message: "flake" } } as unknown as MessageEvent);
+          } else {
+            handler({ data: { type: "audio", data: new Float32Array([0.1]) } } as unknown as MessageEvent);
+          }
+        }, 1);
+      },
+    );
+
+    const gen = generateAllPhrases(["Retry me"], EMBEDDING);
+    const results: Array<{ failed?: boolean }> = [];
+    for await (const r of gen) results.push(r);
+
+    expect(attempts).toBe(3);
+    expect(results).toHaveLength(1);
+    expect(results[0].failed).toBeUndefined();
+  });
+
+  it("marks failed after 3 unsuccessful attempts", async () => {
+    let attempts = 0;
+    mockWorker.addEventListener.mockImplementation(
+      (_event: string, handler: (e: MessageEvent) => void) => {
+        attempts++;
+        setTimeout(() => {
+          handler({ data: { type: "error", message: "nope" } } as unknown as MessageEvent);
+        }, 1);
+      },
+    );
+
+    const gen = generateAllPhrases(["Always fails"], EMBEDDING);
+    const results: Array<{ failed?: boolean }> = [];
+    for await (const r of gen) results.push(r);
+
+    expect(attempts).toBe(3);
+    expect(results).toHaveLength(1);
+    expect(results[0].failed).toBe(true);
+  });
+});
+
+// =============================================================================
+// generateAllPhrases — failed flag
+// =============================================================================
+describe("audioCache — generateAllPhrases failed flag", () => {
+  beforeEach(() => {
+    mockModelManager.isReady.mockReturnValue(true);
+    mockModelManager.getWorker.mockReturnValue(mockWorker);
+    mockWorker.postMessage.mockClear();
+    mockWorker.addEventListener.mockClear();
+    mockWorker.removeEventListener.mockClear();
+  });
+
+  it("marks failed phrases with failed: true on yielded progress", async () => {
+    mockWorker.addEventListener.mockImplementation(
+      (_event: string, handler: (e: MessageEvent) => void) => {
+        setTimeout(() => {
+          handler({
+            data: { type: "error", message: "bad" },
+          } as unknown as MessageEvent);
+        }, 5);
+      },
+    );
+
+    const gen = generateAllPhrases(["Boom"], EMBEDDING);
+    const results: Array<{ phrase: string; failed?: boolean }> = [];
+    for await (const r of gen) results.push(r);
+
+    expect(results).toHaveLength(1);
+    expect(results[0].failed).toBe(true);
+  });
+
+  it("omits failed flag on successful yields", async () => {
+    await putCachedAudio("Cached", EMBEDDING, AUDIO);
+    const gen = generateAllPhrases(["Cached"], EMBEDDING);
+    const results: Array<{ phrase: string; failed?: boolean }> = [];
+    for await (const r of gen) results.push(r);
+    expect(results).toHaveLength(1);
+    expect(results[0].failed).toBeUndefined();
+  });
+});
+
+// =============================================================================
+// generateAllPhrases — AbortSignal
+// =============================================================================
+describe("audioCache — generateAllPhrases abort", () => {
+  beforeEach(() => {
+    mockModelManager.isReady.mockReturnValue(true);
+    mockModelManager.getWorker.mockReturnValue(mockWorker);
+    mockWorker.postMessage.mockClear();
+    mockWorker.addEventListener.mockClear();
+  });
+
+  it("stops before the first phrase when already aborted", async () => {
+    const controller = new AbortController();
+    controller.abort();
+
+    const gen = generateAllPhrases(["A", "B", "C"], EMBEDDING, controller.signal);
+    const results: unknown[] = [];
+    for await (const r of gen) results.push(r);
+
+    expect(results).toHaveLength(0);
+    expect(mockWorker.postMessage).not.toHaveBeenCalled();
+  });
+
+  it("unblocks an in-flight synthesis call when aborted mid-run", async () => {
+    const controller = new AbortController();
+
+    // Worker never resolves — only abort can end the promise
+    mockWorker.addEventListener.mockImplementation(() => {});
+
+    const gen = generateAllPhrases(["Slow phrase"], EMBEDDING, controller.signal);
+    const promise = (async () => {
+      const out: unknown[] = [];
+      for await (const r of gen) out.push(r);
+      return out;
+    })();
+
+    // Abort after the worker call has started
+    setTimeout(() => controller.abort(), 10);
+
+    const results = await promise;
+    expect(results).toHaveLength(0); // no progress yielded — run exits cleanly
+  });
+});
+
+// =============================================================================
+// retryFailed — subset regen
+// =============================================================================
+describe("audioCache — retryFailed", () => {
+  beforeEach(() => {
+    mockModelManager.isReady.mockReturnValue(true);
+    mockModelManager.getWorker.mockReturnValue(mockWorker);
+    mockWorker.postMessage.mockClear();
+    mockWorker.addEventListener.mockClear();
+  });
+
+  it("regenerates only the passed subset of phrases", async () => {
+    const received: string[] = [];
+    mockWorker.addEventListener.mockImplementation(
+      (_event: string, handler: (e: MessageEvent) => void) => {
+        setTimeout(() => {
+          handler({
+            data: { type: "audio", data: new Float32Array([0.1]) },
+          } as unknown as MessageEvent);
+        }, 2);
+      },
+    );
+    mockWorker.postMessage.mockImplementation((msg: { text: string }) => {
+      received.push(msg.text);
+    });
+
+    const gen = retryFailed(["Only this", "And this"], EMBEDDING);
+    const results: unknown[] = [];
+    for await (const r of gen) results.push(r);
+
+    expect(results).toHaveLength(2);
+    expect(received).toEqual(["Only this", "And this"]);
   });
 });

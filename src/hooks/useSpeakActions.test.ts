@@ -174,6 +174,8 @@ describe("useSpeakActions", () => {
       expect(speak).toHaveBeenCalledWith("Can you rate your pain?", {
         name: "Dr. Jones",
         type: "provider",
+        embedding: undefined,
+        lang: "en",
       });
     });
 
@@ -193,6 +195,33 @@ describe("useSpeakActions", () => {
       expect(speak).toHaveBeenCalledWith("Take deep breaths", {
         name: "Nurse Lee",
         type: "provider",
+        embedding: undefined,
+        lang: "en",
+      });
+    });
+
+    it("passes the active provider's embedding through to speak", () => {
+      const providerEmbedding = { token: "prov-embed" };
+      const cfgWithProviderEmbedding: AppSettings = {
+        ...DEFAULT_CFG,
+        providers: [
+          { name: "Dr. Jones", hasVoice: true, embedding: providerEmbedding },
+          { name: "Nurse Lee", hasVoice: true },
+        ],
+      };
+      useSettingsStore.setState({ cfg: cfgWithProviderEmbedding });
+
+      const { result } = renderHook(() => useSpeakActions());
+
+      act(() => {
+        result.current.speakAsProvider("Please rest");
+      });
+
+      expect(speak).toHaveBeenCalledWith("Please rest", {
+        name: "Dr. Jones",
+        type: "provider",
+        embedding: providerEmbedding,
+        lang: "en",
       });
     });
 
@@ -277,6 +306,8 @@ describe("useSpeakActions", () => {
       expect(speak).toHaveBeenCalledWith("I need help", {
         name: "Alice",
         type: "patient",
+        embedding: undefined,
+        lang: "en",
       });
     });
 
@@ -297,6 +328,8 @@ describe("useSpeakActions", () => {
       expect(speak).toHaveBeenCalledWith("Please rest", {
         name: "Dr. Jones",
         type: "provider",
+        embedding: undefined,
+        lang: "en",
       });
     });
   });

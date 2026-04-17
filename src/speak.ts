@@ -1,6 +1,5 @@
 import type { Speaker } from "./types";
-import { getModelManager } from "./models/modelManager";
-import { isGPUReady, synthesizeGPU } from "./models/ttsEngine";
+import { getCachedAudio } from "./models/audioCache";
 
 /** Shared AudioContext for playing synthesized audio */
 let audioCtx: AudioContext | null = null;
@@ -334,44 +333,6 @@ async function playAudioBuffer(
 }
 
 /**
- * Synthesize speech via the TTS worker and return the audio.
- */
-function synthesizeWithWorker(
-  text: string,
-  speakerData: unknown,
-): Promise<{ data: Float32Array; sampleRate: number }> {
-  const worker = getModelManager().getWorker("tts");
-  if (!worker) return Promise.reject(new Error("TTS worker not available"));
-
-  return new Promise((resolve, reject) => {
-    // WASM-based autoregressive generation is slow (~100-200 tokens per
-    // phrase, each requiring a full 24-layer forward pass). On the target
-    // iPad with WebGPU/Metal this will be much faster; 120s accommodates
-    // the WASM fallback on desktop during development.
-    const timeout = setTimeout(() => {
-      worker.removeEventListener("message", handler);
-      reject(new Error("TTS synthesis timeout (180s)"));
-    }, 180000);
-
-    const handler = (e: MessageEvent) => {
-      const msg = e.data;
-      if (msg.type === "audio") {
-        clearTimeout(timeout);
-        worker.removeEventListener("message", handler);
-        resolve({ data: msg.data, sampleRate: msg.sampleRate });
-      } else if (msg.type === "error") {
-        clearTimeout(timeout);
-        worker.removeEventListener("message", handler);
-        reject(new Error(msg.message));
-      }
-    };
-
-    worker.addEventListener("message", handler);
-    worker.postMessage({ type: "synthesize", text, speakerData });
-  });
-}
-
-/**
  * Play a confirmation tone via Web Audio API.
  * Used as the fallback when neither Chatterbox Turbo nor Web Speech API
  * are available. A gentle two-tone chime confirms the tap registered.
@@ -480,70 +441,50 @@ async function tryWebSpeech(text: string): Promise<boolean> {
  * The single audio pathway for all speech output.
  *
  * Priority:
- *   1. Chatterbox Turbo (cloned voice via Web Audio API)
- *   2. Web Speech API (system voice)
- *   3. Confirmation tone (Web Audio API chime — always works)
+ *   0. Cached cloned-voice audio (from the background pre-gen runner)
+ *   1. Web Speech API (neutral system voice while the clone is pending)
+ *   2. Confirmation tone (Web Audio API chime — always works)
+ *
+ * Live TTS synthesis is intentionally NOT on the tap path. WASM
+ * synthesis can take 10–30 seconds per phrase — unusable for a patient
+ * who needs instant feedback — and running it concurrently with pre-gen
+ * on the same worker caused cross-request audio mixups (any "audio"
+ * response resolves all pending listeners with the same buffer). Pre-gen
+ * owns the TTS worker; taps either hit the cache or fall through to
+ * Web Speech.
  *
  * The patient always gets feedback. No silent failures.
  */
 export async function speak(text: string, speaker: Speaker): Promise<void> {
-  const mgr = getModelManager();
-
   console.log("[OwnVoice:TTS] speak() called", {
     text: text.slice(0, 30),
     hasEmbedding: !!speaker.embedding,
-    gpuReady: isGPUReady(),
-    wasmReady: mgr.isReady("tts"),
     speakerType: speaker.type,
   });
 
-  // Priority 1a: Chatterbox Turbo via WebGPU (main thread, fast)
-  if (isGPUReady() && speaker.embedding) {
+  // Priority 0: pre-generated cached audio in the speaker's cloned voice.
+  if (speaker.embedding) {
     try {
-      console.log("[OwnVoice:TTS] Trying GPU synthesis...");
-      const { data, sampleRate } = await synthesizeGPU(
-        text,
-        speaker.embedding as Parameters<typeof synthesizeGPU>[1],
-      );
-      console.log(`[OwnVoice:TTS] GPU synthesis done! samples=${data.length} rate=${sampleRate} dur=${(data.length / sampleRate).toFixed(1)}s`);
-      await playAudioBuffer(data, sampleRate);
-      return;
+      const hit = await getCachedAudio(text, speaker.embedding);
+      if (hit) {
+        console.log("[OwnVoice:TTS] Cache hit — playing pre-generated audio");
+        await playAudioBuffer(hit.audio, hit.sampleRate);
+        return;
+      }
+      console.log("[OwnVoice:TTS] Cache miss — falling back to Web Speech");
     } catch (err) {
-      console.warn("[OwnVoice:TTS] GPU synthesis failed, trying fallbacks:", err);
+      console.warn("[OwnVoice:TTS] Cache lookup failed, falling back:", err);
     }
   }
 
-  // Priority 1b: Chatterbox Turbo via WASM worker (slow fallback)
-  if (mgr.isReady("tts") && speaker.embedding) {
-    console.log("[OwnVoice:TTS] Trying WASM worker synthesis...");
-    try {
-      const { data, sampleRate } = await synthesizeWithWorker(
-        text,
-        speaker.embedding,
-      );
-      const nonZero = Array.from(data.slice(0, 5000)).filter(v => Math.abs(v) > 0.001).length;
-      const rms = Math.sqrt(data.slice(0, 5000).reduce((s, v) => s + v * v, 0) / Math.min(data.length, 5000));
-      const maxAbs = Math.max(...Array.from(data.slice(0, 5000)).map(Math.abs));
-      console.log(`[OwnVoice:TTS] WASM synthesis done! samples=${data.length} rate=${sampleRate} dur=${(data.length / sampleRate).toFixed(1)}s nonZero=${nonZero}/5000 rms=${rms.toFixed(6)} max=${maxAbs.toFixed(6)}`);
-      await playAudioBuffer(data, sampleRate);
-      console.log("[OwnVoice:TTS] Audio playback complete");
-      return;
-    } catch (err) {
-      console.warn("[OwnVoice:TTS] Worker synthesis failed, trying fallbacks:", err);
-    }
-  } else {
-    console.log("[OwnVoice:TTS] Skipping WASM worker", { wasmReady: mgr.isReady("tts"), hasEmbedding: !!speaker.embedding });
-  }
-
-  // Priority 2: Web Speech API
-  console.log("[OwnVoice:TTS] Trying Web Speech API...");
+  // Priority 1: Web Speech API — fast neutral voice while pre-gen fills the cache.
   const speechWorked = await tryWebSpeech(text);
   if (speechWorked) {
     console.log("[OwnVoice:TTS] Web Speech played OK");
     return;
   }
 
-  // Priority 3: Confirmation tone (always works via Web Audio API)
+  // Priority 2: Confirmation tone (always works via Web Audio API)
   console.log("[OwnVoice:TTS] All speech failed, playing confirmation tone");
   await playConfirmationTone();
 }

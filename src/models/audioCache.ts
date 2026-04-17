@@ -1,4 +1,5 @@
 import { getModelManager } from "./modelManager";
+import { isGPUReady, synthesizeGPU } from "./ttsEngine";
 
 const CACHE_DIR = "audio-cache";
 const SAMPLE_RATE = 24000; // Chatterbox Turbo output rate
@@ -13,23 +14,69 @@ const SAMPLE_RATE = 24000; // Chatterbox Turbo output rate
  * Cache key: hash of phrase text + embedding fingerprint
  */
 
-/** Simple hash for cache keys */
-function hashKey(phrase: string, embeddingFingerprint: string): string {
-  let hash = 0;
-  const str = `${phrase}:${embeddingFingerprint}`;
+/**
+ * cyrb53 — a fast, dependency-free 53-bit string hash. Used to build
+ * cache filenames.
+ *
+ * The previous hash (djb2 with Math.abs, truncated to 32 bits then
+ * base-36-encoded) folded negative/positive hash pairs together and
+ * produced short keys — two unrelated phrases could collide and
+ * overwrite each other's cached audio. At ~150 phrases per speaker the
+ * 53-bit space keeps collision probability below 1e-12.
+ *
+ * Reference: https://stackoverflow.com/a/52171480 (public domain)
+ */
+function hashKey(phrase: string, fingerprint: string): string {
+  const str = `${phrase}:${fingerprint}`;
+  let h1 = 0xdeadbeef;
+  let h2 = 0x41c6ce57;
   for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash + char) | 0;
+    const ch = str.charCodeAt(i);
+    h1 = Math.imul(h1 ^ ch, 2654435761);
+    h2 = Math.imul(h2 ^ ch, 1597334677);
   }
-  return Math.abs(hash).toString(36);
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507);
+  h1 ^= Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507);
+  h2 ^= Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  const hi = (2097151 & h2).toString(36);
+  const lo = (h1 >>> 0).toString(36);
+  return `${hi}${lo}`;
 }
 
-/** Create a fingerprint from the first/last bytes of an embedding */
-function embeddingFingerprint(embedding: Float32Array): string {
-  if (embedding.length < 4) return "empty";
-  const first = embedding[0].toFixed(4);
-  const last = embedding[embedding.length - 1].toFixed(4);
-  return `${embedding.length}_${first}_${last}`;
+/**
+ * Pull the voice-distinguishing vector out of whatever shape speakerData
+ * has. Chatterbox Turbo's `SpeakerData` stores `speakerEmbeddings` as a
+ * plain number[] (so it round-trips through JSON persistence); earlier
+ * code paths could also pass a raw `Float32Array`. The fingerprint only
+ * needs numeric values indexable by position.
+ */
+function pickEmbedding(data: unknown): ArrayLike<number> | null {
+  if (data instanceof Float32Array) return data;
+  if (Array.isArray(data)) return data as number[];
+  if (data && typeof data === "object") {
+    const obj = data as Record<string, unknown>;
+    const se = obj.speakerEmbeddings;
+    if (se instanceof Float32Array) return se;
+    if (Array.isArray(se)) return se as number[];
+    const e = obj.embedding;
+    if (e instanceof Float32Array) return e;
+    if (Array.isArray(e)) return e as number[];
+  }
+  return null;
+}
+
+/**
+ * Stable fingerprint of a speaker. Used both as a cache-key component
+ * and as a run identifier in the progress store. Returns "none" when
+ * the input has no recognisable embedding vector.
+ */
+export function embeddingFingerprint(speakerData: unknown): string {
+  const arr = pickEmbedding(speakerData);
+  if (!arr || arr.length < 4) return "none";
+  const first = Number(arr[0]).toFixed(4);
+  const last = Number(arr[arr.length - 1]).toFixed(4);
+  return `${arr.length}_${first}_${last}`;
 }
 
 /** Get the OPFS cache directory, creating it if needed */
@@ -41,11 +88,13 @@ async function getCacheDir(): Promise<FileSystemDirectoryHandle> {
 /** Check if a phrase is in the cache */
 export async function hasCachedAudio(
   phrase: string,
-  embedding: Float32Array,
+  speakerData: unknown,
 ): Promise<boolean> {
+  const fp = embeddingFingerprint(speakerData);
+  if (fp === "none") return false;
   try {
     const dir = await getCacheDir();
-    const key = hashKey(phrase, embeddingFingerprint(embedding));
+    const key = hashKey(phrase, fp);
     const fileHandle = await dir.getFileHandle(`${key}.raw`);
     const file = await fileHandle.getFile();
     return file.size > 0;
@@ -57,11 +106,13 @@ export async function hasCachedAudio(
 /** Retrieve cached audio as a Float32Array */
 export async function getCachedAudio(
   phrase: string,
-  embedding: Float32Array,
+  speakerData: unknown,
 ): Promise<{ audio: Float32Array; sampleRate: number } | null> {
+  const fp = embeddingFingerprint(speakerData);
+  if (fp === "none") return null;
   try {
     const dir = await getCacheDir();
-    const key = hashKey(phrase, embeddingFingerprint(embedding));
+    const key = hashKey(phrase, fp);
     const fileHandle = await dir.getFileHandle(`${key}.raw`);
     const file = await fileHandle.getFile();
     if (file.size === 0) return null;
@@ -75,12 +126,14 @@ export async function getCachedAudio(
 /** Store generated audio in the cache */
 export async function putCachedAudio(
   phrase: string,
-  embedding: Float32Array,
+  speakerData: unknown,
   audio: Float32Array,
 ): Promise<void> {
+  const fp = embeddingFingerprint(speakerData);
+  if (fp === "none") return;
   try {
     const dir = await getCacheDir();
-    const key = hashKey(phrase, embeddingFingerprint(embedding));
+    const key = hashKey(phrase, fp);
     const fileHandle = await dir.getFileHandle(`${key}.raw`, { create: true });
     const writable = await fileHandle.createWritable();
     await writable.write(audio.buffer as ArrayBuffer);
@@ -90,78 +143,225 @@ export async function putCachedAudio(
   }
 }
 
+export interface GenerateProgress {
+  phrase: string;
+  current: number;
+  total: number;
+  /** True when the TTS worker rejected this specific phrase. */
+  failed?: boolean;
+}
+
 /**
- * Background-generate all fixed phrases for a given embedding.
+ * Background-generate fixed phrases for a given embedding.
  *
- * Yields progress after each phrase. The caller can display this in the UI:
- * "Preparing Margaret's voice... 47/150"
+ * Yields after each phrase (cached or generated, success or failure) so
+ * the caller can drive a progress UI. Phrases already in the cache are
+ * skipped cheaply. Individual failures don't stop the batch — they
+ * surface via `failed: true` on the yielded progress so a caller can
+ * collect them for a retry pass.
  *
- * Phrases already in the cache are skipped.
+ * Pass an `AbortSignal` to cancel on locale change or reset. The
+ * generator stops between phrases and also unblocks any in-flight
+ * worker await when aborted.
  */
 export async function* generateAllPhrases(
   phrases: string[],
-  embedding: Float32Array,
-): AsyncGenerator<{ phrase: string; current: number; total: number }> {
+  speakerData: unknown,
+  signal?: AbortSignal,
+): AsyncGenerator<GenerateProgress> {
   const mgr = getModelManager();
   const worker = mgr.getWorker("tts");
+  const gpuAvailable = isGPUReady();
 
-  if (!worker || !mgr.isReady("tts")) {
-    console.warn("[OwnVoice:Cache] TTS model not ready, skipping pre-generation");
+  // Need at least one synthesis path ready.
+  if (!gpuAvailable && (!worker || !mgr.isReady("tts"))) {
+    console.warn("[OwnVoice:Cache] No TTS path ready, skipping pre-generation");
+    return;
+  }
+  if (embeddingFingerprint(speakerData) === "none") {
+    console.warn("[OwnVoice:Cache] speakerData lacks a recognisable embedding, skipping");
     return;
   }
 
   const total = phrases.length;
 
   for (let i = 0; i < phrases.length; i++) {
+    if (signal?.aborted) return;
     const phrase = phrases[i];
 
-    // Skip if already cached
-    if (await hasCachedAudio(phrase, embedding)) {
+    if (await hasCachedAudio(phrase, speakerData)) {
       yield { phrase, current: i + 1, total };
       continue;
     }
 
-    // Generate via TTS worker
+    let failed = false;
     try {
-      const audio = await new Promise<Float32Array>((resolve, reject) => {
-        const timeout = setTimeout(
-          () => reject(new Error("TTS synthesis timeout")),
-          10000,
-        );
-
-        const handler = (e: MessageEvent) => {
-          if (e.data.type === "audio") {
-            clearTimeout(timeout);
-            worker.removeEventListener("message", handler);
-            resolve(e.data.data);
-          } else if (e.data.type === "error") {
-            clearTimeout(timeout);
-            worker.removeEventListener("message", handler);
-            reject(new Error(e.data.message));
-          }
-        };
-
-        worker.addEventListener("message", handler);
-        worker.postMessage({
-          type: "synthesize",
-          text: phrase,
-          embedding,
-        });
-      });
-
-      await putCachedAudio(phrase, embedding, audio);
+      const audio = await synthesizeWithRetries(
+        worker,
+        phrase,
+        speakerData,
+        signal,
+      );
+      await putCachedAudio(phrase, speakerData, audio);
     } catch (err) {
+      if (signal?.aborted) return;
+      failed = true;
       console.warn(
-        `[OwnVoice:Cache] Failed to generate "${phrase}":`,
+        `[OwnVoice:Cache] Gave up on "${phrase}" after retries:`,
         err,
       );
-      // Continue with remaining phrases — don't let one failure stop the batch
     }
 
-    yield { phrase, current: i + 1, total };
+    yield failed
+      ? { phrase, current: i + 1, total, failed: true }
+      : { phrase, current: i + 1, total };
   }
 
   console.log(`[OwnVoice:Cache] Pre-generation complete (${total} phrases)`);
+}
+
+/**
+ * Regenerate a subset of phrases that previously failed. Phrases already
+ * in the cache are skipped — the caller's failed set is treated as a
+ * best-effort hint, not a hard list.
+ */
+export async function* retryFailed(
+  phrases: string[],
+  speakerData: unknown,
+  signal?: AbortSignal,
+): AsyncGenerator<GenerateProgress> {
+  yield* generateAllPhrases(phrases, speakerData, signal);
+}
+
+/**
+ * Attempt to synthesize a phrase up to MAX_ATTEMPTS times. TTS failures
+ * in practice come from transient worker state (mid-load, inflight
+ * conflict) — a retry with no backoff usually succeeds. After the final
+ * attempt the caller marks the phrase failed for a healthcare-worker-
+ * initiated retry in Settings.
+ *
+ * Prefers the WebGPU path when available — Chatterbox on Metal/iPad is
+ * sub-second per phrase; WASM on desktop can be 30–90s. Falls back to
+ * the WASM worker if GPU isn't ready or fails on this attempt.
+ */
+const MAX_ATTEMPTS = 3;
+async function synthesizeWithRetries(
+  worker: Worker | null,
+  phrase: string,
+  speakerData: unknown,
+  signal?: AbortSignal,
+): Promise<Float32Array> {
+  let lastErr: unknown;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    if (signal?.aborted) {
+      throw new DOMException("Aborted", "AbortError");
+    }
+    try {
+      return await synthesizeBestAvailable(worker, phrase, speakerData, signal);
+    } catch (err) {
+      if (signal?.aborted) throw err;
+      lastErr = err;
+      console.warn(
+        `[OwnVoice:Cache] Attempt ${attempt}/${MAX_ATTEMPTS} failed for "${phrase}":`,
+        err,
+      );
+    }
+  }
+  throw lastErr;
+}
+
+/**
+ * One synthesis attempt. GPU first when available, WASM worker otherwise.
+ * GPU doesn't take an AbortSignal; a pending GPU call continues to
+ * completion even if we've since aborted, but the result is discarded
+ * by the caller's aborted check.
+ */
+async function synthesizeBestAvailable(
+  worker: Worker | null,
+  phrase: string,
+  speakerData: unknown,
+  signal?: AbortSignal,
+): Promise<Float32Array> {
+  if (isGPUReady()) {
+    try {
+      const { data } = await synthesizeGPU(
+        phrase,
+        speakerData as Parameters<typeof synthesizeGPU>[1],
+      );
+      return data;
+    } catch (err) {
+      if (signal?.aborted) throw err;
+      console.warn(`[OwnVoice:Cache] GPU synth failed, trying WASM worker:`, err);
+    }
+  }
+  if (!worker) {
+    throw new Error("No TTS worker available for WASM fallback");
+  }
+  return synthesizeOne(worker, phrase, speakerData, signal);
+}
+
+function synthesizeOne(
+  worker: Worker,
+  phrase: string,
+  speakerData: unknown,
+  signal?: AbortSignal,
+): Promise<Float32Array> {
+  return new Promise<Float32Array>((resolve, reject) => {
+    // 180s per-phrase timeout — matches the speak.ts live-synth timeout.
+    // WASM Chatterbox on desktop can take 30–90s per phrase (autoregressive
+    // generation through all 24 transformer layers). First call is worst
+    // due to model warmup. Faster on iPad with WebGPU/Metal, but this
+    // ceiling is a safety net, not the target latency.
+    const timeout = setTimeout(
+      () => finish(reject, new Error("TTS synthesis timeout")),
+      180_000,
+    );
+
+    const handler = (e: MessageEvent) => {
+      if (e.data.type === "audio") {
+        finish(resolve, e.data.data);
+      } else if (e.data.type === "error") {
+        finish(reject, new Error(e.data.message));
+      }
+    };
+
+    const onAbort = () => finish(reject, new DOMException("Aborted", "AbortError"));
+
+    function finish<T>(fn: (v: T) => void, value: T) {
+      clearTimeout(timeout);
+      worker.removeEventListener("message", handler);
+      signal?.removeEventListener("abort", onAbort);
+      fn(value);
+    }
+
+    if (signal?.aborted) {
+      onAbort();
+      return;
+    }
+    signal?.addEventListener("abort", onAbort);
+    worker.addEventListener("message", handler);
+    // IMPORTANT: the TTS worker's synthesize handler reads `msg.speakerData`,
+    // not `msg.embedding`. Passing `embedding` silently produced nothing.
+    worker.postMessage({
+      type: "synthesize",
+      text: phrase,
+      speakerData,
+    });
+  });
+}
+
+/**
+ * Count how many phrases are currently cached for a speaker.
+ */
+export async function countCached(
+  phrases: string[],
+  speakerData: unknown,
+): Promise<number> {
+  let count = 0;
+  for (const phrase of phrases) {
+    if (await hasCachedAudio(phrase, speakerData)) count++;
+  }
+  return count;
 }
 
 /** Clear all cached audio (for patient reset) */
@@ -175,14 +375,3 @@ export async function clearAudioCache(): Promise<void> {
   }
 }
 
-/** Count how many phrases are cached for a given embedding */
-export async function countCached(
-  phrases: string[],
-  embedding: Float32Array,
-): Promise<number> {
-  let count = 0;
-  for (const phrase of phrases) {
-    if (await hasCachedAudio(phrase, embedding)) count++;
-  }
-  return count;
-}

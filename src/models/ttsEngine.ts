@@ -24,6 +24,7 @@ interface SpeakerData {
 
 let worker: Worker | null = null;
 let ready = false;
+const readyListeners = new Set<() => void>();
 
 export function isGPUReady(): boolean {
   return ready;
@@ -31,6 +32,32 @@ export function isGPUReady(): boolean {
 
 export function hasWebGPU(): boolean {
   return "gpu" in navigator;
+}
+
+/**
+ * Subscribe to the one-time "GPU TTS became ready" event. Fires
+ * synchronously if GPU is already ready. Returns an unsubscribe function.
+ *
+ * Consumers (the audio cache pre-gen trigger) need to start working the
+ * moment EITHER the WASM worker or the GPU engine is ready — whichever
+ * comes first. `mgr.onProgress` already covers WASM; this covers GPU.
+ */
+export function onGPUReady(cb: () => void): () => void {
+  if (ready) {
+    cb();
+    return () => {};
+  }
+  readyListeners.add(cb);
+  return () => readyListeners.delete(cb);
+}
+
+function markReady() {
+  if (ready) return;
+  ready = true;
+  for (const cb of readyListeners) {
+    try { cb(); } catch (err) { console.warn("[OwnVoice:TTS:GPU] listener threw:", err); }
+  }
+  readyListeners.clear();
 }
 
 /**
@@ -56,7 +83,7 @@ export function initGPU(modelUrl: string): Promise<boolean> {
       worker.onmessage = (e) => {
         if (e.data.type === "ready") {
           clearTimeout(timeout);
-          ready = true;
+          markReady();
           document.title = "OwnVoice [GPU ready]";
           console.log("[OwnVoice:TTS:GPU] WebGPU TTS engine ready");
           resolve(true);
