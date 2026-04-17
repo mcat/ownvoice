@@ -156,16 +156,19 @@ async function handleInit(modelUrl: string): Promise<void> {
  * Build the LFM2 ChatML prompt.
  *
  * Format (from chat_template.jinja):
- *   <|startoftext|><|im_start|>system
+ *   <|im_start|>system
  *   {SYSTEM_PROMPT}<|im_end|>
  *   <|im_start|>user
  *   ({context}) "{partial}" →<|im_end|>
  *   <|im_start|>assistant
+ *
+ * The leading <|startoftext|> BOS token is NOT part of this string — the
+ * tokenizer's TemplateProcessing post-processor prepends it automatically.
  */
 function buildPrompt(partial: string, context?: string): string {
   const contextLine = context ? `(${context}) ` : "";
   return (
-    `${LFM2_CHAT_TOKENS.bos}${LFM2_CHAT_TOKENS.turnStart}system\n` +
+    `${LFM2_CHAT_TOKENS.turnStart}system\n` +
     `${SYSTEM_PROMPT}${LFM2_CHAT_TOKENS.turnEnd}\n` +
     `${LFM2_CHAT_TOKENS.turnStart}user\n` +
     `${contextLine}"${partial}" →${LFM2_CHAT_TOKENS.turnEnd}\n` +

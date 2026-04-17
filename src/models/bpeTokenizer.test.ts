@@ -43,6 +43,54 @@ describe("bpeTokenizer — encode", () => {
   });
 });
 
+describe("bpeTokenizer — post_processor", () => {
+  it("applies Chatterbox-style TemplateProcessing (append <|endoftext|> x2)", () => {
+    const tok = buildBPETokenizer({
+      model: { vocab: { h: 1, i: 2 }, merges: [] },
+      added_tokens: [{ content: "<|endoftext|>", id: 50256 }],
+      post_processor: {
+        type: "TemplateProcessing",
+        single: [
+          { Sequence: { id: "A", type_id: 0 } },
+          { SpecialToken: { id: "<|endoftext|>", type_id: 0 } },
+          { SpecialToken: { id: "<|endoftext|>", type_id: 0 } },
+        ],
+      },
+    });
+    expect(tok.encode("hi")).toEqual([1, 2, 50256, 50256]);
+  });
+
+  it("applies LFM2-style Sequence+TemplateProcessing (prepend <|startoftext|>)", () => {
+    const tok = buildBPETokenizer({
+      model: { vocab: { h: 1, i: 2 }, merges: [] },
+      added_tokens: [{ content: "<|startoftext|>", id: 1 }],
+      post_processor: {
+        type: "Sequence",
+        processors: [
+          { type: "ByteLevel" },
+          {
+            type: "TemplateProcessing",
+            single: [
+              { SpecialToken: { id: "<|startoftext|>", type_id: 0 } },
+              { Sequence: { id: "A", type_id: 0 } },
+            ],
+          },
+        ],
+      },
+    });
+    // BOS is prepended, no trailing tokens
+    expect(tok.encode("hi")).toEqual([1, 1, 2]);
+  });
+
+  it("appends nothing when post_processor is absent", () => {
+    const tok = buildBPETokenizer({
+      model: { vocab: { h: 1, i: 2 }, merges: [] },
+      added_tokens: [{ content: "<|endoftext|>", id: 50256 }],
+    });
+    expect(tok.encode("hi")).toEqual([1, 2]);
+  });
+});
+
 describe("bpeTokenizer — decode", () => {
   it("decodes byte-level BPE token IDs back to text", () => {
     const tok = buildBPETokenizer({

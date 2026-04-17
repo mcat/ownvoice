@@ -115,19 +115,29 @@ export interface BPETokenizer {
   decode: (ids: number[]) => string;
 }
 
+/** Entries in a TemplateProcessing `single` array — either Sequence or SpecialToken wrappers. */
+interface TemplateEntry {
+  Sequence?: { id: string; type_id: number };
+  SpecialToken?: { id: string; type_id: number };
+}
+
+interface TemplateProcessing {
+  type: "TemplateProcessing";
+  single?: TemplateEntry[];
+}
+
+interface SequencePostProcessor {
+  type: "Sequence";
+  processors?: Array<TemplateProcessing | { type: string }>;
+}
+
 interface TokenizerJSON {
   model: {
     vocab: Record<string, number>;
     merges: string[];
   };
   added_tokens?: Array<{ content: string; id: number }>;
-  post_processor?: {
-    type: string;
-    processors?: Array<{
-      type: string;
-      tokens?: Array<[string, number]>;
-    }>;
-  };
+  post_processor?: TemplateProcessing | SequencePostProcessor | { type: string };
 }
 
 /** Build a BPE tokenizer from a HuggingFace tokenizer.json */
@@ -146,20 +156,42 @@ export function buildBPETokenizer(json: TokenizerJSON): BPETokenizer {
     mergeRanks.set(key, i);
   }
 
-  // Post-processor tokens (e.g., append <|endoftext|> twice)
-  const postTokenIds: number[] = [];
-  if (json.post_processor?.processors) {
-    for (const proc of json.post_processor.processors) {
-      if (proc.type === "Sequence" && proc.tokens) {
-        for (const [, id] of proc.tokens) postTokenIds.push(id);
+  // Post-processor: walk the tokenizer.json TemplateProcessing entries to
+  // figure out which special tokens to prepend/append to every encoded input.
+  // Handles both shapes seen in the wild:
+  //   - Chatterbox: post_processor.type === "TemplateProcessing"
+  //   - LFM2:       post_processor.type === "Sequence" wrapping a TemplateProcessing
+  const prePrependIds: number[] = [];
+  const postAppendIds: number[] = [];
+  const resolveSpecialId = (name: string): number | undefined => {
+    const added = json.added_tokens?.find((t) => t.content === name);
+    if (added) return added.id;
+    return vocab.get(name);
+  };
+  const walkTemplate = (tp: TemplateProcessing): void => {
+    if (!tp.single) return;
+    let sawSequence = false;
+    for (const entry of tp.single) {
+      if (entry.Sequence) {
+        sawSequence = true;
+      } else if (entry.SpecialToken) {
+        const id = resolveSpecialId(entry.SpecialToken.id);
+        if (id !== undefined) {
+          (sawSequence ? postAppendIds : prePrependIds).push(id);
+        }
       }
     }
-  }
-  // Fallback: if no post-processor found, use the known Chatterbox convention
-  if (postTokenIds.length === 0) {
-    const eotId = json.added_tokens?.find((t) => t.content === "<|endoftext|>")?.id;
-    if (eotId !== undefined) {
-      postTokenIds.push(eotId, eotId);
+  };
+  const pp = json.post_processor;
+  if (pp) {
+    if (pp.type === "TemplateProcessing") {
+      walkTemplate(pp as TemplateProcessing);
+    } else if (pp.type === "Sequence" && (pp as SequencePostProcessor).processors) {
+      for (const proc of (pp as SequencePostProcessor).processors ?? []) {
+        if (proc.type === "TemplateProcessing") {
+          walkTemplate(proc as TemplateProcessing);
+        }
+      }
     }
   }
 
@@ -194,7 +226,7 @@ export function buildBPETokenizer(json: TokenizerJSON): BPETokenizer {
 
   return {
     encode(text: string): number[] {
-      const ids: number[] = [];
+      const ids: number[] = [...prePrependIds];
       const segments = addedPattern ? text.split(addedPattern) : [text];
 
       for (const segment of segments) {
@@ -227,8 +259,7 @@ export function buildBPETokenizer(json: TokenizerJSON): BPETokenizer {
         }
       }
 
-      // Append post-processor tokens
-      ids.push(...postTokenIds);
+      ids.push(...postAppendIds);
       return ids;
     },
 

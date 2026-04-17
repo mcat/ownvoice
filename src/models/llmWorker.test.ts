@@ -85,6 +85,20 @@ function setupFetchMocks() {
             { id: LFM2.IM_START, content: "<|im_start|>", special: true },
             { id: LFM2.IM_END, content: "<|im_end|>", special: true },
           ],
+          // Mirror the real LFM2 tokenizer.json: post_processor prepends <|startoftext|>
+          post_processor: {
+            type: "Sequence",
+            processors: [
+              { type: "ByteLevel" },
+              {
+                type: "TemplateProcessing",
+                single: [
+                  { SpecialToken: { id: "<|startoftext|>", type_id: 0 } },
+                  { Sequence: { id: "A", type_id: 0 } },
+                ],
+              },
+            ],
+          },
         }),
       };
     }
