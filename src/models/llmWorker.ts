@@ -44,15 +44,55 @@ const LOG_PREFIX = "[OwnVoice:LLM]";
  *      Few-shot examples all demonstrate direct append (no lead-ins like
  *      "I am scared" following "I feel" — that produces "I feel I am scared").
  */
-const SYSTEM_PROMPT = `You are a hospitalized patient texting your nurse. Finish your own sentence in your own voice. Write ONLY the next few words that naturally continue it — each completion is 1-6 words that read as one sentence when joined to the start. Return 6-8 different short completions, comma-separated.
+/**
+ * System prompt is deliberately short. The heavy lifting happens via
+ * multi-turn few-shot injected as real user/assistant exchanges in
+ * buildPrompt() — instruct-tuned models follow that pattern far more
+ * reliably than arrow-based examples embedded in the system prompt.
+ */
+const SYSTEM_PROMPT = `You complete a hospitalized patient's sentence. Given the start of a sentence, respond with 4-6 short ways (1-6 words each, comma-separated) it could continue. Each continuation must directly attach to the end of the given text as if you read them aloud together. Use only the patient's own first-person voice — never the nurse or doctor. Respond with ONLY the continuations, nothing else.`;
 
-"I feel" → scared, dizzy, better today, cold, nauseous, weak, lonely, confused
-"I am" → thirsty, tired, in pain, scared, cold, hungry, ready to rest, feeling a little better
-"My pain is" → getting worse, in my stomach, sharp, about a 7, unbearable, in my back, spreading, less than before
-"it hurts" → when I breathe, a lot, every time I move, right here, to swallow, more now, less than before
-"I need" → water, the nurse, my glasses, to use the bathroom, more blankets, help sitting up, my family here
-"can you" → call my family, get the nurse, explain what's happening, stay with me, adjust my bed, turn off the light
-"please" → call my family, help me sit up, bring me water, get the doctor, stay with me, come closer`;
+/**
+ * Few-shot exchanges injected as real user/assistant turns. Each pair shows
+ * the model exactly how to respond: starter sentence → comma-separated
+ * short continuations that attach directly. The "I need my glasses" case is
+ * deliberately included because longer partials were the weak spot — without
+ * this example the model kept echoing the generic "I need" completions.
+ */
+const FEW_SHOT_EXAMPLES: Array<{ user: string; assistant: string }> = [
+  {
+    user: `Continue: "I feel"`,
+    assistant: `scared, dizzy, better today, cold, nauseous, weak, lonely`,
+  },
+  {
+    user: `Continue: "I am"`,
+    assistant: `thirsty, tired, in pain, scared, cold, hungry, ready to rest`,
+  },
+  {
+    user: `Continue: "My pain is"`,
+    assistant: `getting worse, in my stomach, sharp, about a 7, unbearable, in my back`,
+  },
+  {
+    user: `Continue: "it hurts"`,
+    assistant: `when I breathe, a lot, every time I move, to swallow, less than before`,
+  },
+  {
+    user: `Continue: "I need"`,
+    assistant: `water, the nurse, my glasses, to use the bathroom, more blankets, help sitting up`,
+  },
+  {
+    user: `Continue: "I need my glasses"`,
+    assistant: `to read, please, now, so I can see, they're on the table`,
+  },
+  {
+    user: `Continue: "can you"`,
+    assistant: `call my family, get the nurse, stay with me, adjust my bed, turn off the light`,
+  },
+  {
+    user: `Continue: "please"`,
+    assistant: `call my family, help me sit up, bring me water, get the doctor, stay with me`,
+  },
+];
 
 // ---------------------------------------------------------------------------
 // Module-level state
@@ -179,23 +219,31 @@ async function handleInit(modelUrl: string): Promise<void> {
  * prepends it automatically.
  */
 function buildPrompt(partial: string, context?: string): string {
-  // Normalize the partial to match the case of the few-shot examples.
-  // Without this, lowercase inputs ("i feel") push the model away from the
-  // few-shot patterns and toward chatbot-assistant voice ("I'm here to
-  // listen…"), which the caregiver filter then drops — leaving the UI's
-  // AI suggestion row empty.
+  // Normalize the partial to sentence case so it matches the few-shot
+  // examples. Without this, lowercase inputs ("i feel") push the model
+  // away from the patterns and toward chatbot-assistant voice.
   const normalized =
     partial.length > 0
       ? partial.charAt(0).toUpperCase() + partial.slice(1)
       : partial;
-  const contextLine = context ? `[Context: ${context}]\n` : "";
-  return (
-    `${LFM2_CHAT_TOKENS.turnStart}system\n` +
-    `${SYSTEM_PROMPT}${LFM2_CHAT_TOKENS.turnEnd}\n` +
-    `${LFM2_CHAT_TOKENS.turnStart}user\n` +
-    `${contextLine}"${normalized}" →${LFM2_CHAT_TOKENS.turnEnd}\n` +
-    `${LFM2_CHAT_TOKENS.turnStart}assistant\n`
-  );
+
+  let prompt = `${LFM2_CHAT_TOKENS.turnStart}system\n${SYSTEM_PROMPT}${LFM2_CHAT_TOKENS.turnEnd}\n`;
+
+  // Few-shot exchanges as real turns — this matches how the instruct model
+  // was fine-tuned and gets much more reliable pattern-following than the
+  // same examples smashed into the system prompt.
+  for (const shot of FEW_SHOT_EXAMPLES) {
+    prompt +=
+      `${LFM2_CHAT_TOKENS.turnStart}user\n${shot.user}${LFM2_CHAT_TOKENS.turnEnd}\n` +
+      `${LFM2_CHAT_TOKENS.turnStart}assistant\n${shot.assistant}${LFM2_CHAT_TOKENS.turnEnd}\n`;
+  }
+
+  const contextLine = context ? `[Context: ${context}] ` : "";
+  prompt +=
+    `${LFM2_CHAT_TOKENS.turnStart}user\n${contextLine}Continue: "${normalized}"${LFM2_CHAT_TOKENS.turnEnd}\n` +
+    `${LFM2_CHAT_TOKENS.turnStart}assistant\n`;
+
+  return prompt;
 }
 
 // ---------------------------------------------------------------------------
