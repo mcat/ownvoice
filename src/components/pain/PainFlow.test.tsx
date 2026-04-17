@@ -34,11 +34,12 @@ describe("PainFlow", () => {
       expect(screen.getByText("Hurts worst")).toBeInTheDocument();
     });
 
-    it("shows breadcrumb with Severity bold", () => {
+    it("shows breadcrumb with Severity highlighted as the current step", () => {
       render(<PainFlow {...baseProps} />);
       const severity = screen.getByText("Severity");
       expect(severity).toBeInTheDocument();
-      expect(severity.style.fontWeight).toBe("700");
+      // Matches the Setup-style step indicator — current step is semibold (600).
+      expect(severity.style.fontWeight).toBe("600");
     });
 
     it("does not show Back button on first step", () => {
