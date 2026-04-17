@@ -548,6 +548,43 @@ export function buildLLMFewShot(partialKey: string): FewShotExample[] {
 }
 
 /**
+ * Pull the most recent UNIQUE phrases the patient has actually said, most
+ * recent first. Feeds the LLM a small vocabulary bank so its suggestions
+ * can echo phrasings the patient has used before — a per-session
+ * personalization signal that would otherwise be wasted (the conversation
+ * store already persists this in IndexedDB; we were just ignoring it
+ * past the last 3 messages).
+ *
+ * Guards:
+ *   - Patient-only. Provider messages are what OTHERS say, not vocabulary
+ *     the patient would reuse.
+ *   - Dedup on normalized text so "I'm in pain" / "I'm in pain." collapse.
+ *   - Phrase length cap at 12 words: trims the rare long narration from
+ *     eating into the 1.2B model's prompt budget.
+ */
+export function extractPatientVocabulary(
+  messages: Message[],
+  limit: number,
+): string[] {
+  const seen = new Set<string>();
+  const phrases: string[] = [];
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const m = messages[i];
+    if (m.from !== "patient") continue;
+    const text = m.text.trim();
+    if (!text) continue;
+    const words = text.split(/\s+/);
+    if (words.length > 12) continue;
+    const key = text.toLowerCase().replace(/[.!?]+$/, "").trim();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    phrases.push(text);
+    if (phrases.length >= limit) break;
+  }
+  return phrases;
+}
+
+/**
  * Monotonically increasing request ID. Each getLLMSuggestions call gets
  * its own ID, which the worker echoes back on the completion/error reply.
  * Without this, multiple overlapping calls (rapid typing) would attach
@@ -619,6 +656,7 @@ export async function getLLMSuggestions(
       type: "complete",
       partial: partialKey,
       context,
+      priorPhrases: extractPatientVocabulary(recentMessages, 8),
       maxTokens: 64,
       fewShot: buildLLMFewShot(partialKey),
       requestId,

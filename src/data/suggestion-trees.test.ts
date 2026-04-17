@@ -13,7 +13,12 @@ vi.mock("../models/modelManager", () => ({
   }),
 }));
 
-import { buildCompletionPrompt, getContextualSuggestions, getLLMSuggestions } from "./suggestion-trees";
+import {
+  buildCompletionPrompt,
+  extractPatientVocabulary,
+  getContextualSuggestions,
+  getLLMSuggestions,
+} from "./suggestion-trees";
 import type { Message } from "../types";
 
 beforeEach(() => {
@@ -392,5 +397,104 @@ describe("getLLMSuggestions", () => {
 
     const result = await getLLMSuggestions("a new partial", [], 12);
     expect(result).toEqual(["fresh"]);
+  });
+
+  it("sends the patient's recent unique phrases as priorPhrases", async () => {
+    let captured: Record<string, unknown> | undefined;
+    const mockWorkerObj = {
+      postMessage: vi.fn((msg: Record<string, unknown>) => {
+        captured = msg;
+      }),
+      addEventListener: vi.fn((_e: string, handler: (e: MessageEvent) => void) => {
+        setTimeout(() => {
+          handler({
+            data: {
+              type: "completions",
+              data: ["ok"],
+              requestId: captured?.requestId as number,
+            },
+          } as MessageEvent);
+        }, 10);
+      }),
+      removeEventListener: vi.fn(),
+    };
+
+    mockIsReady.mockReturnValue(true);
+    mockGetWorker.mockReturnValue(mockWorkerObj as unknown as Worker);
+
+    const messages: Message[] = [
+      msg("patient", "I am in pain"),
+      msg("provider", "Where does it hurt?"),
+      msg("patient", "In my back"),
+      msg("patient", "I am in pain"), // duplicate, should dedup to most recent
+      msg("patient", "I need suction"),
+    ];
+    await getLLMSuggestions("i feel", messages, 12);
+
+    expect(captured).toBeDefined();
+    const priorPhrases = captured!.priorPhrases as string[];
+    // Most recent first, deduplicated, patient-only
+    expect(priorPhrases).toEqual([
+      "I need suction",
+      "I am in pain",
+      "In my back",
+    ]);
+    // Provider text must not appear
+    expect(priorPhrases).not.toContain("Where does it hurt?");
+  });
+});
+
+describe("extractPatientVocabulary", () => {
+  it("returns patient-only phrases, most recent first", () => {
+    const messages: Message[] = [
+      msg("patient", "I am cold"),
+      msg("provider", "Do you want a blanket?"),
+      msg("patient", "Yes please"),
+    ];
+    expect(extractPatientVocabulary(messages, 8)).toEqual([
+      "Yes please",
+      "I am cold",
+    ]);
+  });
+
+  it("deduplicates on normalized text (case and trailing punctuation)", () => {
+    const messages: Message[] = [
+      msg("patient", "I am in pain"),
+      msg("patient", "I am in pain."),
+      msg("patient", "i am in pain"),
+      msg("patient", "I need help"),
+    ];
+    const result = extractPatientVocabulary(messages, 8);
+    expect(result).toEqual(["I need help", "i am in pain"]);
+  });
+
+  it("caps at the requested limit", () => {
+    const messages: Message[] = Array.from({ length: 20 }, (_, i) =>
+      msg("patient", `phrase number ${i}`),
+    );
+    expect(extractPatientVocabulary(messages, 5)).toHaveLength(5);
+  });
+
+  it("drops phrases longer than 12 words to protect prompt budget", () => {
+    const long = Array.from({ length: 15 }, () => "word").join(" ");
+    const messages: Message[] = [
+      msg("patient", "I need help"),
+      msg("patient", long),
+      msg("patient", "I am cold"),
+    ];
+    const result = extractPatientVocabulary(messages, 8);
+    expect(result).toContain("I need help");
+    expect(result).toContain("I am cold");
+    expect(result).not.toContain(long);
+  });
+
+  it("returns an empty array for empty or provider-only history", () => {
+    expect(extractPatientVocabulary([], 8)).toEqual([]);
+    expect(
+      extractPatientVocabulary(
+        [msg("provider", "Hello"), msg("provider", "How are you?")],
+        8,
+      ),
+    ).toEqual([]);
   });
 });

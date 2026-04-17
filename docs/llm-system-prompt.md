@@ -34,6 +34,16 @@ A patient in an intensive care unit cannot speak aloud and is using a communicat
 Respond with ONLY a JSON array of strings, nothing else. No code fence, no explanation.
 ```
 
+### Per-session vocabulary (appended to system prompt when available)
+
+In production the worker appends a single line of vocabulary drawn from this patient's recent unique utterances (`extractPatientVocabulary` in `src/data/suggestion-trees.ts` pulls the 8 most-recent unique patient messages from the conversation store). Shape:
+
+```
+Phrases this patient has recently said: "I am in pain"; "I need suction"; "Please help me up".
+```
+
+This gives the model a per-session vocabulary bank to echo without teaching it the full conversation history — a targeted personalization signal with low token cost. To reproduce in LM Studio, append this line to the system prompt above before your test.
+
 ---
 
 ## Few-shot exchanges

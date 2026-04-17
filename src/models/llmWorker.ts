@@ -225,6 +225,7 @@ async function handleInit(modelUrl: string): Promise<void> {
 function buildPrompt(
   partial: string,
   context: string | undefined,
+  priorPhrases: string[],
   fewShot: FewShotExample[],
 ): string {
   // Normalize the partial to sentence case so it matches the few-shot
@@ -235,7 +236,19 @@ function buildPrompt(
       ? partial.charAt(0).toUpperCase() + partial.slice(1)
       : partial;
 
-  let prompt = `${LFM2_CHAT_TOKENS.turnStart}system\n${SYSTEM_PROMPT}${LFM2_CHAT_TOKENS.turnEnd}\n`;
+  // Inject per-patient vocabulary into the SYSTEM turn (not the live user
+  // turn) so it appears once per prompt and doesn't create an asymmetry
+  // between few-shot turns and the live turn. Framed as phrases the
+  // patient has "recently said" — the model reads this as a vocabulary
+  // bank to echo, not a list to copy verbatim.
+  const systemBody =
+    priorPhrases.length > 0
+      ? `${SYSTEM_PROMPT}\n\nPhrases this patient has recently said: ${priorPhrases
+          .map((p) => `"${p}"`)
+          .join("; ")}.`
+      : SYSTEM_PROMPT;
+
+  let prompt = `${LFM2_CHAT_TOKENS.turnStart}system\n${systemBody}${LFM2_CHAT_TOKENS.turnEnd}\n`;
 
   // Few-shot exchanges as real turns. Source is the curated tree for this
   // partial (see suggestion-trees.ts:buildLLMFewShot). Real ChatML turns
@@ -398,6 +411,7 @@ async function handleComplete(
   partial: string,
   maxTokens: number,
   context: string | undefined,
+  priorPhrases: string[] | undefined,
   fewShot: FewShotExample[] | undefined,
   requestId: number | undefined,
 ): Promise<void> {
@@ -410,6 +424,7 @@ async function handleComplete(
     const fullPrompt = buildPrompt(
       partial,
       context,
+      priorPhrases ?? [],
       fewShot && fewShot.length > 0 ? fewShot : FALLBACK_FEW_SHOT,
     );
     const inputIds = tokenizer.encode(fullPrompt);
@@ -652,16 +667,24 @@ self.onmessage = async (event: MessageEvent) => {
     }
 
     case "complete": {
-      const { prompt, partial, context, maxTokens, fewShot, requestId } = event.data as {
+      const { prompt, partial, context, priorPhrases, maxTokens, fewShot, requestId } = event.data as {
         type: "complete";
         prompt?: string;
         partial?: string;
         context?: string;
+        priorPhrases?: string[];
         maxTokens: number;
         fewShot?: FewShotExample[];
         requestId?: number;
       };
-      await handleComplete(partial ?? prompt ?? "", maxTokens, context, fewShot, requestId);
+      await handleComplete(
+        partial ?? prompt ?? "",
+        maxTokens,
+        context,
+        priorPhrases,
+        fewShot,
+        requestId,
+      );
       break;
     }
 
