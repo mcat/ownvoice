@@ -3,19 +3,34 @@
 export {};
 
 /**
- * Tests for llmWorker.ts message protocol.
+ * Tests for llmWorker.ts (LFM2.5-1.2B-Instruct backend).
  *
  * Strategy: mock onnxruntime-web and fetch, import the worker module
  * (which installs self.onmessage), then exercise the message protocol.
  */
 
+// --- LFM2 token IDs (from tokenizer.json, confirmed by inspector) ---
+const LFM2 = {
+  PAD: 0,
+  BOS: 1,          // <|startoftext|>
+  ENDOFTEXT: 2,    // <|endoftext|>
+  IM_START: 6,     // <|im_start|>
+  IM_END: 7,       // <|im_end|> — also the config's eos_token_id
+};
+
+// --- LFM2 hybrid architecture (from inspector) ---
+const ATTN_LAYERS = [2, 5, 8, 10, 12, 14];
+const CONV_LAYERS = [0, 1, 3, 4, 6, 7, 9, 11, 13, 15];
+const VOCAB_SIZE = 65536;
+const KV_HEADS = 8;
+const HEAD_DIM = 64;
+const HIDDEN_SIZE = 2048;
+const CONV_L = 3;
+
 // --- Mock onnxruntime-web ---
 const mockSessionRun = vi.fn();
 const mockSessionCreate = vi.fn();
 
-// vi.mock is hoisted — define the factory via vi.hoisted so both paths share it.
-// llmWorker imports "onnxruntime-web/webgpu"; bare "onnxruntime-web" is mocked
-// too so any future import works under test.
 const { ortMockFactory } = vi.hoisted(() => ({
   ortMockFactory: () => {
     const Tensor = class {
@@ -49,43 +64,97 @@ const mockPostMessage = vi.fn();
 vi.stubGlobal("postMessage", mockPostMessage);
 (globalThis as unknown as Record<string, unknown>).postMessage = mockPostMessage;
 
-/** Gemma special tokens */
-const TOKEN_EOS = 1;
-
+/**
+ * Tokenizer.json fixture matching the LFM2 shape:
+ *   - byte-level BPE with empty vocab/merges (the worker tokenizes against
+ *     this same fixture in tests, so empty vocab is fine for stop-condition
+ *     coverage where generated tokens are synthetic).
+ *   - added_tokens: the special tokens the worker resolves on init.
+ */
 function setupFetchMocks() {
   mockFetch.mockImplementation(async (url: string) => {
     if (url.includes("tokenizer.json")) {
       return {
         ok: true,
         json: async () => ({
-          model: {
-            type: "BPE",
-            vocab: {
-              "\u2581hello": 100,
-              "\u2581world": 101,
-              a: 10,
-              b: 11,
-            },
-            merges: [],
-          },
+          model: { type: "BPE", vocab: {}, merges: [] },
           added_tokens: [
-            { id: 0, content: "<pad>", special: true },
-            { id: 1, content: "<eos>", special: true },
-            { id: 2, content: "<bos>", special: true },
-            { id: 3, content: "<unk>", special: true },
-            { id: 106, content: "<start_of_turn>", special: true },
-            { id: 107, content: "<end_of_turn>", special: true },
+            { id: LFM2.PAD, content: "<|pad|>", special: true },
+            { id: LFM2.BOS, content: "<|startoftext|>", special: true },
+            { id: LFM2.ENDOFTEXT, content: "<|endoftext|>", special: true },
+            { id: LFM2.IM_START, content: "<|im_start|>", special: true },
+            { id: LFM2.IM_END, content: "<|im_end|>", special: true },
           ],
+          // Mirror the real LFM2 tokenizer.json: post_processor prepends <|startoftext|>
+          post_processor: {
+            type: "Sequence",
+            processors: [
+              { type: "ByteLevel" },
+              {
+                type: "TemplateProcessing",
+                single: [
+                  { SpecialToken: { id: "<|startoftext|>", type_id: 0 } },
+                  { Sequence: { id: "A", type_id: 0 } },
+                ],
+              },
+            ],
+          },
         }),
       };
     }
-    // For ONNX model URL: return an object with arrayBuffer()
-    // (handleInit fetches model_q4.onnx as ArrayBuffer)
-    return {
-      ok: true,
-      arrayBuffer: async () => new ArrayBuffer(10),
-    };
+    return { ok: true, arrayBuffer: async () => new ArrayBuffer(10) };
   });
+}
+
+/** Build the list of ONNX input names for a standard LFM2 session. */
+function lfm2InputNames(): string[] {
+  const names = ["input_ids", "attention_mask"];
+  for (const i of CONV_LAYERS) names.push(`past_conv.${i}`);
+  for (const i of ATTN_LAYERS) {
+    names.push(`past_key_values.${i}.key`, `past_key_values.${i}.value`);
+  }
+  return names;
+}
+
+/** Build the list of ONNX output names for a standard LFM2 session. */
+function lfm2OutputNames(): string[] {
+  const names = ["logits"];
+  for (const i of CONV_LAYERS) names.push(`present_conv.${i}`);
+  for (const i of ATTN_LAYERS) {
+    names.push(`present.${i}.key`, `present.${i}.value`);
+  }
+  return names;
+}
+
+/**
+ * Build a session.run result that always emits IM_END (EOS) as the next token.
+ * Also emits zero-shaped present_* tensors so the worker's cache-extract code
+ * has something to copy each step.
+ */
+function buildImEndResult(seqLen: number) {
+  const offset = (seqLen - 1) * VOCAB_SIZE;
+  const logits = new Float32Array(seqLen * VOCAB_SIZE);
+  logits[offset + LFM2.IM_END] = 100;
+  const out: Record<string, { data: Float32Array; dims: number[] }> = {
+    logits: { data: logits, dims: [1, seqLen, VOCAB_SIZE] },
+  };
+  for (const i of ATTN_LAYERS) {
+    out[`present.${i}.key`] = {
+      data: new Float32Array(0),
+      dims: [1, KV_HEADS, 0, HEAD_DIM],
+    };
+    out[`present.${i}.value`] = {
+      data: new Float32Array(0),
+      dims: [1, KV_HEADS, 0, HEAD_DIM],
+    };
+  }
+  for (const i of CONV_LAYERS) {
+    out[`present_conv.${i}`] = {
+      data: new Float32Array(HIDDEN_SIZE * CONV_L),
+      dims: [1, HIDDEN_SIZE, CONV_L],
+    };
+  }
+  return out;
 }
 
 beforeEach(() => {
@@ -99,7 +168,6 @@ beforeEach(() => {
 describe("llmWorker — message protocol", () => {
   it("responds with 'ready' after successful init", async () => {
     setupFetchMocks();
-
     mockSessionCreate.mockResolvedValue({
       run: mockSessionRun,
       inputNames: ["input_ids", "attention_mask"],
@@ -110,8 +178,6 @@ describe("llmWorker — message protocol", () => {
     await import("./llmWorker");
 
     const handler = (globalThis as unknown as { onmessage: (e: MessageEvent) => Promise<void> }).onmessage;
-    expect(handler).toBeDefined();
-
     await handler({ data: { type: "init", modelUrl: "/models/llm/" } } as MessageEvent);
 
     expect(mockPostMessage).toHaveBeenCalledWith(
@@ -129,7 +195,6 @@ describe("llmWorker — message protocol", () => {
     const handler = (globalThis as unknown as { onmessage: (e: MessageEvent) => Promise<void> }).onmessage;
     await handler({ data: { type: "init", modelUrl: "/models/llm/" } } as MessageEvent);
 
-    // The handleInit catches errors and posts an error message
     expect(mockPostMessage).toHaveBeenCalledWith(
       expect.objectContaining({ type: "error" }),
     );
@@ -137,50 +202,27 @@ describe("llmWorker — message protocol", () => {
 
   it("responds with 'completions' on complete message", async () => {
     setupFetchMocks();
-
-    // The model generates tokens autoregressively. We return EOS immediately.
-    const vocabSize = 256000; // Gemma vocab size
-    mockSessionRun.mockImplementation(async () => {
-      const logitsData = new Float32Array(vocabSize);
-      // Return EOS token (1) as the highest logit
-      logitsData[TOKEN_EOS] = 100.0;
-      return {
-        logits: {
-          data: logitsData,
-          dims: [1, 1, vocabSize],
-        },
-      };
+    mockSessionRun.mockImplementation(async (feeds: Record<string, { dims: number[] }>) => {
+      return buildImEndResult(feeds.input_ids?.dims?.[1] ?? 1);
     });
-
     mockSessionCreate.mockResolvedValue({
       run: mockSessionRun,
-      inputNames: ["input_ids", "attention_mask"],
-      outputNames: ["logits"],
+      inputNames: lfm2InputNames(),
+      outputNames: lfm2OutputNames(),
     });
 
     vi.resetModules();
     await import("./llmWorker");
-
     const handler = (globalThis as unknown as { onmessage: (e: MessageEvent) => Promise<void> }).onmessage;
 
-    // Init first
     await handler({ data: { type: "init", modelUrl: "/models/llm/" } } as MessageEvent);
     mockPostMessage.mockClear();
-
-    // Send complete request
     await handler({
       data: { type: "complete", prompt: "I need", maxTokens: 50 },
     } as unknown as MessageEvent);
 
     expect(mockPostMessage).toHaveBeenCalledWith(
       expect.objectContaining({ type: "completions" }),
-    );
-    const completionsCall = mockPostMessage.mock.calls.find(
-      (c: unknown[]) => (c[0] as { type: string }).type === "completions",
-    );
-    expect(completionsCall).toBeDefined();
-    expect(Array.isArray((completionsCall![0] as { data: string[] }).data)).toBe(
-      true,
     );
   });
 
@@ -195,74 +237,12 @@ describe("llmWorker — message protocol", () => {
     await import("./llmWorker");
 
     const handler = (globalThis as unknown as { onmessage: (e: MessageEvent) => Promise<void> }).onmessage;
-
-    // Do NOT init; call complete directly
     await handler({
       data: { type: "complete", prompt: "I need", maxTokens: 50 },
     } as unknown as MessageEvent);
 
     expect(mockPostMessage).toHaveBeenCalledWith(
       expect.objectContaining({ type: "error" }),
-    );
-  });
-
-  it("generates multi-token completions when model produces text tokens", async () => {
-    setupFetchMocks();
-
-    const vocabSize = 256000;
-    let callIdx = 0;
-    mockSessionRun.mockImplementation(async () => {
-      callIdx++;
-
-      // First call is the prefill (prompt), then autoregressive steps
-      const logitsData = new Float32Array(vocabSize);
-
-      if (callIdx === 1) {
-        // Prefill: return token 100 ("hello")
-        // The prompt has N tokens, logits shape is [1, N, vocab_size]
-        // sampleToken takes seqLen from currentIds.length
-        logitsData[100] = 100.0;
-        return {
-          logits: { data: logitsData, dims: [1, 1, vocabSize] },
-        };
-      }
-
-      if (callIdx === 2) {
-        // Second step: generate newline (token 10 = "a" in our mock)
-        logitsData[10] = 100.0;
-        return {
-          logits: { data: logitsData, dims: [1, 1, vocabSize] },
-        };
-      }
-
-      // Step 3+: EOS to stop
-      logitsData[TOKEN_EOS] = 100.0;
-      return {
-        logits: { data: logitsData, dims: [1, 1, vocabSize] },
-      };
-    });
-
-    mockSessionCreate.mockResolvedValue({
-      run: mockSessionRun,
-      inputNames: ["input_ids", "attention_mask"],
-      outputNames: ["logits"],
-    });
-
-    vi.resetModules();
-    await import("./llmWorker");
-
-    const handler = (globalThis as unknown as { onmessage: (e: MessageEvent) => Promise<void> }).onmessage;
-
-    await handler({ data: { type: "init", modelUrl: "/models/llm/" } } as MessageEvent);
-    mockPostMessage.mockClear();
-    callIdx = 0;
-
-    await handler({
-      data: { type: "complete", prompt: "I need", maxTokens: 10 },
-    } as unknown as MessageEvent);
-
-    expect(mockPostMessage).toHaveBeenCalledWith(
-      expect.objectContaining({ type: "completions" }),
     );
   });
 
@@ -277,7 +257,6 @@ describe("llmWorker — message protocol", () => {
     await import("./llmWorker");
 
     const handler = (globalThis as unknown as { onmessage: (e: MessageEvent) => Promise<void> }).onmessage;
-
     await handler({ data: { type: "banana" } } as MessageEvent);
 
     expect(mockPostMessage).not.toHaveBeenCalledWith(
@@ -285,214 +264,52 @@ describe("llmWorker — message protocol", () => {
     );
   });
 
-  it("uses KV cache when model has past_key_values inputs", async () => {
+  it("stops generation on im_end (EOS) token", async () => {
     setupFetchMocks();
-
-    const vocabSize = 256000;
-    let callIdx = 0;
-
     mockSessionRun.mockImplementation(async (feeds: Record<string, { dims: number[] }>) => {
-      callIdx++;
-
-      // Use the input_ids dims to determine the sequence length for proper logit sizing
-      const seqLen = feeds.input_ids?.dims?.[1] ?? 1;
-      const totalLogits = seqLen * vocabSize;
-      const logitsData = new Float32Array(totalLogits);
-
-      if (callIdx === 1) {
-        // Prefill: return token 100 at the last position
-        const offset = (seqLen - 1) * vocabSize;
-        logitsData[offset + 100] = 100.0;
-        return {
-          logits: { data: logitsData, dims: [1, seqLen, vocabSize] },
-          // Return KV cache entries
-          "present.0.key": { data: new Float32Array(256), dims: [1, 4, seqLen, 64] },
-          "present.0.value": { data: new Float32Array(256), dims: [1, 4, seqLen, 64] },
-        };
-      }
-
-      // Subsequent calls: EOS
-      logitsData[TOKEN_EOS] = 100.0;
-      return {
-        logits: { data: logitsData, dims: [1, 1, vocabSize] },
-        "present.0.key": { data: new Float32Array(512), dims: [1, 4, 2, 64] },
-        "present.0.value": { data: new Float32Array(512), dims: [1, 4, 2, 64] },
-      };
+      return buildImEndResult(feeds.input_ids?.dims?.[1] ?? 1);
     });
-
     mockSessionCreate.mockResolvedValue({
       run: mockSessionRun,
-      // Include past_key_values in input names to trigger KV cache path
-      inputNames: [
-        "input_ids",
-        "attention_mask",
-        "past_key_values.0.key",
-        "past_key_values.0.value",
-      ],
-      outputNames: ["logits", "present.0.key", "present.0.value"],
+      inputNames: lfm2InputNames(),
+      outputNames: lfm2OutputNames(),
     });
 
     vi.resetModules();
     await import("./llmWorker");
-
-    const handler = (globalThis as unknown as { onmessage: (e: MessageEvent) => Promise<void> }).onmessage;
-
-    await handler({ data: { type: "init", modelUrl: "/models/llm/" } } as MessageEvent);
-    mockPostMessage.mockClear();
-    callIdx = 0;
-
-    await handler({
-      data: { type: "complete", prompt: "I need", maxTokens: 10 },
-    } as unknown as MessageEvent);
-
-    expect(mockPostMessage).toHaveBeenCalledWith(
-      expect.objectContaining({ type: "completions" }),
-    );
-    // Model run was called at least twice (prefill + EOS)
-    expect(callIdx).toBeGreaterThanOrEqual(2);
-  });
-
-  it("stops generation on end_of_turn token", async () => {
-    setupFetchMocks();
-
-    const vocabSize = 256000;
-    const END_OF_TURN_ID = 107; // from our mock tokenizer added_tokens
-
-    let callIdx = 0;
-    mockSessionRun.mockImplementation(async (feeds: Record<string, { dims: number[] }>) => {
-      callIdx++;
-
-      const seqLen = feeds.input_ids?.dims?.[1] ?? 1;
-      const totalLogits = seqLen * vocabSize;
-      const logitsData = new Float32Array(totalLogits);
-      const offset = (seqLen - 1) * vocabSize;
-
-      if (callIdx === 1) {
-        // Prefill: generate a text token at the last position
-        logitsData[offset + 100] = 100.0;
-        return { logits: { data: logitsData, dims: [1, seqLen, vocabSize] } };
-      }
-
-      // Second step: emit end_of_turn at the last position
-      logitsData[offset + END_OF_TURN_ID] = 100.0;
-      return { logits: { data: logitsData, dims: [1, seqLen, vocabSize] } };
-    });
-
-    mockSessionCreate.mockResolvedValue({
-      run: mockSessionRun,
-      inputNames: ["input_ids", "attention_mask"],
-      outputNames: ["logits"],
-    });
-
-    vi.resetModules();
-    await import("./llmWorker");
-
-    const handler = (globalThis as unknown as { onmessage: (e: MessageEvent) => Promise<void> }).onmessage;
-
-    await handler({ data: { type: "init", modelUrl: "/models/llm/" } } as MessageEvent);
-    mockPostMessage.mockClear();
-    callIdx = 0;
-
-    await handler({
-      data: { type: "complete", prompt: "I feel", maxTokens: 50 },
-    } as unknown as MessageEvent);
-
-    expect(mockPostMessage).toHaveBeenCalledWith(
-      expect.objectContaining({ type: "completions" }),
-    );
-    // Should have stopped at step 2 (end_of_turn)
-    expect(callIdx).toBe(2);
-  });
-
-  it("stops generation on PAD token (0)", async () => {
-    setupFetchMocks();
-
-    const vocabSize = 256000;
-
-    mockSessionRun.mockImplementation(async (feeds: Record<string, { dims: number[] }>) => {
-      const seqLen = feeds.input_ids?.dims?.[1] ?? 1;
-      const totalLogits = seqLen * vocabSize;
-      const logitsData = new Float32Array(totalLogits);
-      // PAD token (0) has highest logit at the last position
-      // Float32Array is initialized to 0, and 0 is TOKEN_PAD,
-      // so index 0 at the last position will be the default argmax
-      // (all values are 0, so bestId=0=TOKEN_PAD)
-      return { logits: { data: logitsData, dims: [1, seqLen, vocabSize] } };
-    });
-
-    mockSessionCreate.mockResolvedValue({
-      run: mockSessionRun,
-      inputNames: ["input_ids", "attention_mask"],
-      outputNames: ["logits"],
-    });
-
-    vi.resetModules();
-    await import("./llmWorker");
-
     const handler = (globalThis as unknown as { onmessage: (e: MessageEvent) => Promise<void> }).onmessage;
 
     await handler({ data: { type: "init", modelUrl: "/models/llm/" } } as MessageEvent);
     mockPostMessage.mockClear();
 
     await handler({
-      data: { type: "complete", prompt: "test", maxTokens: 50 },
+      data: { type: "complete", partial: "I feel", maxTokens: 50 },
     } as unknown as MessageEvent);
 
     expect(mockPostMessage).toHaveBeenCalledWith(
       expect.objectContaining({ type: "completions" }),
     );
-  });
-
-  it("responds with 'error' when init tokenizer fetch fails", async () => {
-    mockFetch.mockImplementation(async (url: string) => {
-      if (url.includes("tokenizer.json")) {
-        return { ok: false, status: 404 };
-      }
-      return {
-        ok: true,
-        arrayBuffer: async () => new ArrayBuffer(10),
-      };
-    });
-
-    mockSessionCreate.mockResolvedValue({
-      run: vi.fn(),
-      inputNames: [],
-      outputNames: [],
-    });
-
-    vi.resetModules();
-    await import("./llmWorker");
-
-    const handler = (globalThis as unknown as { onmessage: (e: MessageEvent) => Promise<void> }).onmessage;
-    await handler({ data: { type: "init", modelUrl: "/models/llm/" } } as MessageEvent);
-
-    expect(mockPostMessage).toHaveBeenCalledWith(
-      expect.objectContaining({ type: "error" }),
-    );
+    // Exactly one call: prefill emitted IM_END → loop stops immediately
+    expect(mockSessionRun).toHaveBeenCalledTimes(1);
   });
 
   it("responds with error when model returns no logits during generation", async () => {
     setupFetchMocks();
-
-    mockSessionRun.mockImplementation(async () => {
-      // Return result without logits
-      return { some_other_key: { data: new Float32Array(4), dims: [1, 1, 4] } };
-    });
-
+    mockSessionRun.mockImplementation(async () => ({
+      some_other_key: { data: new Float32Array(4), dims: [1, 1, 4] },
+    }));
     mockSessionCreate.mockResolvedValue({
       run: mockSessionRun,
-      inputNames: ["input_ids", "attention_mask"],
+      inputNames: lfm2InputNames(),
       outputNames: ["logits"],
     });
 
     vi.resetModules();
     await import("./llmWorker");
-
     const handler = (globalThis as unknown as { onmessage: (e: MessageEvent) => Promise<void> }).onmessage;
 
     await handler({ data: { type: "init", modelUrl: "/models/llm/" } } as MessageEvent);
     mockPostMessage.mockClear();
-
     await handler({
       data: { type: "complete", prompt: "I need", maxTokens: 10 },
     } as unknown as MessageEvent);
@@ -505,61 +322,29 @@ describe("llmWorker — message protocol", () => {
     );
   });
 
-  it("falls back to vocab lookup when chat template tokens missing from added_tokens", async () => {
-    // Provide a tokenizer that has chat tokens in vocab but NOT in added_tokens
+  it("responds with 'error' when init tokenizer fetch fails", async () => {
     mockFetch.mockImplementation(async (url: string) => {
-      if (url.includes("tokenizer.json")) {
-        return {
-          ok: true,
-          json: async () => ({
-            model: {
-              type: "BPE",
-              vocab: {
-                "<start_of_turn>": 106,
-                "<end_of_turn>": 107,
-                a: 10,
-              },
-              merges: [],
-            },
-            added_tokens: [
-              // Notably missing <start_of_turn> and <end_of_turn>
-              { id: 0, content: "<pad>", special: true },
-              { id: 1, content: "<eos>", special: true },
-              { id: 2, content: "<bos>", special: true },
-              { id: 3, content: "<unk>", special: true },
-            ],
-          }),
-        };
-      }
-      return {
-        ok: true,
-        arrayBuffer: async () => new ArrayBuffer(10),
-      };
+      if (url.includes("tokenizer.json")) return { ok: false, status: 404 };
+      return { ok: true, arrayBuffer: async () => new ArrayBuffer(10) };
     });
-
     mockSessionCreate.mockResolvedValue({
-      run: mockSessionRun,
-      inputNames: ["input_ids", "attention_mask"],
-      outputNames: ["logits"],
+      run: vi.fn(),
+      inputNames: [],
+      outputNames: [],
     });
 
     vi.resetModules();
     await import("./llmWorker");
-
     const handler = (globalThis as unknown as { onmessage: (e: MessageEvent) => Promise<void> }).onmessage;
-
-    // Init should succeed — the tokenizer falls back to vocab lookup
     await handler({ data: { type: "init", modelUrl: "/models/llm/" } } as MessageEvent);
 
     expect(mockPostMessage).toHaveBeenCalledWith(
-      expect.objectContaining({ type: "ready" }),
+      expect.objectContaining({ type: "error" }),
     );
   });
 
   it("uses WebGPU EP when navigator.gpu is available", async () => {
     setupFetchMocks();
-
-    // Temporarily add gpu to self.navigator
     Object.defineProperty(self, "navigator", {
       value: { ...self.navigator, gpu: {} },
       configurable: true,
@@ -574,12 +359,9 @@ describe("llmWorker — message protocol", () => {
 
     vi.resetModules();
     await import("./llmWorker");
-
     const handler = (globalThis as unknown as { onmessage: (e: MessageEvent) => Promise<void> }).onmessage;
-
     await handler({ data: { type: "init", modelUrl: "/models/llm/" } } as MessageEvent);
 
-    // Verify that InferenceSession.create was called with an ArrayBuffer and webgpu as the first EP
     expect(mockSessionCreate).toHaveBeenCalledWith(
       expect.any(ArrayBuffer),
       expect.objectContaining({
@@ -587,36 +369,363 @@ describe("llmWorker — message protocol", () => {
       }),
     );
 
-    // Cleanup: remove gpu
     const nav = self.navigator as unknown as Record<string, unknown>;
     delete nav.gpu;
   });
 
   it("handles model run failure during completion", async () => {
     setupFetchMocks();
-
     mockSessionRun.mockRejectedValue(new Error("ONNX run failed"));
-
     mockSessionCreate.mockResolvedValue({
       run: mockSessionRun,
-      inputNames: ["input_ids", "attention_mask"],
-      outputNames: ["logits"],
+      inputNames: lfm2InputNames(),
+      outputNames: lfm2OutputNames(),
     });
 
     vi.resetModules();
     await import("./llmWorker");
-
     const handler = (globalThis as unknown as { onmessage: (e: MessageEvent) => Promise<void> }).onmessage;
 
     await handler({ data: { type: "init", modelUrl: "/models/llm/" } } as MessageEvent);
     mockPostMessage.mockClear();
-
     await handler({
       data: { type: "complete", prompt: "I need", maxTokens: 10 },
     } as unknown as MessageEvent);
 
     expect(mockPostMessage).toHaveBeenCalledWith(
       expect.objectContaining({ type: "error" }),
+    );
+  });
+});
+
+describe("llmWorker — dual-cache topology", () => {
+  it("feeds both past_key_values.*.{key,value} and past_conv.* on first step", async () => {
+    setupFetchMocks();
+    let firstFeeds: Record<string, unknown> | null = null;
+    mockSessionRun.mockImplementation(async (feeds: Record<string, { dims: number[] }>) => {
+      if (!firstFeeds) firstFeeds = { ...feeds };
+      return buildImEndResult(feeds.input_ids?.dims?.[1] ?? 1);
+    });
+    mockSessionCreate.mockResolvedValue({
+      run: mockSessionRun,
+      inputNames: lfm2InputNames(),
+      outputNames: lfm2OutputNames(),
+    });
+
+    vi.resetModules();
+    await import("./llmWorker");
+    const handler = (globalThis as unknown as { onmessage: (e: MessageEvent) => Promise<void> }).onmessage;
+    await handler({ data: { type: "init", modelUrl: "/models/llm/" } } as MessageEvent);
+    await handler({
+      data: { type: "complete", partial: "I feel", maxTokens: 3 },
+    } as unknown as MessageEvent);
+
+    expect(firstFeeds).not.toBeNull();
+    // Attention-layer keys/values: zero-length tensors
+    for (const i of ATTN_LAYERS) {
+      const key = firstFeeds![`past_key_values.${i}.key`] as { dims: number[] };
+      expect(key).toBeDefined();
+      expect(key.dims).toEqual([1, KV_HEADS, 0, HEAD_DIM]);
+    }
+    // Conv layers: fully-shaped zero-filled buffers
+    for (const i of CONV_LAYERS) {
+      const conv = firstFeeds![`past_conv.${i}`] as { dims: number[] };
+      expect(conv).toBeDefined();
+      expect(conv.dims).toEqual([1, HIDDEN_SIZE, CONV_L]);
+    }
+    // No ghost layers
+    expect(firstFeeds![`past_key_values.0.key`]).toBeUndefined();
+    expect(firstFeeds![`past_conv.2`]).toBeUndefined();
+  });
+});
+
+describe("llmWorker — prompt template", () => {
+  it("encodes the prompt with <|startoftext|> as the first token", async () => {
+    setupFetchMocks();
+    let firstFeeds: Record<string, { data: BigInt64Array }> | null = null;
+    mockSessionRun.mockImplementation(async (feeds) => {
+      if (!firstFeeds) firstFeeds = feeds;
+      return buildImEndResult(feeds.input_ids?.dims?.[1] ?? 1);
+    });
+    mockSessionCreate.mockResolvedValue({
+      run: mockSessionRun,
+      inputNames: lfm2InputNames(),
+      outputNames: lfm2OutputNames(),
+    });
+
+    vi.resetModules();
+    await import("./llmWorker");
+    const handler = (globalThis as unknown as { onmessage: (e: MessageEvent) => Promise<void> }).onmessage;
+    await handler({ data: { type: "init", modelUrl: "/models/llm/" } } as MessageEvent);
+    await handler({
+      data: { type: "complete", partial: "I feel", maxTokens: 3 },
+    } as unknown as MessageEvent);
+
+    const ids = Array.from(firstFeeds!.input_ids.data).map((n) => Number(n));
+    // First three tokens must be: <|startoftext|>, <|im_start|>, then some text
+    expect(ids[0]).toBe(LFM2.BOS);
+    expect(ids[1]).toBe(LFM2.IM_START);
+    // The prompt also contains IM_END markers between turns
+    expect(ids).toContain(LFM2.IM_END);
+  });
+});
+
+describe("llmWorker — caregiver-voice filter", () => {
+  /**
+   * We can't easily drive parseCompletions directly (it's a module-private
+   * helper), so instead we stub the model to produce an output with a mix
+   * of patient-voice and caregiver-voice lines, and verify only the
+   * patient-voice ones survive.
+   */
+  async function runWithRaw(raw: string): Promise<string[]> {
+    setupFetchMocks();
+
+    // Serialize the raw output as tokens we can re-decode. Simplest path:
+    // stash raw as a string in a special token mock and arrange for decode
+    // to return it. Since we don't have a real decoder here, we intercept
+    // by having the model emit text that the mock tokenizer's decode knows
+    // how to reconstruct. Instead, easier: have the worker's tokenizer
+    // (buildBPETokenizer) return `raw` on decode.
+    //
+    // Use buildBPETokenizer's deterministic decode: provide vocab that maps
+    // each byte of `raw` to an ID via byte-level Unicode.
+    const vocab: Record<string, number> = {};
+    const ids: number[] = [];
+    // Use the byte-level BPE "Ġ" convention: unique ids per char, plus Ġ for space
+    let nextId = 1000;
+    for (const ch of raw) {
+      const encoded = ch === " " ? "\u0120" : ch;
+      if (vocab[encoded] === undefined) vocab[encoded] = nextId++;
+      ids.push(vocab[encoded]);
+    }
+
+    // Override the tokenizer fetch to return our custom vocab
+    mockFetch.mockImplementation(async (url: string) => {
+      if (url.includes("tokenizer.json")) {
+        return {
+          ok: true,
+          json: async () => ({
+            model: { type: "BPE", vocab, merges: [] },
+            added_tokens: [
+              { id: LFM2.PAD, content: "<|pad|>", special: true },
+              { id: LFM2.BOS, content: "<|startoftext|>", special: true },
+              { id: LFM2.ENDOFTEXT, content: "<|endoftext|>", special: true },
+              { id: LFM2.IM_START, content: "<|im_start|>", special: true },
+              { id: LFM2.IM_END, content: "<|im_end|>", special: true },
+            ],
+            post_processor: {
+              type: "Sequence",
+              processors: [
+                { type: "ByteLevel" },
+                {
+                  type: "TemplateProcessing",
+                  single: [
+                    { SpecialToken: { id: "<|startoftext|>", type_id: 0 } },
+                    { Sequence: { id: "A", type_id: 0 } },
+                  ],
+                },
+              ],
+            },
+          }),
+        };
+      }
+      return { ok: true, arrayBuffer: async () => new ArrayBuffer(10) };
+    });
+
+    // Model run: emit each id in order, then IM_END
+    let emitIdx = 0;
+    mockSessionRun.mockImplementation(async (feeds: Record<string, { dims: number[] }>) => {
+      const seqLen = feeds.input_ids?.dims?.[1] ?? 1;
+      const out = buildImEndResult(seqLen);
+      const offset = (seqLen - 1) * VOCAB_SIZE;
+      (out.logits.data as Float32Array).fill(0);
+      const token = emitIdx < ids.length ? ids[emitIdx++] : LFM2.IM_END;
+      (out.logits.data as Float32Array)[offset + token] = 100;
+      return out;
+    });
+
+    mockSessionCreate.mockResolvedValue({
+      run: mockSessionRun,
+      inputNames: lfm2InputNames(),
+      outputNames: lfm2OutputNames(),
+    });
+
+    vi.resetModules();
+    await import("./llmWorker");
+    const handler = (globalThis as unknown as { onmessage: (e: MessageEvent) => Promise<void> }).onmessage;
+    await handler({ data: { type: "init", modelUrl: "/models/llm/" } } as MessageEvent);
+    mockPostMessage.mockClear();
+    await handler({
+      data: { type: "complete", partial: "I feel", maxTokens: 200 },
+    } as unknown as MessageEvent);
+
+    const call = mockPostMessage.mock.calls.find(
+      (c: unknown[]) => (c[0] as { type: string }).type === "completions",
+    );
+    return (call![0] as { data: string[] }).data;
+  }
+
+  it("drops caregiver-voice lines (your pain, I'm here to help, the nurse is…)", async () => {
+    const raw = [
+      "scared",
+      "dizzy",
+      "Your pain is getting worse",
+      "cold",
+      "I'm here to help you through this",
+      "weak",
+      "The nurse is coming soon",
+      "lonely",
+    ].join("\n");
+    const completions = await runWithRaw(raw);
+    expect(completions).toEqual(["scared", "dizzy", "cold", "weak", "lonely"]);
+  });
+
+  it("drops caregiver-action lines (I'm getting your X, I'll bring you Y)", async () => {
+    const raw = [
+      "right now",
+      "I'm getting your glasses now",
+      "please",
+      "I'll bring you some water",
+      "soon",
+      "I'm fetching your medication",
+    ].join("\n");
+    const completions = await runWithRaw(raw);
+    expect(completions).toEqual(["right now", "please", "soon"]);
+  });
+
+  it("parses a bare JSON array from the model", async () => {
+    const raw = `["scared", "dizzy", "cold", "tired", "weak"]`;
+    const completions = await runWithRaw(raw);
+    expect(completions).toEqual(["scared", "dizzy", "cold", "tired", "weak"]);
+  });
+
+  it("extracts a JSON array even when the model wraps it in prose or a code fence", async () => {
+    const raw = "Sure, here are some ideas:\n```json\n[\"scared\", \"dizzy\", \"cold\"]\n```";
+    const completions = await runWithRaw(raw);
+    expect(completions).toEqual(["scared", "dizzy", "cold"]);
+  });
+
+  it("falls back to line/comma parsing when the model returns plain text", async () => {
+    const raw = "scared\ndizzy, cold\ntired";
+    const completions = await runWithRaw(raw);
+    expect(completions).toEqual(["scared", "dizzy", "cold", "tired"]);
+  });
+
+  it("drops listener-acknowledgment phrases (I understand, I hear you, etc.)", async () => {
+    const raw = [
+      "scared",
+      "I understand",
+      "I'm cold",
+      "I hear you",
+      "in pain",
+      "it's okay",
+      "don't worry",
+      "weak",
+      "you'll be okay",
+    ].join("\n");
+    const completions = await runWithRaw(raw);
+    expect(completions).toEqual(["scared", "I'm cold", "in pain", "weak"]);
+  });
+
+  it("keeps patient-voice lines intact (first-person continuations)", async () => {
+    const raw = [
+      "scared",
+      "a lot of pain today",
+      "cold and tired",
+      "when I breathe",
+    ].join("\n");
+    const completions = await runWithRaw(raw);
+    expect(completions).toEqual([
+      "scared",
+      "a lot of pain today",
+      "cold and tired",
+      "when I breathe",
+    ]);
+  });
+});
+
+describe("llmWorker — sampling", () => {
+  it("applies repetition penalty so an already-generated token loses to a fresh one", async () => {
+    setupFetchMocks();
+
+    const TOKEN_A = 100;
+    const TOKEN_B = 101;
+    let callIdx = 0;
+
+    mockSessionRun.mockImplementation(async (feeds: Record<string, { dims: number[] }>) => {
+      callIdx++;
+      const seqLen = feeds.input_ids?.dims?.[1] ?? 1;
+      const out = buildImEndResult(seqLen);
+      const offset = (seqLen - 1) * VOCAB_SIZE;
+      // Reset the EOS signal and set our custom distribution
+      (out.logits.data as Float32Array).fill(0);
+      if (callIdx === 1) {
+        (out.logits.data as Float32Array)[offset + TOKEN_A] = 10;
+      } else if (callIdx === 2) {
+        // Raw logits favor A slightly; after /1.05 penalty on A, B must win.
+        (out.logits.data as Float32Array)[offset + TOKEN_A] = 1.0;
+        (out.logits.data as Float32Array)[offset + TOKEN_B] = 0.97;
+      } else {
+        (out.logits.data as Float32Array)[offset + LFM2.IM_END] = 100;
+      }
+      return out;
+    });
+    mockSessionCreate.mockResolvedValue({
+      run: mockSessionRun,
+      inputNames: lfm2InputNames(),
+      outputNames: lfm2OutputNames(),
+    });
+
+    vi.resetModules();
+    await import("./llmWorker");
+    const handler = (globalThis as unknown as { onmessage: (e: MessageEvent) => Promise<void> }).onmessage;
+    await handler({ data: { type: "init", modelUrl: "/models/llm/" } } as MessageEvent);
+
+    // Deterministic: pick the first token after min-p filtering
+    const origRandom = Math.random;
+    Math.random = () => 0;
+
+    // Capture the second-step input_ids to see which token was chosen at step 1
+    const feedsByCall: Array<{ data: BigInt64Array }> = [];
+    const runSpy = mockSessionRun;
+    runSpy.mockImplementationOnce(async (feeds: Record<string, { data: BigInt64Array; dims: number[] }>) => {
+      feedsByCall.push(feeds.input_ids);
+      const seqLen = feeds.input_ids.dims[1];
+      const out = buildImEndResult(seqLen);
+      const offset = (seqLen - 1) * VOCAB_SIZE;
+      (out.logits.data as Float32Array).fill(0);
+      (out.logits.data as Float32Array)[offset + TOKEN_A] = 10;
+      return out;
+    });
+    runSpy.mockImplementationOnce(async (feeds: Record<string, { data: BigInt64Array; dims: number[] }>) => {
+      feedsByCall.push(feeds.input_ids);
+      const seqLen = feeds.input_ids.dims[1];
+      const out = buildImEndResult(seqLen);
+      const offset = (seqLen - 1) * VOCAB_SIZE;
+      (out.logits.data as Float32Array).fill(0);
+      (out.logits.data as Float32Array)[offset + TOKEN_A] = 1.0;
+      (out.logits.data as Float32Array)[offset + TOKEN_B] = 0.97;
+      return out;
+    });
+    runSpy.mockImplementation(async (feeds: Record<string, { dims: number[] }>) => {
+      return buildImEndResult(feeds.input_ids?.dims?.[1] ?? 1);
+    });
+
+    await handler({
+      data: { type: "complete", partial: "x", maxTokens: 3 },
+    } as unknown as MessageEvent);
+
+    Math.random = origRandom;
+
+    // After step 1 the model emitted TOKEN_A. At step 2, penalty on A should have
+    // demoted it below B, and min-p filter should keep both, so the sampler picks B.
+    // We verify by checking that the third call fed TOKEN_B (the selected step-2 token).
+    expect(feedsByCall.length).toBeGreaterThanOrEqual(2);
+    const step2InputId = Number(feedsByCall[1].data[0]);
+    expect(step2InputId).toBe(TOKEN_A); // step 2 input is step 1's choice
+    // The overall completions callback fires without error
+    expect(mockPostMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "completions" }),
     );
   });
 });

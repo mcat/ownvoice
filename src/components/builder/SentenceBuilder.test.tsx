@@ -56,7 +56,7 @@ describe("SentenceBuilder", () => {
     expect(screen.getByRole("button", { name: "Undo last word" })).toBeInTheDocument();
   });
 
-  it("Speak button calls onSend with the text", async () => {
+  it("Speak button polishes the text and calls onSend with the result", async () => {
     const onSend = vi.fn();
     render(<SentenceBuilder {...baseProps} onSend={onSend} />);
     await waitFor(() => {
@@ -65,17 +65,18 @@ describe("SentenceBuilder", () => {
     fireEvent.click(screen.getByText("I am"));
 
     fireEvent.click(screen.getByText("Speak"));
-    expect(onSend).toHaveBeenCalledWith("I am");
+    // polishSentence adds a terminal period to declarative sentences.
+    expect(onSend).toHaveBeenCalledWith("I am.");
   });
 
-  it("Speak sends manually typed text", async () => {
+  it("Speak polishes manually typed text (capitalizes and adds punctuation)", async () => {
     const onSend = vi.fn();
     render(<SentenceBuilder {...baseProps} onSend={onSend} />);
 
     const input = screen.getByRole("textbox", { name: "Your message" });
-    fireEvent.input(input, { target: { value: "Hello nurse" } });
+    fireEvent.input(input, { target: { value: "hello nurse" } });
     fireEvent.click(screen.getByText("Speak"));
-    expect(onSend).toHaveBeenCalledWith("Hello nurse");
+    expect(onSend).toHaveBeenCalledWith("Hello nurse.");
   });
 
   it("undo removes the last word", async () => {

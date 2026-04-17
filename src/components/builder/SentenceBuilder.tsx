@@ -4,6 +4,7 @@ import {
   getContextualSuggestions,
   getLLMSuggestions,
 } from "../../data/suggestion-trees";
+import { polishSentence } from "../../utils/polishSentence";
 import type { Message } from "../../types";
 import type { ThemeTokens, ThemeName } from "../../theme/tokens";
 
@@ -25,6 +26,9 @@ export function SentenceBuilder({
   const [llmSuggestions, setLlmSuggestions] = useState<string[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [loadingLlm, setLoadingLlm] = useState(false);
+  // Bumped when the user taps the AI refresh button — forces the LLM
+  // effect below to refire and produce a new sampled set.
+  const [llmRefreshNonce, setLlmRefreshNonce] = useState(0);
   const requestIdRef = useRef(0);
   const llmRequestIdRef = useRef(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -57,7 +61,11 @@ export function SentenceBuilder({
     };
   }, [key, messages, hour]);
 
-  // Fetch LLM suggestions in parallel — fires on every text change
+  // Fetch LLM suggestions after a short debounce so rapid typing doesn't
+  // flood the worker queue (each keystroke would otherwise fire its own
+  // request; 6-letter word = 6 requests stacking up, 3-5s apiece, blowing
+  // past the 8s timeout). Refresh button taps are treated as an immediate
+  // fire by bumping `llmRefreshNonce` and letting the debounce apply.
   useEffect(() => {
     const id = ++llmRequestIdRef.current;
     let cancelled = false;
@@ -69,16 +77,20 @@ export function SentenceBuilder({
     }
 
     setLoadingLlm(true);
-    getLLMSuggestions(key, messages, hour).then((results) => {
-      if (cancelled || llmRequestIdRef.current !== id) return;
-      setLlmSuggestions(results);
-      setLoadingLlm(false);
-    });
+    const debounce = setTimeout(() => {
+      if (cancelled) return;
+      getLLMSuggestions(key, messages, hour).then((results) => {
+        if (cancelled || llmRequestIdRef.current !== id) return;
+        setLlmSuggestions(results);
+        setLoadingLlm(false);
+      });
+    }, 300);
 
     return () => {
       cancelled = true;
+      clearTimeout(debounce);
     };
-  }, [key, messages, hour]);
+  }, [key, messages, hour, llmRefreshNonce]);
 
   function addWord(word: string) {
     setText((prev) => (prev.trim() ? prev.trimEnd() + " " + word : word));
@@ -98,9 +110,9 @@ export function SentenceBuilder({
   }
 
   function handleSpeak() {
-    const trimmed = text.trim();
-    if (!trimmed) return;
-    onSend(trimmed);
+    const polished = polishSentence(text);
+    if (!polished) return;
+    onSend(polished);
     setText("");
   }
 
@@ -225,8 +237,11 @@ export function SentenceBuilder({
         </div>
       )}
 
-      {/* LLM suggestion pills — separate row */}
-      {shownLlm.length > 0 && (
+      {/* LLM suggestion row — header + refresh button are always shown when
+          the user is typing so they can re-sample on demand. Pills appear
+          once the model returns results; an "AI is thinking…" hint fills
+          the pill area while a request is in flight. */}
+      {hasText && (
         <div style={{ marginBottom: 16 }}>
           <div
             style={{
@@ -251,51 +266,89 @@ export function SentenceBuilder({
             >
               AI
             </span>
-          </div>
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap" as const,
-              gap: 8,
-            }}
-          >
-            {shownLlm.map((word) => (
-              <Btn
-                key={`llm-${word}`}
-                onClick={() => addWord(word)}
+            <Btn
+              onClick={() => setLlmRefreshNonce((n) => n + 1)}
+              disabled={loadingLlm}
+              aria-label="Refresh AI suggestions"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 28,
+                height: 28,
+                padding: 0,
+                color: llmAccent,
+                background: "transparent",
+                border: `1px solid ${
+                  theme === "dark"
+                    ? "rgba(167,139,250,0.25)"
+                    : "rgba(124,58,237,0.2)"
+                }`,
+                borderRadius: 8,
+                cursor: loadingLlm ? "not-allowed" : "pointer",
+                opacity: loadingLlm ? 0.5 : 1,
+              }}
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
                 style={{
-                  padding: "10px 16px",
-                  fontSize: 16,
-                  fontWeight: 500,
-                  color: t.text,
-                  background: t.card,
-                  border: `1px solid ${
-                    theme === "dark"
-                      ? "rgba(167,139,250,0.25)"
-                      : "rgba(124,58,237,0.2)"
-                  }`,
-                  borderRadius: 10,
-                  lineHeight: 1.3,
+                  animation: loadingLlm ? "spin 0.9s linear infinite" : "none",
                 }}
               >
-                {word}
-              </Btn>
-            ))}
+                <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+                <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+                <path d="M21 3v5h-5" />
+                <path d="M3 21v-5h5" />
+              </svg>
+            </Btn>
           </div>
-        </div>
-      )}
-
-      {/* LLM loading indicator */}
-      {loadingLlm && shownLlm.length === 0 && hasText && (
-        <div
-          style={{
-            padding: "8px 16px",
-            color: llmAccent,
-            fontSize: 14,
-            marginBottom: 12,
-          }}
-        >
-          AI is thinking...
+          {shownLlm.length > 0 ? (
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap" as const,
+                gap: 8,
+              }}
+            >
+              {shownLlm.map((word) => (
+                <Btn
+                  key={`llm-${word}`}
+                  onClick={() => addWord(word)}
+                  style={{
+                    padding: "10px 16px",
+                    fontSize: 16,
+                    fontWeight: 500,
+                    color: t.text,
+                    background: t.card,
+                    border: `1px solid ${
+                      theme === "dark"
+                        ? "rgba(167,139,250,0.25)"
+                        : "rgba(124,58,237,0.2)"
+                    }`,
+                    borderRadius: 10,
+                    lineHeight: 1.3,
+                  }}
+                >
+                  {word}
+                </Btn>
+              ))}
+            </div>
+          ) : loadingLlm ? (
+            <div style={{ color: llmAccent, fontSize: 14 }}>
+              AI is thinking...
+            </div>
+          ) : (
+            <div style={{ color: t.muted, fontSize: 14 }}>
+              No AI suggestions. Tap refresh to try again.
+            </div>
+          )}
         </div>
       )}
 

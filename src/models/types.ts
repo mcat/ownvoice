@@ -10,12 +10,26 @@ export interface LoadProgress {
   error?: string;
 }
 
+/** A single user/assistant exchange used as few-shot in the LLM prompt. */
+export interface FewShotExample {
+  user: string;
+  assistant: string;
+}
+
 /** Messages sent TO a model worker */
 export type WorkerRequest =
   | { type: "init"; modelUrl: string }
   | { type: "embed"; audio: Float32Array; sampleRate: number }
   | { type: "synthesize"; text: string; embedding: Float32Array }
-  | { type: "complete"; prompt: string; maxTokens: number }
+  | {
+      type: "complete";
+      partial?: string;
+      prompt?: string;
+      context?: string;
+      maxTokens: number;
+      fewShot?: FewShotExample[];
+      requestId?: number;
+    }
   | { type: "transcribe"; audio: Float32Array; sampleRate: number };
 
 /** Messages sent FROM a model worker */
@@ -50,6 +64,24 @@ export const CHATTERBOX_TOKENS = {
 /** Base URLs for model downloads. Dev uses local paths, production uses CDN. */
 export const MODEL_URLS = {
   tts: "/models/chatterbox-turbo/",
-  llm: "/models/gemma-3-1b/",
+  llm: "/models/lfm2-1.2b-instruct/",
   stt: "/models/whisper-small/",
+} as const;
+
+/**
+ * Sampling defaults recommended by the LFM2 model card.
+ * https://huggingface.co/LiquidAI/LFM2-1.2B
+ */
+export const LFM2_SAMPLING = {
+  temperature: 0.3,
+  minP: 0.15,
+  repetitionPenalty: 1.05,
+  topK: 40,
+} as const;
+
+/** Chat-template marker strings in the LFM2 tokenizer. */
+export const LFM2_CHAT_TOKENS = {
+  bos: "<|startoftext|>",
+  turnStart: "<|im_start|>",
+  turnEnd: "<|im_end|>",
 } as const;

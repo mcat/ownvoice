@@ -1,4 +1,5 @@
 import type { Message } from "../types";
+import type { FewShotExample } from "../models/types";
 import { getModelManager } from "../models/modelManager";
 import { getSuggestionTree, t } from "./phraseRegistry";
 
@@ -9,7 +10,7 @@ import { getSuggestionTree, t } from "./phraseRegistry";
  * - These trees handle ~80% of sentence starts
  * - Instant lookup (0ms), no model inference
  * - Clinically reviewable and deterministic
- * - Gemma 3 1B (Layer 2) fires only on cache miss
+ * - LFM2.5-1.2B-Instruct (Layer 2) fires only on cache miss
  *
  * Phrase text is sourced from the central phrase registry.
  */
@@ -319,7 +320,7 @@ export function buildCompletionPrompt(
  * Request completions from the LLM worker with a timeout.
  * Returns an array of completion strings, or [] on timeout/error.
  *
- * Timeout is generous (2s default) because on-device Gemma 3 1B
+ * Timeout is generous (2s default) because on-device LFM2.5-1.2B-Instruct
  * needs time to tokenize, run inference, and decode — especially
  * on the first request when the execution context is cold.
  */
@@ -370,6 +371,231 @@ export function requestLLMCompletions(
  * Passes the partial sentence and context separately to the worker
  * so the model sees the partial cleanly in its completion slot.
  */
+/**
+ * Tree roots used as the trunk for fallback chains when the user's partial
+ * doesn't map onto the tree. Ordered by coverage: "i feel" and "i need"
+ * dominate real patient input, "i am" and "please" fill in the rest.
+ *
+ * Each root must have at least one depth-2 child in BASE_SUGGESTIONS and a
+ * terminal in CHAIN_TERMINALS below — otherwise walkChain won't produce a
+ * useful 3-turn demo.
+ */
+const CHAIN_ROOTS = ["i feel", "i need", "i am", "please"] as const;
+
+/**
+ * Hand-crafted depth-3+ turns appended to the end of a chain walk. The
+ * curated tree only reaches depth 2 ("i feel scared", "i need help"), so
+ * without these the model never sees a demo where the partial is 4-6 words
+ * long — which is exactly the shape real patients type. Each terminal
+ * picks up where its chain's tree walk leaves off and demonstrates short
+ * attach-on-the-end completions.
+ *
+ * Keep these grounded in first-person patient voice; the isCaregiverVoice
+ * filter in llmWorker would drop them post-hoc, but bad demos also pull
+ * the whole distribution off-voice.
+ */
+const CHAIN_TERMINALS: Record<string, FewShotExample> = {
+  "i feel": {
+    user: `Continue: "I feel scared about the procedure"`,
+    assistant: JSON.stringify([
+      "tomorrow",
+      "and I'm alone",
+      "they're planning",
+      "and want to wait",
+    ]),
+  },
+  "i need": {
+    user: `Continue: "I need help breathing"`,
+    assistant: JSON.stringify([
+      "please",
+      "right now",
+      "it's getting worse",
+      "with the oxygen",
+    ]),
+  },
+  "i am": {
+    user: `Continue: "I am in pain and"`,
+    assistant: JSON.stringify([
+      "it's getting worse",
+      "need medication",
+      "can't sleep",
+      "it won't stop",
+    ]),
+  },
+  "please": {
+    user: `Continue: "Please help me up"`,
+    assistant: JSON.stringify([
+      "slowly",
+      "to the bathroom",
+      "I'm very weak",
+      "I need to move",
+    ]),
+  },
+};
+
+/**
+ * Find the shortest prefix of `key` that matches a tree entry. Used to
+ * locate the top of the user's trunk so walkChain can start at depth 1
+ * even when the user's partial is several words deep.
+ */
+function findTopRoot(key: string): string | null {
+  const words = key.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  for (let i = 1; i <= words.length; i++) {
+    const candidate = words.slice(0, i).join(" ");
+    if (BASE_SUGGESTIONS[candidate]) return candidate;
+  }
+  return null;
+}
+
+/**
+ * Walk the suggestion tree DOWNWARD from `rootKey`, emitting one few-shot
+ * turn per tree depth. At each step, pick the first completion whose
+ * leading words form another tree key when appended — this keeps the walk
+ * on a realistic trunk instead of randomly concatenating. When the tree
+ * runs out (typically depth 2), append the hand-crafted depth-3 terminal.
+ *
+ * Result: 2-3 turns demonstrating ONE sentence growing from depth 1 to
+ * depth 3, which is the shape real patient input takes.
+ */
+function walkChain(rootKey: string, maxDepth: number): FewShotExample[] {
+  const turns: FewShotExample[] = [];
+  const seen = new Set<string>();
+  let key = rootKey;
+
+  for (let d = 0; d < maxDepth; d++) {
+    if (seen.has(key)) break;
+    seen.add(key);
+    const completions = BASE_SUGGESTIONS[key];
+    if (!completions || completions.length === 0) break;
+
+    const display = key.charAt(0).toUpperCase() + key.slice(1);
+    turns.push({
+      user: `Continue: "${display}"`,
+      // JSON-array format: the worker's parseCompletions prefers JSON
+      // parsing, so demonstrating it here trains the model to emit the
+      // same shape.
+      assistant: JSON.stringify(completions.slice(0, 6)),
+    });
+
+    // Advance to the next depth: try each completion in order, taking as
+    // many leading words as needed to land on another tree key.
+    let advanced = false;
+    for (const comp of completions) {
+      const normalized = comp.toLowerCase().replace(/[?.,!]+$/, "").trim();
+      const compWords = normalized.split(/\s+/);
+      for (let take = compWords.length; take >= 1; take--) {
+        const candidate = `${key} ${compWords.slice(0, take).join(" ")}`;
+        if (BASE_SUGGESTIONS[candidate] && !seen.has(candidate)) {
+          key = candidate;
+          advanced = true;
+          break;
+        }
+      }
+      if (advanced) break;
+    }
+    if (!advanced) break;
+  }
+
+  const extension = CHAIN_TERMINALS[rootKey];
+  if (extension && turns.length >= 2) turns.push(extension);
+
+  return turns;
+}
+
+/**
+ * Build progressive-chain few-shot examples from the curated tree.
+ *
+ * Instead of demonstrating 5-6 different sentence STARTS (which teaches
+ * the model "completions = opening words"), we demonstrate 2-3 complete
+ * sentences GROWING from depth 1 to depth 3 across consecutive turns.
+ * Real patient sentences are 1-10 words long, so the model needs to see
+ * that completions can attach at any depth — not just the beginning.
+ *
+ * Chain 1 is seeded from the user's trunk (if it maps to a tree root);
+ * Chains 2-3 fill in with other common roots the user hasn't seen yet.
+ * Each chain produces ~3 turns (2 from tree walk + 1 hand-crafted
+ * terminal), so total turn budget is ~6-9.
+ */
+export function buildLLMFewShot(partialKey: string): FewShotExample[] {
+  const chains: FewShotExample[][] = [];
+  const usedRoots = new Set<string>();
+  const MAX_DEPTH_PER_CHAIN = 3;
+  const MAX_CHAINS = 3;
+  const MAX_TURNS = 9;
+
+  // Chain 1: user's actual trunk, when the tree has a root for it.
+  const topRoot = partialKey ? findTopRoot(partialKey) : null;
+  if (topRoot) {
+    const chain = walkChain(topRoot, MAX_DEPTH_PER_CHAIN);
+    if (chain.length > 0) {
+      chains.push(chain);
+      usedRoots.add(topRoot);
+    }
+  }
+
+  // Chains 2-3: default roots, skipping any already in chain 1.
+  for (const root of CHAIN_ROOTS) {
+    if (chains.length >= MAX_CHAINS) break;
+    if (usedRoots.has(root)) continue;
+    const chain = walkChain(root, MAX_DEPTH_PER_CHAIN);
+    if (chain.length > 0) {
+      chains.push(chain);
+      usedRoots.add(root);
+    }
+  }
+
+  return chains.flat().slice(0, MAX_TURNS);
+}
+
+/**
+ * Pull the most recent UNIQUE phrases the patient has actually said, most
+ * recent first. Feeds the LLM a small vocabulary bank so its suggestions
+ * can echo phrasings the patient has used before — a per-session
+ * personalization signal that would otherwise be wasted (the conversation
+ * store already persists this in IndexedDB; we were just ignoring it
+ * past the last 3 messages).
+ *
+ * Guards:
+ *   - Patient-only. Provider messages are what OTHERS say, not vocabulary
+ *     the patient would reuse.
+ *   - Dedup on normalized text so "I'm in pain" / "I'm in pain." collapse.
+ *   - Phrase length cap at 12 words: trims the rare long narration from
+ *     eating into the 1.2B model's prompt budget.
+ */
+export function extractPatientVocabulary(
+  messages: Message[],
+  limit: number,
+): string[] {
+  const seen = new Set<string>();
+  const phrases: string[] = [];
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const m = messages[i];
+    if (m.from !== "patient") continue;
+    const text = m.text.trim();
+    if (!text) continue;
+    const words = text.split(/\s+/);
+    if (words.length > 12) continue;
+    const key = text.toLowerCase().replace(/[.!?]+$/, "").trim();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    phrases.push(text);
+    if (phrases.length >= limit) break;
+  }
+  return phrases;
+}
+
+/**
+ * Monotonically increasing request ID. Each getLLMSuggestions call gets
+ * its own ID, which the worker echoes back on the completion/error reply.
+ * Without this, multiple overlapping calls (rapid typing) would attach
+ * multiple `message` listeners to the worker, each resolving its own
+ * promise on the FIRST completion it saw — even if that completion was
+ * for a different request. The result was every pending promise
+ * resolving with stale data and the latest useEffect picking up
+ * yesterday's answer.
+ */
+let nextLLMRequestId = 1;
+
 export async function getLLMSuggestions(
   partialKey: string,
   recentMessages: Message[],
@@ -397,6 +623,8 @@ export async function getLLMSuggestions(
     ? `${last3.map((m) => `${m.from === "provider" ? "Provider" : "Patient"}: ${m.text}`).join("; ")} (${timeContext})`
     : timeContext;
 
+  const requestId = nextLLMRequestId++;
+
   return new Promise<string[]>((resolve) => {
     const timer = setTimeout(() => {
       cleanup();
@@ -404,7 +632,10 @@ export async function getLLMSuggestions(
     }, 8000);
 
     function onMessage(event: MessageEvent) {
-      const { type, data, message } = event.data;
+      const { type, data, message, requestId: replyId } = event.data;
+      // Only react to the reply matching THIS call — older in-flight
+      // listeners must ignore unrelated completions.
+      if (replyId !== requestId) return;
       if (type === "completions") {
         cleanup();
         resolve(data as string[]);
@@ -425,7 +656,10 @@ export async function getLLMSuggestions(
       type: "complete",
       partial: partialKey,
       context,
+      priorPhrases: extractPatientVocabulary(recentMessages, 8),
       maxTokens: 64,
+      fewShot: buildLLMFewShot(partialKey),
+      requestId,
     });
   });
 }
