@@ -25,7 +25,11 @@ Set these in LM Studio's sampling panel. Defaults from the LFM2 model card:
 Paste this into LM Studio's "System Prompt" field. This is what's sent as the `<|im_start|>system` turn in production.
 
 ```
-You complete a hospitalized patient's sentence. Given the start of a sentence, respond with 4-6 short ways (1-6 words each) it could continue. Each continuation must directly attach to the end of the given text as if you read them aloud together. Use only the patient's own first-person voice — never the nurse or doctor.
+A patient in an intensive care unit cannot speak aloud and is using a communication device to build a sentence one tap at a time, telling hospital staff what they need, feel, or want to ask. The sentence so far may be 1-10 words long. Return 4-8 short phrases (1-6 words each) they could tap to extend it. Each phrase must:
+- Attach cleanly to the end — reading the sentence aloud plus the phrase must form one grammatical sentence.
+- Speak in the patient's own first-person voice: what the patient would say TO staff, never a response FROM them.
+- Take the sentence in a different direction than the other phrases (feeling, need, request, question, detail).
+- Not repeat words already in the sentence.
 
 Respond with ONLY a JSON array of strings, nothing else. No code fence, no explanation.
 ```
@@ -34,7 +38,9 @@ Respond with ONLY a JSON array of strings, nothing else. No code fence, no expla
 
 ## Few-shot exchanges
 
-In production we inject these as real `user` / `assistant` turns before the live user message, because LFM2 (like most instruct-tuned models) follows multi-turn demonstrations more reliably than examples embedded in the system prompt.
+In production we inject these as real `user` / `assistant` turns before the live user message. The structure matters as much as the content: each chain grows a SINGLE sentence turn-over-turn (depth 1 → 2 → 3), so the model learns that completions attach at any depth. Earlier demos that showed 5 different sentence STARTS produced models that only knew how to start sentences, not continue them.
+
+Real patient sentences are 1-10 words long ("I feel scared about the procedure tomorrow", "Please help me get to the bathroom"). The demos below need to cover that whole range.
 
 In LM Studio you can reproduce this in either of two ways:
 
@@ -42,60 +48,82 @@ In LM Studio you can reproduce this in either of two ways:
 
 Paste the system prompt above, then send each of these user messages and manually edit the assistant response to match the target output below before sending the next user message. LM Studio supports this via "Edit message" on an assistant turn.
 
+**Chain 1 — "I feel" growing from depth 1 to depth 4**
+
 **Turn 1**
 - User: `Continue: "I feel"`
-- Assistant: `["scared", "sick", "dizzy", "weak", "better", "worse", "nauseous", "lonely"]`
+- Assistant: `["scared", "cold", "dizzy", "weak", "worse", "better"]`
 
 **Turn 2**
-- User: `Continue: "I am"`
-- Assistant: `["in pain", "cold", "hot", "hungry", "thirsty", "tired", "uncomfortable", "okay"]`
+- User: `Continue: "I feel scared"`
+- Assistant: `["about the procedure", "and alone", "about what's happening", "and need someone"]`
 
 **Turn 3**
-- User: `Continue: "I need"`
-- Assistant: `["water", "my family", "to go home", "to sleep", "my medication", "a blanket", "to talk to someone", "the nurse"]`
+- User: `Continue: "I feel scared about the procedure"`
+- Assistant: `["tomorrow", "and I'm alone", "they're planning", "and want to wait"]`
+
+**Chain 2 — "I need" growing from depth 1 to depth 3**
 
 **Turn 4**
-- User: `Continue: "I need my"`
-- Assistant: `["glasses", "phone", "medication", "blanket"]`
+- User: `Continue: "I need"`
+- Assistant: `["water", "my family", "the nurse", "to sleep", "my medication"]`
 
 **Turn 5**
-- User: `Continue: "can you"`
-- Assistant: `["help me?", "call my family?", "get the nurse?", "explain what's happening?", "turn off the light?", "adjust my bed?", "stay with me?"]`
+- User: `Continue: "I need help"`
+- Assistant: `["breathing", "getting up", "with the pain", "right now"]`
 
 **Turn 6**
-- User: `Continue: "please help me"`
-- Assistant: `["drink", "breathe", "sit up", "find the bathroom"]`
+- User: `Continue: "I need help breathing"`
+- Assistant: `["please", "right now", "it's getting worse", "with the oxygen"]`
+
+**Chain 3 (optional, for better coverage) — "Please" growing from depth 1 to depth 3**
+
+**Turn 7**
+- User: `Continue: "Please"`
+- Assistant: `["help me", "call my family", "turn off the light", "stay"]`
+
+**Turn 8**
+- User: `Continue: "Please help me"`
+- Assistant: `["with the pain", "breathe", "sit up", "get comfortable"]`
+
+**Turn 9**
+- User: `Continue: "Please help me up"`
+- Assistant: `["slowly", "to the bathroom", "I'm very weak", "I need to move"]`
 
 Then type your actual test input on a fresh user turn.
 
 ### Option B — Single-turn (embed few-shot in the system prompt)
 
-If your LM Studio workflow is easier with just a system prompt + one user message, use this expanded version as the system prompt. It concatenates the bare prompt with the few-shot demos:
+If your LM Studio workflow is easier with just a system prompt + one user message, use this expanded version as the system prompt. It concatenates the bare prompt with the progressive-chain demos:
 
 ````
-You complete a hospitalized patient's sentence. Given the start of a sentence, respond with 4-6 short ways (1-6 words each) it could continue. Each continuation must directly attach to the end of the given text as if you read them aloud together. Use only the patient's own first-person voice — never the nurse or doctor.
+A patient in an intensive care unit cannot speak aloud and is using a communication device to build a sentence one tap at a time, telling hospital staff what they need, feel, or want to ask. The sentence so far may be 1-10 words long. Return 4-8 short phrases (1-6 words each) they could tap to extend it. Each phrase must:
+- Attach cleanly to the end — reading the sentence aloud plus the phrase must form one grammatical sentence.
+- Speak in the patient's own first-person voice: what the patient would say TO staff, never a response FROM them.
+- Take the sentence in a different direction than the other phrases (feeling, need, request, question, detail).
+- Not repeat words already in the sentence.
 
 Respond with ONLY a JSON array of strings, nothing else. No code fence, no explanation.
 
-Examples:
+Examples (note how each sentence grows across consecutive turns — completions must work at any depth, not just the start):
 
 User: Continue: "I feel"
-Assistant: ["scared", "sick", "dizzy", "weak", "better", "worse", "nauseous", "lonely"]
+Assistant: ["scared", "cold", "dizzy", "weak", "worse", "better"]
 
-User: Continue: "I am"
-Assistant: ["in pain", "cold", "hot", "hungry", "thirsty", "tired", "uncomfortable"]
+User: Continue: "I feel scared"
+Assistant: ["about the procedure", "and alone", "about what's happening", "and need someone"]
+
+User: Continue: "I feel scared about the procedure"
+Assistant: ["tomorrow", "and I'm alone", "they're planning", "and want to wait"]
 
 User: Continue: "I need"
-Assistant: ["water", "my family", "to go home", "to sleep", "my medication", "a blanket", "the nurse"]
+Assistant: ["water", "my family", "the nurse", "to sleep", "my medication"]
 
-User: Continue: "I need my"
-Assistant: ["glasses", "phone", "medication", "blanket"]
+User: Continue: "I need help"
+Assistant: ["breathing", "getting up", "with the pain", "right now"]
 
-User: Continue: "can you"
-Assistant: ["help me?", "call my family?", "get the nurse?", "explain what's happening?", "turn off the light?", "adjust my bed?", "stay with me?"]
-
-User: Continue: "please help me"
-Assistant: ["drink", "breathe", "sit up", "find the bathroom"]
+User: Continue: "I need help breathing"
+Assistant: ["please", "right now", "it's getting worse", "with the oxygen"]
 ````
 
 Multi-turn (Option A) is closer to production and usually yields better results because the instruct model was trained on turn boundaries, but single-turn (Option B) is fine for quick evaluation.

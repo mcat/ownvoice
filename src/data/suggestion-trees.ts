@@ -372,73 +372,179 @@ export function requestLLMCompletions(
  * so the model sees the partial cleanly in its completion slot.
  */
 /**
- * Anchor keys that should appear in every LLM prompt as diverse structural
- * examples. Chosen to cover short statements, longer partials, requests,
- * and help-phrases — so the model sees how to continue each shape.
+ * Tree roots used as the trunk for fallback chains when the user's partial
+ * doesn't map onto the tree. Ordered by coverage: "i feel" and "i need"
+ * dominate real patient input, "i am" and "please" fill in the rest.
  *
- * All must exist in BASE_SUGGESTIONS or they're silently skipped.
+ * Each root must have at least one depth-2 child in BASE_SUGGESTIONS and a
+ * terminal in CHAIN_TERMINALS below — otherwise walkChain won't produce a
+ * useful 3-turn demo.
  */
-const FEW_SHOT_ANCHOR_KEYS = [
-  "i feel",
-  "i am",
-  "i need",
-  "i need my",
-  "can you",
-  "please help me",
-];
+const CHAIN_ROOTS = ["i feel", "i need", "i am", "please"] as const;
 
 /**
- * Build 4-6 few-shot examples from the curated tree, anchored on the
- * user's current partial:
+ * Hand-crafted depth-3+ turns appended to the end of a chain walk. The
+ * curated tree only reaches depth 2 ("i feel scared", "i need help"), so
+ * without these the model never sees a demo where the partial is 4-6 words
+ * long — which is exactly the shape real patients type. Each terminal
+ * picks up where its chain's tree walk leaves off and demonstrates short
+ * attach-on-the-end completions.
  *
- *   1. Exact match — if the tree has the partial verbatim, use it first.
- *      This is the strongest possible signal: "the right answer IS in the
- *      tree, here's a demonstration of what completions look like for
- *      exactly this input."
- *   2. Ancestors — "i need my glasses" → "i need my" → "i need". Shows
- *      the model that completions can attach to partials at any depth.
- *   3. Structural anchors (FEW_SHOT_ANCHOR_KEYS) — ensure the model
- *      always sees a range of patterns (statement, question, request).
+ * Keep these grounded in first-person patient voice; the isCaregiverVoice
+ * filter in llmWorker would drop them post-hoc, but bad demos also pull
+ * the whole distribution off-voice.
+ */
+const CHAIN_TERMINALS: Record<string, FewShotExample> = {
+  "i feel": {
+    user: `Continue: "I feel scared about the procedure"`,
+    assistant: JSON.stringify([
+      "tomorrow",
+      "and I'm alone",
+      "they're planning",
+      "and want to wait",
+    ]),
+  },
+  "i need": {
+    user: `Continue: "I need help breathing"`,
+    assistant: JSON.stringify([
+      "please",
+      "right now",
+      "it's getting worse",
+      "with the oxygen",
+    ]),
+  },
+  "i am": {
+    user: `Continue: "I am in pain and"`,
+    assistant: JSON.stringify([
+      "it's getting worse",
+      "need medication",
+      "can't sleep",
+      "it won't stop",
+    ]),
+  },
+  "please": {
+    user: `Continue: "Please help me up"`,
+    assistant: JSON.stringify([
+      "slowly",
+      "to the bathroom",
+      "I'm very weak",
+      "I need to move",
+    ]),
+  },
+};
+
+/**
+ * Find the shortest prefix of `key` that matches a tree entry. Used to
+ * locate the top of the user's trunk so walkChain can start at depth 1
+ * even when the user's partial is several words deep.
+ */
+function findTopRoot(key: string): string | null {
+  const words = key.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  for (let i = 1; i <= words.length; i++) {
+    const candidate = words.slice(0, i).join(" ");
+    if (BASE_SUGGESTIONS[candidate]) return candidate;
+  }
+  return null;
+}
+
+/**
+ * Walk the suggestion tree DOWNWARD from `rootKey`, emitting one few-shot
+ * turn per tree depth. At each step, pick the first completion whose
+ * leading words form another tree key when appended — this keeps the walk
+ * on a realistic trunk instead of randomly concatenating. When the tree
+ * runs out (typically depth 2), append the hand-crafted depth-3 terminal.
  *
- * Using the curated tree as the source keeps examples clinically reviewed
- * and domain-consistent.
+ * Result: 2-3 turns demonstrating ONE sentence growing from depth 1 to
+ * depth 3, which is the shape real patient input takes.
+ */
+function walkChain(rootKey: string, maxDepth: number): FewShotExample[] {
+  const turns: FewShotExample[] = [];
+  const seen = new Set<string>();
+  let key = rootKey;
+
+  for (let d = 0; d < maxDepth; d++) {
+    if (seen.has(key)) break;
+    seen.add(key);
+    const completions = BASE_SUGGESTIONS[key];
+    if (!completions || completions.length === 0) break;
+
+    const display = key.charAt(0).toUpperCase() + key.slice(1);
+    turns.push({
+      user: `Continue: "${display}"`,
+      // JSON-array format: the worker's parseCompletions prefers JSON
+      // parsing, so demonstrating it here trains the model to emit the
+      // same shape.
+      assistant: JSON.stringify(completions.slice(0, 6)),
+    });
+
+    // Advance to the next depth: try each completion in order, taking as
+    // many leading words as needed to land on another tree key.
+    let advanced = false;
+    for (const comp of completions) {
+      const normalized = comp.toLowerCase().replace(/[?.,!]+$/, "").trim();
+      const compWords = normalized.split(/\s+/);
+      for (let take = compWords.length; take >= 1; take--) {
+        const candidate = `${key} ${compWords.slice(0, take).join(" ")}`;
+        if (BASE_SUGGESTIONS[candidate] && !seen.has(candidate)) {
+          key = candidate;
+          advanced = true;
+          break;
+        }
+      }
+      if (advanced) break;
+    }
+    if (!advanced) break;
+  }
+
+  const extension = CHAIN_TERMINALS[rootKey];
+  if (extension && turns.length >= 2) turns.push(extension);
+
+  return turns;
+}
+
+/**
+ * Build progressive-chain few-shot examples from the curated tree.
+ *
+ * Instead of demonstrating 5-6 different sentence STARTS (which teaches
+ * the model "completions = opening words"), we demonstrate 2-3 complete
+ * sentences GROWING from depth 1 to depth 3 across consecutive turns.
+ * Real patient sentences are 1-10 words long, so the model needs to see
+ * that completions can attach at any depth — not just the beginning.
+ *
+ * Chain 1 is seeded from the user's trunk (if it maps to a tree root);
+ * Chains 2-3 fill in with other common roots the user hasn't seen yet.
+ * Each chain produces ~3 turns (2 from tree walk + 1 hand-crafted
+ * terminal), so total turn budget is ~6-9.
  */
 export function buildLLMFewShot(partialKey: string): FewShotExample[] {
-  const examples: FewShotExample[] = [];
-  const used = new Set<string>();
+  const chains: FewShotExample[][] = [];
+  const usedRoots = new Set<string>();
+  const MAX_DEPTH_PER_CHAIN = 3;
+  const MAX_CHAINS = 3;
+  const MAX_TURNS = 9;
 
-  const addExample = (key: string): void => {
-    if (used.has(key)) return;
-    const completions = BASE_SUGGESTIONS[key];
-    if (!completions || completions.length === 0) return;
-    used.add(key);
-    const display = key.length > 0 ? key.charAt(0).toUpperCase() + key.slice(1) : key;
-    examples.push({
-      user: `Continue: "${display}"`,
-      // JSON-array format: the worker's parseCompletions prefers JSON parsing,
-      // so demonstrating it here trains the model to emit the same shape.
-      assistant: JSON.stringify(completions.slice(0, 8)),
-    });
-  };
-
-  const normalized = partialKey.toLowerCase().trim();
-
-  // 1. Exact match
-  if (normalized) addExample(normalized);
-
-  // 2. Ancestors (longest first → shortest)
-  const words = normalized.split(/\s+/).filter(Boolean);
-  for (let i = words.length - 1; i > 0; i--) {
-    addExample(words.slice(0, i).join(" "));
+  // Chain 1: user's actual trunk, when the tree has a root for it.
+  const topRoot = partialKey ? findTopRoot(partialKey) : null;
+  if (topRoot) {
+    const chain = walkChain(topRoot, MAX_DEPTH_PER_CHAIN);
+    if (chain.length > 0) {
+      chains.push(chain);
+      usedRoots.add(topRoot);
+    }
   }
 
-  // 3. Structural anchors
-  for (const key of FEW_SHOT_ANCHOR_KEYS) {
-    if (examples.length >= 6) break;
-    addExample(key);
+  // Chains 2-3: default roots, skipping any already in chain 1.
+  for (const root of CHAIN_ROOTS) {
+    if (chains.length >= MAX_CHAINS) break;
+    if (usedRoots.has(root)) continue;
+    const chain = walkChain(root, MAX_DEPTH_PER_CHAIN);
+    if (chain.length > 0) {
+      chains.push(chain);
+      usedRoots.add(root);
+    }
   }
 
-  return examples.slice(0, 6);
+  return chains.flat().slice(0, MAX_TURNS);
 }
 
 /**

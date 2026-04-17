@@ -34,52 +34,67 @@ if (ort.env?.wasm) {
 const LOG_PREFIX = "[OwnVoice:LLM]";
 
 /**
- * System prompt uses pattern-completion format. See PRD §Layer-2 for the
- * rationale. Two things it has to get right:
- *   1. Voice. The patient is speaking TO a nurse/doctor, first-person. The
- *      model must not slip into caregiver voice ("I'm here to support you")
- *      or third-person ("The patient is feeling...").
- *   2. Grammar. Every completion must append cleanly: reading the partial
- *      followed by the completion aloud must form one grammatical sentence.
- *      Few-shot examples all demonstrate direct append (no lead-ins like
- *      "I am scared" following "I feel" — that produces "I feel I am scared").
- */
-/**
- * System prompt is deliberately short. The heavy lifting happens via
- * multi-turn few-shot injected as real user/assistant exchanges in
- * buildPrompt() — instruct-tuned models follow that pattern far more
- * reliably than arrow-based examples embedded in the system prompt.
+ * System prompt for the Sentence Builder LLM. The framing is load-bearing:
+ *   1. ICU + AAC: the patient cannot speak aloud and is tapping phrases on
+ *      a device. That context (not generic "hospitalized") grounds the
+ *      vocabulary — suction, oxygen, vent, restraints, sedation.
+ *   2. Direction of voice: "what the patient would say TO staff, never a
+ *      response FROM them". Naming the audience positively heads off the
+ *      biggest drifts we saw ("I understand", "let me know", "I'll bring
+ *      you...") — those are caregiver RESPONSES, not patient utterances.
+ *   3. Grammar: completions must append cleanly — reading partial + phrase
+ *      aloud must form one grammatical sentence (no "I am scared" after
+ *      "I feel", which would produce "I feel I am scared").
+ *   4. Diversity + anti-repetition: short models tend toward near-synonyms
+ *      ("in pain" / "in so much pain") and echoing words already typed.
+ *      Explicit rules in the prompt pay for themselves in pill variety.
  *
- * Output format is a bare JSON array of strings. We enforce that via
- * prompting + few-shot demonstrations rather than grammar-constrained
- * sampling (not available in onnxruntime-web). parseCompletions() does
- * JSON.parse first and falls back to heuristic parsing if the model
- * emits malformed JSON.
+ * The heavy lifting still happens via multi-turn progressive-chain few-shot
+ * injected as real user/assistant exchanges in buildPrompt() — the prompt
+ * tells the model WHAT the task is, the demos show HOW to do it at any
+ * depth. Output is a bare JSON array enforced by prompting + demos;
+ * onnxruntime-web has no grammar-constrained sampling.
  */
-const SYSTEM_PROMPT = `You complete a hospitalized patient's sentence. Given the start of a sentence, respond with 4-6 short ways (1-6 words each) it could continue. Each continuation must directly attach to the end of the given text as if you read them aloud together. Use only the patient's own first-person voice — never the nurse or doctor.
+const SYSTEM_PROMPT = `A patient in an intensive care unit cannot speak aloud and is using a communication device to build a sentence one tap at a time, telling hospital staff what they need, feel, or want to ask. The sentence so far may be 1-10 words long. Return 4-8 short phrases (1-6 words each) they could tap to extend it. Each phrase must:
+- Attach cleanly to the end — reading the sentence aloud plus the phrase must form one grammatical sentence.
+- Speak in the patient's own first-person voice: what the patient would say TO staff, never a response FROM them.
+- Take the sentence in a different direction than the other phrases (feeling, need, request, question, detail).
+- Not repeat words already in the sentence.
 
 Respond with ONLY a JSON array of strings, nothing else. No code fence, no explanation.`;
 
 /**
- * Fallback few-shot used when the caller doesn't supply its own. In normal
- * operation `getLLMSuggestions` in suggestion-trees.ts builds these
- * dynamically from the curated tree — so the model sees clinically
- * reviewed examples anchored on the patient's actual partial. This static
- * fallback only fires for callers that don't pass `fewShot` (tests and
- * any direct consumers that haven't migrated yet).
+ * Fallback few-shot used when the caller doesn't supply its own. Mirrors
+ * the progressive-chain shape produced by buildLLMFewShot in
+ * suggestion-trees.ts — one sentence growing turn-over-turn, so the model
+ * learns continuations attach at any depth. This static fallback only
+ * fires for callers that don't pass `fewShot` (tests and direct
+ * consumers that haven't migrated yet).
  */
 const FALLBACK_FEW_SHOT: FewShotExample[] = [
   {
     user: `Continue: "I feel"`,
-    assistant: `["scared", "dizzy", "better today", "cold", "nauseous", "weak", "lonely"]`,
+    assistant: `["scared", "cold", "dizzy", "weak", "worse", "better"]`,
+  },
+  {
+    user: `Continue: "I feel scared"`,
+    assistant: `["about the procedure", "and alone", "about what's happening", "and need someone"]`,
+  },
+  {
+    user: `Continue: "I feel scared about the procedure"`,
+    assistant: `["tomorrow", "and I'm alone", "they're planning", "and want to wait"]`,
   },
   {
     user: `Continue: "I need"`,
-    assistant: `["water", "the nurse", "my glasses", "to use the bathroom", "more blankets"]`,
+    assistant: `["water", "my family", "the nurse", "to sleep", "my medication"]`,
   },
   {
-    user: `Continue: "can you"`,
-    assistant: `["call my family", "get the nurse", "stay with me", "adjust my bed", "turn off the light"]`,
+    user: `Continue: "I need help"`,
+    assistant: `["breathing", "getting up", "with the pain", "right now"]`,
+  },
+  {
+    user: `Continue: "I need help breathing"`,
+    assistant: `["please", "right now", "it's getting worse", "with the oxygen"]`,
   },
 ];
 
