@@ -76,63 +76,68 @@ export function PainFlow({ onSelect, t, theme, locale = "en" }: PainFlowProps) {
   }
 
   // --- Breadcrumb ---
+  // Visual style mirrors the onboarding step indicator (Setup.tsx): a
+  // flex row of 4-px bars, colored when the step is current-or-past,
+  // with a centered label below. Past bars remain clickable so the user
+  // can jump back without stepping through.
+  const PAIN_COLOR = "#DC2626";
+  const inactiveBar = theme === "dark" ? "rgba(255,255,255,0.12)" : "#E5E7EB";
+  const inactiveText = theme === "dark" ? "#9CA3AF" : "#9CA3AF";
   const breadcrumb = (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 8,
-        marginBottom: 16,
-        flexWrap: "wrap",
-      }}
-    >
+    <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
       {STEPS.map((s, i) => {
         const isPast = i < currentIndex;
         const isCurrent = s === step;
+        const isActive = i <= currentIndex;
+        const content = (
+          <>
+            <div
+              style={{
+                height: 4,
+                borderRadius: 2,
+                background: isActive ? PAIN_COLOR : inactiveBar,
+                transition: "background 0.2s",
+              }}
+            />
+            <div
+              class="font-sans"
+              style={{
+                fontSize: 12,
+                color: isCurrent ? PAIN_COLOR : inactiveText,
+                marginTop: 4,
+                fontWeight: isCurrent ? 600 : 400,
+                textAlign: "center",
+              }}
+            >
+              {STEP_LABELS[s]}
+            </div>
+          </>
+        );
+
+        if (isPast) {
+          return (
+            <button
+              key={s}
+              type="button"
+              onClick={() => goToStep(s)}
+              style={{
+                flex: 1,
+                background: "none",
+                border: "none",
+                padding: 0,
+                cursor: "pointer",
+                fontFamily: "inherit",
+              }}
+              aria-label={`Go back to ${STEP_LABELS[s]}`}
+            >
+              {content}
+            </button>
+          );
+        }
         return (
-          <span key={s} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            {i > 0 && (
-              <span
-                class="font-sans"
-                style={{ color: t.muted, fontSize: 16, userSelect: "none" }}
-              >
-                {">"}
-              </span>
-            )}
-            {isPast ? (
-              <button
-                type="button"
-                class="font-sans"
-                onClick={() => goToStep(s)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  padding: 0,
-                  fontFamily: "inherit",
-                  fontSize: 16,
-                  fontWeight: 400,
-                  color: theme === "dark" ? "#FCA5A5" : "#991B1B",
-                  cursor: "pointer",
-                  textDecoration: "underline",
-                  userSelect: "none",
-                }}
-              >
-                {STEP_LABELS[s]}
-              </button>
-            ) : (
-              <span
-                class="font-sans"
-                style={{
-                  fontSize: 16,
-                  fontWeight: isCurrent ? 700 : 400,
-                  color: isCurrent ? t.text : t.muted,
-                  userSelect: "none",
-                }}
-              >
-                {STEP_LABELS[s]}
-              </span>
-            )}
-          </span>
+          <div key={s} style={{ flex: 1 }}>
+            {content}
+          </div>
         );
       })}
     </div>
