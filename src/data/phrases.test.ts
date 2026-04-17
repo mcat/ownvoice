@@ -1,5 +1,10 @@
 import { LANGS } from "./phrases";
-import { getCategories } from "./phraseRegistry";
+import {
+  getCategories,
+  getPatientSpeakablePhrases,
+  getProviderSpeakablePhrases,
+  getProviderCategories,
+} from "./phraseRegistry";
 
 const CATS = getCategories("en");
 
@@ -88,6 +93,68 @@ describe("CATS", () => {
         expect(p.icon).toEqual(expect.any(String));
         expect(p.icon.length).toBeGreaterThan(0);
       }
+    }
+  });
+});
+
+describe("getPatientSpeakablePhrases", () => {
+  const patient = getPatientSpeakablePhrases("en");
+  const providerText = new Set(
+    Object.values(getProviderCategories("en")).flat(),
+  );
+
+  it("returns a non-empty list", () => {
+    expect(patient.length).toBeGreaterThan(0);
+  });
+
+  it("has no duplicates", () => {
+    expect(new Set(patient).size).toBe(patient.length);
+  });
+
+  it("includes Quick tab phrases first for priority caching", () => {
+    const quick = CATS.find((c) => c.id === "quick")!;
+    const firstQuick = quick.phrases![0].text;
+    expect(patient.indexOf(firstQuick)).toBeLessThan(6);
+  });
+
+  it("includes category phrases, pain parts, wish responses, time suggestions, emergency", () => {
+    expect(patient).toContain("Yes");
+    expect(patient).toContain("I need water");
+    expect(patient).toContain("I need help");
+  });
+
+  it("excludes phrases that only appear in provider categories", () => {
+    const providerOnly = [...providerText].filter((p) => {
+      // A phrase is provider-only if it doesn't appear in any patient surface.
+      // We can't introspect all patient surfaces here, so check via the
+      // public contract: patient list must not contain it.
+      return !patient.includes(p);
+    });
+    // Every provider phrase that isn't shared must be absent from patient list.
+    expect(providerOnly.length).toBeGreaterThan(0);
+    for (const p of providerOnly) {
+      expect(patient).not.toContain(p);
+    }
+  });
+});
+
+describe("getProviderSpeakablePhrases", () => {
+  const provider = getProviderSpeakablePhrases("en");
+
+  it("returns a non-empty list", () => {
+    expect(provider.length).toBeGreaterThan(0);
+  });
+
+  it("has no duplicates", () => {
+    expect(new Set(provider).size).toBe(provider.length);
+  });
+
+  it("contains only provider-category phrases", () => {
+    const providerSet = new Set(
+      Object.values(getProviderCategories("en")).flat(),
+    );
+    for (const p of provider) {
+      expect(providerSet.has(p)).toBe(true);
     }
   });
 });

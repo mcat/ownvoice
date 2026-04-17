@@ -39,7 +39,12 @@ export function useSpeakActions() {
     (text: string) => {
       if (!cfg) return;
       const provName = activeProv.name || "Care Team";
-      const speaker: Speaker = { name: provName, type: "provider" };
+      const speaker: Speaker = {
+        name: provName,
+        type: "provider",
+        embedding: activeProv.embedding,
+        lang: cfg.patientLang,
+      };
       addMessage(text, "provider", provName);
       setSpeaking({ text, from: "provider" });
       const dur = Math.max(1400, text.length * 55);
@@ -66,13 +71,20 @@ export function useSpeakActions() {
         from === "patient"
           ? cfg.patientName
           : activeProv.name || "Care Team";
-      const speaker: Speaker = { name, type: from };
+      const embedding =
+        from === "patient" ? speakerData ?? undefined : activeProv.embedding;
+      const speaker: Speaker = {
+        name,
+        type: from,
+        embedding,
+        lang: cfg.patientLang,
+      };
       setSpeaking({ text, from });
       const dur = Math.max(1400, text.length * 55);
       speak(text, speaker);
       setTimeout(() => setSpeaking(null), dur);
     },
-    [cfg, activeProv, setSpeaking],
+    [cfg, activeProv, speakerData, setSpeaking],
   );
 
   return { speakAsPatient, speakAsProvider, addToThread, repeatSpeak, activeProv };

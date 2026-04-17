@@ -5,6 +5,7 @@ import { LANGS } from "../../data/phrases";
 import { Btn } from "../shared/Btn";
 import { VoiceCapture } from "../shared/VoiceCapture";
 import { FallbackVoicePicker } from "../shared/FallbackVoicePicker";
+import { VoiceCacheProgress } from "./VoiceCacheProgress";
 import { useSettingsStore } from "../../stores/settingsStore";
 import { speak } from "../../speak";
 import type { Speaker } from "../../types";
@@ -69,7 +70,8 @@ export function SettingsPanel({
       (p, i) =>
         p.name !== cfg.providers[i]?.name ||
         p.hasVoice !== cfg.providers[i]?.hasVoice ||
-        p.emoji !== cfg.providers[i]?.emoji,
+        p.emoji !== cfg.providers[i]?.emoji ||
+        !!p.embedding !== !!cfg.providers[i]?.embedding,
     );
 
   const hasChanges =
@@ -101,7 +103,17 @@ export function SettingsPanel({
 
   function toggleProviderVoice(index: number, hasVoice: boolean) {
     setProviders((prev) =>
-      prev.map((p, i) => (i === index ? { ...p, hasVoice } : p)),
+      prev.map((p, i) =>
+        i === index
+          ? { ...p, hasVoice, embedding: hasVoice ? p.embedding : undefined }
+          : p,
+      ),
+    );
+  }
+
+  function setProviderEmbedding(index: number, embedding: unknown) {
+    setProviders((prev) =>
+      prev.map((p, i) => (i === index ? { ...p, embedding } : p)),
     );
   }
 
@@ -252,6 +264,12 @@ export function SettingsPanel({
                   cardBg: isDark ? "rgba(255,255,255,0.05)" : "#FFFFFF",
                 }}
               />
+              <VoiceCacheProgress
+                speakerKey="patient"
+                speakerLabel={cfg.patientName || "Patient"}
+                cfg={cfg}
+                patientSpeakerData={useSettingsStore.getState().speakerData}
+              />
             </div>
 
             <div style={{ marginTop: 20 }}>
@@ -355,7 +373,11 @@ export function SettingsPanel({
                   <VoiceCapture
                     label={p.name}
                     hasVoice={p.hasVoice}
-                    onCapture={() => { toggleProviderVoice(i, true); }}
+                    hasEmbedding={!!p.embedding}
+                    onCapture={(_blob, embedding) => {
+                      toggleProviderVoice(i, true);
+                      if (embedding) setProviderEmbedding(i, embedding);
+                    }}
                     onRemove={() => toggleProviderVoice(i, false)}
                     compact
                     color={{
@@ -365,6 +387,12 @@ export function SettingsPanel({
                       border: isDark ? "rgba(255,255,255,0.12)" : "#E5E7EB",
                       cardBg: isDark ? "rgba(255,255,255,0.05)" : "#FFFFFF",
                     }}
+                  />
+                  <VoiceCacheProgress
+                    speakerKey={`provider:${i}`}
+                    speakerLabel={p.name}
+                    cfg={cfg}
+                    patientSpeakerData={useSettingsStore.getState().speakerData}
                   />
                 </div>
               </div>

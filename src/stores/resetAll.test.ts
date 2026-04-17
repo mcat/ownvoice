@@ -11,6 +11,12 @@ vi.mock("../models/audioCache", () => ({
   clearAudioCache: vi.fn(() => Promise.resolve()),
 }));
 
+vi.mock("../models/audioCacheRunner", () => ({
+  abort: vi.fn(),
+  runPreGeneration: vi.fn(),
+  retryFailed: vi.fn(),
+}));
+
 const mockModelManager = {
   clearAll: vi.fn(() => Promise.resolve()),
 };
@@ -23,6 +29,7 @@ vi.mock("../models/modelManager", () => ({
 import { resetAll } from "./resetAll";
 import { clearAll } from "../store";
 import { clearAudioCache } from "../models/audioCache";
+import * as audioCacheRunner from "../models/audioCacheRunner";
 import { getModelManager } from "../models/modelManager";
 
 beforeEach(() => {
@@ -55,6 +62,21 @@ describe("resetAll", () => {
   it("calls clearAudioCache", async () => {
     await resetAll();
     expect(clearAudioCache).toHaveBeenCalledOnce();
+  });
+
+  it("aborts the audio cache runner before clearing OPFS", async () => {
+    const abortOrder: string[] = [];
+    vi.mocked(audioCacheRunner.abort).mockImplementation(() => {
+      abortOrder.push("abort");
+    });
+    vi.mocked(clearAudioCache).mockImplementation(async () => {
+      abortOrder.push("clear");
+    });
+
+    await resetAll();
+
+    expect(audioCacheRunner.abort).toHaveBeenCalledOnce();
+    expect(abortOrder).toEqual(["abort", "clear"]);
   });
 
   it("calls modelManager.clearAll", async () => {

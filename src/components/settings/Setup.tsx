@@ -93,7 +93,17 @@ export function Setup({ onDone }: SetupProps) {
 
   function toggleProviderVoice(index: number, hasVoice: boolean) {
     setProviders((prev) =>
-      prev.map((p, i) => (i === index ? { ...p, hasVoice } : p)),
+      prev.map((p, i) =>
+        i === index
+          ? { ...p, hasVoice, embedding: hasVoice ? p.embedding : undefined }
+          : p,
+      ),
+    );
+  }
+
+  function setProviderEmbedding(index: number, embedding: unknown) {
+    setProviders((prev) =>
+      prev.map((p, i) => (i === index ? { ...p, embedding } : p)),
     );
   }
 
@@ -231,6 +241,7 @@ export function Setup({ onDone }: SetupProps) {
             addProvider={addProvider}
             removeProvider={removeProvider}
             toggleProviderVoice={toggleProviderVoice}
+            setProviderEmbedding={setProviderEmbedding}
           />
         )}
         {step === 3 && (
@@ -472,6 +483,7 @@ function StepCareTeam({
   addProvider,
   removeProvider,
   toggleProviderVoice,
+  setProviderEmbedding,
 }: {
   providers: Provider[];
   newProvName: string;
@@ -483,6 +495,7 @@ function StepCareTeam({
   addProvider: () => void;
   removeProvider: (i: number) => void;
   toggleProviderVoice: (index: number, hasVoice: boolean) => void;
+  setProviderEmbedding: (index: number, embedding: unknown) => void;
 }) {
   return (
     <div>
@@ -538,7 +551,11 @@ function StepCareTeam({
             <VoiceCapture
               label={p.name}
               hasVoice={p.hasVoice}
-              onCapture={() => { toggleProviderVoice(i, true); }}
+              hasEmbedding={!!p.embedding}
+              onCapture={(_blob, embedding) => {
+                toggleProviderVoice(i, true);
+                if (embedding) setProviderEmbedding(i, embedding);
+              }}
               onRemove={() => { toggleProviderVoice(i, false); }}
               compact
             />

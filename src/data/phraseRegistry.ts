@@ -14,7 +14,8 @@
  *   getWishTopics(locale)       — SICG wish topics
  *   getTimeSuggestions(locale)  — time-of-day suggestions
  *   getSuggestionTree(locale)   — sentence builder suggestion tree
- *   getAllSpeakablePhrases(locale) — flat string[] for audio cache
+ *   getPatientSpeakablePhrases(locale) — flat string[] for patient audio cache
+ *   getProviderSpeakablePhrases(locale) — flat string[] for provider audio cache
  *   composePainSentence(locale, ...) — fill pain template
  *   composeWishSentence(locale, ...) — fill wish template
  */
@@ -490,20 +491,19 @@ export function getSuggestionTree(locale: string = "en"): Record<string, string[
   };
 }
 
-// ── Flat phrase list for audio cache ─────────────────────────────
+// ── Flat phrase lists for audio cache ────────────────────────────
 
 /**
- * Collect every speakable phrase as a flat string array.
+ * Every phrase the patient speaks through their cloned voice.
  *
- * This is used by the audio cache to pre-generate cloned speech for
- * all fixed phrases after voice capture. Does NOT include composed
- * phrases (pain sentences, wish sentences) since those are assembled
- * at runtime from variable parts.
+ * Order follows the registry for predictable pre-generation — Quick tab
+ * phrases come first so the most-tapped phrases are cached earliest.
+ * Excludes composed sentences (pain, wishes, sentence-builder) — those
+ * are assembled at runtime from variable parts.
  */
-export function getAllSpeakablePhrases(locale: string = "en"): string[] {
+export function getPatientSpeakablePhrases(locale: string = "en"): string[] {
   const phrases = new Set<string>();
 
-  // Patient category phrases
   for (const cat of getCategories(locale)) {
     if (cat.phrases) {
       for (const p of cat.phrases) phrases.add(p.text);
@@ -515,32 +515,35 @@ export function getAllSpeakablePhrases(locale: string = "en"): string[] {
     }
   }
 
-  // Provider phrases
-  for (const arr of Object.values(getProviderCategories(locale))) {
-    for (const p of arr) phrases.add(p);
-  }
-
-  // Pain face labels (spoken as part of flow feedback)
   for (const f of getEmojiFPS(locale)) phrases.add(f.label);
-
-  // Pain descriptors and body regions (components of composed sentences)
   for (const d of getPainDescriptors(locale)) phrases.add(d.text);
   for (const r of getBodyRegions(locale)) phrases.add(r);
 
-  // SICG wish responses (spoken individually when tapped)
   for (const topic of getWishTopics(locale)) {
     phrases.add(topic.question);
     for (const r of topic.responses) phrases.add(r);
   }
 
-  // Time suggestions
   const time = getTimeSuggestionsForPeriod(locale);
   for (const arr of Object.values(time)) {
     for (const s of arr) phrases.add(s);
   }
 
-  // Emergency
   phrases.add(t("emergency.help", locale));
 
   return Array.from(phrases);
 }
+
+/**
+ * Every phrase a provider speaks through their cloned voice. Provider
+ * audio is generated in the patient's locale so the patient hears every
+ * voice in their own language.
+ */
+export function getProviderSpeakablePhrases(locale: string = "en"): string[] {
+  const phrases = new Set<string>();
+  for (const arr of Object.values(getProviderCategories(locale))) {
+    for (const p of arr) phrases.add(p);
+  }
+  return Array.from(phrases);
+}
+

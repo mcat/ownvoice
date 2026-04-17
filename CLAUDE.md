@@ -11,47 +11,53 @@ OwnVoice is an in-patient AAC (Augmentative and Alternative Communication) web a
 ## Commands
 
 ```bash
-npm run dev      # Start Vite dev server at http://localhost:3000 (auto-opens browser)
-npm run build    # Production build → dist/
-npm run preview  # Preview production build locally
+npm run dev            # Start Vite dev server at http://localhost:3000 (auto-opens browser)
+npm run build          # Type-check then production build → dist/
+npm run preview        # Preview production build locally
+npm test               # Run Vitest once
+npm run test:watch     # Vitest in watch mode
+npm run test:coverage  # Vitest with coverage
 ```
 
-No test runner, linter, or formatter is configured.
+Stack: TypeScript + Preact + Vite + Vitest. ESLint with `typescript-eslint` and `eslint-plugin-jsx-a11y`.
 
 ## Architecture
 
-The entire prototype lives in a single file: **`src/OwnVoice.jsx`** (~1630 lines). This is intentional for rapid prototyping and will be decomposed for production.
+The app is decomposed into focused modules. Colocated `*.test.ts(x)` files live alongside their source.
 
 ### File layout
 - `index.html` — PWA entry point with meta tags
-- `src/main.jsx` — React mount point
-- `src/OwnVoice.jsx` — All components, state, data, and styling
+- `src/main.tsx` — Preact mount point; wires theme side effects
+- `src/App.tsx` — Root component: setup gate, tab routing, overlay orchestration
+- `src/speak.ts` — Single audio pathway. Priority: cloned-TTS (GPU → WASM) → Web Speech → confirmation tone. Owns the Web Audio post-processing pipeline (DC removal, biquads, spectral denoise, gate, normalize, limiter, fade).
+- `src/store.ts` — Legacy IndexedDB helper (`clearAll()` only). State lives in Zustand stores below.
+- `src/types.ts` — Shared TypeScript types (`Speaker`, `AppSettings`, `Category`, etc.)
+- `src/components/**` — UI components grouped by feature (builder, conversation, layout, pain, phrases, provider, settings, shared, wishes)
+- `src/data/phraseRegistry.ts` — Single source of truth for all speakable text. `t(key, locale)` resolves a phrase; `getCategories`, `getProviderCategories`, `getEmojiFPS`, `getWishTopics`, `composePainSentence`, `composeWishSentence`, `getAllSpeakablePhrases` expose structure.
+- `src/data/locales/` — Per-locale string tables (currently `en.ts`). Statically imported so language switching works offline.
+- `src/hooks/` — `useTheme`, `useSpeakActions`, `useMicrophone`, `useModels`, `useDebouncedTap`
+- `src/models/` — On-device inference: `modelManager.ts` (worker lifecycle, OPFS model storage), `ttsEngine.ts` (WebGPU main-thread Chatterbox Turbo), `ttsWorker.ts` / `sttWorker.ts` / `llmWorker.ts` (WASM fallbacks), `audioCache.ts` (OPFS-backed pre-generated phrase audio), `bootModels.ts`, `bpeTokenizer.ts`
+- `src/stores/` — Zustand stores: `settingsStore`, `conversationStore`, `uiStore`; plus `idbStorage.ts` (Zustand IDB adapter) and `resetAll.ts` (wipes every persistent layer)
+- `src/theme/` — Theme tokens and palette
 - `docs/PRD.md` — Full product requirements (voice cloning, SICG, latency tiers, 4-phase roadmap)
 - `docs/DESIGN_GUIDELINES.md` — Accessibility standards, touch targets, contrast, cognitive load
 
-### Key data structures in OwnVoice.jsx
+### State management
 
-- **`CATS`** — Phrase categories (Quick, I Need, I Feel, Pain, Ask). Two levels max: Tab → Phrase, or Tab → Subcategory → Phrase.
-- **`T`** (theme) — Light/dark token object. All text colors are hardcoded per background (no opacity-based secondaries) to guarantee WCAG contrast.
-- **`PROVIDER`** — Provider quick-response categories (responses, questions, directions, goals of care).
-- **`BASE_SUGGESTIONS`** — Dictionary for contextual next-word completions in the Sentence Builder.
+- **`settingsStore`** — Persisted to IndexedDB (`ov-settings`). Holds `cfg: AppSettings` and the extracted `speakerData` (Chatterbox Turbo speech-encoder outputs). `_hasHydrated` gates the render until rehydration completes.
+- **`conversationStore`** — In-memory thread of `Message`s (patient/provider, text, time, label).
+- **`uiStore`** — Transient navigation: current tab, subcategory index, open overlays, active provider, `speaking` state.
+- **`resetAll()`** — Wipes IndexedDB, OPFS audio-cache, OPFS model weights, service-worker caches, `localStorage`, and in-memory stores. Called from SettingsPanel.
 
-### Component structure (all in OwnVoice.jsx)
+### Data flow for speech
 
-- **`OwnVoice`** — Root. Manages setup wizard, tab routing, overlay orchestration, global state via `useState`.
-- **`Btn`** — Debounced button (300ms lock via `useRef`) to prevent double-fires from tremor.
-- **`PhraseBtn`** — 64×64px touch target with icon + label.
-- **`Speaking`** — Overlay showing speaker, text, and animated progress bar (duration: 1400ms + text.length × 55ms).
-- **`Thread`** — Scrollable conversation history with tap-to-repeat.
-- **`PainFlow`** — 3-step pain assessment: severity (Emoji-FPS) → body location → descriptor.
-- **`SentenceBuilder`** — Word-by-word construction with contextual suggestions.
-- **`MyWishes`** — 7-topic goals-of-care flow based on the SICG framework (clinically validated — preserve its structure).
-- **`ProviderPanel`** / **`ListenPanel`** — Caregiver-facing components behind PIN gate.
-- **`SettingsPanel`** / **`Setup`** — Configuration and onboarding wizard.
+1. Patient taps a phrase → `useSpeakActions.speakAsPatient(text)` → adds message, sets `speaking` overlay, calls `speak(text, speaker)`.
+2. `speak()` tries in order: GPU Chatterbox Turbo (if `speaker.embedding` and `isGPUReady()`) → WASM TTS worker → Web Speech API → confirmation tone. Post-processes raw PCM before playback.
+3. Provider taps use `speakAsProvider` — no embedding, so always Web Speech or tone.
 
-### Inline styling is intentional
+### Inline styling is intentional (for now)
 
-All styles use inline objects with theme tokens from `T`. This is by design for the prototype (dynamic theming, no CSS deps, explicit dependencies). Production will move to CSS modules or equivalent.
+Components use inline style objects with tokens from the `theme` module. This keeps theming dynamic and dependency-free. Production may move to CSS modules or equivalent.
 
 ## Accessibility Requirements
 

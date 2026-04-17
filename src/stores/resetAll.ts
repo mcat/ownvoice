@@ -3,6 +3,7 @@ import { useConversationStore } from "./conversationStore";
 import { useUIStore } from "./uiStore";
 import { clearAll } from "../store";
 import { clearAudioCache } from "../models/audioCache";
+import * as audioCacheRunner from "../models/audioCacheRunner";
 import { getModelManager } from "../models/modelManager";
 
 /**
@@ -18,6 +19,10 @@ import { getModelManager } from "../models/modelManager";
  *   - All in-memory Zustand stores
  */
 export async function resetAll(): Promise<void> {
+  // 0. Stop any in-flight pre-generation so the worker isn't mid-write
+  //    when we delete OPFS entries underneath it.
+  audioCacheRunner.abort();
+
   // 1. Persistent storage (IndexedDB, OPFS)
   clearAll();
   clearAudioCache();
