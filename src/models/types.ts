@@ -50,6 +50,24 @@ export const CHATTERBOX_TOKENS = {
 /** Base URLs for model downloads. Dev uses local paths, production uses CDN. */
 export const MODEL_URLS = {
   tts: "/models/chatterbox-turbo/",
-  llm: "/models/gemma-3-1b/",
+  llm: "/models/lfm2-1.2b-instruct/",
   stt: "/models/whisper-small/",
+} as const;
+
+/**
+ * Sampling defaults recommended by the LFM2 model card.
+ * https://huggingface.co/LiquidAI/LFM2-1.2B
+ */
+export const LFM2_SAMPLING = {
+  temperature: 0.3,
+  minP: 0.15,
+  repetitionPenalty: 1.05,
+  topK: 40,
+} as const;
+
+/** Chat-template marker strings in the LFM2 tokenizer. */
+export const LFM2_CHAT_TOKENS = {
+  bos: "<|startoftext|>",
+  turnStart: "<|im_start|>",
+  turnEnd: "<|im_end|>",
 } as const;
