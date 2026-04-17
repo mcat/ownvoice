@@ -112,6 +112,7 @@ function applyBPE(
 
 export interface BPETokenizer {
   encode: (text: string) => number[];
+  decode: (ids: number[]) => string;
 }
 
 interface TokenizerJSON {
@@ -162,33 +163,98 @@ export function buildBPETokenizer(json: TokenizerJSON): BPETokenizer {
     }
   }
 
+  // Reverse byte-to-Unicode lookup for decode
+  const unicodeToByte = new Map<string, number>();
+  for (const [byte, char] of BYTE_TO_UNICODE.entries()) {
+    unicodeToByte.set(char, byte);
+  }
+
+  // Id → token map for decode; added tokens override any vocab collision
+  const idToToken = new Map<number, string>();
+  for (const [token, id] of vocab.entries()) idToToken.set(id, token);
+
+  const addedTokens = new Map<string, number>();
+  const addedTokenIds = new Set<number>();
+  for (const t of json.added_tokens ?? []) {
+    addedTokens.set(t.content, t.id);
+    addedTokenIds.add(t.id);
+    idToToken.set(t.id, t.content);
+  }
+
+  // Regex that splits input text on added-token literals, preserving them as
+  // separate segments. Longest tokens first to avoid prefix collisions.
+  const addedPattern = addedTokens.size
+    ? new RegExp(
+        `(${Array.from(addedTokens.keys())
+          .sort((a, b) => b.length - a.length)
+          .map((s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+          .join("|")})`,
+      )
+    : null;
+
   return {
     encode(text: string): number[] {
       const ids: number[] = [];
+      const segments = addedPattern ? text.split(addedPattern) : [text];
 
-      // Split text into words using GPT-2 regex
-      const words = text.match(GPT2_PAT) ?? [];
+      for (const segment of segments) {
+        if (segment === "") continue;
 
-      for (const word of words) {
-        // Convert word to byte-level Unicode tokens
-        const byteStr = textToByteTokens(word);
-        // Start with individual characters as tokens
-        const charTokens = [...byteStr];
-        // Apply BPE merges
-        const merged = applyBPE(charTokens, mergeRanks);
-        // Look up token IDs
-        for (const token of merged) {
-          const id = vocab.get(token);
-          if (id !== undefined) {
-            ids.push(id);
+        const specialId = addedTokens.get(segment);
+        if (specialId !== undefined) {
+          ids.push(specialId);
+          continue;
+        }
+
+        // Split text into words using GPT-2 regex
+        const words = segment.match(GPT2_PAT) ?? [];
+
+        for (const word of words) {
+          // Convert word to byte-level Unicode tokens
+          const byteStr = textToByteTokens(word);
+          // Start with individual characters as tokens
+          const charTokens = [...byteStr];
+          // Apply BPE merges
+          const merged = applyBPE(charTokens, mergeRanks);
+          // Look up token IDs
+          for (const token of merged) {
+            const id = vocab.get(token);
+            if (id !== undefined) {
+              ids.push(id);
+            }
+            // Unknown tokens are silently dropped (rare with byte-level BPE)
           }
-          // Unknown tokens are silently dropped (rare with byte-level BPE)
         }
       }
 
       // Append post-processor tokens
       ids.push(...postTokenIds);
       return ids;
+    },
+
+    decode(ids: number[]): string {
+      let byteStr = "";
+      for (const id of ids) {
+        if (addedTokenIds.has(id)) continue;
+        const token = idToToken.get(id);
+        if (token !== undefined) byteStr += token;
+      }
+
+      // Invert byte-level Unicode back to UTF-8 bytes, then decode.
+      const bytes: number[] = [];
+      for (const ch of byteStr) {
+        const b = unicodeToByte.get(ch);
+        if (b !== undefined) {
+          bytes.push(b);
+        } else {
+          // Fall through: encode the codepoint as UTF-8 bytes directly.
+          const enc = new TextEncoder().encode(ch);
+          for (const byte of enc) bytes.push(byte);
+        }
+      }
+      return new TextDecoder("utf-8", { fatal: false }).decode(
+        new Uint8Array(bytes),
+      );
     },
   };
 }
