@@ -1,24 +1,29 @@
 /**
- * Web Worker for Gemma 3 1B ONNX inference.
+ * Web Worker for LFM2.5-1.2B-Instruct ONNX inference.
  *
  * Handles sentence completion for the Sentence Builder (Layer 2).
  * Receives prompts, runs inference via ONNX Runtime, and returns
  * completion suggestions for hospitalized patients.
  *
- * Model: onnx-community/gemma-3-1b-it-ONNX (q4 variant)
- * Files: model_q4.onnx + model_q4.onnx_data (~860 MB), tokenizer.json (19 MB)
+ * Model: LiquidAI/LFM2.5-1.2B-Instruct-ONNX (q4 variant)
+ * Files: model_q4.onnx + model_q4.onnx_data (~850 MB), tokenizer.json (3.3 MB)
  *
- * ONNX tensor names (standard Transformers causal LM export):
- *   Inputs:  input_ids (int64 [batch, seq_len])
- *            attention_mask (int64 [batch, seq_len])
- *            past_key_values.{0..25}.key (float32, KV cache — q4 variant uses float32)
- *            past_key_values.{0..25}.value (float32, KV cache)
- *   Outputs: logits (float32 [batch, seq_len, vocab_size])
- *            present.{0..25}.key (float32, updated KV cache)
- *            present.{0..25}.value (float32, updated KV cache)
+ * Architecture: hybrid of 10 short-conv layers and 6 GQA attention layers.
+ * The ONNX export therefore carries TWO cache types:
+ *   - past_key_values.N.key/value  at attention-layer indices [2,5,8,10,12,14]
+ *   - past_conv.N                  at conv-layer indices [0,1,3,4,6,7,9,11,13,15]
+ *
+ * Attention cache shape: [1, 8, seq_len, 64]  (kv_heads=8, head_dim=64)
+ * Conv cache shape:      [1, 2048, 3]         (hidden_size=2048, conv_L_cache=3)
+ *
+ * Conv state is zero-filled at start, NEVER zero-length — it is a short
+ * rolling buffer, not a growing cache. Both caches are discovered from
+ * session.inputNames so the worker works across future LFM2 variants.
  */
 
 import * as ort from "onnxruntime-web/webgpu";
+import { buildBPETokenizer, type BPETokenizer } from "./bpeTokenizer";
+import { LFM2_CHAT_TOKENS, LFM2_SAMPLING } from "./types";
 
 ort.env.logLevel = "error";
 if (ort.env?.wasm) {
@@ -28,33 +33,10 @@ if (ort.env?.wasm) {
 
 const LOG_PREFIX = "[OwnVoice:LLM]";
 
-/** Gemma 3 1B has 26 transformer layers. */
-const NUM_LAYERS = 26;
-
-/** Gemma 3 1B head dimensions (1 merged KV head, head_dim=256 in ONNX export). */
-const NUM_KV_HEADS = 1;
-const HEAD_DIM = 256;
-
-/** Gemma special token IDs (from tokenizer.json added_tokens). */
-const TOKEN_PAD = 0;
-const TOKEN_EOS = 1;
-const TOKEN_BOS = 2;
-const TOKEN_UNK = 3;
-
 /**
- * System prompt uses pattern-completion format.
- *
- * The model sees examples of "partial" → comma-separated completions,
- * then must continue the pattern for the actual input. Examples show
- * completions at DIFFERENT DEPTHS to teach the model that continuations
- * must naturally append to the partial sentence:
- *
- * - Short partial ("I feel") → topic words ("scared", "dizzy")
- * - Longer partial ("I am scared") → continuation phrases ("of the surgery")
- * - Action partial ("can you") → specific requests ("call my family")
- *
- * This teaches the model: if you read "partial + completion" aloud,
- * it must sound like a natural sentence.
+ * System prompt uses pattern-completion format. See PRD §Layer-2 for the
+ * rationale. Examples deliberately finish at different depths so the model
+ * learns that continuations append naturally to the partial.
  */
 const SYSTEM_PROMPT = `Finish the patient's sentence. Write ONLY the next few words that naturally continue it, comma-separated.
 
@@ -64,271 +46,63 @@ const SYSTEM_PROMPT = `Finish the patient's sentence. Write ONLY the next few wo
 "can you" → call my family, get the nurse, explain what's happening, stay with me, adjust my bed, turn off the light`;
 
 // ---------------------------------------------------------------------------
-// Tokenizer
-// ---------------------------------------------------------------------------
-
-interface TokenizerJSON {
-  model: {
-    type: string;
-    vocab: Record<string, number>;
-    merges: string[];
-  };
-  added_tokens: Array<{
-    id: number;
-    content: string;
-    special: boolean;
-  }>;
-}
-
-/**
- * Minimal BPE tokenizer that loads from HuggingFace tokenizer.json format.
- *
- * Implements:
- * - Vocab lookup (token string -> id)
- * - BPE merge pairs for subword tokenization
- * - Special token encoding (<bos>, <start_of_turn>, <end_of_turn>, etc.)
- * - Greedy decode (id -> token string)
- *
- * Gemma's tokenizer uses SentencePiece-style BPE where spaces are encoded
- * as the Unicode block character U+2581 (▁) in the vocab.
- */
-class GemmaTokenizer {
-  private vocab: Map<string, number> = new Map();
-  private idToToken: Map<number, string> = new Map();
-  private merges: Array<[string, string]> = [];
-  private mergeRanks: Map<string, number> = new Map();
-  private specialTokens: Map<string, number> = new Map();
-
-  /** The "space" marker used in SentencePiece vocabularies. */
-  private static readonly SPACE_MARKER = "\u2581";
-
-  /** Token IDs for chat template markers. Populated during load. */
-  startOfTurnId = -1;
-  endOfTurnId = -1;
-
-  async load(url: string): Promise<void> {
-    console.log(`${LOG_PREFIX} Loading tokenizer from ${url}`);
-
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch tokenizer: HTTP ${response.status}`);
-    }
-
-    const data: TokenizerJSON = await response.json();
-
-    // Load vocabulary
-    for (const [token, id] of Object.entries(data.model.vocab)) {
-      this.vocab.set(token, id);
-      this.idToToken.set(id, token);
-    }
-
-    // Load special/added tokens (overwrite if they collide with vocab)
-    for (const tok of data.added_tokens) {
-      this.specialTokens.set(tok.content, tok.id);
-      this.idToToken.set(tok.id, tok.content);
-      if (tok.content === "<start_of_turn>") this.startOfTurnId = tok.id;
-      if (tok.content === "<end_of_turn>") this.endOfTurnId = tok.id;
-    }
-
-    // Load BPE merge rules (handles both string and array formats)
-    for (let i = 0; i < data.model.merges.length; i++) {
-      const merge = data.model.merges[i];
-      let a: string, b: string;
-      if (Array.isArray(merge)) {
-        // Array format: ["token_a", "token_b"]
-        [a, b] = merge;
-      } else {
-        // String format: "token_a token_b"
-        const parts = (merge as string).split(" ");
-        if (parts.length !== 2) continue;
-        [a, b] = parts;
-      }
-      this.merges.push([a, b]);
-      this.mergeRanks.set(`${a} ${b}`, i);
-    }
-
-    console.log(
-      `${LOG_PREFIX} Tokenizer loaded: ${this.vocab.size} vocab, ` +
-        `${this.merges.length} merges, ${this.specialTokens.size} special tokens`,
-    );
-
-    // Verify critical special tokens were found
-    if (this.startOfTurnId < 0 || this.endOfTurnId < 0) {
-      console.warn(
-        `${LOG_PREFIX} Chat template tokens not found in added_tokens. ` +
-          `Falling back to vocab lookup.`,
-      );
-      // Try vocab as fallback
-      if (this.startOfTurnId < 0) {
-        this.startOfTurnId = this.vocab.get("<start_of_turn>") ?? -1;
-      }
-      if (this.endOfTurnId < 0) {
-        this.endOfTurnId = this.vocab.get("<end_of_turn>") ?? -1;
-      }
-    }
-  }
-
-  /**
-   * Encode text to token IDs.
-   *
-   * Handles the Gemma chat template format. Special tokens embedded in the
-   * text (like <bos>, <start_of_turn>, etc.) are detected and mapped to their
-   * IDs directly; remaining text segments are BPE-encoded.
-   */
-  encode(text: string): number[] {
-    const ids: number[] = [];
-
-    // Split text on special tokens, keeping the delimiters
-    const specialPattern = this.buildSpecialTokenRegex();
-    const segments = text.split(specialPattern);
-
-    for (const segment of segments) {
-      if (segment === "") continue;
-
-      // Check if this segment is a special token
-      const specialId = this.specialTokens.get(segment);
-      if (specialId !== undefined) {
-        ids.push(specialId);
-        continue;
-      }
-
-      // BPE-encode the text segment
-      const segmentIds = this.bpeEncode(segment);
-      ids.push(...segmentIds);
-    }
-
-    return ids;
-  }
-
-  /**
-   * Decode a single token ID back to its string representation.
-   * Replaces the SentencePiece space marker (▁) with a regular space.
-   */
-  decode(ids: number[]): string {
-    const pieces: string[] = [];
-    for (const id of ids) {
-      const token = this.idToToken.get(id);
-      if (token !== undefined) {
-        // Skip special tokens in decoded output
-        if (this.specialTokens.has(token)) continue;
-        pieces.push(token);
-      }
-    }
-    return pieces
-      .join("")
-      .replaceAll(GemmaTokenizer.SPACE_MARKER, " ");
-  }
-
-  /**
-   * Decode a single token ID to its raw string (for incremental decode).
-   */
-  decodeToken(id: number): string {
-    const token = this.idToToken.get(id);
-    if (token === undefined) return "";
-    if (this.specialTokens.has(token)) return "";
-    return token.replaceAll(GemmaTokenizer.SPACE_MARKER, " ");
-  }
-
-  // -----------------------------------------------------------------------
-  // BPE internals
-  // -----------------------------------------------------------------------
-
-  /**
-   * BPE-encode a text segment (no special tokens).
-   *
-   * Gemma/SentencePiece convention: leading space becomes ▁, and the
-   * text is first split into individual UTF-8 characters (represented
-   * as vocab entries), then iteratively merged using the merge table.
-   */
-  private bpeEncode(text: string): number[] {
-    if (text.length === 0) return [];
-
-    // SentencePiece-style: replace spaces with ▁
-    const normalized = text.replaceAll(" ", GemmaTokenizer.SPACE_MARKER);
-
-    // Start with individual characters
-    let symbols: string[] = [...normalized];
-
-    // Iteratively apply the lowest-ranked merge pair
-    while (symbols.length > 1) {
-      let bestIdx = -1;
-      let bestRank = Infinity;
-
-      for (let i = 0; i < symbols.length - 1; i++) {
-        const pair = `${symbols[i]} ${symbols[i + 1]}`;
-        const rank = this.mergeRanks.get(pair);
-        if (rank !== undefined && rank < bestRank) {
-          bestRank = rank;
-          bestIdx = i;
-        }
-      }
-
-      if (bestIdx < 0) break; // No more merges possible
-
-      // Apply the merge
-      const merged = symbols[bestIdx] + symbols[bestIdx + 1];
-      symbols = [
-        ...symbols.slice(0, bestIdx),
-        merged,
-        ...symbols.slice(bestIdx + 2),
-      ];
-    }
-
-    // Map symbols to IDs
-    const ids: number[] = [];
-    for (const sym of symbols) {
-      const id = this.vocab.get(sym);
-      if (id !== undefined) {
-        ids.push(id);
-      } else {
-        // Character-level fallback: encode unknown chars as individual bytes
-        // or use UNK token
-        ids.push(TOKEN_UNK);
-      }
-    }
-
-    return ids;
-  }
-
-  /**
-   * Build a regex that splits text on special token boundaries
-   * while keeping the special tokens as separate segments.
-   */
-  private buildSpecialTokenRegex(): RegExp {
-    const escaped = Array.from(this.specialTokens.keys())
-      .sort((a, b) => b.length - a.length) // longest first
-      .map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
-    return new RegExp(`(${escaped.join("|")})`);
-  }
-}
-
-// ---------------------------------------------------------------------------
-// ONNX Session + Generation
+// Module-level state
 // ---------------------------------------------------------------------------
 
 let session: ort.InferenceSession | null = null;
-let tokenizer: GemmaTokenizer | null = null;
+let tokenizer: BPETokenizer | null = null;
 
-/**
- * Initialize the ONNX inference session and tokenizer.
- *
- * Loads tokenizer.json first (fast), then the ONNX model (slow).
- * Uses WebGPU execution provider when available, falls back to WASM.
- */
+/** IDs resolved from the tokenizer at init time. */
+interface TokenIds {
+  bos: number;
+  turnStart: number;
+  turnEnd: number;
+  eos: number;
+  pad: number;
+}
+let tokenIds: TokenIds = { bos: -1, turnStart: -1, turnEnd: -1, eos: -1, pad: -1 };
+
+/** Attention-layer indices (have past_key_values.N.key/value). */
+let attnLayerIndices: number[] = [];
+/** Conv-layer indices (have past_conv.N). */
+let convLayerIndices: number[] = [];
+
+/** Cache tensor shapes, populated on init and refined from first present tensors. */
+const KV_HEADS = 8;
+const HEAD_DIM = 64;
+const HIDDEN_SIZE = 2048;
+const CONV_L_CACHE = 3;
+
+// ---------------------------------------------------------------------------
+// Init
+// ---------------------------------------------------------------------------
+
 async function handleInit(modelUrl: string): Promise<void> {
   console.log(`${LOG_PREFIX} Initializing from ${modelUrl}`);
 
   try {
-    // 1. Load tokenizer
-    tokenizer = new GemmaTokenizer();
-    await tokenizer.load(modelUrl + "tokenizer.json");
+    // 1. Tokenizer
+    const tokResponse = await fetch(modelUrl + "tokenizer.json");
+    if (!tokResponse.ok) {
+      throw new Error(`Failed to fetch tokenizer: HTTP ${tokResponse.status}`);
+    }
+    const tokJson = await tokResponse.json();
+    tokenizer = buildBPETokenizer(tokJson);
 
-    // 2. Load ONNX model
+    // Resolve every special-token ID we rely on for generation.
+    const byContent = new Map<string, number>();
+    for (const t of tokJson.added_tokens ?? []) byContent.set(t.content, t.id);
+    tokenIds = {
+      bos: byContent.get(LFM2_CHAT_TOKENS.bos) ?? -1,
+      turnStart: byContent.get(LFM2_CHAT_TOKENS.turnStart) ?? -1,
+      turnEnd: byContent.get(LFM2_CHAT_TOKENS.turnEnd) ?? -1,
+      eos: byContent.get("<|endoftext|>") ?? byContent.get(LFM2_CHAT_TOKENS.turnEnd) ?? -1,
+      pad: byContent.get("<|pad|>") ?? 0,
+    };
+
+    // 2. ONNX session
     console.log(`${LOG_PREFIX} Loading ONNX model...`);
-
-    const executionProviders: ort.InferenceSession.ExecutionProviderConfig[] =
-      [];
-
+    const executionProviders: ort.InferenceSession.ExecutionProviderConfig[] = [];
     if ("gpu" in self.navigator) {
       executionProviders.push("webgpu");
       console.log(`${LOG_PREFIX} WebGPU available, using as primary EP`);
@@ -337,8 +111,6 @@ async function handleInit(modelUrl: string): Promise<void> {
     }
     executionProviders.push("wasm");
 
-    // Fetch model as ArrayBuffer and specify external data file location
-    // so ONNX Runtime resolves the companion _data file in worker context
     const modelResponse = await fetch(modelUrl + "model_q4.onnx");
     if (!modelResponse.ok) throw new Error(`Failed to fetch model: ${modelResponse.status}`);
     const modelData = await modelResponse.arrayBuffer();
@@ -350,160 +122,196 @@ async function handleInit(modelUrl: string): Promise<void> {
       ],
     });
 
-    console.log(`${LOG_PREFIX} Model session created successfully`);
+    // 3. Discover cache topology from input names
+    attnLayerIndices = [];
+    convLayerIndices = [];
+    for (const name of session.inputNames) {
+      const attn = name.match(/^past_key_values\.(\d+)\.key$/);
+      if (attn) attnLayerIndices.push(Number(attn[1]));
+      const conv = name.match(/^past_conv\.(\d+)$/);
+      if (conv) convLayerIndices.push(Number(conv[1]));
+    }
+    attnLayerIndices.sort((a, b) => a - b);
+    convLayerIndices.sort((a, b) => a - b);
     console.log(
-      `${LOG_PREFIX} Input names: ${session.inputNames.join(", ")}`,
-    );
-    console.log(
-      `${LOG_PREFIX} Output names: ${session.outputNames.join(", ")}`,
+      `${LOG_PREFIX} Discovered ${attnLayerIndices.length} attention layers ` +
+        `[${attnLayerIndices.join(",")}] and ${convLayerIndices.length} conv layers ` +
+        `[${convLayerIndices.join(",")}]`,
     );
 
+    console.log(`${LOG_PREFIX} Model session created successfully`);
     self.postMessage({ type: "ready" });
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "Failed to load model";
+    const message = err instanceof Error ? err.message : "Failed to load model";
     console.error(`${LOG_PREFIX} Init error:`, err);
     self.postMessage({ type: "error", message });
   }
 }
 
+// ---------------------------------------------------------------------------
+// Prompt building (LFM2 ChatML format)
+// ---------------------------------------------------------------------------
+
 /**
- * Build the Gemma chat-template prompt.
+ * Build the LFM2 ChatML prompt.
  *
- * Format:
- *   <bos><start_of_turn>user
- *   {system}\n\n{user message}<end_of_turn>
- *   <start_of_turn>model
- *
- * The system message is folded into the first user turn per Gemma convention
- * (from the chat_template in tokenizer_config.json).
+ * Format (from chat_template.jinja):
+ *   <|startoftext|><|im_start|>system
+ *   {SYSTEM_PROMPT}<|im_end|>
+ *   <|im_start|>user
+ *   ({context}) "{partial}" →<|im_end|>
+ *   <|im_start|>assistant
  */
 function buildPrompt(partial: string, context?: string): string {
-  // Pattern-completion: the model sees examples ending with " → completions"
-  // and continues the same pattern for the actual input.
-  // Context (time, conversation) goes between the examples and the input.
   const contextLine = context ? `(${context}) ` : "";
   return (
-    `<bos><start_of_turn>user\n` +
-    `${SYSTEM_PROMPT}\n` +
-    `${contextLine}"${partial}" →<end_of_turn>\n` +
-    `<start_of_turn>model\n`
+    `${LFM2_CHAT_TOKENS.bos}${LFM2_CHAT_TOKENS.turnStart}system\n` +
+    `${SYSTEM_PROMPT}${LFM2_CHAT_TOKENS.turnEnd}\n` +
+    `${LFM2_CHAT_TOKENS.turnStart}user\n` +
+    `${contextLine}"${partial}" →${LFM2_CHAT_TOKENS.turnEnd}\n` +
+    `${LFM2_CHAT_TOKENS.turnStart}assistant\n`
   );
 }
 
+// ---------------------------------------------------------------------------
+// Cache handling (dual: attention KV + conv state)
+// ---------------------------------------------------------------------------
+
 /**
- * Create empty KV cache tensors for the initial forward pass.
+ * Build the initial cache feed.
  *
- * Each layer has a key and value tensor of shape
- * [batch=1, num_kv_heads, seq_len=0, head_dim].
+ * Attention entries are zero-length — the model grows them each step.
+ * Conv entries are zero-filled but fully shaped [1, HIDDEN, CONV_L] — they
+ * are a rolling fixed-size buffer, not a growing cache.
  */
-function createEmptyKVCache(): Record<string, ort.Tensor> {
+function createInitialCache(): Record<string, ort.Tensor> {
   const cache: Record<string, ort.Tensor> = {};
-  for (let i = 0; i < NUM_LAYERS; i++) {
+  for (const i of attnLayerIndices) {
     cache[`past_key_values.${i}.key`] = new ort.Tensor(
       "float32",
       new Float32Array(0),
-      [1, NUM_KV_HEADS, 0, HEAD_DIM],
+      [1, KV_HEADS, 0, HEAD_DIM],
     );
     cache[`past_key_values.${i}.value`] = new ort.Tensor(
       "float32",
       new Float32Array(0),
-      [1, NUM_KV_HEADS, 0, HEAD_DIM],
+      [1, KV_HEADS, 0, HEAD_DIM],
+    );
+  }
+  for (const i of convLayerIndices) {
+    cache[`past_conv.${i}`] = new ort.Tensor(
+      "float32",
+      new Float32Array(HIDDEN_SIZE * CONV_L_CACHE),
+      [1, HIDDEN_SIZE, CONV_L_CACHE],
     );
   }
   return cache;
 }
 
-/**
- * Extract updated KV cache tensors from model output.
- *
- * The ONNX model outputs `present.N.key` / `present.N.value` which become
- * the `past_key_values.N.key` / `past_key_values.N.value` inputs for the
- * next autoregressive step.
- */
-function extractKVCache(
+/** Copy `present.*` outputs back into the `past_*` input slots for the next step. */
+function extractCache(
   results: ort.InferenceSession.OnnxValueMapType,
 ): Record<string, ort.Tensor> {
   const cache: Record<string, ort.Tensor> = {};
-  for (let i = 0; i < NUM_LAYERS; i++) {
-    const key = results[`present.${i}.key`];
-    const value = results[`present.${i}.value`];
-    if (key) cache[`past_key_values.${i}.key`] = key;
-    if (value) cache[`past_key_values.${i}.value`] = value;
+  for (const i of attnLayerIndices) {
+    const k = results[`present.${i}.key`];
+    const v = results[`present.${i}.value`];
+    if (k) cache[`past_key_values.${i}.key`] = k;
+    if (v) cache[`past_key_values.${i}.value`] = v;
+  }
+  for (const i of convLayerIndices) {
+    const c = results[`present_conv.${i}`];
+    if (c) cache[`past_conv.${i}`] = c;
   }
   return cache;
 }
 
-/**
- * Check whether the ONNX model expects KV cache inputs.
- *
- * Some ONNX exports omit KV cache entirely (no past_key_values in the
- * input list). In that case we skip cache feeding and just re-run
- * the full sequence each step.
- */
-function modelUsesKVCache(): boolean {
-  if (!session) return false;
-  return session.inputNames.some((n) => n.startsWith("past_key_values"));
+function modelUsesCache(): boolean {
+  return attnLayerIndices.length > 0 || convLayerIndices.length > 0;
 }
 
-/** Sampling parameters for sentence completion generation. */
-const TEMPERATURE = 0.8;
-const TOP_K = 40;
+// ---------------------------------------------------------------------------
+// Sampling — LFM2 defaults (repetition penalty, temperature, min-p)
+// ---------------------------------------------------------------------------
 
 /**
- * Sample the next token from logits using temperature-scaled top-k sampling.
- *
- * 1. Extract logits for the last position in the sequence
- * 2. Apply temperature scaling (lower = more deterministic, higher = more random)
- * 3. Keep only the top-k highest logits, zero out the rest
- * 4. Convert to probabilities via softmax
- * 5. Sample from the resulting distribution
- *
- * This produces diverse completions from the model — critical for
- * generating 8 different suggestions from a single prompt.
+ * Sample the next token from logits using LFM2 recommended sampling:
+ *   1. Repetition penalty: divide logits for tokens we've already emitted.
+ *   2. Temperature scaling.
+ *   3. Softmax to probabilities.
+ *   4. Min-p filter: zero out tokens whose prob < minP × max_prob.
+ *   5. Renormalize and sample.
  */
-function sampleToken(logits: ort.Tensor, seqLen: number): number {
-  const vocabSize = logits.dims[2];
+function sampleToken(
+  logits: ort.Tensor,
+  seqLen: number,
+  generated: readonly number[],
+): number {
+  const vocabSize = logits.dims[2] as number;
   const data = logits.data as Float32Array;
   const offset = (seqLen - 1) * vocabSize;
 
-  // Build (id, logit) pairs for the last position
-  const candidates: Array<{ id: number; logit: number }> = [];
+  const scores = new Float32Array(vocabSize);
+  for (let i = 0; i < vocabSize; i++) scores[i] = data[offset + i];
+
+  // 1. Repetition penalty
+  const rp = LFM2_SAMPLING.repetitionPenalty;
+  for (const id of generated) {
+    if (id >= 0 && id < vocabSize) {
+      scores[id] = scores[id] > 0 ? scores[id] / rp : scores[id] * rp;
+    }
+  }
+
+  // 2. Temperature + running max for stable softmax
+  const t = LFM2_SAMPLING.temperature;
+  let max = -Infinity;
   for (let i = 0; i < vocabSize; i++) {
-    candidates.push({ id: i, logit: data[offset + i] });
+    scores[i] = scores[i] / t;
+    if (scores[i] > max) max = scores[i];
   }
 
-  // Sort descending by logit and keep top-k
-  candidates.sort((a, b) => b.logit - a.logit);
-  const topK = candidates.slice(0, TOP_K);
-
-  // Apply temperature scaling and softmax
-  const scaled = topK.map((c) => c.logit / TEMPERATURE);
-  const maxScaled = scaled[0]; // already sorted descending
-  const exps = scaled.map((s) => Math.exp(s - maxScaled)); // subtract max for numerical stability
-  const sumExp = exps.reduce((a, b) => a + b, 0);
-  const probs = exps.map((e) => e / sumExp);
-
-  // Sample from the distribution
-  const r = Math.random();
-  let cumulative = 0;
-  for (let i = 0; i < probs.length; i++) {
-    cumulative += probs[i];
-    if (r < cumulative) return topK[i].id;
+  // 3. Softmax
+  let sum = 0;
+  for (let i = 0; i < vocabSize; i++) {
+    scores[i] = Math.exp(scores[i] - max);
+    sum += scores[i];
   }
-  return topK[topK.length - 1].id;
+  for (let i = 0; i < vocabSize; i++) scores[i] /= sum;
+
+  // 4. Min-p
+  let maxProb = 0;
+  for (let i = 0; i < vocabSize; i++) if (scores[i] > maxProb) maxProb = scores[i];
+  const threshold = LFM2_SAMPLING.minP * maxProb;
+  let remaining = 0;
+  for (let i = 0; i < vocabSize; i++) {
+    if (scores[i] < threshold) {
+      scores[i] = 0;
+    } else {
+      remaining += scores[i];
+    }
+  }
+  if (remaining === 0) {
+    // Degenerate case: return argmax
+    let argmax = 0;
+    for (let i = 1; i < vocabSize; i++) if (scores[i] > scores[argmax]) argmax = i;
+    return argmax;
+  }
+
+  // 5. Sample
+  const r = Math.random() * remaining;
+  let cum = 0;
+  for (let i = 0; i < vocabSize; i++) {
+    if (scores[i] === 0) continue;
+    cum += scores[i];
+    if (r < cum) return i;
+  }
+  return vocabSize - 1;
 }
 
-/**
- * Run autoregressive generation to produce sentence completions.
- *
- * Strategy:
- * 1. Encode the full prompt (system + partial sentence) to input_ids
- * 2. Run a prefill pass with the full input sequence
- * 3. Autoregressively generate tokens, feeding KV cache when supported
- * 4. Stop on EOS, newline-heavy output, or maxTokens
- * 5. Decode generated tokens and split into completion lines
- */
+// ---------------------------------------------------------------------------
+// Generation
+// ---------------------------------------------------------------------------
+
 async function handleComplete(
   partial: string,
   maxTokens: number,
@@ -523,16 +331,13 @@ async function handleComplete(
         `generating up to ${maxTokens} tokens`,
     );
 
-    const useCache = modelUsesKVCache();
+    const useCache = modelUsesCache();
     const generatedIds: number[] = [];
     let currentIds = inputIds;
-    let kvCache: Record<string, ort.Tensor> = useCache
-      ? createEmptyKVCache()
-      : {};
+    let cache: Record<string, ort.Tensor> = useCache ? createInitialCache() : {};
     let totalSeqLen = inputIds.length;
 
     for (let step = 0; step < maxTokens; step++) {
-      // Build input tensors
       const inputIdsTensor = new ort.Tensor(
         "int64",
         new BigInt64Array(currentIds.map((id) => BigInt(id))),
@@ -547,13 +352,11 @@ async function handleComplete(
       const feeds: Record<string, ort.Tensor> = {
         input_ids: inputIdsTensor,
         attention_mask: attentionMaskTensor,
-        ...kvCache,
+        ...cache,
       };
 
-      // Run inference
       const results = await session.run(feeds);
 
-      // Extract logits and sample next token
       const logits = results["logits"];
       if (!logits) {
         throw new Error(
@@ -562,38 +365,30 @@ async function handleComplete(
         );
       }
 
-      const nextToken = sampleToken(logits, currentIds.length);
+      const nextToken = sampleToken(logits, currentIds.length, generatedIds);
       generatedIds.push(nextToken);
 
-      // Stop conditions
-      if (nextToken === TOKEN_EOS || nextToken === TOKEN_PAD) {
+      // Stop on EOS/turn-end/pad
+      if (
+        nextToken === tokenIds.eos ||
+        nextToken === tokenIds.turnEnd ||
+        nextToken === tokenIds.pad
+      ) {
         console.log(
-          `${LOG_PREFIX} Generation stopped: EOS/PAD at step ${step}`,
+          `${LOG_PREFIX} Generation stopped at step ${step} (token ${nextToken})`,
         );
         break;
       }
 
-      // Stop if end_of_turn token is generated
-      if (nextToken === tokenizer.endOfTurnId) {
-        console.log(
-          `${LOG_PREFIX} Generation stopped: <end_of_turn> at step ${step}`,
-        );
-        break;
-      }
-
-      // Update state for next step
       if (useCache) {
-        kvCache = extractKVCache(results);
-        // In cached mode, only feed the new token
+        cache = extractCache(results);
         currentIds = [nextToken];
       } else {
-        // Without cache, re-feed the full sequence
         currentIds = [...inputIds, ...generatedIds];
       }
       totalSeqLen = inputIds.length + generatedIds.length;
     }
 
-    // Decode generated tokens to text
     const rawOutput = tokenizer.decode(generatedIds);
     const completions = parseCompletions(rawOutput, partial);
 
@@ -604,8 +399,7 @@ async function handleComplete(
 
     self.postMessage({ type: "completions", data: completions });
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "Inference failed";
+    const message = err instanceof Error ? err.message : "Inference failed";
     console.error(`${LOG_PREFIX} Completion error:`, err);
     self.postMessage({ type: "error", message });
   }
@@ -614,7 +408,7 @@ async function handleComplete(
 /**
  * Parse the model's raw text output into individual completion strings.
  *
- * Handles multiple output formats the small model may produce:
+ * Handles multiple formats the small model may produce:
  * - Newline-separated lines (ideal)
  * - Comma-separated items: "water, help, the nurse"
  * - Numbered items without newlines: 1."text"2."text"
@@ -625,17 +419,13 @@ async function handleComplete(
  * Stripping the partial recovers the actual continuation.
  */
 function parseCompletions(rawOutput: string, partial?: string): string[] {
-  // First try splitting on newlines
   let items = rawOutput.split("\n");
 
-  // If we got a single long line, try other formats
   if (items.length <= 2 && rawOutput.length > 30) {
-    // Try numbered patterns (e.g. "1." "2.")
     const numbered = rawOutput.split(/(?=\d+[\.\)])/);
     if (numbered.length > 2) {
       items = numbered;
     } else {
-      // Try comma-separated
       items = rawOutput.split(",");
     }
   }
@@ -644,13 +434,12 @@ function parseCompletions(rawOutput: string, partial?: string): string[] {
 
   return items
     .map((s) => s.trim())
-    .map((s) => s.replace(/^\d+[\.\)]\s*/, "")) // strip "1. " or "1) "
-    .map((s) => s.replace(/^[-•*]\s*/, "")) // strip bullet markers
-    .map((s) => s.replace(/^["'""]|["'""]$/g, "")) // strip surrounding quotes
-    .map((s) => s.replace(/\.$/, "")) // strip trailing period
+    .map((s) => s.replace(/^\d+[\.\)]\s*/, ""))
+    .map((s) => s.replace(/^[-•*]\s*/, ""))
+    .map((s) => s.replace(/^["'""]|["'""]$/g, ""))
+    .map((s) => s.replace(/\.$/, ""))
     .map((s) => s.trim())
     .map((s) => {
-      // Strip echoed partial from the start (model often echoes the input)
       if (partialLower && s.toLowerCase().startsWith(partialLower)) {
         return s.slice(partialLower.length).trim();
       }
@@ -682,7 +471,6 @@ self.onmessage = async (event: MessageEvent) => {
         context?: string;
         maxTokens: number;
       };
-      // Support both old (prompt) and new (partial+context) message format
       await handleComplete(partial ?? prompt ?? "", maxTokens, context);
       break;
     }
