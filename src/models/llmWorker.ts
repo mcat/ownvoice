@@ -35,15 +35,24 @@ const LOG_PREFIX = "[OwnVoice:LLM]";
 
 /**
  * System prompt uses pattern-completion format. See PRD §Layer-2 for the
- * rationale. Examples deliberately finish at different depths so the model
- * learns that continuations append naturally to the partial.
+ * rationale. Two things it has to get right:
+ *   1. Voice. The patient is speaking TO a nurse/doctor, first-person. The
+ *      model must not slip into caregiver voice ("I'm here to support you")
+ *      or third-person ("The patient is feeling...").
+ *   2. Grammar. Every completion must append cleanly: reading the partial
+ *      followed by the completion aloud must form one grammatical sentence.
+ *      Few-shot examples all demonstrate direct append (no lead-ins like
+ *      "I am scared" following "I feel" — that produces "I feel I am scared").
  */
-const SYSTEM_PROMPT = `Finish the patient's sentence. Write ONLY the next few words that naturally continue it, comma-separated.
+const SYSTEM_PROMPT = `You are a hospitalized patient texting your nurse. Finish your own sentence in your own voice. Write ONLY the next few words that naturally continue it — each completion is 1-6 words that read as one sentence when joined to the start. Return 6-8 different short completions, comma-separated.
 
 "I feel" → scared, dizzy, better today, cold, nauseous, weak, lonely, confused
-"I am scared" → of the surgery, to be alone, about what's happening, and I need someone, of the needles, please stay with me
-"I need help" → getting up, breathing, with the pain, reaching the button, right now, going to the bathroom
-"can you" → call my family, get the nurse, explain what's happening, stay with me, adjust my bed, turn off the light`;
+"I am" → thirsty, tired, in pain, scared, cold, hungry, ready to rest, feeling a little better
+"My pain is" → getting worse, in my stomach, sharp, about a 7, unbearable, in my back, spreading, less than before
+"it hurts" → when I breathe, a lot, every time I move, right here, to swallow, more now, less than before
+"I need" → water, the nurse, my glasses, to use the bathroom, more blankets, help sitting up, my family here
+"can you" → call my family, get the nurse, explain what's happening, stay with me, adjust my bed, turn off the light
+"please" → call my family, help me sit up, bring me water, get the doctor, stay with me, come closer`;
 
 // ---------------------------------------------------------------------------
 // Module-level state
@@ -159,14 +168,18 @@ async function handleInit(modelUrl: string): Promise<void> {
  *   <|im_start|>system
  *   {SYSTEM_PROMPT}<|im_end|>
  *   <|im_start|>user
- *   ({context}) "{partial}" →<|im_end|>
+ *   [Context: {context}.]
+ *   "{partial}" →<|im_end|>
  *   <|im_start|>assistant
  *
- * The leading <|startoftext|> BOS token is NOT part of this string — the
- * tokenizer's TemplateProcessing post-processor prepends it automatically.
+ * Context (time of day + recent messages) is prefixed as a bracketed
+ * aside so it doesn't fuse into the partial sentence and confuse the
+ * model's continuation. The leading <|startoftext|> BOS token is NOT
+ * part of this string — the tokenizer's TemplateProcessing post-processor
+ * prepends it automatically.
  */
 function buildPrompt(partial: string, context?: string): string {
-  const contextLine = context ? `(${context}) ` : "";
+  const contextLine = context ? `[Context: ${context}]\n` : "";
   return (
     `${LFM2_CHAT_TOKENS.turnStart}system\n` +
     `${SYSTEM_PROMPT}${LFM2_CHAT_TOKENS.turnEnd}\n` +
@@ -409,28 +422,74 @@ async function handleComplete(
 }
 
 /**
+ * Phrases that indicate the model drifted into caregiver voice — somebody
+ * OTHER than the patient talking (nurse/doctor/chatbot). These are dropped
+ * even when they form grammatically valid completions, because they defeat
+ * the product's core purpose (letting the patient communicate in their
+ * own voice). The model is ~1.2B and chat-tuned, so some drift is expected;
+ * this filter is the safety net.
+ */
+const CAREGIVER_VOICE_PATTERNS: RegExp[] = [
+  /\bthe patient\b/i,
+  /\byour (pain|condition|family|comfort|throat|body|chest|stomach|back|symptoms|vitals|breathing)\b/i,
+  /\byou (are|feel|need|should|might|can|will|want|look|seem) /i,
+  /\blet me (know|check|help)\b/i,
+  /\bI['’]?m here to (help|support|listen|assist)\b/i,
+  /\bI['’]?ll (stay|help|check|bring|call|assist|be)\b/i,
+  /\bI will (help|check|assist|bring|call|stay)\b/i,
+  /\btell me (what|how|if|about|where)\b/i,
+  /\b(we|we['’]re|we are) (going to|here|trying|working|reassess|['’]ll)\b/i,
+  /\bwe['’]ll /i,
+  /\bthe nurse (is|will|says|should|can|came)\b/i,
+  /\bthe doctor (is|will|says|should|can|came)\b/i,
+  /\bto (help|assist|support|comfort) (you|the patient)\b/i,
+  /\btrying to (understand|help|support)\b/i,
+  /\bmatters most\b/i,
+  /\b(you['’]?d|do you want to|do you need) (like|describe|tell|share)\b/i,
+  /\bhow (are|do) you\b/i,
+  /^let['’]?s\b/i,
+  /\bI need your help\b/i,
+  /\bfind a way forward\b/i,
+];
+
+function isCaregiverVoice(s: string): boolean {
+  return CAREGIVER_VOICE_PATTERNS.some((re) => re.test(s));
+}
+
+/**
  * Parse the model's raw text output into individual completion strings.
  *
  * Handles multiple formats the small model may produce:
  * - Newline-separated lines (ideal)
  * - Comma-separated items: "water, help, the nurse"
- * - Numbered items without newlines: 1."text"2."text"
  * - Numbered items with dots/parens: "1. text" or "1) text"
  *
  * The `partial` parameter is used to strip echoed input from completions.
  * Small models often echo the partial: "I need a drink" instead of "a drink".
  * Stripping the partial recovers the actual continuation.
+ *
+ * Finally, a caregiver-voice post-filter drops items like "Your pain is…"
+ * or "I'm here to help…" that defeat the patient-communication purpose.
  */
 function parseCompletions(rawOutput: string, partial?: string): string[] {
-  let items = rawOutput.split("\n");
-
-  if (items.length <= 2 && rawOutput.length > 30) {
-    const numbered = rawOutput.split(/(?=\d+[\.\)])/);
-    if (numbered.length > 2) {
-      items = numbered;
+  // Start with newline-split lines, then split further on commas. The model
+  // frequently groups short completions comma-separated within a line, which
+  // without this step would produce one huge pill per line.
+  const lines = rawOutput.split("\n");
+  let items: string[] = [];
+  for (const line of lines) {
+    if (line.includes(",") && !/[.?!]$/.test(line.trim())) {
+      // Looks like a list — split on commas
+      items.push(...line.split(","));
     } else {
-      items = rawOutput.split(",");
+      items.push(line);
     }
+  }
+
+  // Fallback if the entire output was one long line
+  if (items.length <= 1 && rawOutput.length > 30) {
+    const numbered = rawOutput.split(/(?=\d+[\.\)])/);
+    if (numbered.length > 2) items = numbered;
   }
 
   const partialLower = partial?.toLowerCase().trim() ?? "";
@@ -440,7 +499,7 @@ function parseCompletions(rawOutput: string, partial?: string): string[] {
     .map((s) => s.replace(/^\d+[\.\)]\s*/, ""))
     .map((s) => s.replace(/^[-•*]\s*/, ""))
     .map((s) => s.replace(/^["'""]|["'""]$/g, ""))
-    .map((s) => s.replace(/\.$/, ""))
+    .map((s) => s.replace(/[.,]$/, ""))
     .map((s) => s.trim())
     .map((s) => {
       if (partialLower && s.toLowerCase().startsWith(partialLower)) {
@@ -448,7 +507,9 @@ function parseCompletions(rawOutput: string, partial?: string): string[] {
       }
       return s;
     })
-    .filter((s) => s.length > 0 && s.length <= 40)
+    .filter((s) => s.length >= 3 && s.length <= 60)
+    .filter((s) => !isCaregiverVoice(s))
+    .filter((s, i, arr) => arr.findIndex((t) => t.toLowerCase() === s.toLowerCase()) === i)
     .slice(0, 8);
 }
 

@@ -470,6 +470,133 @@ describe("llmWorker — prompt template", () => {
   });
 });
 
+describe("llmWorker — caregiver-voice filter", () => {
+  /**
+   * We can't easily drive parseCompletions directly (it's a module-private
+   * helper), so instead we stub the model to produce an output with a mix
+   * of patient-voice and caregiver-voice lines, and verify only the
+   * patient-voice ones survive.
+   */
+  async function runWithRaw(raw: string): Promise<string[]> {
+    setupFetchMocks();
+
+    // Serialize the raw output as tokens we can re-decode. Simplest path:
+    // stash raw as a string in a special token mock and arrange for decode
+    // to return it. Since we don't have a real decoder here, we intercept
+    // by having the model emit text that the mock tokenizer's decode knows
+    // how to reconstruct. Instead, easier: have the worker's tokenizer
+    // (buildBPETokenizer) return `raw` on decode.
+    //
+    // Use buildBPETokenizer's deterministic decode: provide vocab that maps
+    // each byte of `raw` to an ID via byte-level Unicode.
+    const vocab: Record<string, number> = {};
+    const ids: number[] = [];
+    // Use the byte-level BPE "Ġ" convention: unique ids per char, plus Ġ for space
+    let nextId = 1000;
+    for (const ch of raw) {
+      const encoded = ch === " " ? "\u0120" : ch;
+      if (vocab[encoded] === undefined) vocab[encoded] = nextId++;
+      ids.push(vocab[encoded]);
+    }
+
+    // Override the tokenizer fetch to return our custom vocab
+    mockFetch.mockImplementation(async (url: string) => {
+      if (url.includes("tokenizer.json")) {
+        return {
+          ok: true,
+          json: async () => ({
+            model: { type: "BPE", vocab, merges: [] },
+            added_tokens: [
+              { id: LFM2.PAD, content: "<|pad|>", special: true },
+              { id: LFM2.BOS, content: "<|startoftext|>", special: true },
+              { id: LFM2.ENDOFTEXT, content: "<|endoftext|>", special: true },
+              { id: LFM2.IM_START, content: "<|im_start|>", special: true },
+              { id: LFM2.IM_END, content: "<|im_end|>", special: true },
+            ],
+            post_processor: {
+              type: "Sequence",
+              processors: [
+                { type: "ByteLevel" },
+                {
+                  type: "TemplateProcessing",
+                  single: [
+                    { SpecialToken: { id: "<|startoftext|>", type_id: 0 } },
+                    { Sequence: { id: "A", type_id: 0 } },
+                  ],
+                },
+              ],
+            },
+          }),
+        };
+      }
+      return { ok: true, arrayBuffer: async () => new ArrayBuffer(10) };
+    });
+
+    // Model run: emit each id in order, then IM_END
+    let emitIdx = 0;
+    mockSessionRun.mockImplementation(async (feeds: Record<string, { dims: number[] }>) => {
+      const seqLen = feeds.input_ids?.dims?.[1] ?? 1;
+      const out = buildImEndResult(seqLen);
+      const offset = (seqLen - 1) * VOCAB_SIZE;
+      (out.logits.data as Float32Array).fill(0);
+      const token = emitIdx < ids.length ? ids[emitIdx++] : LFM2.IM_END;
+      (out.logits.data as Float32Array)[offset + token] = 100;
+      return out;
+    });
+
+    mockSessionCreate.mockResolvedValue({
+      run: mockSessionRun,
+      inputNames: lfm2InputNames(),
+      outputNames: lfm2OutputNames(),
+    });
+
+    vi.resetModules();
+    await import("./llmWorker");
+    const handler = (globalThis as unknown as { onmessage: (e: MessageEvent) => Promise<void> }).onmessage;
+    await handler({ data: { type: "init", modelUrl: "/models/llm/" } } as MessageEvent);
+    mockPostMessage.mockClear();
+    await handler({
+      data: { type: "complete", partial: "I feel", maxTokens: 200 },
+    } as unknown as MessageEvent);
+
+    const call = mockPostMessage.mock.calls.find(
+      (c: unknown[]) => (c[0] as { type: string }).type === "completions",
+    );
+    return (call![0] as { data: string[] }).data;
+  }
+
+  it("drops caregiver-voice lines (your pain, I'm here to help, the nurse is…)", async () => {
+    const raw = [
+      "scared",
+      "dizzy",
+      "Your pain is getting worse",
+      "cold",
+      "I'm here to help you through this",
+      "weak",
+      "The nurse is coming soon",
+      "lonely",
+    ].join("\n");
+    const completions = await runWithRaw(raw);
+    expect(completions).toEqual(["scared", "dizzy", "cold", "weak", "lonely"]);
+  });
+
+  it("keeps patient-voice lines intact (first-person continuations)", async () => {
+    const raw = [
+      "scared",
+      "a lot of pain today",
+      "cold and tired",
+      "when I breathe",
+    ].join("\n");
+    const completions = await runWithRaw(raw);
+    expect(completions).toEqual([
+      "scared",
+      "a lot of pain today",
+      "cold and tired",
+      "when I breathe",
+    ]);
+  });
+});
+
 describe("llmWorker — sampling", () => {
   it("applies repetition penalty so an already-generated token loses to a fresh one", async () => {
     setupFetchMocks();
