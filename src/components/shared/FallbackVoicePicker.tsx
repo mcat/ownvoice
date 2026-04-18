@@ -165,6 +165,8 @@ export function FallbackVoicePicker({
           gap: 6,
           maxHeight: 320,
           overflowY: "auto",
+          // Clearance for focus outline on edge items
+          padding: 4,
         }}
       >
         {sorted.map((v) => {

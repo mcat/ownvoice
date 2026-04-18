@@ -234,7 +234,11 @@ export function App() {
                   display: "flex",
                   gap: 10,
                   overflowX: "auto",
-                  paddingBottom: 6,
+                  // overflowX:auto implies overflow-y:auto, and this row is
+                  // the clip boundary for its chip children. Pad all four
+                  // sides so focus rings on the leftmost/rightmost chips
+                  // aren't clipped.
+                  padding: "4px 4px 6px",
                 }}
               >
                 {sug.map((s) => (
