@@ -1,8 +1,9 @@
-import { useState, useRef, useEffect } from "preact/hooks";
+import { useState, useRef, useEffect, useId } from "preact/hooks";
 import type { JSX } from "preact";
 import type { ThemeTokens, ThemeName } from "../../theme/tokens";
 import { getWishTopics, composeWishSentence } from "../../data/phraseRegistry";
 import { Btn } from "../shared/Btn";
+import { useDialog } from "../../hooks/useDialog";
 
 interface WishMessage {
   from: "patient" | "provider";
@@ -40,6 +41,8 @@ export function MyWishes({
 
   const threadRef = useRef<HTMLDivElement>(null);
   const responsesRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
+  const { dialogRef } = useDialog({ onClose, titleId });
 
   const blue = theme === "dark" ? "#60A5FA" : "#2563EB";
   const blueBg = theme === "dark" ? "#1E3A5F" : "#EFF6FF";
@@ -173,6 +176,7 @@ export function MyWishes({
     overflowY: "auto",
     padding: "16px 20px",
     borderTop: `1px solid ${t.border}`,
+    scrollPaddingBottom: 96,
   };
 
   const actionBar: JSX.CSSProperties = {
@@ -190,11 +194,19 @@ export function MyWishes({
     );
 
     return (
-      <div style={overlay}>
-        <div style={card}>
+      <div style={overlay} onClick={onClose}>
+        <div
+          ref={dialogRef}
+          tabIndex={-1}
+          style={card}
+          onClick={(e) => e.stopPropagation()}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
+        >
           <div style={header}>
             <div style={headerRow}>
-              <h2 style={titleStyle}>{patientName}'s Wishes</h2>
+              <h2 id={titleId} style={titleStyle}>{patientName}'s Wishes</h2>
               <Btn
                 onClick={onClose}
                 style={{
@@ -304,12 +316,20 @@ export function MyWishes({
 
   // --- Active topic screen ---
   return (
-    <div style={overlay}>
-      <div style={card}>
+    <div style={overlay} onClick={onClose}>
+      <div
+        ref={dialogRef}
+        tabIndex={-1}
+        style={card}
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+      >
         {/* Fixed Header */}
         <div style={header}>
           <div style={headerRow}>
-            <h2 style={titleStyle}>My Wishes</h2>
+            <h2 id={titleId} style={titleStyle}>My Wishes</h2>
             <Btn
               onClick={onClose}
               style={{
@@ -327,7 +347,13 @@ export function MyWishes({
             </Btn>
           </div>
 
-          {/* Progress bars */}
+          {/* Progress: visible step-count + individual bars with aria-current */}
+          <div
+            class="font-sans"
+            style={{ fontSize: 13, color: t.muted, marginBottom: 6 }}
+          >
+            Step {currentIdx + 1} of {SICG_TOPICS.length}
+          </div>
           <div style={progressRow}>
             {SICG_TOPICS.map((tp, i) => {
               const answered =
@@ -338,11 +364,13 @@ export function MyWishes({
               } else if (i === currentIdx) {
                 bg = theme === "dark" ? "#93C5FD" : "#93C5FD";
               } else {
-                bg = t.border;
+                // 3:1 non-text contrast for WCAG 1.4.11 AA
+                bg = theme === "dark" ? "rgba(255,255,255,0.30)" : "#6B7280";
               }
               return (
                 <div
                   key={tp.id}
+                  aria-current={i === currentIdx ? "step" : undefined}
                   style={{
                     flex: 1,
                     height: 6,
@@ -444,6 +472,7 @@ export function MyWishes({
                 <Btn
                   key={response}
                   onClick={() => toggleResponse(response)}
+                  aria-pressed={isSelected}
                   style={{
                     display: "flex",
                     alignItems: "center",

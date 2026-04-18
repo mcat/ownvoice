@@ -81,66 +81,83 @@ export function PainFlow({ onSelect, t, theme, locale = "en" }: PainFlowProps) {
   // with a centered label below. Past bars remain clickable so the user
   // can jump back without stepping through.
   const PAIN_COLOR = "#DC2626";
-  const inactiveBar = theme === "dark" ? "rgba(255,255,255,0.12)" : "#E5E7EB";
-  const inactiveText = theme === "dark" ? "#9CA3AF" : "#9CA3AF";
+  // Dedicated text color — 7.5:1 on #FAFAF8 in light, AAA-pass in dark.
+  const PAIN_COLOR_TEXT = theme === "dark" ? "#FCA5A5" : "#991B1B";
+  // Inactive bar: 3:1 non-text contrast for WCAG 1.4.11 AA
+  const inactiveBar = theme === "dark" ? "rgba(255,255,255,0.30)" : "#D1D5DB";
+  // Inactive step label uses theme.muted which is AAA-contrast on both themes
+  const inactiveText = t.muted;
   const breadcrumb = (
-    <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
-      {STEPS.map((s, i) => {
-        const isPast = i < currentIndex;
-        const isCurrent = s === step;
-        const isActive = i <= currentIndex;
-        const content = (
-          <>
-            <div
-              style={{
-                height: 4,
-                borderRadius: 2,
-                background: isActive ? PAIN_COLOR : inactiveBar,
-                transition: "background 0.2s",
-              }}
-            />
-            <div
-              class="font-sans"
-              style={{
-                fontSize: 12,
-                color: isCurrent ? PAIN_COLOR : inactiveText,
-                marginTop: 4,
-                fontWeight: isCurrent ? 600 : 400,
-                textAlign: "center",
-              }}
-            >
-              {STEP_LABELS[s]}
-            </div>
-          </>
-        );
+    <>
+      {/* Visible step-of-total cue + SR-accessible aria-current below */}
+      <div
+        class="font-sans"
+        style={{ fontSize: 13, color: t.muted, marginBottom: 6 }}
+      >
+        Step {currentIndex + 1} of {STEPS.length}
+      </div>
+      <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
+        {STEPS.map((s, i) => {
+          const isPast = i < currentIndex;
+          const isCurrent = s === step;
+          const isActive = i <= currentIndex;
+          const content = (
+            <>
+              <div
+                style={{
+                  height: 4,
+                  borderRadius: 2,
+                  background: isActive ? PAIN_COLOR : inactiveBar,
+                  transition: "background 0.2s",
+                }}
+              />
+              <div
+                class="font-sans"
+                style={{
+                  fontSize: 13,
+                  color: isCurrent ? PAIN_COLOR_TEXT : inactiveText,
+                  marginTop: 4,
+                  fontWeight: isCurrent ? 600 : 400,
+                  textAlign: "center",
+                }}
+              >
+                {STEP_LABELS[s]}
+              </div>
+            </>
+          );
 
-        if (isPast) {
+          if (isPast) {
+            return (
+              <button
+                key={s}
+                type="button"
+                onClick={() => goToStep(s)}
+                style={{
+                  flex: 1,
+                  background: "none",
+                  border: "none",
+                  padding: 0,
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                }}
+                aria-label={`Go back to ${STEP_LABELS[s]}`}
+              >
+                {content}
+              </button>
+            );
+          }
           return (
-            <button
+            <div
               key={s}
-              type="button"
-              onClick={() => goToStep(s)}
-              style={{
-                flex: 1,
-                background: "none",
-                border: "none",
-                padding: 0,
-                cursor: "pointer",
-                fontFamily: "inherit",
-              }}
-              aria-label={`Go back to ${STEP_LABELS[s]}`}
+              style={{ flex: 1 }}
+              aria-current={isCurrent ? "step" : undefined}
             >
               {content}
-            </button>
+            </div>
           );
-        }
-        return (
-          <div key={s} style={{ flex: 1 }}>
-            {content}
-          </div>
-        );
-      })}
-    </div>
+        })}
+      </div>
+    </>
   );
 
   // --- Back button ---
@@ -168,22 +185,39 @@ export function PainFlow({ onSelect, t, theme, locale = "en" }: PainFlowProps) {
   // --- Step: Severity ---
   if (step === "severity") {
     return (
-      <div style={{ padding: 8, animation: "fadeUp 0.25s ease-out backwards" }}>
+      <div
+        style={{
+          padding: 8,
+          animation: "fadeUp 0.25s ease-out backwards",
+          flex: 1,
+          minHeight: 0,
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
         {breadcrumb}
-        <p class="font-sans" style={{ color: t.sub, fontSize: 18, margin: "0 0 16px" }}>
+        <h2 class="font-sans" style={{ color: t.sub, fontSize: 18, fontWeight: 600, margin: "0 0 16px", flexShrink: 0 }}>
           How much pain do you have?
-        </p>
+        </h2>
         <div
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(3, 1fr)",
             gap: 12,
+            flex: 1,
+            minHeight: 0,
+            overflowY: "auto",
+            alignContent: "start",
+            // Breathing room so focus rings on edge buttons aren't clipped
+            // by the scroll container's overflow boundary (WCAG 2.4.11/2.4.13).
+            padding: 4,
           }}
         >
           {EMOJI_FPS.map((face) => (
             <Btn
               key={face.n}
               onClick={() => handleSeverity(face.n)}
+              aria-label={`Pain level ${face.n}, ${face.label}`}
               style={{
                 display: "flex",
                 flexDirection: "column",
@@ -231,17 +265,33 @@ export function PainFlow({ onSelect, t, theme, locale = "en" }: PainFlowProps) {
   // --- Step: Location ---
   if (step === "location") {
     return (
-      <div style={{ padding: 8, animation: "fadeUp 0.25s ease-out backwards" }}>
+      <div
+        style={{
+          padding: 8,
+          animation: "fadeUp 0.25s ease-out backwards",
+          flex: 1,
+          minHeight: 0,
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
         {breadcrumb}
         {backButton}
-        <p class="font-sans" style={{ color: t.sub, fontSize: 18, margin: "0 0 16px" }}>
+        <h2 class="font-sans" style={{ color: t.sub, fontSize: 18, fontWeight: 600, margin: "0 0 16px", flexShrink: 0 }}>
           Where is your pain?
-        </p>
+        </h2>
         <div
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(3, 1fr)",
             gap: 12,
+            flex: 1,
+            minHeight: 0,
+            overflowY: "auto",
+            alignContent: "start",
+            // Breathing room so focus rings on edge buttons aren't clipped
+            // by the scroll container's overflow boundary (WCAG 2.4.11/2.4.13).
+            padding: 4,
           }}
         >
           {BODY_REGIONS.map((region) => (
@@ -281,17 +331,31 @@ export function PainFlow({ onSelect, t, theme, locale = "en" }: PainFlowProps) {
 
   // --- Step: Descriptor ---
   return (
-    <div style={{ padding: 8, animation: "fadeUp 0.25s ease-out backwards" }}>
+    <div
+      style={{
+        padding: 8,
+        animation: "fadeUp 0.25s ease-out backwards",
+        flex: 1,
+        minHeight: 0,
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
       {breadcrumb}
       {backButton}
-      <p class="font-sans" style={{ color: t.sub, fontSize: 18, margin: "0 0 16px" }}>
+      <h2 class="font-sans" style={{ color: t.sub, fontSize: 18, fontWeight: 600, margin: "0 0 16px", flexShrink: 0 }}>
         What does the pain feel like?
-      </p>
+      </h2>
       <div
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(3, 1fr)",
           gap: 12,
+          flex: 1,
+          minHeight: 0,
+          overflowY: "auto",
+          alignContent: "start",
+          padding: 4,
         }}
       >
         {PAIN_DESCRIPTORS.map((desc) => (

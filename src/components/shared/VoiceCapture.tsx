@@ -579,8 +579,11 @@ export function VoiceCapture({
             Remove
           </Btn>
         </div>
-        {/* Clone status indicator */}
-        <div style={{ marginTop: compact ? 4 : 6, display: "flex", alignItems: "center", gap: 8 }}>
+        {/* Clone status indicator — live region so transitions are announced */}
+        <div
+          aria-live="polite"
+          style={{ marginTop: compact ? 4 : 6, display: "flex", alignItems: "center", gap: 8 }}
+        >
           <CloneStatusBadge />
           {cloneStatus === "ready" && onPreview && (
             <Btn
@@ -653,11 +656,13 @@ export function VoiceCapture({
 
 function ErrorRow({ compact, message }: { compact: boolean; message: string }) {
   return (
-    <div style={{
-      marginTop: compact ? 6 : 8, padding: compact ? "6px 10px" : "8px 12px",
-      background: "#FEF2F2", borderRadius: compact ? 6 : 8,
-      fontSize: compact ? 12 : 13, color: "#991B1B", border: "1px solid #FCA5A5",
-    }}>
+    <div
+      role="alert"
+      style={{
+        marginTop: compact ? 6 : 8, padding: compact ? "6px 10px" : "8px 12px",
+        background: "#FEF2F2", borderRadius: compact ? 6 : 8,
+        fontSize: compact ? 12 : 13, color: "#991B1B", border: "1px solid #FCA5A5",
+      }}>
       {message}
     </div>
   );

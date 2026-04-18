@@ -10,8 +10,8 @@ export const light = {
   bg: "#FAFAF8",
   card: "#FFFFFF",
   text: "#1A1A1A",
-  sub: "#4B5563", // 7.2:1 on #FAFAF8
-  muted: "#6B7280", // 4.9:1 on #FAFAF8 — AA pass
+  sub: "#374151", // 10.04:1 on #FAFAF8 — AAA pass
+  muted: "#4B5563", // 7.23:1 on #FAFAF8 — AAA pass
   border: "rgba(0,0,0,0.07)",
   activeBg: "rgba(0,0,0,0.03)",
   helpBg: "#DC2626",
@@ -19,15 +19,15 @@ export const light = {
   tabBg: "#FFFFFF",
   speakBg: "linear-gradient(135deg,#1E293B,#334155)",
   threadMeta: "#FFFFFF", // 5.33:1 on #2563EB (blue bubbles) — AA pass for 11px text
-  threadMetaProvider: "#6B7280", // 4.9:1 on #FFFFFF (white bubbles)
+  threadMetaProvider: "#4B5563", // 7.23:1 on #FFFFFF (white bubbles) — AAA pass
 } as const;
 
 export const dark = {
   bg: "#111113",
   card: "#1C1C1E",
   text: "#F5F5F5", // warm off-white per design guidelines
-  sub: "#B0B7C0", // 8.0:1 on #111113
-  muted: "#8B929B", // 5.3:1 on #111113 — AA pass
+  sub: "#B0B7C0", // 8.0:1 on #111113 — AAA pass
+  muted: "#A0A7B0", // 7.1:1 on #111113 — AAA pass
   border: "rgba(255,255,255,0.08)",
   activeBg: "rgba(255,255,255,0.05)",
   helpBg: "#EF4444",
@@ -35,7 +35,7 @@ export const dark = {
   tabBg: "#1C1C1E",
   speakBg: "linear-gradient(135deg,#0F172A,#1E293B)",
   threadMeta: "#FFFFFF", // 5.33:1 on #2563EB (blue bubbles) — AA pass for 11px text
-  threadMetaProvider: "#8B929B", // 5.3:1 on #1C1C1E
+  threadMetaProvider: "#A0A7B0", // 7.0:1 on #1C1C1E — AAA pass
 } as const;
 
 export type ThemeTokens = typeof light;

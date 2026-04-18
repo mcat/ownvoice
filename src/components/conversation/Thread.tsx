@@ -36,30 +36,20 @@ export function Thread({ messages, t, onRepeat }: ThreadProps) {
 
   const wrapperStyle: JSX.CSSProperties = {
     marginBottom: 16,
-  };
-
-  const headerStyle: JSX.CSSProperties = {
-    textTransform: "uppercase",
-    letterSpacing: 2,
-    fontSize: 13,
-    color: t.muted,
-    margin: "0 0 10px 0",
-    fontWeight: 600,
+    flexShrink: 0,
   };
 
   const scrollStyle: JSX.CSSProperties = {
     background: t.activeBg,
     borderRadius: 18,
     padding: "14px 16px",
-    maxHeight: 190,
+    maxHeight: "min(160px, 22dvh)",
     overflowY: "auto",
     border: `1px solid ${t.border}`,
   };
 
   return (
     <div style={wrapperStyle}>
-      <div style={headerStyle}>Conversation · tap to say again</div>
-
       <div style={scrollStyle}>
       {messages.map((msg, idx) => {
         const isPatient = msg.from === "patient";
@@ -72,10 +62,14 @@ export function Thread({ messages, t, onRepeat }: ThreadProps) {
         };
 
         const btnStyle: JSX.CSSProperties = {
+          // #1E40AF is a darker shade of the patient-blue brand that passes
+          // WCAG 1.4.6 AAA (7:1) against white text; #2563EB is only AA (5.16:1).
+          // Thread bubbles persist, so AAA matters; transient "lit" states
+          // elsewhere stay on the lighter brand color.
           background: isPatient
             ? isRepeating
-              ? "#1D4ED8"
-              : "#2563EB"
+              ? "#1E3A8A"
+              : "#1E40AF"
             : t.card,
           color: isPatient ? "#FFFFFF" : t.text,
           border: isPatient ? "none" : `1px solid ${t.border}`,
@@ -89,20 +83,6 @@ export function Thread({ messages, t, onRepeat }: ThreadProps) {
           transition: "background 0.15s, box-shadow 0.15s",
         };
 
-        const metaStyle: JSX.CSSProperties = {
-          fontSize: 11,
-          color: isPatient ? t.threadMeta : t.threadMetaProvider,
-          marginTop: 4,
-          display: "flex",
-          alignItems: "center",
-          gap: 6,
-        };
-
-        const repeatIconStyle: JSX.CSSProperties = {
-          fontSize: 13,
-          opacity: isRepeating ? 1 : 0.7,
-        };
-
         return (
           <div key={idx} style={bubbleStyle}>
             <Btn
@@ -110,17 +90,7 @@ export function Thread({ messages, t, onRepeat }: ThreadProps) {
               style={btnStyle}
               aria-label={`Repeat: ${msg.text}`}
             >
-              <div>{msg.text}</div>
-              <div style={metaStyle}>
-                <span>
-                  {msg.label} · {msg.time}
-                </span>
-                {isRepeating ? (
-                  <span style={repeatIconStyle}>speaking ↻</span>
-                ) : (
-                  <span style={repeatIconStyle}>↻</span>
-                )}
-              </div>
+              {msg.text}
             </Btn>
           </div>
         );

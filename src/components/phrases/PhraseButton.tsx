@@ -34,7 +34,8 @@ export function PhraseButton({ phrase, onTap, t }: PhraseButtonProps) {
         alignItems: "center",
         justifyContent: "center",
         gap: 8,
-        minHeight: 100,
+        width: "100%",
+        height: "100%",
         boxShadow: lit
           ? "0 4px 16px rgba(37,99,235,0.25)"
           : "0 1px 3px rgba(0,0,0,0.04)",
@@ -42,10 +43,10 @@ export function PhraseButton({ phrase, onTap, t }: PhraseButtonProps) {
         animation: "fadeUp 0.25s ease-out backwards",
       }}
     >
-      <span style={{ fontSize: 28, lineHeight: 1 }}>{phrase.icon}</span>
+      <span style={{ fontSize: 40, lineHeight: 1 }}>{phrase.icon}</span>
       <span
         style={{
-          fontSize: 16,
+          fontSize: 18,
           fontWeight: 600,
           textAlign: "center",
           lineHeight: 1.35,

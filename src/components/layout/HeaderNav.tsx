@@ -15,10 +15,10 @@ const ICONS = {
 
 // Overlay button definitions live at module scope — identity never changes
 // across renders, so React/Preact reuses the same array reference.
-const OVERLAY_BUTTONS: readonly { overlay: OverlayName; icon: string }[] = [
-  { overlay: "wishes", icon: ICONS.wishes },
-  { overlay: "listen", icon: ICONS.listen },
-  { overlay: "provider", icon: ICONS.provider },
+const OVERLAY_BUTTONS: readonly { overlay: OverlayName; icon: string; label: string }[] = [
+  { overlay: "wishes", icon: ICONS.wishes, label: "Wishes" },
+  { overlay: "listen", icon: ICONS.listen, label: "Listen" },
+  { overlay: "provider", icon: ICONS.provider, label: "Staff" },
 ];
 
 function btnStyle(t: ThemeTokens, icon: string) {
@@ -27,12 +27,25 @@ function btnStyle(t: ThemeTokens, icon: string) {
     color: t.sub,
     border: "none",
     borderRadius: 14,
-    width: 44,
-    height: 44,
-    fontSize: icon === ICONS.provider ? 16 : 18,
+    width: 64,
+    height: 64,
+    padding: 0,
     display: "flex",
+    flexDirection: "column" as const,
     alignItems: "center",
     justifyContent: "center",
+    gap: 4,
+    lineHeight: 1,
+    fontSize: icon === ICONS.provider ? 20 : 22,
+  };
+}
+
+function labelStyle(t: ThemeTokens) {
+  return {
+    fontSize: 11,
+    fontWeight: 600,
+    color: t.sub,
+    letterSpacing: 0.1,
   };
 }
 
@@ -45,19 +58,23 @@ export function HeaderNav({ onSettings }: HeaderNavProps) {
   const openOverlay = useUIStore((s) => s.openOverlay);
 
   const themeIcon = isAuto ? ICONS.auto : theme === "light" ? ICONS.light : ICONS.dark;
+  const themeLabel = isAuto ? "Auto" : theme === "light" ? "Light" : "Dark";
 
   return (
-    <div style={{ display: "flex", gap: 8 }}>
-      <Btn key="theme" onClick={onToggleTheme} style={btnStyle(t, themeIcon)}>
-        {themeIcon}
+    <div style={{ display: "flex", gap: 12 }}>
+      <Btn key="theme" onClick={onToggleTheme} aria-label={`Theme: ${themeLabel}`} style={btnStyle(t, themeIcon)}>
+        <span>{themeIcon}</span>
+        <span style={labelStyle(t)}>{themeLabel}</span>
       </Btn>
-      {OVERLAY_BUTTONS.map(({ overlay, icon }) => (
-        <Btn key={overlay} onClick={() => openOverlay(overlay)} style={btnStyle(t, icon)}>
-          {icon}
+      {OVERLAY_BUTTONS.map(({ overlay, icon, label }) => (
+        <Btn key={overlay} onClick={() => openOverlay(overlay)} aria-label={label} style={btnStyle(t, icon)}>
+          <span>{icon}</span>
+          <span style={labelStyle(t)}>{label}</span>
         </Btn>
       ))}
-      <Btn key="settings" onClick={onSettings} style={btnStyle(t, ICONS.settings)}>
-        {ICONS.settings}
+      <Btn key="settings" onClick={onSettings} aria-label="Settings" style={btnStyle(t, ICONS.settings)}>
+        <span>{ICONS.settings}</span>
+        <span style={labelStyle(t)}>Settings</span>
       </Btn>
     </div>
   );

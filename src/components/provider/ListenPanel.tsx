@@ -1,9 +1,10 @@
-import { useEffect, useState } from "preact/hooks";
+import { useId, useState } from "preact/hooks";
 import type { JSX } from "preact";
 import type { Provider } from "../../types";
 import type { ThemeTokens, ThemeName } from "../../theme/tokens";
 import { Btn } from "../shared/Btn";
 import { useMicrophone } from "../../hooks/useMicrophone";
+import { useDialog } from "../../hooks/useDialog";
 
 interface ListenPanelProps {
   onAddMessage: (text: string, providerLabel: string) => void;
@@ -43,12 +44,8 @@ export function ListenPanel({
   // Allow manual editing of the transcript
   const [editedTranscript, setEditedTranscript] = useState<string | null>(null);
 
-  // Close on Escape from anywhere inside the dialog (keyboard parity with backdrop click).
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  const titleId = useId();
+  const { dialogRef } = useDialog({ onClose, titleId });
 
   // Use edited transcript if the user has typed, otherwise use STT transcript
   const transcript = editedTranscript !== null ? editedTranscript : sttTranscript;
@@ -61,6 +58,8 @@ export function ListenPanel({
 
   const blue = theme === "dark" ? "#60A5FA" : "#2563EB";
   const providerGreen = "#059669";
+  // Text variant for AAA 7:1 contrast (used on card backgrounds)
+  const providerGreenText = theme === "dark" ? "#34D399" : "#065F46";
 
   const canSubmit = transcript.trim().length > 0;
 
@@ -145,7 +144,7 @@ export function ListenPanel({
 
   const singleProvStyle: JSX.CSSProperties = {
     fontSize: 15,
-    color: providerGreen,
+    color: providerGreenText,
     fontWeight: 600,
     marginBottom: 18,
   };
@@ -223,28 +222,23 @@ export function ListenPanel({
   };
 
   return (
-    <div
-      style={overlayStyle}
-      onClick={onClose}
-      onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}
-      role="button"
-      tabIndex={-1}
-      aria-label="Close Listen panel"
-    >
-      {/* Dialog content: click-propagation is stopped so inner taps don't close via the backdrop.
-          Keyboard dismissal via Escape is handled by the document listener in useEffect above.
-          The linter flags onClick on role=dialog; this is the standard modal content-pane pattern. */}
-      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
+    // Backdrop is a passive surface: clicking it closes the dialog (mouse convenience),
+    // but keyboard users close via Escape (document listener above) or the ✕ button.
+    // No role/tabindex here — the backdrop is not an interactive target for AT.
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
+    <div style={overlayStyle} onClick={onClose}>
       <div
+        ref={dialogRef}
+        tabIndex={-1}
         style={cardStyle}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
-        aria-label="Listen panel"
+        aria-labelledby={titleId}
       >
         {/* Header */}
         <div style={headerStyle}>
-          <h2 style={titleStyle}>Listen</h2>
+          <h2 id={titleId} style={titleStyle}>Listen</h2>
           <Btn onClick={onClose} style={closeBtnStyle} aria-label="Close panel">
             ✕
           </Btn>

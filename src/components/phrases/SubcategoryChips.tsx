@@ -17,7 +17,18 @@ export function SubcategoryChips({
 }: SubcategoryChipsProps) {
   const { theme } = useTheme();
   return (
-    <div style={{ display: "flex", gap: 4, marginBottom: 16, overflowX: "auto" }}>
+    <div
+      style={{
+        display: "flex",
+        gap: 4,
+        marginBottom: 16,
+        overflowX: "auto",
+        // overflowX:auto forces overflow-y:auto too, and this row is the
+        // clip boundary for its chip children. Pad all four sides so focus
+        // rings on the leftmost/rightmost chips aren't clipped.
+        padding: 4,
+      }}
+    >
       {labels.map((label, i) => {
         const active = i === activeIndex;
         return (

@@ -4,8 +4,6 @@ import { light } from "../../theme/tokens";
 
 const baseProps = {
   text: "I need water",
-  speaker: "Maria",
-  isVoice: true,
   isProvider: false,
   onDone: vi.fn(),
   t: light,
@@ -34,19 +32,15 @@ describe("Speaking", () => {
     expect(screen.getByText("I need water")).toBeInTheDocument();
   });
 
-  it("shows 'Speaking as {speaker}' label when isVoice is true", () => {
+  it("does not render a caption for patient voice", () => {
     render(<Speaking {...baseProps} />);
-    expect(screen.getByText("Speaking as Maria")).toBeInTheDocument();
+    expect(screen.queryByText(/speaking as/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/care team/i)).not.toBeInTheDocument();
   });
 
-  it("shows 'Care Team' label when isProvider is true", () => {
-    render(<Speaking {...baseProps} isVoice={false} isProvider={true} />);
+  it("shows 'Care Team' caption when isProvider is true", () => {
+    render(<Speaking {...baseProps} isProvider={true} />);
     expect(screen.getByText("Care Team")).toBeInTheDocument();
-  });
-
-  it("shows generic 'Speaking' label when isVoice is false and not provider", () => {
-    render(<Speaking {...baseProps} isVoice={false} isProvider={false} />);
-    expect(screen.getByText("Speaking")).toBeInTheDocument();
   });
 
   it("has role=status and aria-live=polite", () => {

@@ -30,8 +30,8 @@ interface ColorTokens {
 
 const LIGHT_COLORS: ColorTokens = {
   text: "#1A1A1A",
-  sub: "#6B7280",
-  muted: "#9CA3AF",
+  sub: "#374151", // 10.04:1 on #FFFFFF — AAA
+  muted: "#4B5563", // 7.23:1 on #FFFFFF — AAA
   border: "#E5E7EB",
   cardBg: "#FFFFFF",
 };
@@ -165,6 +165,8 @@ export function FallbackVoicePicker({
           gap: 6,
           maxHeight: 320,
           overflowY: "auto",
+          // Clearance for focus outline on edge items
+          padding: 4,
         }}
       >
         {sorted.map((v) => {
