@@ -1,4 +1,4 @@
-import { useState } from "preact/hooks";
+import { useState, useId } from "preact/hooks";
 import type { AppSettings, FallbackVoice, Provider } from "../../types";
 import type { ThemeTokens, ThemeName } from "../../theme/tokens";
 import { LANGS } from "../../data/phrases";
@@ -9,6 +9,7 @@ import { VoiceCacheProgress } from "./VoiceCacheProgress";
 import { useSettingsStore } from "../../stores/settingsStore";
 import { speak } from "../../speak";
 import type { Speaker } from "../../types";
+import { useDialog } from "../../hooks/useDialog";
 
 const EMOJIS = [
   "\uD83D\uDC69\u200D\u2695\uFE0F", // woman health worker
@@ -55,6 +56,8 @@ export function SettingsPanel({
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   const isDark = theme === "dark";
+  const titleId = useId();
+  const { dialogRef } = useDialog({ onClose, titleId });
 
   function previewClonedVoice() {
     const embedding = useSettingsStore.getState().speakerData;
@@ -128,13 +131,10 @@ export function SettingsPanel({
         justifyContent: "flex-end",
       }}
     >
-      {/* Backdrop */}
+      {/* Backdrop: passive surface — click closes; Escape closes via useDialog. */}
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
       <div
         onClick={onClose}
-        onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}
-        role="button"
-        tabIndex={-1}
-        aria-label="Close settings"
         style={{
           position: "absolute",
           inset: 0,
@@ -144,6 +144,11 @@ export function SettingsPanel({
 
       {/* Bottom sheet */}
       <div
+        ref={dialogRef}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
         style={{
           position: "relative",
           background: t.bg,
@@ -151,6 +156,7 @@ export function SettingsPanel({
           maxHeight: "85vh",
           overflowY: "auto",
           padding: "0 0 40px",
+          scrollPaddingBottom: 120,
         }}
       >
         {/* Handle */}
@@ -181,7 +187,7 @@ export function SettingsPanel({
             borderBottom: `1px solid ${t.border}`,
           }}
         >
-          <h2 style={{ fontSize: 22, fontWeight: 700, color: t.text, margin: 0 }}>
+          <h2 id={titleId} style={{ fontSize: 22, fontWeight: 700, color: t.text, margin: 0 }}>
             Settings
           </h2>
           <button

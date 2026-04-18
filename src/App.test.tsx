@@ -122,8 +122,8 @@ describe("App", () => {
     render(<App />);
     // Header shows patient name
     expect(screen.getByText("Maria")).toBeInTheDocument();
-    // TabBar has tablist role
-    expect(screen.getByRole("tablist")).toBeInTheDocument();
+    // TabBar exposes a primary navigation landmark
+    expect(screen.getByRole("navigation", { name: "Primary" })).toBeInTheDocument();
   });
 
   it("Quick tab shows PhraseGrid with quick phrases", () => {
@@ -182,7 +182,7 @@ describe("App", () => {
     useUIStore.setState({ tab: "nonexistent" });
     const { container } = render(<App />);
     // Should still render header and tab bar, but no phrase content
-    expect(screen.getByRole("tablist")).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "Primary" })).toBeInTheDocument();
     // No phrase grid content
     expect(screen.queryByText("Yes")).not.toBeInTheDocument();
   });
@@ -223,14 +223,14 @@ describe("App", () => {
     });
     useUIStore.setState({ listenOpen: true });
     render(<App />);
-    expect(screen.getByText("Listen")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Listen" })).toBeInTheDocument();
   });
 
   it("settingsOpen overlay renders SettingsPanel", () => {
     useSettingsStore.setState({ _hasHydrated: true, cfg: makeCfg() });
     useUIStore.setState({ settingsOpen: true });
     render(<App />);
-    expect(screen.getByText("Settings")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Settings" })).toBeInTheDocument();
   });
 
   it("pinEntryOpen overlay renders PinGate", () => {

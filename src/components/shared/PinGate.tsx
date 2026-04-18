@@ -1,6 +1,7 @@
-import { useState, useEffect } from "preact/hooks";
+import { useState, useEffect, useId } from "preact/hooks";
 import type { ThemeTokens, ThemeName } from "../../theme/tokens";
 import { Btn } from "./Btn";
+import { useDialog } from "../../hooks/useDialog";
 
 interface PinGateProps {
   pin: string;
@@ -21,6 +22,8 @@ export function PinGate({ pin, onSuccess, onClose, t, theme }: PinGateProps) {
   const [entry, setEntry] = useState("");
   const [error, setError] = useState(false);
   const isDark = theme === "dark";
+  const titleId = useId();
+  const { dialogRef } = useDialog({ onClose, titleId });
 
   useEffect(() => {
     if (entry.length === 4) {
@@ -40,11 +43,28 @@ export function PinGate({ pin, onSuccess, onClose, t, theme }: PinGateProps) {
   function press(key: string) {
     if (error) return;
     if (key === "del") {
-      setEntry(entry.slice(0, -1));
-    } else if (entry.length < 4) {
-      setEntry(entry + key);
+      setEntry((prev) => prev.slice(0, -1));
+    } else if (/^[0-9]$/.test(key)) {
+      setEntry((prev) => (prev.length < 4 ? prev + key : prev));
     }
   }
+
+  // Physical keyboard support: digits append, Backspace deletes, Escape closes.
+  // Escape is handled in useDialog already; here we just cover input.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (error) return;
+      if (/^[0-9]$/.test(e.key)) {
+        e.preventDefault();
+        press(e.key);
+      } else if (e.key === "Backspace") {
+        e.preventDefault();
+        press("del");
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [error]);
 
   return (
     <div
@@ -59,6 +79,11 @@ export function PinGate({ pin, onSuccess, onClose, t, theme }: PinGateProps) {
       }}
     >
       <div
+        ref={dialogRef}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
         style={{
           background: t.card,
           borderRadius: 24,
@@ -72,6 +97,7 @@ export function PinGate({ pin, onSuccess, onClose, t, theme }: PinGateProps) {
       >
         {/* Title */}
         <h2
+          id={titleId}
           style={{
             fontSize: 22,
             fontWeight: 700,
@@ -101,6 +127,7 @@ export function PinGate({ pin, onSuccess, onClose, t, theme }: PinGateProps) {
                 width: 16,
                 height: 16,
                 borderRadius: 8,
+                // Empty state: 3:1 non-text contrast against card for WCAG 1.4.11.
                 background:
                   i < entry.length
                     ? error
@@ -109,16 +136,21 @@ export function PinGate({ pin, onSuccess, onClose, t, theme }: PinGateProps) {
                         ? "#60A5FA"
                         : "#2563EB"
                     : isDark
-                      ? "rgba(255,255,255,0.12)"
-                      : "rgba(0,0,0,0.08)",
+                      ? "rgba(255,255,255,0.32)"
+                      : "rgba(0,0,0,0.28)",
                 transition: "background 0.15s",
               }}
             />
           ))}
         </div>
 
-        {/* Error message */}
-        <div style={{ height: 28, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        {/* Error message — aria-live=assertive so screen readers announce a
+            failed PIN immediately (it auto-resets after 800ms). */}
+        <div
+          role="alert"
+          aria-live="assertive"
+          style={{ height: 28, display: "flex", alignItems: "center", justifyContent: "center" }}
+        >
           {error && (
             <span style={{ fontSize: 14, color: "#DC2626", fontWeight: 500 }}>
               Incorrect PIN
@@ -145,6 +177,7 @@ export function PinGate({ pin, onSuccess, onClose, t, theme }: PinGateProps) {
                 key={i}
                 onClick={() => press(key)}
                 disabled={error}
+                aria-label={isDel ? "Delete" : `Digit ${key}`}
                 style={{
                   width: "100%",
                   height: 64,

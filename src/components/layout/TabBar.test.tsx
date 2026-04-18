@@ -35,9 +35,10 @@ describe("TabBar", () => {
 
   it("renders all category tabs", () => {
     render(<TabBar />);
-    const tabs = screen.getAllByRole("tab");
-    // CATS + the "Say More" sentence builder tab
-    expect(tabs).toHaveLength(CATS.length + 1);
+    // CATS + the "Say More" sentence builder
+    const nav = screen.getByRole("navigation", { name: "Primary" });
+    const buttons = nav.querySelectorAll("button");
+    expect(buttons).toHaveLength(CATS.length + 1);
   });
 
   it("renders tab labels matching CATS data", () => {
@@ -47,22 +48,19 @@ describe("TabBar", () => {
     }
   });
 
-  it("active tab has aria-selected='true'", () => {
+  it("active tab has aria-current='page'", () => {
     useUIStore.setState({ tab: "quick" });
     render(<TabBar />);
     const quickTab = screen.getByLabelText("Quick");
-    expect(quickTab).toHaveAttribute("aria-selected", "true");
+    expect(quickTab).toHaveAttribute("aria-current", "page");
   });
 
-  it("inactive tabs have aria-selected='false'", () => {
+  it("inactive tabs omit aria-current", () => {
     useUIStore.setState({ tab: "quick" });
     render(<TabBar />);
     const nonQuickTabs = CATS.filter((c) => c.id !== "quick");
     for (const c of nonQuickTabs) {
-      expect(screen.getByLabelText(c.label)).toHaveAttribute(
-        "aria-selected",
-        "false",
-      );
+      expect(screen.getByLabelText(c.label)).not.toHaveAttribute("aria-current");
     }
   });
 

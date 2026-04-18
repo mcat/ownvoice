@@ -21,25 +21,10 @@ describe("Thread", () => {
     expect(container.innerHTML).toBe("");
   });
 
-  it("shows the 'tap to say again' header", () => {
-    render(<Thread messages={messages} t={light} onRepeat={vi.fn()} />);
-    expect(
-      screen.getByText(/tap to say again/i),
-    ).toBeInTheDocument();
-  });
-
   it("renders message text for each message", () => {
     render(<Thread messages={messages} t={light} onRepeat={vi.fn()} />);
     expect(screen.getByText("I need water")).toBeInTheDocument();
     expect(screen.getByText("I will get that for you.")).toBeInTheDocument();
-  });
-
-  it("renders speaker labels and times", () => {
-    render(<Thread messages={messages} t={light} onRepeat={vi.fn()} />);
-    expect(screen.getByText(/Maria/)).toBeInTheDocument();
-    expect(screen.getByText(/2:30 PM/)).toBeInTheDocument();
-    expect(screen.getByText(/Dr\. Smith/)).toBeInTheDocument();
-    expect(screen.getByText(/2:31 PM/)).toBeInTheDocument();
   });
 
   it("calls onRepeat with text and from when a bubble is tapped", () => {

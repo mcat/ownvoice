@@ -341,11 +341,11 @@ export function SentenceBuilder({
               ))}
             </div>
           ) : loadingLlm ? (
-            <div style={{ color: llmAccent, fontSize: 14 }}>
+            <div role="status" aria-live="polite" style={{ color: llmAccent, fontSize: 14 }}>
               AI is thinking...
             </div>
           ) : (
-            <div style={{ color: t.muted, fontSize: 14 }}>
+            <div role="status" aria-live="polite" style={{ color: t.muted, fontSize: 14 }}>
               No AI suggestions. Tap refresh to try again.
             </div>
           )}

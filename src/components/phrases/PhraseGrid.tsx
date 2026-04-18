@@ -8,14 +8,31 @@ interface PhraseGridProps {
   t: ThemeTokens;
 }
 
-/** Responsive grid: max 3 cols on 11" iPad. 12px gap between targets. */
+/**
+ * Pick a column count that keeps cells roughly in landscape aspect on an
+ * iPad without leaving a lone orphan button on the last row.
+ * Targets 2–3 rows for typical phrase counts.
+ */
+function pickColumns(n: number): number {
+  if (n <= 3) return Math.max(1, n);
+  if (n <= 6) return 3;
+  if (n <= 12) return 4;
+  if (n <= 20) return 5;
+  return 6;
+}
+
 export function PhraseGrid({ phrases, onTap, t }: PhraseGridProps) {
+  const cols = pickColumns(phrases.length);
   return (
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
+        gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
+        gridAutoRows: "minmax(100px, 240px)",
         gap: 14,
+        flex: 1,
+        minHeight: 0,
+        alignContent: "start",
       }}
     >
       {phrases.map((p) => (

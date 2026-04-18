@@ -18,28 +18,18 @@ export function Header({ cfg }: HeaderProps) {
   const blue = theme === "dark" ? "#60A5FA" : "#2563EB";
 
   return (
-    <div
+    <header
       style={{
-        background: t.headerBg,
-        borderBottom: `1px solid ${t.border}`,
-        padding: "14px 32px",
+        background: "transparent",
+        padding: "10px 32px",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        position: "sticky",
-        top: 0,
-        zIndex: 50,
+        flexShrink: 0,
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <span
-          class="font-brand"
-          style={{ fontSize: 20, fontWeight: 700, color: blue }}
-        >
-          OwnVoice
-        </span>
-        <span style={{ fontSize: 13, color: t.muted }}>|</span>
-        <span class="font-sans" style={{ fontSize: 16, fontWeight: 600, color: t.sub }}>
+        <span class="font-sans" style={{ fontSize: 17, fontWeight: 700, color: t.text }}>
           {cfg.patientName || "Patient"}
         </span>
         {cfg.bed && (
@@ -63,6 +53,6 @@ export function Header({ cfg }: HeaderProps) {
         )}
       </div>
       <HeaderNav onSettings={handleSettings} />
-    </div>
+    </header>
   );
 }

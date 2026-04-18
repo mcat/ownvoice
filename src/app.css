@@ -81,16 +81,56 @@ button {
   touch-action: manipulation;
 }
 
+/* ── Focus ring (WCAG 2.4.7 AA + 2.4.13 AAA) ──
+   3px outline gives the 2px perimeter coverage 2.4.13 requires, at >= 3:1
+   against both themes. Outline sits outside the box so inline `border: none`
+   styles don't suppress it. */
+*:focus-visible {
+  outline: 3px solid #2563EB;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.dark *:focus-visible,
+[data-theme="dark"] *:focus-visible {
+  outline-color: #60A5FA;
+}
+
+/* Inputs set `outline: none` inline for aesthetics — re-enable :focus-visible */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 3px solid #2563EB !important;
+  outline-offset: 2px !important;
+}
+
+.dark input:focus-visible,
+.dark textarea:focus-visible,
+.dark select:focus-visible,
+[data-theme="dark"] input:focus-visible,
+[data-theme="dark"] textarea:focus-visible,
+[data-theme="dark"] select:focus-visible {
+  outline-color: #60A5FA !important;
+}
+
+/* ── Reduced motion (WCAG 2.3.3 AAA) ──
+   Honor the user's OS-level preference by collapsing all animations and
+   smooth-scrolls to near-instant. Critical for vestibular disorders. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* ── Animations ── */
 @keyframes fadeUp {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes slideUp {

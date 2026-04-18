@@ -3,8 +3,6 @@ import type { ThemeTokens } from "../../theme/tokens";
 
 interface SpeakingProps {
   text: string;
-  speaker: string;
-  isVoice: boolean;
   isProvider: boolean;
   onDone: () => void;
   t: ThemeTokens;
@@ -13,8 +11,6 @@ interface SpeakingProps {
 /** Full-width overlay bar showing speech progress. Not a modal — no dead ends. */
 export function Speaking({
   text,
-  speaker,
-  isVoice,
   isProvider,
   onDone,
   t,
@@ -85,20 +81,22 @@ export function Speaking({
           {"\uD83D\uDD0A"}
         </div>
         <div style={{ minWidth: 0 }}>
+          {isProvider && (
+            <div
+              class="font-sans"
+              style={{
+                fontSize: 13,
+                color: "rgba(245,245,245,0.7)",
+                letterSpacing: 1.5,
+                textTransform: "uppercase",
+              }}
+            >
+              Care Team
+            </div>
+          )}
           <div
             class="font-sans"
-            style={{
-              fontSize: 13,
-              color: "rgba(245,245,245,0.7)",
-              letterSpacing: 1.5,
-              textTransform: "uppercase",
-            }}
-          >
-            {isVoice ? `Speaking as ${speaker}` : isProvider ? "Care Team" : "Speaking"}
-          </div>
-          <div
-            class="font-sans"
-            style={{ fontSize: 20, fontWeight: 600, marginTop: 3, lineHeight: 1.4 }}
+            style={{ fontSize: 20, fontWeight: 600, marginTop: isProvider ? 3 : 0, lineHeight: 1.4 }}
           >
             {text}
           </div>

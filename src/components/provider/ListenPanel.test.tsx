@@ -127,10 +127,11 @@ describe("ListenPanel", () => {
 
   it("calls onClose when overlay background is clicked", () => {
     const onClose = vi.fn();
-    render(<ListenPanel {...baseProps} onClose={onClose} />);
-    // Backdrop is role=button with accessible name "Close Listen panel";
-    // role=dialog sits on the inner card and stops click propagation.
-    fireEvent.click(screen.getByRole("button", { name: "Close Listen panel" }));
+    const { container } = render(<ListenPanel {...baseProps} onClose={onClose} />);
+    // Backdrop is the outermost div and is the click target; the inner
+    // role=dialog card stops click propagation so only backdrop clicks close.
+    const backdrop = container.firstElementChild as HTMLElement;
+    fireEvent.click(backdrop);
     expect(onClose).toHaveBeenCalledOnce();
   });
 

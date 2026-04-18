@@ -156,7 +156,7 @@ export function App() {
 
     if (cat?.subs) {
       return (
-        <div>
+        <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
           <SubcategoryChips
             labels={cat.subs.map((s) => s.label)}
             activeIndex={sub}
@@ -177,77 +177,90 @@ export function App() {
 
   return (
     <div
-      class="font-sans min-h-screen flex flex-col relative"
-      style={{ background: t.bg, color: t.text }}
+      class="font-sans flex flex-col relative"
+      style={{ background: t.bg, color: t.text, height: "100dvh", overflow: "hidden" }}
     >
       <Header cfg={cfg} />
 
-      {/* Visually-hidden page heading for screen readers */}
-      <h1
-        style={{
-          position: "absolute",
-          width: 1,
-          height: 1,
-          padding: 0,
-          margin: -1,
-          overflow: "hidden",
-          clip: "rect(0,0,0,0)",
-          whiteSpace: "nowrap",
-          border: 0,
-        }}
-      >
-        OwnVoice — {cfg.patientName || "Patient"} conversation
-      </h1>
-
-      {/* Main content area */}
+      {/* Main content area. Thread is pinned at the top; the region below
+          scrolls independently so the conversation never scrolls out of view. */}
       <main
         style={{
           flex: 1,
-          overflowY: "auto",
-          padding: "18px 32px",
-          paddingBottom: 160,
+          minHeight: 0,
+          display: "flex",
+          flexDirection: "column",
+          padding: "18px 32px 20px",
+          overflow: "hidden",
         }}
       >
+        {/* Visually-hidden page heading — inside main landmark so AT sees
+            the page title in context of its region. */}
+        <h1
+          style={{
+            position: "absolute",
+            width: 1,
+            height: 1,
+            padding: 0,
+            margin: -1,
+            overflow: "hidden",
+            clip: "rect(0,0,0,0)",
+            whiteSpace: "nowrap",
+            border: 0,
+          }}
+        >
+          OwnVoice — {cfg.patientName || "Patient"} conversation
+        </h1>
+
         <Thread messages={messages} t={t} onRepeat={repeatSpeak} />
 
-        {/* Time-of-day suggestions on Quick tab */}
-        {tab === "quick" && !builderOpen && (
-          <div style={{ marginBottom: 16 }}>
-            <div
-              style={{
-                display: "flex",
-                gap: 10,
-                overflowX: "auto",
-                paddingBottom: 6,
-              }}
-            >
-              {sug.map((s) => (
-                <button
-                  key={s}
-                  onClick={() => speakAsPatient(s)}
-                  class="font-sans"
-                  style={{
-                    background: t.card,
-                    border: `1.5px solid ${theme === "dark" ? "#60A5FA30" : "#2563EB30"}`,
-                    borderRadius: 24,
-                    padding: "12px 20px",
-                    fontSize: 16,
-                    color: theme === "dark" ? "#60A5FA" : "#2563EB",
-                    fontWeight: 600,
-                    whiteSpace: "nowrap",
-                    boxShadow:
-                      theme === "dark" ? "none" : "0 1px 4px rgba(37,99,235,0.06)",
-                    cursor: "pointer",
-                  }}
-                >
-                  {s}
-                </button>
-              ))}
+        <div
+          style={{
+            flex: 1,
+            minHeight: 0,
+            display: "flex",
+            flexDirection: "column",
+            overflowY: "auto",
+          }}
+        >
+          {/* Time-of-day suggestions on Quick tab */}
+          {tab === "quick" && !builderOpen && (
+            <div style={{ marginBottom: 16, flexShrink: 0 }}>
+              <div
+                style={{
+                  display: "flex",
+                  gap: 10,
+                  overflowX: "auto",
+                  paddingBottom: 6,
+                }}
+              >
+                {sug.map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => speakAsPatient(s)}
+                    class="font-sans"
+                    style={{
+                      background: t.card,
+                      border: `1.5px solid ${theme === "dark" ? "#60A5FA30" : "#2563EB30"}`,
+                      borderRadius: 10,
+                      padding: "10px 16px",
+                      fontSize: 16,
+                      // Patient blue text: darker shade for AAA 7:1 on card bg
+                      color: theme === "dark" ? "#60A5FA" : "#1E40AF",
+                      fontWeight: 600,
+                      whiteSpace: "nowrap",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {renderContent()}
+          {renderContent()}
+        </div>
       </main>
 
       <TabBar />
@@ -256,16 +269,6 @@ export function App() {
       {speaking && (
         <Speaking
           text={speaking.text}
-          speaker={
-            speaking.from === "patient"
-              ? cfg.patientName
-              : activeProv.name || "Care Team"
-          }
-          isVoice={
-            speaking.from === "patient"
-              ? cfg.patientVoice
-              : activeProv.hasVoice
-          }
           isProvider={speaking.from === "provider"}
           onDone={() => setSpeaking(null)}
           t={t}

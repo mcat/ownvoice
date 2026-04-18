@@ -147,11 +147,18 @@ export function Setup({ onDone }: SetupProps) {
           OwnVoice
         </span>
         <button
-          onClick={finish}
+          onClick={() => {
+            // Confirm before discarding setup — otherwise a tremor-tap loses
+            // everything (WCAG 3.3.6 AAA Error Prevention).
+            if (window.confirm("Skip setup? You can finish this later in Settings.")) {
+              finish();
+            }
+          }}
+          aria-label="Skip setup"
           style={{
             background: "none",
             border: "none",
-            color: "#6B7280",
+            color: "#4B5563",
             fontSize: 16,
             cursor: "pointer",
             padding: "8px 12px",
@@ -174,19 +181,19 @@ export function Setup({ onDone }: SetupProps) {
         }}
       >
         {STEP_LABELS.map((label, i) => (
-          <div key={i} style={{ flex: 1 }}>
+          <div key={i} style={{ flex: 1 }} aria-current={i === step ? "step" : undefined}>
             <div
               style={{
                 height: 4,
                 borderRadius: 2,
-                background: i <= step ? STEP_COLORS[i] : "#E5E7EB",
+                background: i <= step ? STEP_COLORS[i] : "#6B7280",
                 transition: "background 0.2s",
               }}
             />
             <div
               style={{
-                fontSize: 12,
-                color: i === step ? STEP_COLORS[i] : "#9CA3AF",
+                fontSize: 13,
+                color: i === step ? STEP_COLORS[i] : "#4B5563",
                 marginTop: 4,
                 fontWeight: i === step ? 600 : 400,
                 textAlign: "center",
@@ -198,7 +205,8 @@ export function Setup({ onDone }: SetupProps) {
         ))}
       </div>
 
-      {/* Step content — scrollable */}
+      {/* Step content — scrollable; extra scroll-padding-bottom ensures focused
+          inputs aren't obscured by the fixed bottom action bar (2.4.12 AAA). */}
       <div
         style={{
           flex: 1,
@@ -207,6 +215,7 @@ export function Setup({ onDone }: SetupProps) {
           overflowY: "auto",
           padding: "24px 24px 120px",
           boxSizing: "border-box",
+          scrollPaddingBottom: 120,
         }}
       >
         {step === 0 && (
@@ -335,7 +344,7 @@ function StepPatient({
       <h2 style={{ fontSize: 26, fontWeight: 700, color: "#1A1A1A", margin: "0 0 8px" }}>
         Welcome to OwnVoice
       </h2>
-      <p style={{ fontSize: 16, color: "#6B7280", margin: "0 0 28px" }}>
+      <p style={{ fontSize: 16, color: "#4B5563", margin: "0 0 28px" }}>
         Let's set up your communication board. Everything stays on this device.
       </p>
 
@@ -429,11 +438,11 @@ function StepVoice({
       <h2 style={{ fontSize: 26, fontWeight: 700, color: "#1A1A1A", margin: "0 0 8px" }}>
         Voice sample
       </h2>
-      <p style={{ fontSize: 16, color: "#6B7280", margin: "0 0 8px" }}>
+      <p style={{ fontSize: 16, color: "#4B5563", margin: "0 0 8px" }}>
         Capture a voice sample so OwnVoice can speak in the patient's own voice.
         This step is optional.
       </p>
-      <p style={{ fontSize: 14, color: "#9CA3AF", margin: "0 0 28px" }}>
+      <p style={{ fontSize: 14, color: "#4B5563", margin: "0 0 28px" }}>
         Voice cloning runs entirely on-device. No audio leaves this tablet.
       </p>
 
@@ -452,11 +461,11 @@ function StepVoice({
         <h3 style={{ fontSize: 20, fontWeight: 700, color: "#1A1A1A", margin: "0 0 8px" }}>
           Backup voice
         </h3>
-        <p style={{ fontSize: 15, color: "#6B7280", margin: "0 0 6px" }}>
+        <p style={{ fontSize: 15, color: "#4B5563", margin: "0 0 6px" }}>
           Choose a system voice to use while the voice clone loads, or if no
           sample is recorded. Tap a voice to hear a preview.
         </p>
-        <p style={{ fontSize: 14, color: "#9CA3AF", margin: "0 0 16px" }}>
+        <p style={{ fontSize: 14, color: "#4B5563", margin: "0 0 16px" }}>
           This uses your device's built-in text-to-speech.
         </p>
 
@@ -502,7 +511,7 @@ function StepCareTeam({
       <h2 style={{ fontSize: 26, fontWeight: 700, color: "#1A1A1A", margin: "0 0 8px" }}>
         Care team
       </h2>
-      <p style={{ fontSize: 16, color: "#6B7280", margin: "0 0 28px" }}>
+      <p style={{ fontSize: 16, color: "#4B5563", margin: "0 0 28px" }}>
         Add the providers who will be caring for this patient.
       </p>
 
@@ -538,7 +547,7 @@ function StepCareTeam({
                 border: "none",
                 cursor: "pointer",
                 fontSize: 18,
-                color: "#9CA3AF",
+                color: "#4B5563",
                 padding: "4px 8px",
                 fontFamily: "inherit",
               }}
@@ -705,7 +714,7 @@ function StepConfirm({
       <h2 style={{ fontSize: 26, fontWeight: 700, color: "#1A1A1A", margin: "0 0 8px" }}>
         Ready to go
       </h2>
-      <p style={{ fontSize: 16, color: "#6B7280", margin: "0 0 28px" }}>
+      <p style={{ fontSize: 16, color: "#4B5563", margin: "0 0 28px" }}>
         Review your setup. You can change anything later in Settings.
       </p>
 
@@ -751,7 +760,7 @@ function StepConfirm({
         <p
           style={{
             fontSize: 14,
-            color: "#9CA3AF",
+            color: "#4B5563",
             margin: "4px 0 12px",
           }}
         >
@@ -802,12 +811,12 @@ function SummaryRow({
         borderBottom: last ? "none" : "1px solid #F3F4F6",
       }}
     >
-      <span style={{ fontSize: 15, color: "#6B7280" }}>{label}</span>
+      <span style={{ fontSize: 15, color: "#4B5563" }}>{label}</span>
       <span
         style={{
           fontSize: 15,
           fontWeight: 500,
-          color: muted ? "#9CA3AF" : "#1A1A1A",
+          color: muted ? "#4B5563" : "#1A1A1A",
           textAlign: "right",
           maxWidth: "60%",
         }}

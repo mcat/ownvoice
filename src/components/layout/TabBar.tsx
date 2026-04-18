@@ -4,13 +4,13 @@ import { useUIStore } from "../../stores/uiStore";
 import { useSettingsStore } from "../../stores/settingsStore";
 import { useTheme } from "../../hooks/useTheme";
 
-/** Contrast-safe active label colors — verified >= 4.5:1 on both backgrounds */
+/** Contrast-safe active label colors — verified >= 7:1 on #FFFFFF for AAA */
 const ACTIVE_COLORS_LIGHT: Record<string, string> = {
-  "#2563EB": "#1D4ED8",
-  "#059669": "#047857",
-  "#D97706": "#92400E",
-  "#DC2626": "#991B1B",
-  "#7C3AED": "#6D28D9",
+  "#2563EB": "#1E40AF", // 8.59:1
+  "#059669": "#065F46", // 7.83:1
+  "#D97706": "#92400E", // 7.50:1
+  "#DC2626": "#991B1B", // 8.13:1
+  "#7C3AED": "#5B21B6", // 8.72:1
 };
 
 const ACTIVE_COLORS_DARK: Record<string, string> = {
@@ -33,25 +33,25 @@ export function TabBar() {
   const setTab = useUIStore((s) => s.setTab);
   const openBuilder = useUIStore((s) => s.openBuilder);
 
+  // Say More active label: cyan-900 in light gives 8.5:1 on card bg for AAA
   const smLabelColor = builderOpen
-    ? (theme === "dark" ? "#22D3EE" : "#0E7490")
+    ? (theme === "dark" ? "#22D3EE" : "#164E63")
     : t.muted;
 
   return (
-    <div
-      role="tablist"
+    // Bottom primary nav. Not a tablist (which would require arrow-key roving
+    // tabindex per WAI-ARIA) — aria-current="page" carries the active state
+    // semantically and natively plays well with all AT.
+    <nav
+      aria-label="Primary"
       style={{
-        position: "fixed",
-        bottom: 0,
-        left: 0,
-        right: 0,
         background: t.tabBg,
         borderTop: `1px solid ${t.border}`,
         display: "flex",
         justifyContent: "center",
-        padding: "8px 32px",
-        paddingBottom: "max(8px, env(safe-area-inset-bottom))",
-        zIndex: 40,
+        padding: "4px 32px",
+        paddingBottom: "max(4px, env(safe-area-inset-bottom))",
+        flexShrink: 0,
       }}
     >
       {CATS.map((c) => {
@@ -63,8 +63,7 @@ export function TabBar() {
           <Btn
             key={c.id}
             onClick={() => setTab(c.id)}
-            role="tab"
-            aria-selected={isActive}
+            aria-current={isActive ? "page" : undefined}
             aria-label={c.label}
             style={{
               flex: 1,
@@ -99,16 +98,6 @@ export function TabBar() {
             <span style={{ fontSize: 14, fontWeight: isActive ? 700 : 600, color: labelColor }}>
               {c.label}
             </span>
-            {/* Structural indicator — visible without color */}
-            <div
-              style={{
-                width: 6,
-                height: 6,
-                borderRadius: "50%",
-                background: isActive ? labelColor : "transparent",
-                transition: "background 0.15s",
-              }}
-            />
           </Btn>
         );
       })}
@@ -116,8 +105,7 @@ export function TabBar() {
       {/* Say More — Sentence Builder, visually distinct from phrase categories */}
       <Btn
         onClick={openBuilder}
-        role="tab"
-        aria-selected={builderOpen}
+        aria-current={builderOpen ? "page" : undefined}
         aria-label="Say More"
         style={{
           flex: 1,
@@ -152,16 +140,7 @@ export function TabBar() {
         <span style={{ fontSize: 14, fontWeight: builderOpen ? 700 : 600, color: smLabelColor }}>
           Say More
         </span>
-        <div
-          style={{
-            width: 6,
-            height: 6,
-            borderRadius: "50%",
-            background: builderOpen ? smLabelColor : "transparent",
-            transition: "background 0.15s",
-          }}
-        />
       </Btn>
-    </div>
+    </nav>
   );
 }

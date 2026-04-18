@@ -1,9 +1,10 @@
-import { useEffect, useState } from "preact/hooks";
+import { useId, useState } from "preact/hooks";
 import type { JSX } from "preact";
 import type { AppSettings, Provider } from "../../types";
 import type { ThemeTokens, ThemeName } from "../../theme/tokens";
 import { getProviderCategories } from "../../data/phraseRegistry";
 import { Btn } from "../shared/Btn";
+import { useDialog } from "../../hooks/useDialog";
 
 interface ProviderPanelProps {
   onSend: (text: string) => void;
@@ -33,12 +34,8 @@ export function ProviderPanel({
   onSelectProvider,
 }: ProviderPanelProps) {
   const [activeSection, setActiveSection] = useState(SECTION_KEYS[0]);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  const titleId = useId();
+  const { dialogRef } = useDialog({ onClose, titleId });
 
   const provider = cfg.providers[activeProvIdx] ?? cfg.providers[0];
   const providerLabel = provider
@@ -46,7 +43,12 @@ export function ProviderPanel({
     : "Provider";
 
   const blue = theme === "dark" ? "#60A5FA" : "#2563EB";
+  // Text variant of patient blue for AAA 7:1 contrast on light card backgrounds.
+  const blueText = theme === "dark" ? "#60A5FA" : "#1E40AF";
   const providerGreen = "#059669";
+  // Stronger green for bold text on white to clear AAA 7:1; the base providerGreen
+  // is used for UI chrome (borders, chip fills) where 3:1 non-text suffices.
+  const providerGreenText = theme === "dark" ? "#34D399" : "#065F46";
 
   const phrases = PROVIDER_CATEGORIES[activeSection] ?? [];
 
@@ -142,29 +144,24 @@ export function ProviderPanel({
   };
 
   return (
-    <div
-      style={overlayStyle}
-      onClick={onClose}
-      onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}
-      role="button"
-      tabIndex={-1}
-      aria-label="Close Care Team panel"
-    >
-      {/* Dialog content: click-propagation is stopped so inner taps don't close via the backdrop.
-          Keyboard dismissal via Escape is handled by the document listener in useEffect above.
-          The linter flags onClick on role=dialog; this is the standard modal content-pane pattern. */}
-      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
+    // Backdrop is a passive surface: clicking it closes the dialog (mouse convenience),
+    // but keyboard users close via Escape (document listener above) or the ✕ button.
+    // No role/tabindex here — the backdrop is not an interactive target for AT.
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
+    <div style={overlayStyle} onClick={onClose}>
       <div
+        ref={dialogRef}
+        tabIndex={-1}
         style={cardStyle}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
-        aria-label="Care Team panel"
+        aria-labelledby={titleId}
       >
         {/* Header */}
         <div style={headerStyle}>
           <div>
-            <h2 style={titleStyle}>Care Team</h2>
+            <h2 id={titleId} style={titleStyle}>Care Team</h2>
           </div>
           <Btn onClick={onClose} style={closeBtnStyle} aria-label="Close panel">
             ✕
@@ -172,7 +169,7 @@ export function ProviderPanel({
         </div>
         <div style={subtitleStyle}>
           Speaking to <strong>{cfg.patientName || "patient"}</strong> as{" "}
-          <strong style={{ color: providerGreen }}>{providerLabel}</strong>
+          <strong style={{ color: providerGreenText }}>{providerLabel}</strong>
         </div>
 
         {/* Provider selector chips */}
@@ -199,7 +196,7 @@ export function ProviderPanel({
             <Btn
               key={key}
               onClick={() => setActiveSection(key)}
-              style={chipStyle(key === activeSection, blue)}
+              style={chipStyle(key === activeSection, blueText)}
               aria-label={`Show ${key}`}
               aria-pressed={key === activeSection}
             >

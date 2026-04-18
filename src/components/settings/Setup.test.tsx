@@ -18,10 +18,15 @@ describe("Setup", () => {
   beforeEach(() => {
     onDone.mockClear();
     vi.useFakeTimers();
+    // Skip button now gates behind window.confirm (WCAG 3.3.6 AAA).
+    // Default to accept so existing skip tests continue exercising the
+    // skip path; individual tests can override.
+    vi.spyOn(window, "confirm").mockReturnValue(true);
   });
 
   afterEach(() => {
     vi.useRealTimers();
+    vi.restoreAllMocks();
   });
 
   it("renders step 0 with patient name input and language selection", () => {
