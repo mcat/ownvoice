@@ -83,11 +83,12 @@ button {
 
 /* ── Focus ring (WCAG 2.4.7 AA + 2.4.13 AAA) ──
    3px outline gives the 2px perimeter coverage 2.4.13 requires, at >= 3:1
-   against both themes. Outline sits outside the box so inline `border: none`
-   styles don't suppress it. */
+   against both themes. Outline-offset stays at 0 so the ring sits immediately
+   outside the border — keeps the total overhang to 3px so focus rings never
+   get clipped by overflow:hidden/auto scroll containers. */
 *:focus-visible {
   outline: 3px solid #2563EB;
-  outline-offset: 2px;
+  outline-offset: 0;
   border-radius: 4px;
 }
 
@@ -101,7 +102,7 @@ input:focus-visible,
 textarea:focus-visible,
 select:focus-visible {
   outline: 3px solid #2563EB !important;
-  outline-offset: 2px !important;
+  outline-offset: 0 !important;
 }
 
 .dark input:focus-visible,

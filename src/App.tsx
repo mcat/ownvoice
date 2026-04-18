@@ -221,6 +221,9 @@ export function App() {
             display: "flex",
             flexDirection: "column",
             overflowY: "auto",
+            // Keep focus rings on edge children from being clipped by the
+            // scroll boundary (WCAG 2.4.11 / 2.4.13).
+            padding: "4px 4px 0",
           }}
         >
           {/* Time-of-day suggestions on Quick tab */}

@@ -208,6 +208,9 @@ export function PainFlow({ onSelect, t, theme, locale = "en" }: PainFlowProps) {
             minHeight: 0,
             overflowY: "auto",
             alignContent: "start",
+            // Breathing room so focus rings on edge buttons aren't clipped
+            // by the scroll container's overflow boundary (WCAG 2.4.11/2.4.13).
+            padding: 4,
           }}
         >
           {EMOJI_FPS.map((face) => (
@@ -286,6 +289,9 @@ export function PainFlow({ onSelect, t, theme, locale = "en" }: PainFlowProps) {
             minHeight: 0,
             overflowY: "auto",
             alignContent: "start",
+            // Breathing room so focus rings on edge buttons aren't clipped
+            // by the scroll container's overflow boundary (WCAG 2.4.11/2.4.13).
+            padding: 4,
           }}
         >
           {BODY_REGIONS.map((region) => (
@@ -349,6 +355,7 @@ export function PainFlow({ onSelect, t, theme, locale = "en" }: PainFlowProps) {
           minHeight: 0,
           overflowY: "auto",
           alignContent: "start",
+          padding: 4,
         }}
       >
         {PAIN_DESCRIPTORS.map((desc) => (
