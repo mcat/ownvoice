@@ -39,14 +39,16 @@ describe("MyWishes", () => {
     expect(screen.getByText("Skip")).toBeInTheDocument();
   });
 
-  it("toggling a response selects it and shows a preview", () => {
+  it("toggling a response marks it as selected", () => {
     render(<MyWishes {...baseProps} />);
     const firstResponse = SICG_TOPICS[0].responses[0]; // "Being with my family"
-    fireEvent.click(screen.getByText(firstResponse));
-    // Preview should contain a composed sentence
     expect(
-      screen.getByText(/what matters most to me is being with my family/i),
-    ).toBeInTheDocument();
+      screen.getByText(firstResponse).closest("button"),
+    ).toHaveAttribute("aria-pressed", "false");
+    fireEvent.click(screen.getByText(firstResponse));
+    expect(
+      screen.getByText(firstResponse).closest("button"),
+    ).toHaveAttribute("aria-pressed", "true");
   });
 
   it("tapping Share calls onSpeak with composed sentence and onAddToThread", () => {
@@ -167,19 +169,22 @@ describe("MyWishes", () => {
   });
 
   it("tapping a selected response deselects it", () => {
+    vi.useFakeTimers();
     render(<MyWishes {...baseProps} />);
     const firstResponse = SICG_TOPICS[0].responses[0];
     // Select
     fireEvent.click(screen.getByText(firstResponse));
     expect(
-      screen.getByText(/what matters most to me is being with my family/i),
-    ).toBeInTheDocument();
+      screen.getByText(firstResponse).closest("button"),
+    ).toHaveAttribute("aria-pressed", "true");
+    // Advance past the Btn 300ms debounce
+    vi.advanceTimersByTime(300);
     // Deselect by tapping again
     fireEvent.click(screen.getByText(firstResponse));
-    // Preview should disappear (no selections)
     expect(
-      screen.queryByText(/what matters most to me is being with my family/i),
-    ).not.toBeInTheDocument();
+      screen.getByText(firstResponse).closest("button"),
+    ).toHaveAttribute("aria-pressed", "false");
+    vi.useRealTimers();
   });
 
   it("Share with no selections does nothing", () => {

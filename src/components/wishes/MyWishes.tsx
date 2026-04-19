@@ -102,9 +102,6 @@ export function MyWishes({
     }
   }
 
-  const preview =
-    selected.length > 0 ? composeWishSentence(locale, topic, selected) : "";
-
   const progressRow: JSX.CSSProperties = { display: "flex", gap: 6 };
 
   /* ── Completion screen ─────────────────────────────────── */
@@ -306,24 +303,6 @@ export function MyWishes({
           </div>
           <div style={{ fontSize: 18, color: t.sub }}>{topic.question}</div>
         </div>
-
-        {/* Live sentence preview */}
-        {preview && (
-          <div
-            style={{
-              padding: "12px 16px",
-              borderRadius: 12,
-              backgroundColor: blueBg,
-              color: blue,
-              fontSize: 17,
-              fontWeight: 500,
-              marginBottom: 16,
-              lineHeight: 1.4,
-            }}
-          >
-            {preview}
-          </div>
-        )}
 
         {/* Response buttons */}
         <div
