@@ -1,9 +1,10 @@
 import { createContext } from "preact";
-import { useContext, useId } from "preact/hooks";
+import { useContext, useEffect, useId, useState } from "preact/hooks";
 import type { ComponentChildren, JSX, RefObject } from "preact";
 import type { ThemeTokens } from "../../theme/tokens";
 import { z as zScale } from "../../theme/z";
 import { useDialog } from "../../hooks/useDialog";
+import { useReducedMotion } from "../../hooks/useReducedMotion";
 
 interface BottomSheetContext {
   titleId: string;
@@ -43,7 +44,49 @@ export function BottomSheet({
   children,
 }: BottomSheetProps) {
   const titleId = useId();
-  const { dialogRef } = useDialog({ onClose, titleId });
+  const reducedMotion = useReducedMotion();
+  const [closing, setClosing] = useState(false);
+  // Start at final state if reduced motion; otherwise animate in on mount.
+  const [entered, setEntered] = useState(reducedMotion);
+
+  useEffect(() => {
+    if (reducedMotion) return;
+    const raf = requestAnimationFrame(() => setEntered(true));
+    return () => cancelAnimationFrame(raf);
+  }, [reducedMotion]);
+
+  // Single close path: all routes call handleClose → sets `closing`, and
+  // transitionEnd on the card fires the caller's onClose. Reduced motion
+  // fires the caller's onClose synchronously.
+  function handleClose() {
+    if (reducedMotion) {
+      onClose();
+      return;
+    }
+    setClosing(true);
+  }
+
+  // useDialog gets OUR handler, not the caller's — Escape must animate out
+  // before unmounting.
+  const { dialogRef } = useDialog({ onClose: handleClose, titleId });
+
+  // Attach transitionend via addEventListener. Preact's JSX `onTransitionEnd`
+  // binding doesn't fire under @testing-library/preact's synthetic events in
+  // jsdom, so wire the listener imperatively.
+  useEffect(() => {
+    const el = dialogRef.current;
+    if (!el) return;
+    const listener = (e: Event) => {
+      const te = e as TransitionEvent;
+      if (closing && te.propertyName === "transform") {
+        onClose();
+      }
+    };
+    el.addEventListener("transitionend", listener);
+    return () => el.removeEventListener("transitionend", listener);
+  }, [closing, onClose, dialogRef]);
+
+  const open = entered && !closing;
 
   const overlay: JSX.CSSProperties = {
     position: "fixed",
@@ -58,6 +101,8 @@ export function BottomSheet({
     position: "absolute",
     inset: 0,
     background: "rgba(0,0,0,0.45)",
+    opacity: reducedMotion ? 1 : open ? 1 : 0,
+    transition: reducedMotion ? undefined : "opacity 180ms ease-out",
   };
 
   const card: JSX.CSSProperties = {
@@ -70,6 +115,13 @@ export function BottomSheet({
     height: heightVh === "auto" ? undefined : `${heightVh}vh`,
     maxHeight: heightVh === "auto" ? "92vh" : undefined,
     boxShadow: "0 -4px 24px rgba(0,0,0,0.18)",
+    transform: reducedMotion
+      ? "translateY(0)"
+      : open
+        ? "translateY(0)"
+        : "translateY(100%)",
+    transition: reducedMotion ? undefined : "transform 220ms cubic-bezier(.22,.61,.36,1)",
+    willChange: "transform",
   };
 
   return (
@@ -79,7 +131,7 @@ export function BottomSheet({
       {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
       <div
         data-testid="bottom-sheet-backdrop"
-        onClick={onClose}
+        onClick={handleClose}
         style={backdrop}
       />
       <div
@@ -90,7 +142,7 @@ export function BottomSheet({
         aria-labelledby={titleId}
         style={card}
       >
-        <ctx.Provider value={{ titleId, close: onClose, t }}>
+        <ctx.Provider value={{ titleId, close: handleClose, t }}>
           {children}
         </ctx.Provider>
       </div>

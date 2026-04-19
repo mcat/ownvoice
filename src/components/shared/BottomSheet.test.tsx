@@ -2,6 +2,17 @@ import { render, screen, fireEvent } from "@testing-library/preact";
 import { BottomSheet } from "./BottomSheet";
 import { light } from "../../theme/tokens";
 
+/**
+ * jsdom + testing-library's `fireEvent.transitionEnd` doesn't reliably bubble
+ * to addEventListener("transitionend", ...) listeners. Dispatch a plain Event
+ * with a propertyName field — good enough for our handler's needs.
+ */
+function fireTransitionEnd(el: Element, propertyName = "transform") {
+  const evt = new Event("transitionend", { bubbles: true });
+  (evt as unknown as { propertyName: string }).propertyName = propertyName;
+  el.dispatchEvent(evt);
+}
+
 describe("BottomSheet root", () => {
   it("renders children inside a dialog", () => {
     render(
@@ -22,7 +33,7 @@ describe("BottomSheet root", () => {
     expect(screen.getByRole("dialog")).toHaveAttribute("aria-modal", "true");
   });
 
-  it("fires onClose when Escape is pressed", () => {
+  it("fires onClose when Escape is pressed (after exit transition)", () => {
     const onClose = vi.fn();
     render(
       <BottomSheet onClose={onClose} t={light}>
@@ -30,10 +41,12 @@ describe("BottomSheet root", () => {
       </BottomSheet>,
     );
     fireEvent.keyDown(document, { key: "Escape" });
+    expect(onClose).not.toHaveBeenCalled();
+    fireTransitionEnd(screen.getByRole("dialog"));
     expect(onClose).toHaveBeenCalledOnce();
   });
 
-  it("fires onClose when the backdrop is clicked", () => {
+  it("fires onClose when the backdrop is clicked (after exit transition)", () => {
     const onClose = vi.fn();
     const { container } = render(
       <BottomSheet onClose={onClose} t={light}>
@@ -43,6 +56,8 @@ describe("BottomSheet root", () => {
     const backdrop = container.querySelector("[data-testid='bottom-sheet-backdrop']");
     expect(backdrop).not.toBeNull();
     fireEvent.click(backdrop as Element);
+    expect(onClose).not.toHaveBeenCalled();
+    fireTransitionEnd(screen.getByRole("dialog"));
     expect(onClose).toHaveBeenCalledOnce();
   });
 
@@ -74,7 +89,7 @@ describe("BottomSheet.Title", () => {
 });
 
 describe("BottomSheet.CloseButton", () => {
-  it("calls onClose when tapped", () => {
+  it("calls onClose when tapped (after exit transition)", () => {
     const onClose = vi.fn();
     render(
       <BottomSheet onClose={onClose} t={light}>
@@ -85,6 +100,8 @@ describe("BottomSheet.CloseButton", () => {
       </BottomSheet>,
     );
     fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    expect(onClose).not.toHaveBeenCalled();
+    fireTransitionEnd(screen.getByRole("dialog"));
     expect(onClose).toHaveBeenCalledOnce();
   });
 
@@ -170,5 +187,71 @@ describe("BottomSheet.Actions", () => {
     const style = actions.getAttribute("style") ?? "";
     expect(style).toMatch(/flex-shrink:\s*0/);
     expect(style).toMatch(/border-top/);
+  });
+});
+
+describe("BottomSheet animation", () => {
+  afterEach(() => {
+    // Reset matchMedia to the setup.ts default between tests
+    (window.matchMedia as unknown as ReturnType<typeof vi.fn>).mockImplementation(
+      (query: string) => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      }),
+    );
+  });
+
+  it("under prefers-reduced-motion, Escape fires caller onClose synchronously", () => {
+    (window.matchMedia as unknown as ReturnType<typeof vi.fn>).mockImplementation(
+      (query: string) => ({
+        matches: query === "(prefers-reduced-motion: reduce)",
+        media: query,
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      }),
+    );
+    const onClose = vi.fn();
+    render(
+      <BottomSheet onClose={onClose} t={light}>
+        content
+      </BottomSheet>,
+    );
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it("without reduced motion, close waits for the exit transition to end before firing caller onClose", () => {
+    const onClose = vi.fn();
+    render(
+      <BottomSheet onClose={onClose} t={light}>
+        content
+      </BottomSheet>,
+    );
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(onClose).not.toHaveBeenCalled();
+
+    fireTransitionEnd(screen.getByRole("dialog"));
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it("renders the sheet with entrance transform on first paint", () => {
+    render(
+      <BottomSheet onClose={() => {}} t={light}>
+        content
+      </BottomSheet>,
+    );
+    const dialog = screen.getByRole("dialog");
+    const style = dialog.getAttribute("style") ?? "";
+    expect(style).toMatch(/transform:\s*translateY\(/);
   });
 });
