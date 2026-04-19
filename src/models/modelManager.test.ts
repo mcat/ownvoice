@@ -478,8 +478,8 @@ describe("ModelManager — verifyOPFSCache", () => {
   it("returns ok when all manifest files pass integrity", async () => {
     const opfs = createOPFSMock();
     const good = new Uint8Array(10);
-    good[0] = 0x08;
-    good[1] = 0x01;
+    good[0] = 0x08; // ONNX ModelProto field-1 tag
+    good[1] = 0x07; // ir_version
     opfs.store.set("/models/tts/good.onnx", good.buffer.slice(0));
     opfs.install();
 

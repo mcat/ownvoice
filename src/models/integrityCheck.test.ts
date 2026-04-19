@@ -13,13 +13,20 @@ function fakeDir(files: Record<string, Uint8Array>): FileSystemDirectoryHandle {
   } as unknown as FileSystemDirectoryHandle;
 }
 
-// ONNX magic: 0x08 0x01 (protobuf field 1, varint 1).
-const ONNX_HEADER = new Uint8Array([0x08, 0x01]);
+// Header byte for ONNX ModelProto field 1 (ir_version), varint wire type.
+// The SECOND byte encodes the actual ir_version value — varies by export.
+const ONNX_HEADER_BYTE = 0x08;
 
 describe("verifyFile", () => {
-  it("passes when size and magic match", async () => {
+  it.each([
+    ["ir_version 7 (Chatterbox)", 0x07],
+    ["ir_version 8", 0x08],
+    ["ir_version 9 (LFM2)", 0x09],
+    ["ir_version 10", 0x0a],
+  ])("passes for a real-shape ONNX header: %s", async (_label, irByte) => {
     const bytes = new Uint8Array(100);
-    bytes.set(ONNX_HEADER, 0);
+    bytes[0] = ONNX_HEADER_BYTE;
+    bytes[1] = irByte;
     const dir = fakeDir({ "model.onnx": bytes });
     const spec: ManifestFile = { name: "model.onnx", size: 100, magic: "onnx" };
     const result = await verifyFile(dir, spec);
@@ -28,7 +35,8 @@ describe("verifyFile", () => {
 
   it("fails when size mismatches", async () => {
     const bytes = new Uint8Array(50);
-    bytes.set(ONNX_HEADER, 0);
+    bytes[0] = ONNX_HEADER_BYTE;
+    bytes[1] = 0x07;
     const dir = fakeDir({ "model.onnx": bytes });
     const spec: ManifestFile = { name: "model.onnx", size: 100, magic: "onnx" };
     const result = await verifyFile(dir, spec);
@@ -36,8 +44,8 @@ describe("verifyFile", () => {
     expect(result.reason).toMatch(/size/i);
   });
 
-  it("fails when onnx magic is wrong", async () => {
-    const bytes = new Uint8Array(100); // all zeros — no 0x08 0x01
+  it("fails when byte 0 is not the ONNX field-1 tag", async () => {
+    const bytes = new Uint8Array(100); // all zeros
     const dir = fakeDir({ "model.onnx": bytes });
     const spec: ManifestFile = { name: "model.onnx", size: 100, magic: "onnx" };
     const result = await verifyFile(dir, spec);
@@ -45,24 +53,15 @@ describe("verifyFile", () => {
     expect(result.reason).toMatch(/magic/i);
   });
 
-  it("fails when only the first magic byte is wrong", async () => {
-    // Exercises head[0] !== ONNX_MAGIC[0] side of the OR independently.
-    const bytes = new Uint8Array(100);
-    bytes[0] = 0xff;
-    bytes[1] = 0x01; // second byte correct
-    const dir = fakeDir({ "model.onnx": bytes });
-    const spec: ManifestFile = { name: "model.onnx", size: 100, magic: "onnx" };
-    const result = await verifyFile(dir, spec);
-    expect(result.ok).toBe(false);
-    expect(result.reason).toMatch(/magic/i);
-  });
-
-  it("fails when only the second magic byte is wrong", async () => {
-    // Exercises head[1] !== ONNX_MAGIC[1] side of the OR independently.
-    const bytes = new Uint8Array(100);
-    bytes[0] = 0x08; // first byte correct
-    bytes[1] = 0xff;
-    const dir = fakeDir({ "model.onnx": bytes });
+  it("fails when file is an HTML error page masquerading as .onnx", async () => {
+    // A caching proxy might return "<!DOCTYPE html>..." when a model URL
+    // 404s or captive-portal-redirects. Byte 0 is '<' (0x3C), not 0x08.
+    const bytes = new TextEncoder().encode(
+      "<!DOCTYPE html><html><body>503</body></html>",
+    );
+    const padded = new Uint8Array(100);
+    padded.set(bytes, 0);
+    const dir = fakeDir({ "model.onnx": padded });
     const spec: ManifestFile = { name: "model.onnx", size: 100, magic: "onnx" };
     const result = await verifyFile(dir, spec);
     expect(result.ok).toBe(false);
@@ -102,7 +101,8 @@ describe("verifyFile", () => {
 describe("verifyModel", () => {
   it("reports per-file and overall status", async () => {
     const good = new Uint8Array(10);
-    good.set(ONNX_HEADER, 0);
+    good[0] = ONNX_HEADER_BYTE;
+    good[1] = 0x07;
     const dir = fakeDir({ "good.onnx": good, "bad.onnx": new Uint8Array(5) });
     const model: ManifestModel = {
       baseUrl: "/models/x/",
