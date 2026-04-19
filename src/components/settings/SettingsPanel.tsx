@@ -5,6 +5,7 @@ import { Btn } from "../shared/Btn";
 import { useDialog } from "../../hooks/useDialog";
 import { PatientInfoSection } from "./sections/PatientInfoSection";
 import { CareTeamSection } from "./sections/CareTeamSection";
+import { AboutSection } from "./sections/AboutSection";
 
 interface SettingsPanelProps {
   cfg: AppSettings;
@@ -169,28 +170,7 @@ export function SettingsPanel({
             theme={theme}
           />
 
-          {/* About section */}
-          <Section label="About" t={t}>
-            <p
-              style={{
-                fontSize: 15,
-                fontWeight: 600,
-                color: t.text,
-                margin: "0 0 8px",
-              }}
-            >
-              OwnVoice v0.1
-            </p>
-            <p style={{ fontSize: 14, color: t.sub, margin: "0 0 4px" }}>
-              In-patient AAC communication aid.
-            </p>
-            <p style={{ fontSize: 13, color: t.muted, margin: "0 0 4px" }}>
-              Pain scale: Emoji-FPS (Li et al., JMIR 2023) — CC-BY 4.0
-            </p>
-            <p style={{ fontSize: 13, color: t.muted, margin: 0 }}>
-              Goals of care: SICG (Ariadne Labs) — CC-BY-NC-SA 4.0
-            </p>
-          </Section>
+          <AboutSection t={t} />
 
           {/* Reset section */}
           <Section label="Reset" t={t}>
