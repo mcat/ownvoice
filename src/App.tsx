@@ -23,6 +23,7 @@ import { PinGate } from "./components/shared/PinGate";
 import { Setup } from "./components/settings/Setup";
 import { getModelManager } from "./models/modelManager";
 import { bootModels, verifyAllOnBoot } from "./models/bootModels";
+import { resumePendingOnVisible } from "./models/offlineResume";
 import { initGPU, isGPUReady, onGPUReady } from "./models/ttsEngine";
 import { MODEL_URLS } from "./models/types";
 import { primeSpeechSynthesis, setFallbackVoice } from "./speak";
@@ -79,7 +80,13 @@ export function App() {
     verifyAllOnBoot().catch((err) =>
       console.warn("[OwnVoice] boot verify failed:", err),
     );
+    // Resume any interrupted model downloads — fires on boot if partials
+    // exist, and again whenever the tab returns to the foreground.
+    const unsubResume = resumePendingOnVisible();
     primeSpeechSynthesis();
+    return () => {
+      unsubResume();
+    };
   }, []);
 
   // Sync the user-selected fallback voice to the speak module
