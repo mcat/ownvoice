@@ -4,7 +4,11 @@ import type { ThemeTokens } from "../../../theme/tokens";
 import { Btn } from "../../shared/Btn";
 import { loadManifest } from "../../../models/modelsManifest";
 import { primeOffline } from "../../../models/offlinePrimer";
+import { verifyAllOnBoot } from "../../../models/bootModels";
+import { clearAudioCache } from "../../../models/audioCache";
+import * as audioCacheRunner from "../../../models/audioCacheRunner";
 import { useOfflineStore } from "../../../stores/offlineStore";
+import { useSettingsStore } from "../../../stores/settingsStore";
 import { useStorageHealth } from "../../../hooks/useStorageHealth";
 
 interface Props {
@@ -29,8 +33,16 @@ export function OfflineReadinessSection({ t }: Props) {
   const setModelVerified = useOfflineStore((s) => s.setModelVerified);
   const markPrimerComplete = useOfflineStore((s) => s.markPrimerComplete);
 
+  const cfg = useSettingsStore((s) => s.cfg);
+  const speakerData = useSettingsStore((s) => s.speakerData);
+
   const [error, setError] = useState<string | null>(null);
+  const [verifying, setVerifying] = useState(false);
+  const [clearingCache, setClearingCache] = useState(false);
   const health = useStorageHealth();
+
+  const anyActionRunning = primerRunning || verifying || clearingCache;
+  const warnColor = "#DC2626";
 
   async function runPrimer() {
     setError(null);
@@ -53,8 +65,39 @@ export function OfflineReadinessSection({ t }: Props) {
     }
   }
 
+  async function runVerifyOnly() {
+    setError(null);
+    setVerifying(true);
+    try {
+      await verifyAllOnBoot();
+      markPrimerComplete();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setVerifying(false);
+    }
+  }
+
+  async function clearCacheAndRepopulate() {
+    setError(null);
+    setClearingCache(true);
+    try {
+      audioCacheRunner.abort();
+      await clearAudioCache();
+      // Repopulate in the background if we have a voice clone to generate from.
+      // Skips silently when no cfg/speakerData — the App-level effect will
+      // kick generation on next relevant state change.
+      if (cfg && speakerData) {
+        audioCacheRunner.runPreGeneration(cfg, speakerData);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setClearingCache(false);
+    }
+  }
+
   const verifiedEntries = Object.entries(verified);
-  const warnColor = "#DC2626";
 
   return (
     <Section label="Offline readiness" t={t}>
@@ -64,7 +107,7 @@ export function OfflineReadinessSection({ t }: Props) {
 
       <Btn
         onClick={runPrimer}
-        disabled={primerRunning}
+        disabled={anyActionRunning}
         style={{
           width: "100%",
           minHeight: 64,
@@ -79,6 +122,26 @@ export function OfflineReadinessSection({ t }: Props) {
         }}
       >
         {primerRunning ? "Preparing…" : "Prepare for offline"}
+      </Btn>
+
+      <Btn
+        onClick={runVerifyOnly}
+        disabled={anyActionRunning}
+        style={{
+          width: "100%",
+          minHeight: 44,
+          marginTop: 10,
+          padding: "10px 20px",
+          borderRadius: 10,
+          border: `1px solid ${t.border}`,
+          background: "transparent",
+          color: t.sub,
+          fontSize: 14,
+          fontWeight: 500,
+          fontFamily: "inherit",
+        }}
+      >
+        {verifying ? "Verifying…" : "Verify without downloading"}
       </Btn>
 
       {verifiedEntries.length > 0 && (
@@ -137,8 +200,30 @@ export function OfflineReadinessSection({ t }: Props) {
       >
         Storage: {formatBytes(health.usage)} of {formatBytes(health.quota)} used
         {health.percentUsed != null && ` (${health.percentUsed.toFixed(0)}%)`}
-        {health.warning && " — running low, consider resetting audio cache"}
+        {health.warning && " — running low"}
       </div>
+
+      {health.warning && (
+        <Btn
+          onClick={clearCacheAndRepopulate}
+          disabled={anyActionRunning}
+          style={{
+            width: "100%",
+            minHeight: 44,
+            marginTop: 10,
+            padding: "10px 20px",
+            borderRadius: 10,
+            border: `1px solid ${warnColor}`,
+            background: "transparent",
+            color: warnColor,
+            fontSize: 14,
+            fontWeight: 500,
+            fontFamily: "inherit",
+          }}
+        >
+          {clearingCache ? "Clearing…" : "Clear audio cache"}
+        </Btn>
+      )}
     </Section>
   );
 }
