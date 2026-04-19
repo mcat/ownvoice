@@ -45,6 +45,30 @@ describe("verifyFile", () => {
     expect(result.reason).toMatch(/magic/i);
   });
 
+  it("fails when only the first magic byte is wrong", async () => {
+    // Exercises head[0] !== ONNX_MAGIC[0] side of the OR independently.
+    const bytes = new Uint8Array(100);
+    bytes[0] = 0xff;
+    bytes[1] = 0x01; // second byte correct
+    const dir = fakeDir({ "model.onnx": bytes });
+    const spec: ManifestFile = { name: "model.onnx", size: 100, magic: "onnx" };
+    const result = await verifyFile(dir, spec);
+    expect(result.ok).toBe(false);
+    expect(result.reason).toMatch(/magic/i);
+  });
+
+  it("fails when only the second magic byte is wrong", async () => {
+    // Exercises head[1] !== ONNX_MAGIC[1] side of the OR independently.
+    const bytes = new Uint8Array(100);
+    bytes[0] = 0x08; // first byte correct
+    bytes[1] = 0xff;
+    const dir = fakeDir({ "model.onnx": bytes });
+    const spec: ManifestFile = { name: "model.onnx", size: 100, magic: "onnx" };
+    const result = await verifyFile(dir, spec);
+    expect(result.ok).toBe(false);
+    expect(result.reason).toMatch(/magic/i);
+  });
+
   it("fails when json does not parse", async () => {
     const bytes = new TextEncoder().encode("not valid json");
     const dir = fakeDir({ "tokenizer.json": bytes });

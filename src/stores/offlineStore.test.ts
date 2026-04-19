@@ -6,6 +6,24 @@ describe("offlineStore", () => {
     useOfflineStore.getState().reset();
   });
 
+  it("starts in a clean idle state", () => {
+    const s = useOfflineStore.getState();
+    expect(s.primerRunning).toBe(false);
+    expect(s.progress).toEqual({});
+    expect(s.verified).toEqual({});
+    expect(s.lastVerifiedAt).toBeNull();
+  });
+
+  it("markPrimerComplete sets lastVerifiedAt to a recent timestamp", () => {
+    const before = Date.now();
+    useOfflineStore.getState().markPrimerComplete();
+    const after = Date.now();
+    const ts = useOfflineStore.getState().lastVerifiedAt;
+    expect(ts).not.toBeNull();
+    expect(ts).toBeGreaterThanOrEqual(before);
+    expect(ts).toBeLessThanOrEqual(after);
+  });
+
   it("tracks primer running state", () => {
     useOfflineStore.getState().setPrimerRunning(true);
     expect(useOfflineStore.getState().primerRunning).toBe(true);

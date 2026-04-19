@@ -51,6 +51,29 @@ describe("primeOffline", () => {
     expect(events.at(-1)).toEqual({ type: "complete", allOk: true });
   });
 
+  it("emits a model-start event for every model that has files", () => {
+    // Asserts the exact event type and the full set of models that got started
+    // so ObjectLiteral / StringLiteral mutants on `yield { type: "model-start", model: id }` die.
+    return (async () => {
+      const events: PrimerEvent[] = [];
+      for await (const ev of primeOffline(manifest)) events.push(ev);
+      const starts = events.filter((e) => e.type === "model-start");
+      expect(starts.map((e) => (e as { model: string }).model)).toEqual(["tts", "llm"]);
+    })();
+  });
+
+  it("skips models with no files (no model-start, no model-verified)", async () => {
+    // stt has files: []. The `!model || model.files.length === 0` guard should
+    // skip it entirely — kills ConditionalExpression + LogicalOperator mutants.
+    const events: PrimerEvent[] = [];
+    for await (const ev of primeOffline(manifest)) events.push(ev);
+    expect(events.some((e) => "model" in e && e.model === "stt")).toBe(false);
+    expect(mockMgr.verifyOPFSCache).not.toHaveBeenCalledWith(
+      "stt",
+      expect.anything(),
+    );
+  });
+
   it("emits download-failed without aborting the whole primer", async () => {
     mockMgr.downloadAndCache.mockImplementation(async (_id, _url, filename) => {
       if (filename === "a.onnx") throw new Error("network dropped");
@@ -90,5 +113,57 @@ describe("primeOffline", () => {
       expect((err as Error).name).toBe("AbortError");
     }
     expect(mockMgr.downloadAndCache.mock.calls.length).toBeLessThan(3);
+  });
+
+  it("honors a signal aborted between successful downloads", async () => {
+    // Targets the `if (signal?.aborted) throw` guards at iteration boundaries —
+    // ensures they actually fire when signal flips to aborted WITHOUT the inner
+    // downloadAndCache raising. Kills ConditionalExpression mutants on lines
+    // 37 + 44 (outer + inner loop abort checks).
+    const controller = new AbortController();
+    let callCount = 0;
+    mockMgr.downloadAndCache.mockImplementation(async () => {
+      callCount++;
+      // After the first successful file, abort the signal. Don't throw — let
+      // the primer's iteration-boundary check be the ONLY exit path.
+      if (callCount === 1) controller.abort();
+      return new File([], "ok");
+    });
+
+    let thrown: unknown;
+    try {
+      for await (const _ of primeOffline(manifest, controller.signal)) {
+        // drain
+      }
+    } catch (err) {
+      thrown = err;
+    }
+    expect((thrown as Error | undefined)?.name).toBe("AbortError");
+    // Exactly one download happened before the boundary check caught abort.
+    // If the guard is mutated to `false`, both tts files + llm file run → 3 calls.
+    expect(callCount).toBe(1);
+  });
+
+  it("rethrows AbortError even when signal isn't set", async () => {
+    // Targets `if ((err as Error).name === "AbortError") throw err;` (line 51).
+    // If downloadAndCache throws an AbortError without signal.aborted ever being
+    // true, the primer must still propagate — otherwise a cancelled worker
+    // would look like a silent failure. Kills the `if (false)` + empty-string
+    // mutants on the name check.
+    mockMgr.downloadAndCache.mockImplementation(async () => {
+      throw new DOMException("Aborted", "AbortError");
+    });
+
+    let thrown: unknown;
+    try {
+      for await (const _ of primeOffline(manifest)) {
+        // drain
+      }
+    } catch (err) {
+      thrown = err;
+    }
+    expect((thrown as Error | undefined)?.name).toBe("AbortError");
+    // Only the first file attempted before the rethrow — not all three.
+    expect(mockMgr.downloadAndCache).toHaveBeenCalledTimes(1);
   });
 });
