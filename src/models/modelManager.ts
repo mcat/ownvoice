@@ -97,7 +97,7 @@ class ModelManager {
     url: string,
     filename: string,
     expectedSize: number,
-  ): Promise<File> {
+  ): Promise<{ file: File; fromCache: boolean }> {
     this.updateModel(id, { status: "downloading", total: expectedSize });
 
     try {
@@ -112,7 +112,7 @@ class ModelManager {
         if (file.size === expectedSize) {
           console.log(`[OwnVoice] ${id}/${filename} loaded from OPFS cache`);
           this.updateModel(id, { loaded: expectedSize });
-          return file;
+          return { file, fromCache: true };
         }
       } catch {
         // Missing — proceed to download.
@@ -134,7 +134,7 @@ class ModelManager {
       console.log(
         `[OwnVoice] ${id}/${filename} cached in OPFS (${(file.size / 1e6).toFixed(1)} MB)`,
       );
-      return file;
+      return { file, fromCache: false };
     } catch (err) {
       const message = err instanceof Error ? err.message : "Download failed";
       this.updateModel(id, { status: "error", error: message });

@@ -33,7 +33,7 @@ describe("primeOffline", () => {
   beforeEach(() => {
     mockMgr.downloadAndCache.mockReset();
     mockMgr.verifyOPFSCache.mockReset();
-    mockMgr.downloadAndCache.mockResolvedValue(new File([], "ok"));
+    mockMgr.downloadAndCache.mockResolvedValue({ file: new File([], "ok"), fromCache: false });
     mockMgr.verifyOPFSCache.mockResolvedValue({ ok: true, files: [] });
   });
 
@@ -48,7 +48,34 @@ describe("primeOffline", () => {
     expect(
       events.some((e) => e.type === "model-verified" && e.model === "tts"),
     ).toBe(true);
-    expect(events.at(-1)).toEqual({ type: "complete", allOk: true });
+    expect(events.at(-1)).toEqual({ type: "complete", allOk: true, downloadedCount: 3 });
+  });
+
+  it("sets downloadedCount to 0 when all files hit the cache fast-path", async () => {
+    mockMgr.downloadAndCache.mockResolvedValue({ file: new File([], "ok"), fromCache: true });
+    const events: PrimerEvent[] = [];
+    for await (const ev of primeOffline(manifest)) events.push(ev);
+
+    const complete = events.at(-1);
+    expect(complete).toEqual({ type: "complete", allOk: true, downloadedCount: 0 });
+  });
+
+  it("counts only non-cached files in downloadedCount", async () => {
+    let call = 0;
+    mockMgr.downloadAndCache.mockImplementation(async () => {
+      call++;
+      // First file: cached. Second & third: downloaded.
+      return call === 1
+        ? { file: new File([], "ok"), fromCache: true }
+        : { file: new File([], "ok"), fromCache: false };
+    });
+    mockMgr.verifyOPFSCache.mockResolvedValue({ ok: true, files: [] });
+
+    const events: PrimerEvent[] = [];
+    for await (const ev of primeOffline(manifest)) events.push(ev);
+
+    const complete = events.at(-1);
+    expect(complete).toEqual({ type: "complete", allOk: true, downloadedCount: 2 });
   });
 
   it("emits a model-start event for every model that has files", () => {
@@ -96,7 +123,7 @@ describe("primeOffline", () => {
       "c.onnx",
       5,
     );
-    expect(events.at(-1)).toEqual({ type: "complete", allOk: false });
+    expect(events.at(-1)).toEqual({ type: "complete", allOk: false, downloadedCount: 2 });
   });
 
   it("respects AbortSignal mid-primer", async () => {

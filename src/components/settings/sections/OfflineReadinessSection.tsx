@@ -1,4 +1,4 @@
-import { useState } from "preact/hooks";
+import { useState, useRef, useCallback, useEffect } from "preact/hooks";
 import type { ComponentChildren } from "preact";
 import type { ThemeTokens } from "../../../theme/tokens";
 import { Btn } from "../../shared/Btn";
@@ -50,7 +50,19 @@ export function OfflineReadinessSection({ t }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [verifying, setVerifying] = useState(false);
   const [clearingCache, setClearingCache] = useState(false);
+  const [alreadyReady, setAlreadyReady] = useState(false);
+  const dismissTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const health = useStorageHealth();
+
+  const clearDismissTimer = useCallback(() => {
+    if (dismissTimer.current != null) {
+      clearTimeout(dismissTimer.current);
+      dismissTimer.current = null;
+    }
+  }, []);
+
+  // Clean up timer on unmount
+  useEffect(() => clearDismissTimer, [clearDismissTimer]);
 
   const anyActionRunning =
     primerRunning || verifying || clearingCache || rebuildingCache;
@@ -58,8 +70,14 @@ export function OfflineReadinessSection({ t }: Props) {
 
   async function runPrimer() {
     setError(null);
+    clearDismissTimer();
+    setAlreadyReady(false);
     try {
-      await drivePrimer();
+      const result = await drivePrimer();
+      if (result && result.downloadedCount === 0) {
+        setAlreadyReady(true);
+        dismissTimer.current = setTimeout(() => setAlreadyReady(false), 3000);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     }
@@ -123,6 +141,12 @@ export function OfflineReadinessSection({ t }: Props) {
       >
         {primerRunning ? "Preparing…" : "Prepare for offline"}
       </Btn>
+
+      {alreadyReady && (
+        <p style={{ marginTop: 8, fontSize: 14, color: t.sub, fontWeight: 500 }}>
+          Already up to date
+        </p>
+      )}
 
       <Btn
         onClick={runVerifyOnly}
