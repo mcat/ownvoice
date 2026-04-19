@@ -78,7 +78,7 @@ describe("drivePrimer", () => {
     expect(p).toEqual({ loaded: 5, total: 10 });
   });
 
-  it("calls setModelVerified on model-verified events", async () => {
+  it("marks model 'verified' on successful model-verified events", async () => {
     primeOfflineMock.mockImplementation(async function* () {
       yield { type: "model-verified", model: "tts", ok: true };
       yield { type: "complete", allOk: true };
@@ -87,7 +87,20 @@ describe("drivePrimer", () => {
     const drivePrimer = await importDrivePrimer();
     await drivePrimer();
 
-    expect(useOfflineStore.getState().verified.tts).toBe(true);
+    expect(useOfflineStore.getState().verified.tts).toBe("verified");
+  });
+
+  it("marks model 'needs-retry' on failed model-verified events (post-primer)", async () => {
+    primeOfflineMock.mockImplementation(async function* () {
+      yield { type: "model-verified", model: "tts", ok: false };
+      yield { type: "complete", allOk: false };
+    });
+
+    const drivePrimer = await importDrivePrimer();
+    await drivePrimer();
+
+    // After a primer run, failure means partial/corrupt download — not "not-primed"
+    expect(useOfflineStore.getState().verified.tts).toBe("needs-retry");
   });
 
   it("calls markPrimerComplete on complete events", async () => {

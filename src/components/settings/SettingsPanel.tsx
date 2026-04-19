@@ -101,7 +101,7 @@ export function SettingsPanel({
             theme={theme}
           />
           <AboutSection t={t} />
-          <OfflineReadinessSection t={t} />
+          <OfflineReadinessSection t={t} theme={theme} />
           <ResetSection onReset={onReset} t={t} theme={theme} />
         </div>
       </BottomSheet.Body>

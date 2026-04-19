@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "preact/hooks";
 import type { ComponentChildren } from "preact";
-import type { ThemeTokens } from "../../../theme/tokens";
+import type { ThemeTokens, ThemeName } from "../../../theme/tokens";
+import { colors } from "../../../theme/tokens";
 import { Btn } from "../../shared/Btn";
 import { drivePrimer } from "../../../models/drivePrimer";
 import { verifyAllOnBoot } from "../../../models/bootModels";
@@ -13,6 +14,7 @@ import { useStorageHealth } from "../../../hooks/useStorageHealth";
 
 interface Props {
   t: ThemeTokens;
+  theme: ThemeName;
 }
 
 function formatBytes(n: number | null): string {
@@ -23,7 +25,9 @@ function formatBytes(n: number | null): string {
   return `${(n / 1024 / 1024 / 1024).toFixed(2)} GB`;
 }
 
-export function OfflineReadinessSection({ t }: Props) {
+export function OfflineReadinessSection({ t, theme }: Props) {
+  const accent = colors.patient[theme];
+  const accentText = theme === "light" ? "#FFFFFF" : "#0A0A0A";
   const primerRunning = useOfflineStore((s) => s.primerRunning);
   const progress = useOfflineStore((s) => s.progress);
   const verified = useOfflineStore((s) => s.verified);
@@ -64,8 +68,15 @@ export function OfflineReadinessSection({ t }: Props) {
   // Clean up timer on unmount
   useEffect(() => clearDismissTimer, [clearDismissTimer]);
 
-  const anyActionRunning =
-    primerRunning || verifying || clearingCache || rebuildingCache;
+  // Offline-readiness actions (primer/verify/clear) gate on each other, but
+  // NOT on audio-cache rebuild. Audio-cache pre-gen runs automatically in the
+  // background any time a voice clone is configured — it shouldn't block
+  // clinician-initiated offline prep.
+  const offlineActionRunning = primerRunning || verifying || clearingCache;
+  // Clear-cache itself is special: it conflicts with a live rebuild because
+  // clearing mid-rebuild aborts it. So Clear disables when a rebuild is
+  // actually in flight.
+  const clearDisabled = offlineActionRunning || rebuildingCache;
   const warnColor = "#DC2626";
 
   async function runPrimer() {
@@ -125,21 +136,22 @@ export function OfflineReadinessSection({ t }: Props) {
 
       <Btn
         onClick={runPrimer}
-        disabled={anyActionRunning}
+        disabled={offlineActionRunning}
         style={{
           width: "100%",
           minHeight: 64,
           padding: "14px 20px",
           borderRadius: 12,
-          border: `1px solid ${t.border}`,
-          background: primerRunning ? t.activeBg : t.card,
-          color: t.text,
+          border: "none",
+          background: offlineActionRunning ? t.muted : accent,
+          color: accentText,
           fontSize: 16,
           fontWeight: 600,
           fontFamily: "inherit",
+          opacity: offlineActionRunning ? 0.7 : 1,
         }}
       >
-        {primerRunning ? "Preparing…" : "Prepare for offline"}
+        {primerRunning ? "Preparing…" : "Download and verify voice files"}
       </Btn>
 
       {alreadyReady && (
@@ -150,7 +162,7 @@ export function OfflineReadinessSection({ t }: Props) {
 
       <Btn
         onClick={runVerifyOnly}
-        disabled={anyActionRunning}
+        disabled={offlineActionRunning}
         style={{
           width: "100%",
           minHeight: 44,
@@ -163,9 +175,10 @@ export function OfflineReadinessSection({ t }: Props) {
           fontSize: 14,
           fontWeight: 500,
           fontFamily: "inherit",
+          opacity: offlineActionRunning ? 0.6 : 1,
         }}
       >
-        {verifying ? "Verifying…" : "Verify without downloading"}
+        {verifying ? "Checking…" : "Check existing files only"}
       </Btn>
 
       {verifiedEntries.length > 0 && (
@@ -177,14 +190,19 @@ export function OfflineReadinessSection({ t }: Props) {
             fontSize: 14,
           }}
         >
-          {verifiedEntries.map(([model, ok]) => (
-            <li
-              key={model}
-              style={{ color: ok ? t.text : warnColor, padding: "4px 0" }}
-            >
-              {model}: {ok ? "verified" : "needs retry"}
-            </li>
-          ))}
+          {verifiedEntries.map(([model, status]) => {
+            const { label, color } =
+              status === "verified"
+                ? { label: "verified", color: t.text }
+                : status === "not-primed"
+                  ? { label: "not yet downloaded", color: t.muted }
+                  : { label: "needs retry", color: warnColor };
+            return (
+              <li key={model} style={{ color, padding: "4px 0" }}>
+                {model}: {label}
+              </li>
+            );
+          })}
         </ul>
       )}
 
@@ -230,7 +248,7 @@ export function OfflineReadinessSection({ t }: Props) {
       {health.warning && (
         <Btn
           onClick={clearCacheAndRepopulate}
-          disabled={anyActionRunning}
+          disabled={clearDisabled}
           style={{
             width: "100%",
             minHeight: 44,

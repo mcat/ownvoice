@@ -131,7 +131,19 @@ export async function verifyAllOnBoot(): Promise<void> {
   await Promise.all(
     ids.map(async (id) => {
       const report = await mgr.verifyOPFSCache(id, manifest.models[id]);
-      setModelVerified(id, report.ok);
+      if (report.ok) {
+        setModelVerified(id, "verified");
+      } else {
+        // Distinguish "user hasn't primed yet" from "primed but something is broken".
+        // If every failure reason looks like "file missing / not found," the model
+        // has simply never been downloaded to OPFS — that's a neutral state, not
+        // an error. If any file is present but fails size/magic checks, something
+        // was interrupted or corrupted — needs retry.
+        const allMissing = report.files.every(
+          (f) => !f.ok && /missing|not found/i.test(f.reason ?? ""),
+        );
+        setModelVerified(id, allMissing ? "not-primed" : "needs-retry");
+      }
     }),
   );
 }
