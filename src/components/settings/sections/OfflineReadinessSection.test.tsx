@@ -33,14 +33,42 @@ vi.mock("../../../models/offlinePrimer", () => ({
   }),
 }));
 
+const verifyAllOnBootMock = vi.fn(async () => {
+  useOfflineStore.getState().setModelVerified("tts", true);
+});
+vi.mock("../../../models/bootModels", () => ({
+  verifyAllOnBoot: () => verifyAllOnBootMock(),
+}));
+
+const clearAudioCacheMock = vi.fn(async () => {});
+vi.mock("../../../models/audioCache", () => ({
+  clearAudioCache: () => clearAudioCacheMock(),
+}));
+
+const abortRunnerMock = vi.fn();
+const runPreGenerationMock = vi.fn();
+vi.mock("../../../models/audioCacheRunner", () => ({
+  abort: () => abortRunnerMock(),
+  runPreGeneration: (cfg: unknown, data: unknown) => runPreGenerationMock(cfg, data),
+  retryFailed: vi.fn(),
+}));
+
+function installStorageEstimate(usage: number, quota: number) {
+  Object.defineProperty(navigator, "storage", {
+    value: { estimate: vi.fn(async () => ({ usage, quota })) },
+    configurable: true,
+    writable: true,
+  });
+}
+
 describe("OfflineReadinessSection", () => {
   beforeEach(() => {
     useOfflineStore.getState().reset();
-    Object.defineProperty(navigator, "storage", {
-      value: { estimate: vi.fn(async () => ({ usage: 500, quota: 10_000 })) },
-      configurable: true,
-      writable: true,
-    });
+    verifyAllOnBootMock.mockClear();
+    clearAudioCacheMock.mockClear();
+    abortRunnerMock.mockClear();
+    runPreGenerationMock.mockClear();
+    installStorageEstimate(500, 10_000); // 5% usage — no warning
   });
   afterEach(() => vi.clearAllMocks());
 
@@ -53,7 +81,7 @@ describe("OfflineReadinessSection", () => {
 
   it("runs the primer when the button is clicked and updates store", async () => {
     render(<OfflineReadinessSection t={light} />);
-    fireEvent.click(screen.getByRole("button", { name: /prepare for offline/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^prepare for offline$/i }));
 
     await waitFor(() => {
       expect(useOfflineStore.getState().verified.tts).toBe(true);
@@ -70,5 +98,50 @@ describe("OfflineReadinessSection", () => {
       expect(text).toMatch(/Storage:/i);
       expect(text).toMatch(/used/);
     });
+  });
+
+  it("runs verifyAllOnBoot and marks complete when 'Verify without downloading' is clicked", async () => {
+    render(<OfflineReadinessSection t={light} />);
+    fireEvent.click(
+      screen.getByRole("button", { name: /verify without downloading/i }),
+    );
+
+    await waitFor(() => {
+      expect(verifyAllOnBootMock).toHaveBeenCalled();
+      expect(useOfflineStore.getState().verified.tts).toBe(true);
+      expect(useOfflineStore.getState().lastVerifiedAt).not.toBeNull();
+    });
+  });
+
+  it("hides the 'Clear audio cache' button when storage is healthy", () => {
+    render(<OfflineReadinessSection t={light} />);
+    expect(
+      screen.queryByRole("button", { name: /clear audio cache/i }),
+    ).toBeNull();
+  });
+
+  it("shows 'Clear audio cache' only when storage usage is at or above warning threshold", async () => {
+    installStorageEstimate(9000, 10_000); // 90% — triggers warning
+    render(<OfflineReadinessSection t={light} />);
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: /clear audio cache/i }),
+      ).toBeTruthy();
+    });
+  });
+
+  it("aborts the runner, clears the audio cache, and does not re-kick without cfg/speakerData", async () => {
+    installStorageEstimate(9000, 10_000);
+    render(<OfflineReadinessSection t={light} />);
+
+    const btn = await screen.findByRole("button", { name: /clear audio cache/i });
+    fireEvent.click(btn);
+
+    await waitFor(() => {
+      expect(abortRunnerMock).toHaveBeenCalled();
+      expect(clearAudioCacheMock).toHaveBeenCalled();
+    });
+    // No cfg/speakerData seeded in the store, so runPreGeneration should be skipped.
+    expect(runPreGenerationMock).not.toHaveBeenCalled();
   });
 });
