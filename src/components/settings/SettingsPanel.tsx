@@ -1,11 +1,11 @@
 import { useState, useId } from "preact/hooks";
 import type { AppSettings, FallbackVoice, Provider } from "../../types";
 import type { ThemeTokens, ThemeName } from "../../theme/tokens";
-import { Btn } from "../shared/Btn";
 import { useDialog } from "../../hooks/useDialog";
 import { PatientInfoSection } from "./sections/PatientInfoSection";
 import { CareTeamSection } from "./sections/CareTeamSection";
 import { AboutSection } from "./sections/AboutSection";
+import { ResetSection } from "./sections/ResetSection";
 
 interface SettingsPanelProps {
   cfg: AppSettings;
@@ -31,7 +31,6 @@ export function SettingsPanel({
   const [fallbackVoice, setFallbackVoice] = useState<FallbackVoice | null>(
     cfg.fallbackVoice ?? null,
   );
-  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   const isDark = theme === "dark";
   const titleId = useId();
@@ -172,156 +171,9 @@ export function SettingsPanel({
 
           <AboutSection t={t} />
 
-          {/* Reset section */}
-          <Section label="Reset" t={t}>
-            {!showResetConfirm ? (
-              <Btn
-                onClick={() => setShowResetConfirm(true)}
-                style={{
-                  width: "100%",
-                  padding: "14px 20px",
-                  borderRadius: 12,
-                  border: "1px solid #DC2626",
-                  background: "transparent",
-                  color: "#DC2626",
-                  fontSize: 16,
-                  fontWeight: 600,
-                  fontFamily: "inherit",
-                }}
-              >
-                Reset app for new patient
-              </Btn>
-            ) : (
-              <div
-                style={{
-                  padding: 16,
-                  background: isDark
-                    ? "rgba(220,38,38,0.1)"
-                    : "rgba(220,38,38,0.05)",
-                  borderRadius: 14,
-                }}
-              >
-                <p
-                  style={{
-                    fontSize: 15,
-                    fontWeight: 600,
-                    color: "#DC2626",
-                    margin: "0 0 8px",
-                  }}
-                >
-                  Are you sure?
-                </p>
-                <p style={{ fontSize: 14, color: t.sub, margin: "0 0 16px" }}>
-                  This will erase all patient data, voice samples, conversation
-                  history, and provider settings. This cannot be undone.
-                </p>
-                <div style={{ display: "flex", gap: 10 }}>
-                  <Btn
-                    onClick={() => setShowResetConfirm(false)}
-                    style={{
-                      flex: 1,
-                      padding: "12px 16px",
-                      borderRadius: 10,
-                      border: `1px solid ${t.border}`,
-                      background: t.card,
-                      color: t.text,
-                      fontSize: 15,
-                      fontWeight: 600,
-                      fontFamily: "inherit",
-                    }}
-                  >
-                    Cancel
-                  </Btn>
-                  <Btn
-                    onClick={onReset}
-                    style={{
-                      flex: 1,
-                      padding: "12px 16px",
-                      borderRadius: 10,
-                      border: "none",
-                      background: "#DC2626",
-                      color: "#FFFFFF",
-                      fontSize: 15,
-                      fontWeight: 600,
-                      fontFamily: "inherit",
-                    }}
-                  >
-                    Reset everything
-                  </Btn>
-                </div>
-              </div>
-            )}
-          </Section>
+          <ResetSection onReset={onReset} t={t} theme={theme} />
         </div>
       </div>
     </div>
   );
-}
-
-/* ---------- Helpers ---------- */
-
-function Section({
-  label,
-  t,
-  children,
-}: {
-  label: string;
-  t: ThemeTokens;
-  children: preact.ComponentChildren;
-}) {
-  return (
-    <div style={{ marginTop: 28 }}>
-      <h3
-        style={{
-          fontSize: 13,
-          fontWeight: 600,
-          color: t.muted,
-          textTransform: "uppercase",
-          letterSpacing: "0.05em",
-          margin: "0 0 12px",
-        }}
-      >
-        {label}
-      </h3>
-      <div
-        style={{
-          background: t.card,
-          borderRadius: 14,
-          border: `1px solid ${t.border}`,
-          padding: 18,
-        }}
-      >
-        {children}
-      </div>
-    </div>
-  );
-}
-
-function labelStyle(t: ThemeTokens): Record<string, string | number> {
-  return {
-    display: "block",
-    fontSize: 14,
-    fontWeight: 600,
-    color: t.sub,
-    marginBottom: 6,
-  };
-}
-
-function inputStyle(
-  t: ThemeTokens,
-  isDark: boolean,
-): Record<string, string | number> {
-  return {
-    width: "100%",
-    padding: "12px 14px",
-    borderRadius: 10,
-    border: `1px solid ${isDark ? "rgba(255,255,255,0.12)" : "#D1D5DB"}`,
-    background: isDark ? "rgba(255,255,255,0.05)" : "#FAFAF8",
-    fontSize: 16,
-    color: t.text,
-    outline: "none",
-    boxSizing: "border-box",
-    fontFamily:
-      "'Atkinson Hyperlegible Next', system-ui, -apple-system, sans-serif",
-  };
 }
