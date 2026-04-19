@@ -118,13 +118,18 @@ describe("resumableDownload", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  it("throws if server 200s without Range support on resume", async () => {
-    opfs.store.set("/a.onnx", new Uint8Array([1, 2, 3]).buffer);
+  it("restarts from byte 0 when server returns 200 instead of 206 on a resume attempt", async () => {
+    // Some hospital captive portals / middleboxes strip the Range header and
+    // return the full file as 200. Historically this was a hard error; now
+    // we clear the progress marker and consume the 200 body as a fresh download.
+    opfs.store.set("/a.onnx", new Uint8Array([9, 9]).buffer);
     opfs.store.set(
       "/a.onnx._progress.json",
-      new TextEncoder().encode(JSON.stringify({ bytesWritten: 3, expectedSize: 5 }))
-        .buffer as ArrayBuffer,
+      new TextEncoder()
+        .encode(JSON.stringify({ bytesWritten: 2, expectedSize: 5 }))
+        .slice().buffer,
     );
+
     globalThis.fetch = vi.fn(async () =>
       new Response(new Uint8Array([1, 2, 3, 4, 5]), {
         status: 200,
@@ -132,14 +137,19 @@ describe("resumableDownload", () => {
       }),
     ) as typeof fetch;
 
-    await expect(
-      resumableDownload({
-        url: "/models/tts/a.onnx",
-        dir: opfs.root,
-        filename: "a.onnx",
-        expectedSize: 5,
-      }),
-    ).rejects.toThrow(/range|206/i);
+    await resumableDownload({
+      url: "/models/tts/a.onnx",
+      dir: opfs.root,
+      filename: "a.onnx",
+      expectedSize: 5,
+    });
+
+    // File contains fresh content, not appended to the old 9,9.
+    expect(new Uint8Array(opfs.store.get("/a.onnx")!)).toEqual(
+      new Uint8Array([1, 2, 3, 4, 5]),
+    );
+    // Progress marker cleared after successful restart.
+    expect(opfs.store.has("/a.onnx._progress.json")).toBe(false);
   });
 
   it("throws and writes a short-progress marker when server delivers fewer bytes than expected", async () => {

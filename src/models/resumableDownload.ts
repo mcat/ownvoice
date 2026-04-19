@@ -66,7 +66,7 @@ export async function resumableDownload(opts: ResumableDownloadOpts): Promise<vo
   const { url, dir, filename, expectedSize, signal, onProgress } = opts;
 
   const prior = await readProgress(dir, filename);
-  const resumeFrom =
+  let resumeFrom =
     prior && prior.expectedSize === expectedSize ? prior.bytesWritten : 0;
 
   const headers: HeadersInit = {};
@@ -77,9 +77,14 @@ export async function resumableDownload(opts: ResumableDownloadOpts): Promise<vo
     throw new Error(`download failed: HTTP ${response.status} ${response.statusText}`);
   }
   if (resumeFrom > 0 && response.status !== 206) {
-    throw new Error(
-      `expected 206 Partial Content for resume, got ${response.status} (server ignored Range)`,
+    // Server ignored Range (captive portal / middlebox / server without
+    // partial-content support). The body is a full-file 200 — discard the
+    // stale progress marker and treat this as a fresh download.
+    console.warn(
+      `[OwnVoice] Server returned ${response.status} instead of 206 for Range request — restarting from byte 0`,
     );
+    await clearProgress(dir, filename);
+    resumeFrom = 0;
   }
 
   const fileHandle = await dir.getFileHandle(filename, { create: true });
