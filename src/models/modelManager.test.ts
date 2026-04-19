@@ -528,6 +528,36 @@ describe("ModelManager — downloadAndCache", () => {
   });
 });
 
+describe("ModelManager — verifyOPFSCache", () => {
+  it("returns ok when all manifest files pass integrity", async () => {
+    const opfs = createOPFSMock();
+    const good = new Uint8Array(10);
+    good[0] = 0x08;
+    good[1] = 0x01;
+    opfs.store.set("/models/tts/good.onnx", good.buffer.slice(0));
+    opfs.install();
+
+    const mgr = getModelManager();
+    const report = await mgr.verifyOPFSCache("tts", {
+      baseUrl: "/models/tts/",
+      files: [{ name: "good.onnx", size: 10, magic: "onnx" }],
+    });
+    expect(report.ok).toBe(true);
+  });
+
+  it("returns not-ok with per-file reasons when a file is missing", async () => {
+    const opfs = createOPFSMock();
+    opfs.install();
+    const mgr = getModelManager();
+    const report = await mgr.verifyOPFSCache("tts", {
+      baseUrl: "/models/tts/",
+      files: [{ name: "missing.onnx", size: 10, magic: "onnx" }],
+    });
+    expect(report.ok).toBe(false);
+    expect(report.files[0].reason).toMatch(/missing/i);
+  });
+});
+
 describe("ModelManager — downloadAndCache streams to OPFS", () => {
   it("writes streamed chunks to OPFS", async () => {
     const opfs = createOPFSMock();

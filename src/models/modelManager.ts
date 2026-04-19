@@ -1,4 +1,6 @@
 import type { ModelId, ModelStatus, LoadProgress } from "./types";
+import type { ManifestModel } from "./modelsManifest";
+import type { IntegrityReport } from "./integrityCheck";
 
 interface ModelEntry {
   status: ModelStatus;
@@ -156,6 +158,32 @@ class ModelManager {
       const message = err instanceof Error ? err.message : "Download failed";
       this.updateModel(id, { status: "error", error: message });
       throw err;
+    }
+  }
+
+  /**
+   * Verify every file of a model against the manifest. Cheap (reads first
+   * 2 bytes per ONNX file + full text for JSON), safe to run on every boot.
+   */
+  async verifyOPFSCache(
+    id: ModelId,
+    model: ManifestModel,
+  ): Promise<IntegrityReport> {
+    const { verifyModel } = await import("./integrityCheck");
+    try {
+      const root = await navigator.storage.getDirectory();
+      const modelsDir = await root.getDirectoryHandle("models", { create: true });
+      const modelDir = await modelsDir.getDirectoryHandle(id, { create: true });
+      return verifyModel(modelDir, model);
+    } catch {
+      return {
+        ok: false,
+        files: model.files.map((f) => ({
+          name: f.name,
+          ok: false,
+          reason: "OPFS unavailable",
+        })),
+      };
     }
   }
 
