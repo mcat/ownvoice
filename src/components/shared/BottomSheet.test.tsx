@@ -127,3 +127,48 @@ describe("BottomSheet subcomponent misuse", () => {
     spy.mockRestore();
   });
 });
+
+describe("BottomSheet.Body", () => {
+  it("renders children", () => {
+    render(
+      <BottomSheet onClose={() => {}} t={light}>
+        <BottomSheet.Body>
+          <p>body paragraph</p>
+        </BottomSheet.Body>
+      </BottomSheet>,
+    );
+    expect(screen.getByText("body paragraph")).toBeInTheDocument();
+  });
+
+  it("sets overflow-y auto and flex:1 for scroll containment", () => {
+    render(
+      <BottomSheet onClose={() => {}} t={light}>
+        <BottomSheet.Body>
+          <p data-testid="inner">body</p>
+        </BottomSheet.Body>
+      </BottomSheet>,
+    );
+    const body = screen.getByTestId("inner").parentElement as HTMLElement;
+    const style = body.getAttribute("style") ?? "";
+    expect(style).toMatch(/overflow-y:\s*auto/);
+    expect(style).toMatch(/flex:\s*1/);
+    expect(style).toMatch(/min-height:\s*0/);
+  });
+});
+
+describe("BottomSheet.Actions", () => {
+  it("renders children inside a pinned footer", () => {
+    render(
+      <BottomSheet onClose={() => {}} t={light}>
+        <BottomSheet.Actions>
+          <button>Submit</button>
+        </BottomSheet.Actions>
+      </BottomSheet>,
+    );
+    const btn = screen.getByRole("button", { name: "Submit" });
+    const actions = btn.parentElement as HTMLElement;
+    const style = actions.getAttribute("style") ?? "";
+    expect(style).toMatch(/flex-shrink:\s*0/);
+    expect(style).toMatch(/border-top/);
+  });
+});

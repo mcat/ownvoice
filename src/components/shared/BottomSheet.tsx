@@ -159,6 +159,33 @@ function CloseButton({
   );
 }
 
+function Body({ children }: { children: ComponentChildren }) {
+  const style: JSX.CSSProperties = {
+    flex: 1,
+    minHeight: 0,
+    overflowY: "auto",
+    padding: "16px 20px",
+    // Keep focus rings on edge children from being clipped by the scroll
+    // boundary (WCAG 2.4.11 / 2.4.13).
+    scrollPaddingBottom: 96,
+  };
+  return <div style={style}>{children}</div>;
+}
+
+function Actions({ children }: { children: ComponentChildren }) {
+  const { t } = useBottomSheet();
+  const style: JSX.CSSProperties = {
+    flexShrink: 0,
+    display: "flex",
+    gap: 12,
+    padding: "12px 20px",
+    borderTop: `1px solid ${t.border}`,
+  };
+  return <div style={style}>{children}</div>;
+}
+
 BottomSheet.Header = Header;
 BottomSheet.Title = Title;
 BottomSheet.CloseButton = CloseButton;
+BottomSheet.Body = Body;
+BottomSheet.Actions = Actions;
