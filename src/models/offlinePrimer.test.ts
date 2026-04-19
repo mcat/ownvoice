@@ -104,7 +104,7 @@ describe("primeOffline", () => {
   it("emits download-failed without aborting the whole primer", async () => {
     mockMgr.downloadAndCache.mockImplementation(async (_id, _url, filename) => {
       if (filename === "a.onnx") throw new Error("network dropped");
-      return new File([], "ok");
+      return { file: new File([], "ok"), fromCache: false };
     });
     mockMgr.verifyOPFSCache.mockImplementation(async (id) => ({
       ok: id !== "tts",
@@ -122,6 +122,7 @@ describe("primeOffline", () => {
       "/models/llm/",
       "c.onnx",
       5,
+      undefined, // no onProgress passed to primeOffline in this test
     );
     expect(events.at(-1)).toEqual({ type: "complete", allOk: false, downloadedCount: 2 });
   });
@@ -135,7 +136,7 @@ describe("primeOffline", () => {
 
     const events: PrimerEvent[] = [];
     try {
-      for await (const ev of primeOffline(manifest, controller.signal)) events.push(ev);
+      for await (const ev of primeOffline(manifest, { signal: controller.signal })) events.push(ev);
     } catch (err) {
       expect((err as Error).name).toBe("AbortError");
     }
@@ -159,7 +160,7 @@ describe("primeOffline", () => {
 
     let thrown: unknown;
     try {
-      for await (const _ of primeOffline(manifest, controller.signal)) {
+      for await (const _ of primeOffline(manifest, { signal: controller.signal })) {
         // drain
       }
     } catch (err) {

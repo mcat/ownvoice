@@ -51,6 +51,7 @@ export function OfflineReadinessSection({ t }: Props) {
   const [verifying, setVerifying] = useState(false);
   const [clearingCache, setClearingCache] = useState(false);
   const [alreadyReady, setAlreadyReady] = useState(false);
+  const [forcingRedownload, setForcingRedownload] = useState(false);
   const dismissTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const health = useStorageHealth();
 
@@ -64,11 +65,44 @@ export function OfflineReadinessSection({ t }: Props) {
   // Clean up timer on unmount
   useEffect(() => clearDismissTimer, [clearDismissTimer]);
 
+  /**
+   * Wipe /models/ in OPFS so the next primer run hits the network for
+   * every file. Workers keep their in-memory copies — inference doesn't
+   * interrupt. The primer refills OPFS.
+   */
+  async function forceRedownload() {
+    if (
+      !globalThis.confirm(
+        "Redownload all AI models? This will re-fetch roughly 1.7 GB. Voice synthesis keeps working through the refresh.",
+      )
+    ) {
+      return;
+    }
+    setError(null);
+    setForcingRedownload(true);
+    try {
+      try {
+        const root = await navigator.storage.getDirectory();
+        await root.removeEntry("models", { recursive: true });
+      } catch {
+        // /models/ doesn't exist yet — that's fine, primer will create it.
+      }
+      // Wipe stale progress + verified state so the UI reflects the refresh.
+      useOfflineStore.getState().reset();
+      await drivePrimer();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setForcingRedownload(false);
+    }
+  }
+
   // Offline-readiness actions (primer/verify/clear) gate on each other, but
   // NOT on audio-cache rebuild. Audio-cache pre-gen runs automatically in the
   // background any time a voice clone is configured — it shouldn't block
   // clinician-initiated offline prep.
-  const offlineActionRunning = primerRunning || verifying || clearingCache;
+  const offlineActionRunning =
+    primerRunning || verifying || clearingCache || forcingRedownload;
   // Clear-cache itself is special: it conflicts with a live rebuild because
   // clearing mid-rebuild aborts it. So Clear disables when a rebuild is
   // actually in flight.
@@ -128,6 +162,13 @@ export function OfflineReadinessSection({ t }: Props) {
     statuses.length > 0 && statuses.every((s) => s === "verified");
   const anyNeedsRetry = statuses.some((s) => s === "needs-retry");
 
+  // Aggregate download progress across all files being primed.
+  const progressEntries = Object.values(progress);
+  const loadedBytes = progressEntries.reduce((s, p) => s + p.loaded, 0);
+  const totalBytes = progressEntries.reduce((s, p) => s + p.total, 0);
+  const percent =
+    totalBytes > 0 ? Math.min(100, (loadedBytes / totalBytes) * 100) : 0;
+
   return (
     <Section label="Offline readiness" t={t}>
       <p style={{ margin: "0 0 14px", color: t.sub, fontSize: 14 }}>
@@ -136,9 +177,47 @@ export function OfflineReadinessSection({ t }: Props) {
       </p>
 
       {primerRunning && (
-        <p style={{ margin: "0 0 10px", color: t.sub, fontSize: 14, fontWeight: 500 }}>
-          Downloading models for offline use…
-        </p>
+        <div style={{ margin: "0 0 14px" }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              color: t.text,
+              fontSize: 14,
+              fontWeight: 500,
+              marginBottom: 6,
+            }}
+          >
+            <span>Downloading models…</span>
+            <span>
+              {formatBytes(loadedBytes)} / {formatBytes(totalBytes || null)}
+              {totalBytes > 0 && ` (${percent.toFixed(0)}%)`}
+            </span>
+          </div>
+          <div
+            role="progressbar"
+            aria-valuenow={Math.round(percent)}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label="Model download progress"
+            style={{
+              width: "100%",
+              height: 6,
+              borderRadius: 3,
+              background: t.activeBg,
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                width: `${percent}%`,
+                height: "100%",
+                background: t.text,
+                transition: "width 150ms linear",
+              }}
+            />
+          </div>
+        </div>
       )}
 
       {allVerified && !primerRunning && (
@@ -202,6 +281,33 @@ export function OfflineReadinessSection({ t }: Props) {
       >
         {verifying ? "Checking…" : "Check existing models"}
       </Btn>
+
+      {/* Force redownload — lets a clinician or tester trigger a visible
+          fresh download even when everything verifies. Wipes OPFS /models/
+          then primes. Workers keep their in-memory copies through the swap. */}
+      {allVerified && !primerRunning && (
+        <Btn
+          onClick={forceRedownload}
+          disabled={offlineActionRunning}
+          style={{
+            width: "100%",
+            minHeight: 44,
+            marginTop: 8,
+            padding: "10px 20px",
+            borderRadius: 10,
+            border: "none",
+            background: "transparent",
+            color: t.muted,
+            fontSize: 13,
+            fontWeight: 400,
+            textDecoration: "underline",
+            fontFamily: "inherit",
+            opacity: offlineActionRunning ? 0.6 : 1,
+          }}
+        >
+          {forcingRedownload ? "Redownloading…" : "Force redownload all models"}
+        </Btn>
+      )}
 
       {verifiedEntries.length > 0 && (
         <ul

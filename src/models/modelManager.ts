@@ -97,6 +97,7 @@ class ModelManager {
     url: string,
     filename: string,
     expectedSize: number,
+    onProgress?: (bytesWritten: number) => void,
   ): Promise<{ file: File; fromCache: boolean }> {
     this.updateModel(id, { status: "downloading", total: expectedSize });
 
@@ -126,6 +127,7 @@ class ModelManager {
         expectedSize,
         onProgress: ({ bytesWritten }) => {
           this.updateModel(id, { loaded: bytesWritten });
+          onProgress?.(bytesWritten);
         },
       });
 
