@@ -1,5 +1,4 @@
-import { loadManifest } from "./modelsManifest";
-import { primeOffline } from "./offlinePrimer";
+import { drivePrimer } from "./drivePrimer";
 import { useOfflineStore } from "../stores/offlineStore";
 
 const PROGRESS_SUFFIX = "._progress.json";
@@ -28,24 +27,7 @@ export async function hasPendingDownloads(): Promise<boolean> {
 }
 
 async function runPrimer(): Promise<void> {
-  const s = useOfflineStore.getState();
-  if (s.primerRunning) return;
-
-  const manifest = await loadManifest();
-  s.setPrimerRunning(true);
-  try {
-    for await (const ev of primeOffline(manifest)) {
-      if (ev.type === "download-progress") {
-        s.reportProgress(ev.model, ev.file, ev.loaded, ev.total);
-      } else if (ev.type === "model-verified") {
-        s.setModelVerified(ev.model, ev.ok);
-      } else if (ev.type === "complete") {
-        s.markPrimerComplete();
-      }
-    }
-  } finally {
-    useOfflineStore.getState().setPrimerRunning(false);
-  }
+  await drivePrimer();
 }
 
 async function maybeResume(): Promise<void> {

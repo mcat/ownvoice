@@ -5,32 +5,13 @@ import { OfflineReadinessSection } from "./OfflineReadinessSection";
 import { useOfflineStore } from "../../../stores/offlineStore";
 import { light } from "../../../theme/tokens";
 
-vi.mock("../../../models/modelsManifest", () => ({
-  loadManifest: vi.fn(async () => ({
-    version: 1,
-    models: {
-      tts: {
-        baseUrl: "/models/tts/",
-        files: [{ name: "a.onnx", size: 10, magic: "onnx" }],
-      },
-      llm: { baseUrl: "/models/llm/", files: [] },
-      stt: { baseUrl: "/models/stt/", files: [] },
-    },
-  })),
-}));
-
-vi.mock("../../../models/offlinePrimer", () => ({
-  primeOffline: vi.fn(async function* () {
-    yield { type: "model-start", model: "tts" } as const;
-    yield {
-      type: "download-start",
-      model: "tts",
-      file: "a.onnx",
-      size: 10,
-    } as const;
-    yield { type: "model-verified", model: "tts", ok: true } as const;
-    yield { type: "complete", allOk: true } as const;
-  }),
+const drivePrimerMock = vi.fn(async () => {
+  const s = useOfflineStore.getState();
+  s.setModelVerified("tts", true);
+  s.markPrimerComplete();
+});
+vi.mock("../../../models/drivePrimer", () => ({
+  drivePrimer: (...args: unknown[]) => drivePrimerMock(...args),
 }));
 
 const verifyAllOnBootMock = vi.fn(async () => {
@@ -64,6 +45,7 @@ function installStorageEstimate(usage: number, quota: number) {
 describe("OfflineReadinessSection", () => {
   beforeEach(() => {
     useOfflineStore.getState().reset();
+    drivePrimerMock.mockClear();
     verifyAllOnBootMock.mockClear();
     clearAudioCacheMock.mockClear();
     abortRunnerMock.mockClear();

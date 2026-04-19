@@ -2,14 +2,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { hasPendingDownloads, resumePendingOnVisible } from "./offlineResume";
 import { useOfflineStore } from "../stores/offlineStore";
 
-const loadManifestMock = vi.fn();
-vi.mock("./modelsManifest", () => ({
-  loadManifest: () => loadManifestMock(),
-}));
-
-const primeOfflineMock = vi.fn();
-vi.mock("./offlinePrimer", () => ({
-  primeOffline: () => primeOfflineMock(),
+const drivePrimerMock = vi.fn(async () => {});
+vi.mock("./drivePrimer", () => ({
+  drivePrimer: () => drivePrimerMock(),
 }));
 
 /** Minimal OPFS mock supporting .values() async iteration. */
@@ -96,22 +91,8 @@ describe("hasPendingDownloads", () => {
 describe("resumePendingOnVisible", () => {
   beforeEach(() => {
     useOfflineStore.getState().reset();
-    loadManifestMock.mockReset();
-    primeOfflineMock.mockReset();
-    // Default: manifest with one model/one file; primer yields "complete".
-    loadManifestMock.mockResolvedValue({
-      version: 1,
-      models: {
-        tts: { baseUrl: "/models/tts/", files: [{ name: "a.onnx", size: 10, magic: "onnx" }] },
-        llm: { baseUrl: "/models/llm/", files: [] },
-        stt: { baseUrl: "/models/stt/", files: [] },
-      },
-    });
-    primeOfflineMock.mockImplementation(
-      async function* () {
-        yield { type: "complete", allOk: true };
-      },
-    );
+    drivePrimerMock.mockReset();
+    drivePrimerMock.mockResolvedValue(undefined);
     // Default: visible + no partials
     Object.defineProperty(document, "visibilityState", {
       configurable: true,
@@ -139,7 +120,7 @@ describe("resumePendingOnVisible", () => {
     // Give microtasks time to settle
     await Promise.resolve();
     await Promise.resolve();
-    expect(primeOfflineMock).not.toHaveBeenCalled();
+    expect(drivePrimerMock).not.toHaveBeenCalled();
     unsub();
   });
 
@@ -148,7 +129,7 @@ describe("resumePendingOnVisible", () => {
     const unsub = resumePendingOnVisible();
     // Wait for async resume chain to complete
     await vi.waitFor(() => {
-      expect(primeOfflineMock).toHaveBeenCalledTimes(1);
+      expect(drivePrimerMock).toHaveBeenCalledTimes(1);
     });
     unsub();
   });
@@ -159,7 +140,7 @@ describe("resumePendingOnVisible", () => {
     const unsub = resumePendingOnVisible();
     await Promise.resolve();
     await Promise.resolve();
-    expect(primeOfflineMock).not.toHaveBeenCalled();
+    expect(drivePrimerMock).not.toHaveBeenCalled();
     unsub();
   });
 
@@ -173,14 +154,14 @@ describe("resumePendingOnVisible", () => {
 
     const unsub = resumePendingOnVisible();
     await Promise.resolve();
-    expect(primeOfflineMock).not.toHaveBeenCalled();
+    expect(drivePrimerMock).not.toHaveBeenCalled();
 
     // Flip to visible and dispatch the event.
     visibility = "visible";
     document.dispatchEvent(new Event("visibilitychange"));
 
     await vi.waitFor(() => {
-      expect(primeOfflineMock).toHaveBeenCalledTimes(1);
+      expect(drivePrimerMock).toHaveBeenCalledTimes(1);
     });
     unsub();
   });
