@@ -296,7 +296,7 @@ describe("ModelManager — WebGPU detection", () => {
 });
 
 // =============================================================================
-// OPFS helpers — getOPFSCache / markComplete / downloadAndCache / clearAll OPFS
+// OPFS helpers — downloadAndCache / verifyOPFSCache / clearAll OPFS
 // =============================================================================
 
 /** Creates an in-memory OPFS mock with directory + file handles. */
@@ -386,65 +386,6 @@ function createOPFSMock() {
     },
   };
 }
-
-describe("ModelManager — getOPFSCache", () => {
-  it("returns null when model dir does not exist", async () => {
-    const opfs = createOPFSMock();
-    opfs.install();
-    const mgr = getModelManager();
-    const result = await mgr.getOPFSCache("tts");
-    expect(result).toBeNull();
-  });
-
-  it("returns null when _complete sentinel is missing", async () => {
-    const opfs = createOPFSMock();
-    // Create the model dir but NOT the _complete sentinel
-    opfs.store.set("/models/tts/somefile.onnx", new ArrayBuffer(10));
-    opfs.install();
-    const mgr = getModelManager();
-    const result = await mgr.getOPFSCache("tts");
-    expect(result).toBeNull();
-  });
-
-  it("returns directory handle when _complete sentinel exists", async () => {
-    const opfs = createOPFSMock();
-    // Create the _complete sentinel in the model dir
-    opfs.store.set("/models/tts/_complete", new TextEncoder().encode("ok").buffer as ArrayBuffer);
-    opfs.install();
-    const mgr = getModelManager();
-    const result = await mgr.getOPFSCache("tts");
-    expect(result).not.toBeNull();
-  });
-});
-
-describe("ModelManager — markComplete", () => {
-  it("writes a _complete sentinel file to OPFS", async () => {
-    const opfs = createOPFSMock();
-    opfs.install();
-    const mgr = getModelManager();
-    await mgr.markComplete("tts");
-
-    // The sentinel file should exist in the store
-    expect(opfs.store.has("/models/tts/_complete")).toBe(true);
-    const buf = opfs.store.get("/models/tts/_complete")!;
-    const text = new TextDecoder().decode(buf);
-    expect(text).toBe("ok");
-  });
-
-  it("does not throw when OPFS operations fail", async () => {
-    Object.defineProperty(navigator, "storage", {
-      value: {
-        getDirectory: vi.fn(() => Promise.reject(new Error("OPFS unavailable"))),
-        persist: vi.fn(),
-      },
-      configurable: true,
-      writable: true,
-    });
-    const mgr = getModelManager();
-    // markComplete catches errors silently
-    await expect(mgr.markComplete("tts")).resolves.toBeUndefined();
-  });
-});
 
 describe("ModelManager — downloadAndCache", () => {
   it("returns cached file when it already exists in OPFS with matching size", async () => {
