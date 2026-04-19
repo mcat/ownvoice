@@ -98,6 +98,67 @@ export function BottomSheet({
   );
 }
 
-// Subcomponent placeholders — filled in Task 3 and Task 4.
-BottomSheet.__ctx = ctx;
-BottomSheet.__useBottomSheet = useBottomSheet;
+/* ── Subcomponents ─────────────────────────────────────── */
+
+function Header({ children }: { children: ComponentChildren }) {
+  const { t } = useBottomSheet();
+  const style: JSX.CSSProperties = {
+    flexShrink: 0,
+    padding: "16px 20px 12px",
+    borderBottom: `1px solid ${t.border}`,
+    display: "flex",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: 12,
+  };
+  return <div style={style}>{children}</div>;
+}
+
+function Title({ children }: { children: ComponentChildren }) {
+  const { titleId } = useBottomSheet();
+  return (
+    <h2
+      id={titleId}
+      style={{
+        fontSize: 22,
+        fontWeight: 700,
+        margin: 0,
+        flex: 1,
+        minWidth: 0,
+      }}
+    >
+      {children}
+    </h2>
+  );
+}
+
+function CloseButton({
+  children,
+  ...rest
+}: JSX.HTMLAttributes<HTMLButtonElement>) {
+  const { close } = useBottomSheet();
+  return (
+    <button
+      type="button"
+      onClick={close}
+      {...rest}
+      style={{
+        background: "none",
+        border: "none",
+        fontSize: 28,
+        padding: 8,
+        minWidth: 64,
+        minHeight: 64,
+        cursor: "pointer",
+        fontFamily: "inherit",
+        ...(rest.style as JSX.CSSProperties | undefined),
+      }}
+    >
+      {children ?? "\u2715"}
+    </button>
+  );
+}
+
+BottomSheet.Header = Header;
+BottomSheet.Title = Title;
+BottomSheet.CloseButton = CloseButton;
