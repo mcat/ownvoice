@@ -65,10 +65,11 @@ describe("drivePrimer", () => {
     expect(primeOfflineMock).not.toHaveBeenCalled();
   });
 
-  it("calls reportProgress on download-progress events", async () => {
-    primeOfflineMock.mockImplementation(async function* () {
-      yield { type: "download-progress", model: "tts", file: "a.onnx", loaded: 5, total: 10 };
-      yield { type: "complete", allOk: true };
+  it("writes to offlineStore.progress via the onProgress callback passed to primeOffline", async () => {
+    primeOfflineMock.mockImplementation(async function* (_manifest: unknown, opts: { onProgress?: (m: string, f: string, l: number, t: number) => void }) {
+      // Simulate the primer firing the onProgress callback mid-stream.
+      opts.onProgress?.("tts", "a.onnx", 5, 10);
+      yield { type: "complete", allOk: true, downloadedCount: 1 };
     });
 
     const drivePrimer = await importDrivePrimer();
@@ -147,27 +148,35 @@ describe("drivePrimer", () => {
     expect(useOfflineStore.getState().primerRunning).toBe(false);
   });
 
-  it("passes signal through to primeOffline", async () => {
+  it("passes signal through to primeOffline options", async () => {
     primeOfflineMock.mockImplementation(async function* () {
-      yield { type: "complete", allOk: true };
+      yield { type: "complete", allOk: true, downloadedCount: 0 };
     });
 
     const ac = new AbortController();
     const drivePrimer = await importDrivePrimer();
     await drivePrimer({ signal: ac.signal });
 
-    expect(primeOfflineMock).toHaveBeenCalledWith(MANIFEST, ac.signal);
+    expect(primeOfflineMock).toHaveBeenCalledWith(
+      MANIFEST,
+      expect.objectContaining({ signal: ac.signal }),
+    );
   });
 
   it("passes manifest to primeOffline from loadManifest", async () => {
     primeOfflineMock.mockImplementation(async function* () {
-      yield { type: "complete", allOk: true };
+      yield { type: "complete", allOk: true, downloadedCount: 0 };
     });
 
     const drivePrimer = await importDrivePrimer();
     await drivePrimer();
 
     expect(loadManifestMock).toHaveBeenCalledOnce();
-    expect(primeOfflineMock).toHaveBeenCalledWith(MANIFEST, undefined);
+    // primeOffline now takes (manifest, options) — options.onProgress is always
+    // wired, options.signal may be undefined.
+    expect(primeOfflineMock).toHaveBeenCalledWith(
+      MANIFEST,
+      expect.objectContaining({ onProgress: expect.any(Function) }),
+    );
   });
 });

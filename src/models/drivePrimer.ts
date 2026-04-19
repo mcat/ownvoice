@@ -26,12 +26,13 @@ export async function drivePrimer(opts?: {
   let downloadedCount = 0;
   try {
     const manifest = await loadManifest();
-    for await (const ev of primeOffline(manifest, opts?.signal)) {
-      if (ev.type === "download-progress") {
-        useOfflineStore
-          .getState()
-          .reportProgress(ev.model, ev.file, ev.loaded, ev.total);
-      } else if (ev.type === "model-verified") {
+    for await (const ev of primeOffline(manifest, {
+      signal: opts?.signal,
+      onProgress: (model, file, loaded, total) => {
+        useOfflineStore.getState().reportProgress(model, file, loaded, total);
+      },
+    })) {
+      if (ev.type === "model-verified") {
         // After a primer run, files are either present+ok or present+failed.
         // "not-primed" only applies before a primer has ever run.
         useOfflineStore
