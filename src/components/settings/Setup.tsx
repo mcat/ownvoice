@@ -1,6 +1,7 @@
 import { useState } from "preact/hooks";
 import type { AppSettings, FallbackVoice, Provider } from "../../types";
 import { LANGS } from "../../data/phrases";
+import { z } from "../../theme/z";
 import { Btn } from "../shared/Btn";
 import { VoiceCapture } from "../shared/VoiceCapture";
 import { FallbackVoicePicker } from "../shared/FallbackVoicePicker";
@@ -115,7 +116,7 @@ export function Setup({ onDone }: SetupProps) {
         position: "fixed",
         inset: 0,
         background: "#FAFAF8",
-        zIndex: 9999,
+        zIndex: z.setup,
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
