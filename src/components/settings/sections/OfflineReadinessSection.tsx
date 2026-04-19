@@ -2,8 +2,7 @@ import { useState } from "preact/hooks";
 import type { ComponentChildren } from "preact";
 import type { ThemeTokens } from "../../../theme/tokens";
 import { Btn } from "../../shared/Btn";
-import { loadManifest } from "../../../models/modelsManifest";
-import { primeOffline } from "../../../models/offlinePrimer";
+import { drivePrimer } from "../../../models/drivePrimer";
 import { verifyAllOnBoot } from "../../../models/bootModels";
 import { clearAudioCache } from "../../../models/audioCache";
 import * as audioCacheRunner from "../../../models/audioCacheRunner";
@@ -28,9 +27,6 @@ export function OfflineReadinessSection({ t }: Props) {
   const progress = useOfflineStore((s) => s.progress);
   const verified = useOfflineStore((s) => s.verified);
   const lastVerifiedAt = useOfflineStore((s) => s.lastVerifiedAt);
-  const setPrimerRunning = useOfflineStore((s) => s.setPrimerRunning);
-  const reportProgress = useOfflineStore((s) => s.reportProgress);
-  const setModelVerified = useOfflineStore((s) => s.setModelVerified);
   const markPrimerComplete = useOfflineStore((s) => s.markPrimerComplete);
 
   const cfg = useSettingsStore((s) => s.cfg);
@@ -46,22 +42,10 @@ export function OfflineReadinessSection({ t }: Props) {
 
   async function runPrimer() {
     setError(null);
-    setPrimerRunning(true);
     try {
-      const manifest = await loadManifest();
-      for await (const ev of primeOffline(manifest)) {
-        if (ev.type === "download-progress") {
-          reportProgress(ev.model, ev.file, ev.loaded, ev.total);
-        } else if (ev.type === "model-verified") {
-          setModelVerified(ev.model, ev.ok);
-        } else if (ev.type === "complete") {
-          markPrimerComplete();
-        }
-      }
+      await drivePrimer();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setPrimerRunning(false);
     }
   }
 
