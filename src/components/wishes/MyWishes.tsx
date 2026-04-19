@@ -1,14 +1,9 @@
-import { useState, useRef, useEffect } from "preact/hooks";
+import { useState } from "preact/hooks";
 import type { JSX } from "preact";
 import type { ThemeTokens, ThemeName } from "../../theme/tokens";
 import { getWishTopics, composeWishSentence } from "../../data/phraseRegistry";
 import { Btn } from "../shared/Btn";
 import { BottomSheet } from "../shared/BottomSheet";
-
-interface WishMessage {
-  from: "patient" | "provider";
-  text: string;
-}
 
 interface MyWishesProps {
   onSpeak: (text: string) => void;
@@ -36,22 +31,13 @@ export function MyWishes({
   const SICG_TOPICS = getWishTopics(locale);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [selections, setSelections] = useState<Record<string, string[]>>({});
-  const [thread, setThread] = useState<WishMessage[]>([]);
   const [complete, setComplete] = useState(false);
-
-  const threadRef = useRef<HTMLDivElement>(null);
 
   const blue = theme === "dark" ? "#60A5FA" : "#2563EB";
   const blueBg = theme === "dark" ? "#1E3A5F" : "#EFF6FF";
 
   const topic = SICG_TOPICS[currentIdx];
   const selected = selections[topic?.id] ?? [];
-
-  useEffect(() => {
-    if (threadRef.current) {
-      threadRef.current.scrollTop = threadRef.current.scrollHeight;
-    }
-  }, [thread.length]);
 
   function toggleResponse(response: string) {
     const topicId = topic.id;
@@ -70,11 +56,6 @@ export function MyWishes({
   function handleShare() {
     if (!selected.length) return;
     const sentence = composeWishSentence(locale, topic, selected);
-    setThread((prev) => [
-      ...prev,
-      { from: "provider", text: topic.question },
-      { from: "patient", text: sentence },
-    ]);
     onAddToThread(topic.question, "provider", "My Wishes");
     onSpeak(sentence);
     advance();
@@ -247,47 +228,6 @@ export function MyWishes({
       </BottomSheet.Header>
 
       <BottomSheet.Body>
-        {thread.length > 0 && (
-          <div
-            ref={threadRef}
-            style={{
-              maxHeight: "38vh",
-              overflowY: "auto",
-              marginBottom: 12,
-              paddingBottom: 12,
-              borderBottom: `1px solid ${t.border}`,
-            }}
-          >
-            {thread.map((msg, i) => (
-              <div
-                key={i}
-                style={{
-                  display: "flex",
-                  justifyContent:
-                    msg.from === "patient" ? "flex-end" : "flex-start",
-                  marginBottom: 8,
-                }}
-              >
-                <div
-                  style={{
-                    maxWidth: "80%",
-                    padding: "10px 14px",
-                    borderRadius: 12,
-                    fontSize: 16,
-                    lineHeight: 1.4,
-                    backgroundColor:
-                      msg.from === "patient" ? blueBg : t.activeBg,
-                    color: msg.from === "patient" ? blue : t.sub,
-                    fontWeight: msg.from === "patient" ? 500 : 400,
-                  }}
-                >
-                  {msg.text}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
         {/* Topic header — question only; emoji & label are used on the
             completion screen, not here. */}
         <h2
