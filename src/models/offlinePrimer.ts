@@ -13,7 +13,7 @@ export type PrimerEvent =
     }
   | { type: "download-failed"; model: ModelId; file: string; error: string }
   | { type: "model-verified"; model: ModelId; ok: boolean }
-  | { type: "complete"; allOk: boolean };
+  | { type: "complete"; allOk: boolean; downloadedCount: number };
 
 /**
  * Walks every file in the manifest, downloads any missing or short files,
@@ -32,6 +32,7 @@ export async function* primeOffline(
   const mgr = getModelManager();
   const modelIds = Object.keys(manifest.models) as ModelId[];
   let allOk = true;
+  let downloadedCount = 0;
 
   for (const id of modelIds) {
     if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
@@ -44,7 +45,8 @@ export async function* primeOffline(
       if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
       yield { type: "download-start", model: id, file: spec.name, size: spec.size };
       try {
-        await mgr.downloadAndCache(id, model.baseUrl, spec.name, spec.size);
+        const result = await mgr.downloadAndCache(id, model.baseUrl, spec.name, spec.size);
+        if (!result.fromCache) downloadedCount++;
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         yield { type: "download-failed", model: id, file: spec.name, error: message };
@@ -57,5 +59,5 @@ export async function* primeOffline(
     yield { type: "model-verified", model: id, ok: report.ok };
   }
 
-  yield { type: "complete", allOk };
+  yield { type: "complete", allOk, downloadedCount };
 }

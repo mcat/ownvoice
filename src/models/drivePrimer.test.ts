@@ -92,13 +92,35 @@ describe("drivePrimer", () => {
 
   it("calls markPrimerComplete on complete events", async () => {
     primeOfflineMock.mockImplementation(async function* () {
-      yield { type: "complete", allOk: true };
+      yield { type: "complete", allOk: true, downloadedCount: 1 };
     });
 
     const drivePrimer = await importDrivePrimer();
     await drivePrimer();
 
     expect(useOfflineStore.getState().lastVerifiedAt).not.toBeNull();
+  });
+
+  it("returns downloadedCount from the complete event", async () => {
+    primeOfflineMock.mockImplementation(async function* () {
+      yield { type: "complete", allOk: true, downloadedCount: 0 };
+    });
+
+    const drivePrimer = await importDrivePrimer();
+    const result = await drivePrimer();
+
+    expect(result).toEqual({ downloadedCount: 0 });
+  });
+
+  it("returns downloadedCount > 0 when files were downloaded", async () => {
+    primeOfflineMock.mockImplementation(async function* () {
+      yield { type: "complete", allOk: true, downloadedCount: 5 };
+    });
+
+    const drivePrimer = await importDrivePrimer();
+    const result = await drivePrimer();
+
+    expect(result).toEqual({ downloadedCount: 5 });
   });
 
   it("resets primerRunning in finally even when primer throws", async () => {

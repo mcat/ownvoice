@@ -398,9 +398,10 @@ describe("ModelManager — downloadAndCache", () => {
     opfs.install();
 
     const mgr = getModelManager();
-    const file = await mgr.downloadAndCache("tts", "/cdn/", "model.onnx", 4);
-    expect(file).toBeInstanceOf(File);
-    expect(file.size).toBe(4);
+    const result = await mgr.downloadAndCache("tts", "/cdn/", "model.onnx", 4);
+    expect(result.file).toBeInstanceOf(File);
+    expect(result.file.size).toBe(4);
+    expect(result.fromCache).toBe(true);
   });
 
   it("downloads and caches a new file when not in OPFS", async () => {
@@ -421,9 +422,10 @@ describe("ModelManager — downloadAndCache", () => {
     const cb = vi.fn();
     mgr.onProgress(cb);
 
-    const file = await mgr.downloadAndCache("tts", "/cdn/", "model.onnx", 5);
+    const result = await mgr.downloadAndCache("tts", "/cdn/", "model.onnx", 5);
 
-    expect(file).toBeInstanceOf(File);
+    expect(result.file).toBeInstanceOf(File);
+    expect(result.fromCache).toBe(false);
     expect(mockFetch).toHaveBeenCalledWith(
       "/cdn/model.onnx",
       expect.objectContaining({ cache: "no-store" }),
@@ -526,8 +528,9 @@ describe("ModelManager — downloadAndCache streams to OPFS", () => {
     );
 
     const mgr = getModelManager();
-    const file = await mgr.downloadAndCache("tts", "/cdn/", "model.onnx", 5);
-    expect(file.size).toBe(5);
+    const result = await mgr.downloadAndCache("tts", "/cdn/", "model.onnx", 5);
+    expect(result.file.size).toBe(5);
+    expect(result.fromCache).toBe(false);
     expect(new Uint8Array(opfs.store.get("/models/tts/model.onnx")!)).toEqual(
       new Uint8Array([1, 2, 3, 4, 5]),
     );

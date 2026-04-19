@@ -125,6 +125,67 @@ describe("OfflineReadinessSection", () => {
     });
   });
 
+  it("shows 'Already up to date' when primer completes with zero downloads", async () => {
+    drivePrimerMock.mockImplementation(async () => {
+      const s = useOfflineStore.getState();
+      s.setModelVerified("tts", true);
+      s.markPrimerComplete();
+      return { downloadedCount: 0 };
+    });
+
+    render(<OfflineReadinessSection t={light} />);
+    fireEvent.click(screen.getByRole("button", { name: /^prepare for offline$/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/already up to date/i)).toBeTruthy();
+    });
+  });
+
+  it("auto-dismisses 'Already up to date' after timeout", async () => {
+    vi.useFakeTimers();
+    drivePrimerMock.mockImplementation(async () => {
+      const s = useOfflineStore.getState();
+      s.setModelVerified("tts", true);
+      s.markPrimerComplete();
+      return { downloadedCount: 0 };
+    });
+
+    render(<OfflineReadinessSection t={light} />);
+    fireEvent.click(screen.getByRole("button", { name: /^prepare for offline$/i }));
+
+    // Wait for the message to appear
+    await waitFor(() => {
+      expect(screen.getByText(/already up to date/i)).toBeTruthy();
+    });
+
+    // Advance past the 3s dismiss timer
+    vi.advanceTimersByTime(3100);
+
+    await waitFor(() => {
+      expect(screen.queryByText(/already up to date/i)).toBeNull();
+    });
+
+    vi.useRealTimers();
+  });
+
+  it("does not show 'Already up to date' when primer downloaded files", async () => {
+    drivePrimerMock.mockImplementation(async () => {
+      const s = useOfflineStore.getState();
+      s.setModelVerified("tts", true);
+      s.markPrimerComplete();
+      return { downloadedCount: 3 };
+    });
+
+    render(<OfflineReadinessSection t={light} />);
+    fireEvent.click(screen.getByRole("button", { name: /^prepare for offline$/i }));
+
+    await waitFor(() => {
+      expect(useOfflineStore.getState().lastVerifiedAt).not.toBeNull();
+    });
+
+    expect(screen.queryByText(/already up to date/i)).toBeNull();
+  });
+
   it("aborts the runner, clears the audio cache, and does not re-kick without cfg/speakerData", async () => {
     installStorageEstimate(9000, 10_000);
     render(<OfflineReadinessSection t={light} />);
