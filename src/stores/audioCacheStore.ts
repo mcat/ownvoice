@@ -11,7 +11,7 @@ import { create } from "zustand";
 
 export type SpeakerKey = "patient" | `provider:${number}`;
 
-export type RunStatus = "idle" | "running" | "done" | "failed";
+export type RunStatus = "idle" | "running" | "paused" | "done" | "failed";
 
 export interface RunState {
   status: RunStatus;
@@ -52,6 +52,15 @@ interface AudioCacheState {
   finish: (key: SpeakerKey) => void;
   /** Clear the failed-phrases list for a key (called before retry). */
   resetFailed: (key: SpeakerKey) => void;
+  /**
+   * Mark every currently-running speaker as "paused" without losing
+   * progress. The underlying runner is expected to have already aborted
+   * its controller. Paused state is resumable via `runPreGeneration` —
+   * cached phrases are auto-skipped, so the counter quickly catches up.
+   */
+  pauseAllRuns: () => void;
+  /** Drop just this speaker's run from state (for discard). */
+  discard: (key: SpeakerKey) => void;
   /** Drop all runs and clear the active key. */
   abortAll: () => void;
 }
@@ -118,6 +127,28 @@ export const useAudioCacheStore = create<AudioCacheState>()((set) => ({
       const prev = s.runs[key] ?? IDLE;
       return {
         runs: { ...s.runs, [key]: { ...prev, failedPhrases: [] } },
+      };
+    }),
+
+  pauseAllRuns: () =>
+    set((s) => {
+      const runs: Partial<Record<SpeakerKey, RunState>> = { ...s.runs };
+      for (const k of Object.keys(runs) as SpeakerKey[]) {
+        const r = runs[k];
+        if (r && r.status === "running") {
+          runs[k] = { ...r, status: "paused", currentPhrase: null };
+        }
+      }
+      return { runs, activeKey: null };
+    }),
+
+  discard: (key) =>
+    set((s) => {
+      const runs: Partial<Record<SpeakerKey, RunState>> = { ...s.runs };
+      delete runs[key];
+      return {
+        runs,
+        activeKey: s.activeKey === key ? null : s.activeKey,
       };
     }),
 

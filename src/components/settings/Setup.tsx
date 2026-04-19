@@ -252,6 +252,7 @@ export function Setup({ onDone }: SetupProps) {
             removeProvider={removeProvider}
             toggleProviderVoice={toggleProviderVoice}
             setProviderEmbedding={setProviderEmbedding}
+            lang={lang}
           />
         )}
         {step === 3 && (
@@ -456,6 +457,7 @@ function StepVoice({
         }}
         onRemove={() => setPatientVoice(false)}
         onPreview={previewClonedVoice}
+        locale={lang}
       />
 
       <div style={{ marginTop: 36 }}>
@@ -494,6 +496,7 @@ function StepCareTeam({
   removeProvider,
   toggleProviderVoice,
   setProviderEmbedding,
+  lang,
 }: {
   providers: Provider[];
   newProvName: string;
@@ -506,6 +509,7 @@ function StepCareTeam({
   removeProvider: (i: number) => void;
   toggleProviderVoice: (index: number, hasVoice: boolean) => void;
   setProviderEmbedding: (index: number, embedding: unknown) => void;
+  lang: string;
 }) {
   return (
     <div>
@@ -567,6 +571,7 @@ function StepCareTeam({
                 if (embedding) setProviderEmbedding(i, embedding);
               }}
               onRemove={() => { toggleProviderVoice(i, false); }}
+              locale={lang}
               compact
             />
           </div>

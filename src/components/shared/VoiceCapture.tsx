@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "preact/hooks";
 import { Btn } from "./Btn";
 import { getModelManager } from "../../models/modelManager";
+import { getRecordingScript } from "../../data/recordingScripts";
 
 /**
  * Voice clone processing status — shown in the UI so the user
@@ -25,6 +26,12 @@ export interface VoiceCaptureProps {
   hasEmbedding?: boolean;
   /** Called when the user taps "Preview voice" after clone is ready */
   onPreview?: () => void;
+  /**
+   * BCP-47 locale for the recording script (e.g. "en-US"). Determines whether
+   * the recording card shows a phonetically balanced reference passage or
+   * falls back to free-speak coaching. Omit to always use free-speak.
+   */
+  locale?: string;
   compact?: boolean;
   color?: {
     text?: string;
@@ -36,6 +43,85 @@ export interface VoiceCaptureProps {
 }
 
 const RECORD_DURATION = 15;
+
+/**
+ * Play a calming tone — soft sine wave with long fade-in and fade-out so
+ * it feels like a chime rather than a beep. Used to mark each beat of the
+ * pre-recording coaching sequence. Volume stays low (below typical ICU
+ * ambient of 50–75 dB) and envelopes are long enough (~300ms each way)
+ * to avoid any startle effect.
+ *
+ * The tone rings for `sustainSec` seconds between fades. Total duration
+ * is `sustainSec + attackSec + releaseSec`.
+ */
+function playTone(freq: number, sustainSec = 0.6, volume = 0.08) {
+  try {
+    const Ctx = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!Ctx) return;
+    const ctx = new Ctx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.value = freq;
+    const attack = 0.12;
+    const release = 0.35;
+    const total = attack + sustainSec + release;
+    const now = ctx.currentTime;
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(volume, now + attack);
+    gain.gain.setValueAtTime(volume, now + attack + sustainSec);
+    gain.gain.linearRampToValueAtTime(0, now + total);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + total + 0.05);
+    osc.onended = () => { try { ctx.close(); } catch { /* already closed */ } };
+  } catch { /* audio unavailable — visual cues still work */ }
+}
+
+/**
+ * Countdown timeline. Each step advances the pre-recording coaching state.
+ * Tones use `Solfeggio`-adjacent frequencies chosen to feel calming (soft
+ * sine waves, low volume, long fades) while progressing upward in pitch
+ * to subtly signal forward motion.
+ *
+ * Durations in ms. Render fades inherit from the step's `duration` via CSS
+ * animation — each message/number fades in, holds, fades out.
+ */
+type CountdownStep =
+  | { kind: "message"; text: string; duration: number; tone?: number }
+  | { kind: "beat"; duration: number }
+  | { kind: "inhale"; duration: number }
+  | { kind: "exhale"; duration: number }
+  | { kind: "number"; value: number; duration: number; tone?: number }
+  | { kind: "go"; tone: number };
+
+const BREATH_CYCLE_MS = 4000;
+
+const COUNTDOWN_TIMELINE: CountdownStep[] = [
+  { kind: "message", text: "You're about to read a sentence out loud.", duration: 3800, tone: 396 },
+  { kind: "beat", duration: 1500 },
+  { kind: "message", text: "Take a few deep breaths.", duration: 3800, tone: 432 },
+  // Two 8-second breath cycles, each split into a 4-second inhale +
+  // 4-second exhale substep. The circle's scale is controlled directly
+  // from the step kind so it stays synced with the "Breathe in…" /
+  // "Breathe out…" text. Splitting vs. a single 16s beat also lets us
+  // play a soft tone at the top of each breath without silence guessing.
+  { kind: "inhale", duration: BREATH_CYCLE_MS },
+  { kind: "exhale", duration: BREATH_CYCLE_MS },
+  { kind: "inhale", duration: BREATH_CYCLE_MS },
+  { kind: "exhale", duration: BREATH_CYCLE_MS },
+  { kind: "message", text: "Ready.", duration: 2300, tone: 528 },
+  // No silent beat between "Ready." and "5" — a short beat showed a
+  // spurious breath circle. Letting "Ready." fade out while "5" fades
+  // in creates a natural transition.
+  { kind: "number", value: 5, duration: 1200, tone: 440 },
+  { kind: "number", value: 4, duration: 1200, tone: 440 },
+  { kind: "number", value: 3, duration: 1200, tone: 440 },
+  { kind: "number", value: 2, duration: 1200, tone: 440 },
+  { kind: "number", value: 1, duration: 1200, tone: 494 },
+  { kind: "go", tone: 659 },
+];
 
 /**
  * Translate a raw error message into something a non-technical user can act on.
@@ -111,6 +197,7 @@ export function VoiceCapture({
   audioBlob: externalBlob,
   hasEmbedding = false,
   onPreview,
+  locale,
   color,
 }: VoiceCaptureProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -126,6 +213,14 @@ export function VoiceCapture({
   const [recording, setRecording] = useState(false);
   const [recordSecs, setRecordSecs] = useState(0);
   const [audioLevel, setAudioLevel] = useState(0);
+  /**
+   * Pre-recording countdown index into `COUNTDOWN_TIMELINE`. `null` means
+   * no countdown is running. The timeline walks through intro messages,
+   * breathing beats, and a final 5→1 countdown before MediaRecorder
+   * starts. See `COUNTDOWN_TIMELINE` above.
+   */
+  const [countdownIdx, setCountdownIdx] = useState<number | null>(null);
+  const countdownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
   const [savedBlob, setSavedBlob] = useState<Blob | null>(externalBlob ?? null);
   const [playing, setPlaying] = useState(false);
@@ -172,6 +267,24 @@ export function VoiceCapture({
       setAudioLevel(0);
     }
   }, [recording]);
+
+  // Release countdown timer + held stream on unmount so a mid-countdown
+  // unmount (e.g., patient reset, tab close) doesn't leave the mic active
+  // or fire callbacks after the component is gone.
+  useEffect(() => {
+    return () => {
+      if (countdownTimerRef.current) {
+        clearTimeout(countdownTimerRef.current);
+        countdownTimerRef.current = null;
+      }
+      if (streamRef.current && !mediaRecorderRef.current) {
+        // Stream was held during countdown but never handed to the recorder.
+        streamRef.current.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
+      }
+      try { window.speechSynthesis?.cancel(); } catch { /* non-critical */ }
+    };
+  }, []);
 
   // Auto-stop recording at RECORD_DURATION
   useEffect(() => {
@@ -270,61 +383,144 @@ export function VoiceCapture({
   }
 
   // --- Recording flow ---
+  //
+  // Two-phase: first acquire mic permission and run a ~4s pre-recording
+  // countdown with audio cues, THEN start the actual MediaRecorder so the
+  // full 15s budget is available for reading. This keeps the permission
+  // prompt out of the way before the coaching begins.
+
   async function startRecording() {
     setError(null);
     setPreviewBlob(null);
     try {
+      // Acquire mic permission BEFORE the countdown so the permission
+      // dialog doesn't interrupt the cue sequence. The stream is held
+      // open (but not recorded) until the countdown completes.
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
-      const recorder = new MediaRecorder(stream);
-      const chunks: Blob[] = [];
-
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunks.push(e.data);
-      };
-
-      recorder.onstop = () => {
-        stream.getTracks().forEach((t) => t.stop());
-        streamRef.current = null;
-        clearInterval(timerRef.current);
-        setRecording(false);
-        setPreviewBlob(new Blob(chunks, { type: "audio/webm" }));
-      };
-
-      mediaRecorderRef.current = recorder;
-      recorder.start();
-      setRecording(true);
-      setRecordSecs(0);
-      timerRef.current = setInterval(() => setRecordSecs((s) => s + 1), 1000);
-
-      // Audio level metering
-      try {
-        const audioCtx = new AudioContext();
-        const source = audioCtx.createMediaStreamSource(stream);
-        const analyser = audioCtx.createAnalyser();
-        analyser.fftSize = 256;
-        source.connect(analyser);
-        const dataArray = new Uint8Array(analyser.frequencyBinCount);
-        function tick() {
-          analyser.getByteFrequencyData(dataArray);
-          let sum = 0;
-          for (let i = 0; i < dataArray.length; i++)
-            sum += dataArray[i] * dataArray[i];
-          setAudioLevel(Math.sqrt(sum / dataArray.length) / 255);
-          analyserRef.current!.raf = requestAnimationFrame(tick);
-        }
-        analyserRef.current = {
-          ctx: audioCtx,
-          node: analyser,
-          raf: requestAnimationFrame(tick),
-        };
-      } catch { /* metering is non-critical */ }
+      beginCountdownTimeline(stream);
     } catch {
       setError("Microphone access denied. Try uploading a file instead.");
     }
   }
 
+  /**
+   * Walk the COUNTDOWN_TIMELINE one step at a time, firing tones and
+   * advancing the state index. Each step schedules its own successor
+   * via setTimeout so durations can be heterogeneous.
+   */
+  function beginCountdownTimeline(stream: MediaStream) {
+    let idx = 0;
+    setCountdownIdx(0);
+    const step = COUNTDOWN_TIMELINE[0];
+    if (step.kind === "message" || step.kind === "number") {
+      if (step.tone) playTone(step.tone);
+    }
+
+    const advance = () => {
+      idx += 1;
+      if (idx >= COUNTDOWN_TIMELINE.length) return;
+      if (!streamRef.current) return; // cancelled
+
+      const next = COUNTDOWN_TIMELINE[idx];
+      setCountdownIdx(idx);
+
+      if (next.kind === "go") {
+        // Start recording on the "go" beat. The completion tone rings
+        // over the first ~1s of recording, which is fine — embedding
+        // extraction averages over the whole clip.
+        playTone(next.tone, 0.7, 0.1);
+        setCountdownIdx(null);
+        _startMediaRecorder(stream);
+        return;
+      }
+
+      if (next.kind === "message" || next.kind === "number") {
+        if (next.tone) playTone(next.tone);
+      }
+
+      // `next` is narrowed here to exclude the "go" variant (handled above)
+      // so `duration` is guaranteed to exist.
+      countdownTimerRef.current = setTimeout(advance, next.duration);
+    };
+
+    // The first step is never a "go" — safe to access duration directly.
+    if (step.kind !== "go") {
+      countdownTimerRef.current = setTimeout(advance, step.duration);
+    }
+  }
+
+  /**
+   * Cancel an in-flight countdown and release the held mic stream
+   * without producing an audio clip.
+   */
+  function cancelCountdown() {
+    if (countdownTimerRef.current) {
+      clearTimeout(countdownTimerRef.current);
+      countdownTimerRef.current = null;
+    }
+    setCountdownIdx(null);
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
+  }
+
+  /** Internal — starts the MediaRecorder against an already-acquired stream. */
+  function _startMediaRecorder(stream: MediaStream) {
+    const recorder = new MediaRecorder(stream);
+    const chunks: Blob[] = [];
+
+    recorder.ondataavailable = (e) => {
+      if (e.data.size > 0) chunks.push(e.data);
+    };
+
+    recorder.onstop = () => {
+      stream.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+      clearInterval(timerRef.current);
+      setRecording(false);
+      setPreviewBlob(new Blob(chunks, { type: "audio/webm" }));
+    };
+
+    mediaRecorderRef.current = recorder;
+    recorder.start();
+    setRecording(true);
+    setRecordSecs(0);
+    timerRef.current = setInterval(() => setRecordSecs((s) => s + 1), 1000);
+
+    // Audio level metering
+    try {
+      const audioCtx = new AudioContext();
+      const source = audioCtx.createMediaStreamSource(stream);
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 256;
+      source.connect(analyser);
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      function tick() {
+        analyser.getByteFrequencyData(dataArray);
+        let sum = 0;
+        for (let i = 0; i < dataArray.length; i++)
+          sum += dataArray[i] * dataArray[i];
+        setAudioLevel(Math.sqrt(sum / dataArray.length) / 255);
+        analyserRef.current!.raf = requestAnimationFrame(tick);
+      }
+      analyserRef.current = {
+        ctx: audioCtx,
+        node: analyser,
+        raf: requestAnimationFrame(tick),
+      };
+    } catch { /* metering is non-critical */ }
+  }
+
   function stopRecording() {
+    // Clear the tick interval defensively — recorder.onstop also clears it,
+    // but stopping the counter here avoids a race where another setRecordSecs
+    // tick could fire between the stop() call and the onstop handler.
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = undefined;
+    }
     mediaRecorderRef.current?.stop();
   }
 
@@ -437,35 +633,218 @@ export function VoiceCapture({
 
   // ===================== RENDER STATES =====================
 
+  // --- Pre-recording countdown state ---
+  // The mic is already acquired (permission granted) but MediaRecorder has
+  // not been started. We walk the COUNTDOWN_TIMELINE so the patient has
+  // time to orient, breathe, and settle before reading. Each step fades
+  // in and out; beats between messages give the patient breathing room.
+  if (countdownIdx !== null) {
+    const step = COUNTDOWN_TIMELINE[countdownIdx];
+    // A "go" step would have already cleared countdownIdx in the timeline
+    // advance, so we never render it here. Default to 1000ms if ever hit.
+    const stepDuration = step.kind === "go" ? 1000 : step.duration;
+    // Keyed on idx so the same DOM node type re-mounts between steps and
+    // re-triggers the CSS fade animation.
+    const animStyle = {
+      animation: `voiceCoachFade ${stepDuration}ms ease-in-out both`,
+    } as const;
+    const inBreath = step.kind === "inhale" || step.kind === "exhale";
+
+    // Fixed content-area height so swapping between a short message, a
+    // large numeral, and a breathing circle doesn't cause the card (or the
+    // whole Settings sheet below it) to jump. 220px comfortably fits the
+    // peak-scale breath circle (~160px) and the 112px countdown numeral.
+    const contentHeight = compact ? 180 : 220;
+
+    return (
+      <div
+        role="status"
+        aria-live="polite"
+        style={{
+          padding: compact ? "24px 18px" : "32px 24px",
+          background: "#FFFBEB",
+          borderRadius: compact ? 10 : 12,
+          border: "2px solid #FCD34D",
+          textAlign: "center",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 20,
+        }}
+      >
+        {fileInput}
+        <div
+          style={{
+            height: contentHeight,
+            width: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            overflow: "hidden",
+          }}
+        >
+          {step.kind === "message" && (
+            <span
+              key={`m-${countdownIdx}`}
+              style={{
+                fontSize: compact ? 18 : 22,
+                color: "#78350F", // amber-950 — richer contrast than 900
+                fontWeight: 500,
+                lineHeight: 1.4,
+                ...animStyle,
+              }}
+            >
+              {step.text}
+            </span>
+          )}
+          {step.kind === "number" && (
+            <span
+              key={`n-${countdownIdx}`}
+              aria-label={`${step.value} seconds`}
+              style={{
+                fontSize: compact ? 88 : 112,
+                lineHeight: 1,
+                fontWeight: 700,
+                color: "#B45309", // amber-700 — better contrast than 600
+                fontVariantNumeric: "tabular-nums",
+                letterSpacing: "-0.03em",
+                ...animStyle,
+              }}
+            >
+              {step.value}
+            </span>
+          )}
+          {step.kind === "beat" && (
+            // Non-breathing silent beat — just a faint static dot to show
+            // the UI isn't frozen. No animation (short beats would show a
+            // half-finished cycle, which looked errant).
+            <span
+              aria-hidden="true"
+              style={{
+                width: 10,
+                height: 10,
+                borderRadius: "50%",
+                background: "#FCD34D",
+                opacity: 0.55,
+              }}
+            />
+          )}
+          {inBreath && (
+            // Breath-paced circle with text label. The key on the outer
+            // wrapper is "breath" (constant across inhale↔exhale) so the
+            // circle element persists and its CSS transition smoothly
+            // animates between the two scale targets. The inner text is
+            // keyed on countdownIdx so it fades in/out per substep.
+            <div
+              key="breath"
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 18,
+              }}
+            >
+              <span
+                aria-hidden="true"
+                style={{
+                  width: 80,
+                  height: 80,
+                  borderRadius: "50%",
+                  background: "radial-gradient(circle, #FCD34D 0%, #FDE68A 75%)",
+                  transform: step.kind === "inhale" ? "scale(1.6)" : "scale(0.55)",
+                  opacity: step.kind === "inhale" ? 1 : 0.55,
+                  transition: `transform ${BREATH_CYCLE_MS}ms ease-in-out, opacity ${BREATH_CYCLE_MS}ms ease-in-out`,
+                  transformOrigin: "center",
+                  boxShadow: "0 0 28px 6px rgba(252, 211, 77, 0.25)",
+                }}
+              />
+              <span
+                key={`breath-text-${countdownIdx}`}
+                style={{
+                  fontSize: compact ? 16 : 18,
+                  color: "#78350F",
+                  fontWeight: 500,
+                  animation: `voiceCoachFade ${stepDuration}ms ease-in-out both`,
+                }}
+              >
+                {step.kind === "inhale" ? "Breathe in…" : "Breathe out…"}
+              </span>
+            </div>
+          )}
+        </div>
+        <Btn
+          onClick={cancelCountdown}
+          aria-label="Cancel recording countdown"
+          style={{
+            background: "none",
+            color: "#78350F", // amber-950
+            border: "1px solid #B45309", // amber-700 for 3:1 non-text contrast
+            minHeight: btnFloor.minHeight,
+            minWidth: btnFloor.minWidth,
+            borderRadius: btnFloor.borderRadius,
+            padding: btnFloor.padding,
+            fontSize: btnFloor.fontSize,
+            fontWeight: 500,
+            fontFamily: "inherit",
+          }}
+        >
+          Cancel
+        </Btn>
+      </div>
+    );
+  }
+
   // --- Recording state ---
+  // Amber palette (not red). Red signaled "alarm" in a clinical setting and
+  // duplicated the visual language of error states. Amber matches the
+  // preview card so "recording" and "previewing" feel like siblings.
   if (recording) {
     const barCount = compact ? 5 : 7;
     const barH = compact ? 20 : 28;
     const progress = Math.min(recordSecs / RECORD_DURATION, 1);
+    const remaining = Math.max(0, RECORD_DURATION - recordSecs);
+    const script = getRecordingScript(locale);
+    const hasPassage = !!script.passage;
+
+    // Coaching is lightweight during recording because the 4-second
+    // pre-recording countdown already handled "get ready" moments.
+    //   t = 0..11  → quiet (script is the focal point); free-speak gets a countdown
+    //   t ≥ 12     → closing hint
+    //   t ≥ 15     → "Done!"
+    const scriptVisible = hasPassage;
+    let coaching = "";
+    if (recordSecs >= RECORD_DURATION) {
+      coaching = "Done!";
+    } else if (recordSecs >= RECORD_DURATION - 3) {
+      coaching = script.closingHint;
+    } else if (!hasPassage) {
+      coaching = script.freeSpeakTemplate.replace("{remaining}", String(remaining));
+    }
 
     return (
       <div
         style={{
-          padding: compact ? "8px 12px" : "12px 16px",
-          background: "#FEF2F2",
+          padding: compact ? "12px 14px" : "16px 20px",
+          background: "#FFFBEB", // amber-50
           borderRadius: compact ? 10 : 12,
-          border: "2px solid #FCA5A5",
+          border: "2px solid #FCD34D", // amber-300
         }}
       >
         {fileInput}
         <div style={{ display: "flex", alignItems: "center", gap: compact ? 8 : 12 }}>
           <span
+            aria-hidden="true"
             style={{
               width: compact ? 10 : 12, height: compact ? 10 : 12,
-              borderRadius: "50%", background: "#DC2626",
+              borderRadius: "50%", background: "#D97706", // amber-600
               display: "inline-block", flexShrink: 0,
               animation: "pulse 1s ease-in-out infinite",
             }}
           />
           <span
             style={{
-              fontSize: compact ? 14 : 16, fontWeight: 700, color: "#DC2626",
-              fontVariantNumeric: "tabular-nums", minWidth: 42,
+              fontSize: compact ? 14 : 16, fontWeight: 700, color: "#92400E", // amber-900
+              fontVariantNumeric: "tabular-nums", minWidth: 48,
             }}
           >
             {recordSecs}s / {RECORD_DURATION}s
@@ -491,7 +870,7 @@ export function VoiceCapture({
                   key={i}
                   style={{
                     width: compact ? 3 : 4, height: h, borderRadius: 2,
-                    background: active ? "#DC2626" : "#FECACA",
+                    background: active ? "#D97706" : "#FDE68A", // amber-600 / amber-200
                     transition: "height 0.08s ease-out",
                   }}
                 />
@@ -499,21 +878,122 @@ export function VoiceCapture({
             })}
           </div>
         </div>
-        <div style={{ marginTop: compact ? 6 : 10, height: 4, borderRadius: 2, background: "#FECACA", overflow: "hidden" }}>
-          <div style={{ width: `${progress * 100}%`, height: "100%", borderRadius: 2, background: "#DC2626", transition: "width 1s linear" }} />
+        <div
+          role="progressbar"
+          aria-label="Recording progress"
+          aria-valuemin={0}
+          aria-valuemax={RECORD_DURATION}
+          aria-valuenow={recordSecs}
+          style={{
+            marginTop: compact ? 8 : 12,
+            height: 6,
+            borderRadius: 3,
+            background: "#FDE68A", // amber-200
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              width: `${progress * 100}%`, height: "100%", borderRadius: 3,
+              // amber-700 gives 4.03:1 against the amber-200 track — passes
+              // WCAG 2.2 SC 1.4.11 (non-text contrast 3:1). amber-600 at
+              // 2.56:1 failed.
+              background: "#B45309",
+              transition: "width 1s linear",
+            }}
+          />
         </div>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: compact ? 4 : 8 }}>
-          <span style={{ fontSize: compact ? 11 : 13, color: "#991B1B", fontWeight: 500 }}>
-            {recordSecs < RECORD_DURATION
-              ? `Speak naturally for ${RECORD_DURATION - recordSecs} more seconds...`
-              : "Done!"}
-          </span>
+
+        {/* Coaching area — above the script so the patient's eye lands on
+            it first. The big 3-2-1 countdown happens BEFORE recording (in
+            the dedicated countdown branch above), so during recording this
+            slot stays compact: empty during the reading window, a closing
+            cue in the final seconds. */}
+        <div
+          aria-live="polite"
+          style={{
+            marginTop: compact ? 14 : 18,
+            minHeight: compact ? 24 : 28,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          {coaching && (
+            <span
+              style={{
+                fontSize: compact ? 14 : 15,
+                color: "#92400E",
+                fontWeight: 500,
+                textAlign: "center",
+              }}
+            >
+              {coaching}
+            </span>
+          )}
+        </div>
+
+        {/* Scripted-read panel: phonetically balanced passage so the Chatterbox
+            CAMPPlus embedding captures a wider pitch + formant range. Hidden
+            during the countdown so the patient isn't split-focused. See
+            docs/BIBLIOGRAPHY.md §9 for citations.
+            Border at amber-600 gives 3.4:1 against the amber-50 outer card
+            (passes WCAG 2.2 SC 1.4.11); this boundary is essential because
+            white-on-amber-50 itself is near-invisible (~1.03:1). */}
+        {scriptVisible && (
+          <div
+            style={{
+              marginTop: compact ? 14 : 18,
+              padding: compact ? "14px 16px" : "18px 20px",
+              background: "#FFFFFF",
+              borderRadius: compact ? 10 : 12,
+              border: "1px solid #D97706",
+              animation: "fadeIn 250ms ease-out",
+            }}
+          >
+            <div style={{
+              fontSize: 13, fontWeight: 600, color: "#92400E",
+              textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8,
+            }}>
+              {script.prompt}
+            </div>
+            <p style={{
+              margin: 0,
+              fontSize: compact ? 18 : 20,
+              lineHeight: 1.5,
+              color: "#1A1A1A",
+              fontWeight: 500,
+            }}>
+              {script.passage}
+            </p>
+            {script.subtitle && (
+              <p style={{
+                margin: "10px 0 0",
+                fontSize: 13,
+                color: "#78716C",
+                fontStyle: "normal",
+              }}>
+                {script.subtitle}
+              </p>
+            )}
+          </div>
+        )}
+
+        <div
+          style={{
+            display: "flex", alignItems: "center", justifyContent: "flex-end",
+            marginTop: compact ? 10 : 14,
+          }}
+        >
           {recordSecs < RECORD_DURATION && (
             <Btn
               onClick={stopRecording}
+              aria-label="Stop recording early"
               style={{
-                flexShrink: 0, background: "none", color: "#991B1B",
-                border: "1px solid #FCA5A5",
+                flexShrink: 0, background: "none", color: "#92400E",
+                // amber-700 = 4.84:1 against the amber-50 card (passes AA);
+                // amber-300 was 1.39:1 and failed non-text contrast.
+                border: "1px solid #B45309",
                 minHeight: btnFloor.minHeight, minWidth: btnFloor.minWidth,
                 borderRadius: btnFloor.borderRadius,
                 padding: btnFloor.padding,
@@ -542,7 +1022,10 @@ export function VoiceCapture({
             onClick={playing ? stopPlayback : () => playBlob(previewBlob)}
             aria-label={playing ? "Stop preview playback" : "Play recording preview"}
             style={{
-              background: "#D97706", color: "#FFF", border: "none",
+              // amber-700 gives 5.02:1 with white text (passes AA small-text).
+              // amber-600 was 3.19:1 — passes AA-large only; 14px bold is not
+              // "large" per WCAG.
+              background: "#B45309", color: "#FFF", border: "none",
               minHeight: btnFloor.minHeight, minWidth: btnFloor.minWidth,
               borderRadius: btnFloor.borderRadius,
               padding: btnFloor.padding,
@@ -557,7 +1040,11 @@ export function VoiceCapture({
         <div style={{ display: "flex", gap: btnFloor.gap }}>
           <Btn
             onClick={discardPreview}
+            aria-label="Discard this recording and start over"
             style={{
+              // Text-button label was "Re-record" which misdescribed the
+              // action — it returns to the Upload/Record choice, doesn't
+              // auto-restart recording. "Discard recording" is accurate.
               flex: 1, background: "none", border: `1px solid ${c.border}`,
               minHeight: btnFloor.minHeight,
               borderRadius: btnFloor.borderRadius,
@@ -565,12 +1052,14 @@ export function VoiceCapture({
               fontSize: btnFloor.fontSize, fontWeight: 500, color: c.sub, fontFamily: "inherit",
             }}
           >
-            Re-record
+            Discard recording
           </Btn>
           <Btn
             onClick={acceptRecording}
             style={{
-              flex: 1, background: "#059669", color: "#FFF", border: "none",
+              // emerald-700 gives 5.48:1 with white (passes AA small-text).
+              // emerald-600 was 3.77:1 — too low for 14px bold label.
+              flex: 1, background: "#047857", color: "#FFF", border: "none",
               minHeight: btnFloor.minHeight,
               borderRadius: btnFloor.borderRadius,
               padding: btnFloor.padding,
@@ -627,7 +1116,8 @@ export function VoiceCapture({
               onClick={playing ? stopPlayback : () => playBlob((savedBlob || externalBlob)!)}
               aria-label={playing ? "Stop playback of recorded sample" : "Play recorded voice sample"}
               style={{
-                background: "#059669", color: "#FFF", border: "none",
+                // emerald-700 for 5.48:1 contrast with white (passes AA).
+                background: "#047857", color: "#FFF", border: "none",
                 minHeight: btnFloor.minHeight, minWidth: btnFloor.minWidth,
                 borderRadius: btnFloor.borderRadius,
                 padding: btnFloor.padding,
@@ -644,7 +1134,10 @@ export function VoiceCapture({
             aria-label="Remove voice sample"
             style={{
               background: "none",
-              border: `1px solid ${c.border}`,
+              // gray-500 gives 4.62:1 on the green-50 captured row; the
+              // incoming `c.border` prop (#E5E7EB on emerald-50 = 1.18:1)
+              // failed non-text contrast.
+              border: "1px solid #6B7280",
               color: "#374151",
               minHeight: btnFloor.minHeight, minWidth: btnFloor.minWidth,
               borderRadius: btnFloor.borderRadius,
@@ -670,7 +1163,10 @@ export function VoiceCapture({
                 onClick={onPreview}
                 aria-label="Preview synthesized voice clone"
                 style={{
-                  background: "none", border: "1px solid #BBF7D0",
+                  background: "none",
+                  // emerald-700 gives 5.48:1 on white (passes AA for non-text);
+                  // the old emerald-200 #BBF7D0 was 1.21:1 and invisible.
+                  border: "1px solid #047857",
                   minHeight: btnFloor.minHeight, minWidth: btnFloor.minWidth,
                   borderRadius: btnFloor.borderRadius,
                   padding: btnFloor.padding,
@@ -685,7 +1181,9 @@ export function VoiceCapture({
                 onClick={retryEmbedding}
                 aria-label="Retry voice clone extraction"
                 style={{
-                  background: "none", border: "1px solid #FCA5A5",
+                  background: "none",
+                  // red-600 gives 4.83:1 on white; red-300 was 1.90:1.
+                  border: "1px solid #DC2626",
                   minHeight: btnFloor.minHeight, minWidth: btnFloor.minWidth,
                   borderRadius: btnFloor.borderRadius,
                   padding: btnFloor.padding,

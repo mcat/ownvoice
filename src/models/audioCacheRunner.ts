@@ -176,3 +176,44 @@ export function abort(): void {
   }
   useAudioCacheStore.getState().abortAll();
 }
+
+/**
+ * Soft-stop: abort the in-flight run but keep store state intact and
+ * mark running speakers as "paused". Resumable via `resumeAll`.
+ */
+export function pauseAll(): void {
+  if (currentController) {
+    currentController.abort();
+    currentController = null;
+  }
+  useAudioCacheStore.getState().pauseAllRuns();
+}
+
+/**
+ * Resume a paused run. Internally this just re-enters `runPreGeneration`
+ * — cached phrases are skipped by the generator, so the counter catches
+ * up quickly to where the paused run left off. Safe to call even if no
+ * runs are paused; it will kick off a fresh plan.
+ */
+export async function resumeAll(
+  cfg: AppSettings,
+  patientSpeakerData: unknown,
+): Promise<void> {
+  await runPreGeneration(cfg, patientSpeakerData);
+}
+
+/**
+ * Permanently discard this speaker's run state and stop the current run.
+ * Other speakers in the plan also stop (we abort the shared controller);
+ * callers who want them to continue should call `resumeAll` afterward.
+ * Cached OPFS audio for the speaker is left in place — discard affects
+ * progress state only. Call `resetAll` or `clearAudioCache` to wipe the
+ * on-disk cache itself.
+ */
+export function discardRun(key: SpeakerKey): void {
+  if (currentController) {
+    currentController.abort();
+    currentController = null;
+  }
+  useAudioCacheStore.getState().discard(key);
+}

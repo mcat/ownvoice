@@ -111,6 +111,39 @@ Providers can also load their own voice model. When a provider taps a response l
 - If the base TTS model fails to load or is evicted from storage, the app degrades gracefully to Web Speech API
 - The patient always has a voice — personal voice is an enhancement, not a gate
 
+**Recording protocol — scripted read.**
+
+OwnVoice captures 15 seconds of audio for speaker-embedding extraction. During the recording, the patient is prompted to read the opening two sentences of the Rainbow Passage (Fairbanks, 1960) — a phonetically balanced paragraph engineered for proportional English phoneme coverage:
+
+> "When the sunlight strikes raindrops in the air, they act like a prism and form a rainbow. The rainbow is a division of white light into many beautiful colors."
+
+**Why a script rather than free-form speech.** Chatterbox Turbo encodes the speaker via a CAMPPlus 192-dim x-vector that statistically summarizes spectrum, pitch, and formants averaged across the clip. Phonetic diversity and prosodic variety in the reference directly shape what the clone *can* sound like — monotone 15-second free-form speech systematically under-captures the patient's pitch range. The Rainbow Passage is the canonical reference in the VCTK corpus and decades of speech-science research, runs ~14 seconds at conversational pace, and reliably elicits a wider phonetic distribution than improvised speech. See `docs/BIBLIOGRAPHY.md` §9 for citations.
+
+**Recording UX principles:**
+
+- The recording card uses a warm amber palette, not red — red signaled clinical alarm and duplicated the visual language of error states
+- A **pre-recording orientation sequence** runs before the 15-second capture begins. This serves ICU patients who are sedated, weak, or anxious — the clock does not start until they are settled. The timeline:
+  1. *"You're about to read a sentence out loud."* (≈2.8 s, fades in/out)
+  2. Silent breathing beat (≈0.7 s) with a pulsing amber dot so the UI doesn't look frozen
+  3. *"Take a few deep breaths."* (≈3 s)
+  4. Extended breathing beat (≈1.8 s) to actually let the patient breathe
+  5. *"Ready."* (≈1.6 s)
+  6. 5 → 4 → 3 → 2 → 1 countdown (≈5 s total, each numeral fades in/out)
+  7. Recording begins; script panel appears; timer starts at 0 s / 15 s
+- Auditory cues are soft sine-wave tones (not speech — synthesized speech would compete with the patient's own voice about to be captured, and a calming progression of pitches feels less clinical). Each cue uses a long fade-in/fade-out envelope to avoid startle. The pre-recording sequence marks message transitions with tones at 396 / 432 / 528 Hz (grounding → mid → anticipatory), uses 440 Hz for each countdown beat, and resolves with a 659 Hz "begin" tone when recording starts.
+- The entire pre-recording sequence can be aborted with a Cancel button, which releases the mic and returns to the Upload / Record buttons without producing any audio.
+- Once recording begins, the middle of the 15 s window stays visually quiet — script is the focal point. A closing cue ("Nice — almost done.") appears in the final 3 seconds.
+- An escape hatch is always available: "Or speak naturally — anything works." Free-form speech still produces a usable embedding; quality is just slightly reduced.
+- For 22 languages Chatterbox supports beyond English, the scripted read falls back to free-speak coaching until a native-speaker-reviewed balanced passage exists for each locale — explicitly marked as a co-design target in `docs/BIBLIOGRAPHY.md` §10
+
+**Contraindications for reference audio** (enforced by UX or caregiver guidance):
+
+- Recordings under 3 seconds (the 15s minimum is enforced; the user may tap "Stop early" but audio is still captured)
+- Whispered, breathy, or shouted speech (distorts formants and pitch statistics)
+- Background noise, reverb, or multiple concurrent speakers (contaminates the embedding)
+- Monotone reading (the Rainbow Passage's embedded question and color terms naturally solicit prosodic variety)
+- Clips over 30 seconds (diminishing returns; hard-capped at 15s)
+
 ### 6.2 Pre-Generated Audio Architecture
 
 To achieve soundboard-level latency (< 50ms for fixed phrases), OwnVoice pre-generates all known phrases as cached audio clips immediately after a voice model is created.

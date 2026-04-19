@@ -116,6 +116,7 @@ export function CareTeamSection({
                 if (embedding) setProviderEmbedding(i, embedding);
               }}
               onRemove={() => toggleProviderVoice(i, false)}
+              locale={cfg.patientLang}
               compact
               color={{
                 text: t.text, sub: t.sub, muted: t.muted,
