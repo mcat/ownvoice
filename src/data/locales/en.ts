@@ -198,9 +198,7 @@ const en = {
   "wishes.hopes.r.peace": "To be at peace",
 
   // Wish sentence composition templates
-  "wishes.compose.one": "{stem} is {first}.",
-  "wishes.compose.two": "{stem} is {first}, and also {second}.",
-  "wishes.compose.many": "{stem} is {rest}, and {last}.",
+  "wishes.compose": "{stem} is {list}.",
 
   // ── Provider phrases ───────────────────────────────────────────
   "provider.responses.help": "I will get someone to help.",

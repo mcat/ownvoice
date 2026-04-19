@@ -62,13 +62,13 @@ describe("composeWishSentence", () => {
     expect(result).toBe("What matters most to me is being with my family.");
   });
 
-  it("composes sentence with two responses using 'and also'", () => {
+  it("composes sentence with two responses joined by 'and'", () => {
     const result = composeWishSentence("en", topic, [
       "Being with my family",
       "Being comfortable and free of pain",
     ]);
     expect(result).toBe(
-      "What matters most to me is being with my family, and also being comfortable and free of pain.",
+      "What matters most to me is being with my family and being comfortable and free of pain.",
     );
   });
 

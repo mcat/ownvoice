@@ -322,31 +322,23 @@ export function getWishTopics(locale: string = "en"): WishTopic[] {
   }));
 }
 
-/** Compose a wish sentence using the locale's templates. */
+/** Compose a wish sentence using the locale's template. */
 export function composeWishSentence(
   locale: string,
   topic: WishTopic,
-  ranked: string[],
+  selected: string[],
 ): string {
-  if (!ranked.length) return "";
-  const stem = topic.stem;
-  if (ranked.length === 1) {
-    return t("wishes.compose.one", locale)
-      .replace("{stem}", stem)
-      .replace("{first}", ranked[0].toLowerCase());
-  }
-  if (ranked.length === 2) {
-    return t("wishes.compose.two", locale)
-      .replace("{stem}", stem)
-      .replace("{first}", ranked[0].toLowerCase())
-      .replace("{second}", ranked[1].toLowerCase());
-  }
-  const last = ranked[ranked.length - 1];
-  const rest = ranked.slice(0, -1).map((r) => r.toLowerCase()).join(", ");
-  return t("wishes.compose.many", locale)
-    .replace("{stem}", stem)
-    .replace("{rest}", rest)
-    .replace("{last}", last.toLowerCase());
+  if (!selected.length) return "";
+  const items = selected.map((r) => r.toLowerCase());
+  const list =
+    items.length === 1
+      ? items[0]
+      : items.length === 2
+        ? `${items[0]} and ${items[1]}`
+        : `${items.slice(0, -1).join(", ")}, and ${items[items.length - 1]}`;
+  return t("wishes.compose", locale)
+    .replace("{stem}", topic.stem)
+    .replace("{list}", list);
 }
 
 // ── Time suggestions ─────────────────────────────────────────────
