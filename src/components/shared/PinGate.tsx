@@ -1,5 +1,6 @@
 import { useState, useEffect, useId } from "preact/hooks";
 import type { ThemeTokens, ThemeName } from "../../theme/tokens";
+import { z } from "../../theme/z";
 import { Btn } from "./Btn";
 import { useDialog } from "../../hooks/useDialog";
 
@@ -71,7 +72,7 @@ export function PinGate({ pin, onSuccess, onClose, t, theme }: PinGateProps) {
       style={{
         position: "fixed",
         inset: 0,
-        zIndex: 9000,
+        zIndex: z.pin,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",

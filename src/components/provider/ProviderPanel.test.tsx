@@ -69,20 +69,26 @@ describe("ProviderPanel", () => {
     expect(screen.getByText(questions[0])).toBeInTheDocument();
   });
 
-  it("calls onClose when close button is tapped", () => {
+  it("calls onClose when close button is tapped (after exit transition)", () => {
     const onClose = vi.fn();
     render(<ProviderPanel {...baseProps} onClose={onClose} />);
     fireEvent.click(screen.getByRole("button", { name: "Close panel" }));
+    // BottomSheet plays an exit transition before calling caller onClose.
+    const evt = new Event("transitionend", { bubbles: true });
+    (evt as unknown as { propertyName: string }).propertyName = "transform";
+    screen.getByRole("dialog").dispatchEvent(evt);
     expect(onClose).toHaveBeenCalledOnce();
   });
 
-  it("calls onClose when overlay background is clicked", () => {
+  it("calls onClose when backdrop is clicked (after exit transition)", () => {
     const onClose = vi.fn();
     const { container } = render(<ProviderPanel {...baseProps} onClose={onClose} />);
-    // Backdrop is the outermost div and is the click target; the inner
-    // role=dialog card stops click propagation so only backdrop clicks close.
-    const backdrop = container.firstElementChild as HTMLElement;
-    fireEvent.click(backdrop);
+    const backdrop = container.querySelector("[data-testid='bottom-sheet-backdrop']");
+    expect(backdrop).not.toBeNull();
+    fireEvent.click(backdrop as Element);
+    const evt = new Event("transitionend", { bubbles: true });
+    (evt as unknown as { propertyName: string }).propertyName = "transform";
+    screen.getByRole("dialog").dispatchEvent(evt);
     expect(onClose).toHaveBeenCalledOnce();
   });
 

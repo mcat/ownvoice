@@ -54,6 +54,9 @@ export const colors = {
   amber: { light: "#D97706", dark: "#FBBF24" },
 } as const;
 
+export { z } from "./z";
+export type { ZToken } from "./z";
+
 /** Pain scale indigo ramp — colorblind-safe, single-hue intensity */
 export const painColors = [
   "#C7D2FE", // 0

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "preact/hooks";
 import type { ThemeTokens } from "../../theme/tokens";
+import { z } from "../../theme/z";
 
 interface SpeakingProps {
   text: string;
@@ -45,68 +46,75 @@ export function Speaking({
       aria-label={`Speaking: ${text}`}
       style={{
         position: "fixed",
-        bottom: 0,
+        top: 0,
         left: 0,
         right: 0,
         background: t.speakBg,
         color: "#F5F5F5",
-        padding: "22px 28px 28px",
-        zIndex: 100,
-        borderTop: `3px solid ${isProvider ? "#059669" : "#2563EB"}`,
-        animation: "slideUp 0.25s ease-out",
+        padding: "10px 32px",
+        zIndex: z.speaking,
+        animation: "slideDown 0.25s ease-out",
+        display: "flex",
+        alignItems: "center",
+        gap: 14,
+        minHeight: 84,
+        boxSizing: "border-box",
       }}
     >
       <div
         style={{
+          width: 44,
+          height: 44,
+          borderRadius: "50%",
+          background: `linear-gradient(135deg,${gc})`,
           display: "flex",
           alignItems: "center",
-          gap: 16,
-          marginBottom: 14,
+          justifyContent: "center",
+          fontSize: 20,
+          animation: "pulseGlow 1.5s ease-in-out infinite",
+          flexShrink: 0,
         }}
       >
-        <div
-          style={{
-            width: 44,
-            height: 44,
-            borderRadius: "50%",
-            background: `linear-gradient(135deg,${gc})`,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: 20,
-            animation: "pulseGlow 1.5s ease-in-out infinite",
-            flexShrink: 0,
-          }}
-        >
-          {"\uD83D\uDD0A"}
-        </div>
-        <div style={{ minWidth: 0 }}>
-          {isProvider && (
-            <div
-              class="font-sans"
-              style={{
-                fontSize: 13,
-                color: "rgba(245,245,245,0.7)",
-                letterSpacing: 1.5,
-                textTransform: "uppercase",
-              }}
-            >
-              Care Team
-            </div>
-          )}
+        {"\uD83D\uDD0A"}
+      </div>
+      <div style={{ minWidth: 0, flex: 1 }}>
+        {isProvider && (
           <div
             class="font-sans"
-            style={{ fontSize: 20, fontWeight: 600, marginTop: isProvider ? 3 : 0, lineHeight: 1.4 }}
+            style={{
+              fontSize: 13,
+              color: "rgba(245,245,245,0.7)",
+              letterSpacing: 1.5,
+              textTransform: "uppercase",
+              lineHeight: 1,
+              marginBottom: 4,
+            }}
           >
-            {text}
+            Care Team
           </div>
+        )}
+        <div
+          class="font-sans"
+          style={{
+            fontSize: 20,
+            fontWeight: 600,
+            lineHeight: 1.3,
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}
+        >
+          {text}
         </div>
       </div>
       <div
         style={{
-          height: 4,
+          position: "absolute",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: 3,
           background: "rgba(255,255,255,0.12)",
-          borderRadius: 3,
           overflow: "hidden",
         }}
       >
@@ -115,7 +123,6 @@ export function Speaking({
             height: "100%",
             background: `linear-gradient(90deg,${gc})`,
             width: `${progress * 100}%`,
-            borderRadius: 3,
           }}
         />
       </div>

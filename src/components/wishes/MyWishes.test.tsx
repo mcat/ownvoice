@@ -85,10 +85,13 @@ describe("MyWishes", () => {
     expect(screen.getByRole("button", { name: "Close" })).toBeInTheDocument();
   });
 
-  it("calls onClose when close button is tapped", () => {
+  it("calls onClose when close button is tapped (after exit transition)", () => {
     const onClose = vi.fn();
     render(<MyWishes {...baseProps} onClose={onClose} />);
     fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    const evt = new Event("transitionend", { bubbles: true });
+    (evt as unknown as { propertyName: string }).propertyName = "transform";
+    screen.getByRole("dialog").dispatchEvent(evt);
     expect(onClose).toHaveBeenCalledOnce();
   });
 
@@ -205,9 +208,13 @@ describe("MyWishes", () => {
       fireEvent.click(screen.getByText("Skip"));
       vi.advanceTimersByTime(300);
     }
-    // Click Close on completion screen
+    // Click Close on completion screen. BottomSheet plays an exit animation
+    // before calling caller onClose.
     fireEvent.click(screen.getByText("Close"));
     vi.advanceTimersByTime(300);
+    const evt = new Event("transitionend", { bubbles: true });
+    (evt as unknown as { propertyName: string }).propertyName = "transform";
+    screen.getByRole("dialog").dispatchEvent(evt);
     expect(onClose).toHaveBeenCalled();
     vi.useRealTimers();
   });

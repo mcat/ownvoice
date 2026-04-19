@@ -271,16 +271,20 @@ describe("App", () => {
     expect(screen.getByText("I need my medication")).toBeInTheDocument();
   });
 
-  it("closing wishes overlay updates store", () => {
+  it("closing wishes overlay updates store (after exit transition)", () => {
     useSettingsStore.setState({ _hasHydrated: true, cfg: makeCfg() });
     useUIStore.setState({ wishesOpen: true });
     render(<App />);
-    // Close via the Close button
+    // Close via the Close button. BottomSheet plays an exit animation before
+    // invoking the caller's onClose (which updates the store).
     fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    const evt = new Event("transitionend", { bubbles: true });
+    (evt as unknown as { propertyName: string }).propertyName = "transform";
+    screen.getByRole("dialog").dispatchEvent(evt);
     expect(useUIStore.getState().wishesOpen).toBe(false);
   });
 
-  it("closing listen overlay updates store", () => {
+  it("closing listen overlay updates store (after exit transition)", () => {
     useSettingsStore.setState({
       _hasHydrated: true,
       cfg: makeCfg({ providers: [{ name: "Dr. B", hasVoice: false, emoji: "👨‍⚕️" }] }),
@@ -288,6 +292,9 @@ describe("App", () => {
     useUIStore.setState({ listenOpen: true });
     render(<App />);
     fireEvent.click(screen.getByRole("button", { name: "Close panel" }));
+    const evt = new Event("transitionend", { bubbles: true });
+    (evt as unknown as { propertyName: string }).propertyName = "transform";
+    screen.getByRole("dialog").dispatchEvent(evt);
     expect(useUIStore.getState().listenOpen).toBe(false);
   });
 

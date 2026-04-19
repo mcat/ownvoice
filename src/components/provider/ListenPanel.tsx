@@ -1,10 +1,10 @@
-import { useId, useState } from "preact/hooks";
+import { useState } from "preact/hooks";
 import type { JSX } from "preact";
 import type { Provider } from "../../types";
 import type { ThemeTokens, ThemeName } from "../../theme/tokens";
 import { Btn } from "../shared/Btn";
 import { useMicrophone } from "../../hooks/useMicrophone";
-import { useDialog } from "../../hooks/useDialog";
+import { BottomSheet } from "../shared/BottomSheet";
 
 interface ListenPanelProps {
   onAddMessage: (text: string, providerLabel: string) => void;
@@ -41,15 +41,8 @@ export function ListenPanel({
     clearTranscript,
   } = useMicrophone();
 
-  // Allow manual editing of the transcript
   const [editedTranscript, setEditedTranscript] = useState<string | null>(null);
-
-  const titleId = useId();
-  const { dialogRef } = useDialog({ onClose, titleId });
-
-  // Use edited transcript if the user has typed, otherwise use STT transcript
   const transcript = editedTranscript !== null ? editedTranscript : sttTranscript;
-  const setTranscript = (val: string) => setEditedTranscript(val);
 
   const provider = providers[activeProvIdx] ?? providers[0];
   const providerLabel = provider
@@ -58,7 +51,6 @@ export function ListenPanel({
 
   const blue = theme === "dark" ? "#60A5FA" : "#2563EB";
   const providerGreen = "#059669";
-  // Text variant for AAA 7:1 contrast (used on card backgrounds)
   const providerGreenText = theme === "dark" ? "#34D399" : "#065F46";
 
   const canSubmit = transcript.trim().length > 0;
@@ -68,56 +60,6 @@ export function ListenPanel({
     onAddMessage(transcript.trim(), providerLabel);
     setEditedTranscript(null);
     clearTranscript();
-  };
-
-  /* ── Styles ─────────────────────────────────────────── */
-
-  const overlayStyle: JSX.CSSProperties = {
-    position: "fixed",
-    inset: 0,
-    zIndex: 900,
-    background: "rgba(0,0,0,0.45)",
-    display: "flex",
-    alignItems: "flex-end",
-    justifyContent: "center",
-  };
-
-  const cardStyle: JSX.CSSProperties = {
-    background: t.card,
-    borderRadius: "26px 26px 0 0",
-    width: "100%",
-    maxHeight: "80vh",
-    overflowY: "auto",
-    padding: "24px 20px 32px",
-    boxShadow: "0 -4px 24px rgba(0,0,0,0.18)",
-  };
-
-  const headerStyle: JSX.CSSProperties = {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 20,
-  };
-
-  const titleStyle: JSX.CSSProperties = {
-    fontSize: 22,
-    fontWeight: 700,
-    color: t.text,
-    margin: 0,
-  };
-
-  const closeBtnStyle: JSX.CSSProperties = {
-    background: t.activeBg,
-    border: `1px solid ${t.border}`,
-    borderRadius: 14,
-    width: 40,
-    height: 40,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: 20,
-    color: t.muted,
-    flexShrink: 0,
   };
 
   const chipRowStyle: JSX.CSSProperties = {
@@ -149,16 +91,10 @@ export function ListenPanel({
     marginBottom: 18,
   };
 
-  const micWrapStyle: JSX.CSSProperties = {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    marginBottom: 20,
-  };
-
-  // Audio level drives shadow spread (16–28px) and opacity (0.2–0.55)
   const shadowSpread = listening ? Math.round(16 + audioLevel * 12) : 0;
-  const shadowAlpha = listening ? Math.round(0.2 * 255 + audioLevel * 0.35 * 255).toString(16).padStart(2, "0") : "00";
+  const shadowAlpha = listening
+    ? Math.round(0.2 * 255 + audioLevel * 0.35 * 255).toString(16).padStart(2, "0")
+    : "00";
 
   const micBtnStyle: JSX.CSSProperties = {
     width: 80,
@@ -177,12 +113,6 @@ export function ListenPanel({
     color: listening ? blue : t.muted,
     transition: "border 0.2s, background 0.2s, color 0.2s",
     boxShadow: listening ? `0 0 ${shadowSpread}px ${blue}${shadowAlpha}` : "none",
-  };
-
-  const micHintStyle: JSX.CSSProperties = {
-    fontSize: 13,
-    color: t.muted,
-    marginTop: 10,
   };
 
   const textareaStyle: JSX.CSSProperties = {
@@ -214,37 +144,14 @@ export function ListenPanel({
     transition: "background 0.15s, color 0.15s",
   };
 
-  const helperStyle: JSX.CSSProperties = {
-    fontSize: 12,
-    color: t.muted,
-    textAlign: "center",
-    marginTop: 14,
-  };
-
   return (
-    // Backdrop is a passive surface: clicking it closes the dialog (mouse convenience),
-    // but keyboard users close via Escape (document listener above) or the ✕ button.
-    // No role/tabindex here — the backdrop is not an interactive target for AT.
-    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
-    <div style={overlayStyle} onClick={onClose}>
-      <div
-        ref={dialogRef}
-        tabIndex={-1}
-        style={cardStyle}
-        onClick={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-      >
-        {/* Header */}
-        <div style={headerStyle}>
-          <h2 id={titleId} style={titleStyle}>Listen</h2>
-          <Btn onClick={onClose} style={closeBtnStyle} aria-label="Close panel">
-            ✕
-          </Btn>
-        </div>
+    <BottomSheet onClose={onClose} t={t}>
+      <BottomSheet.Header>
+        <BottomSheet.Title>Listen</BottomSheet.Title>
+        <BottomSheet.CloseButton aria-label="Close panel" />
+      </BottomSheet.Header>
 
-        {/* Provider selector */}
+      <BottomSheet.Body>
         {providers.length > 1 ? (
           <div style={chipRowStyle}>
             {providers.map((prov, idx) => (
@@ -267,14 +174,12 @@ export function ListenPanel({
           </div>
         )}
 
-        {/* Mic button */}
-        <div style={micWrapStyle}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 20 }}>
           <Btn
             onClick={() => {
               if (listening) {
                 stopCapture();
               } else {
-                // Reset edited text when starting a new capture
                 setEditedTranscript(null);
                 startCapture();
               }
@@ -284,7 +189,7 @@ export function ListenPanel({
           >
             🎙
           </Btn>
-          <div style={micHintStyle}>
+          <div style={{ fontSize: 13, color: t.muted, marginTop: 10 }}>
             {listening ? "Listening..." : transcribing ? "Transcribing..." : "Tap to start listening"}
           </div>
           {micError && (
@@ -303,7 +208,6 @@ export function ListenPanel({
           )}
         </div>
 
-        {/* Transcript textarea (populated by STT, editable) */}
         <textarea
           style={textareaStyle}
           value={transcript}
@@ -312,7 +216,6 @@ export function ListenPanel({
           aria-label="Transcript"
         />
 
-        {/* Submit */}
         <Btn
           onClick={handleSubmit}
           disabled={!canSubmit}
@@ -322,11 +225,10 @@ export function ListenPanel({
           Add to conversation as {providerLabel}
         </Btn>
 
-        {/* Helper */}
-        <div style={helperStyle}>
+        <div style={{ fontSize: 12, color: t.muted, textAlign: "center", marginTop: 14 }}>
           On-device &middot; Whisper &middot; no audio leaves this device
         </div>
-      </div>
-    </div>
+      </BottomSheet.Body>
+    </BottomSheet>
   );
 }

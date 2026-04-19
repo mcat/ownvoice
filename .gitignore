@@ -49,3 +49,5 @@ scripts/pipeline-verify/*.wav
 # Python bytecode
 __pycache__/
 *.pyc
+
+.superpowers/
