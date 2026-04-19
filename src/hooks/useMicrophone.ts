@@ -62,6 +62,31 @@ export function useMicrophone(): MicrophoneState {
     if (!isListening) setAudioLevel(0);
   }, [isListening]);
 
+  // Release everything when the consuming component unmounts. Without this,
+  // closing the panel mid-capture orphans the MediaStream and the browser mic
+  // indicator stays on indefinitely — there is no handle left to stop it.
+  // This is a force-release: unlike stopCapture, no final flush and no waiting
+  // for pending transcripts. The session is being abandoned, not finalized.
+  useEffect(() => {
+    return () => {
+      if (streamTimerRef.current) clearInterval(streamTimerRef.current);
+      if (levelIntervalRef.current) clearInterval(levelIntervalRef.current);
+      if (flushTimeoutRef.current) clearTimeout(flushTimeoutRef.current);
+      if (processorRef.current) {
+        processorRef.current.disconnect();
+        processorRef.current.onaudioprocess = null;
+      }
+      if (audioCtxRef.current) audioCtxRef.current.close().catch(() => {});
+      if (streamRef.current) {
+        for (const track of streamRef.current.getTracks()) track.stop();
+      }
+      const worker = getModelManager().getWorker("stt");
+      if (worker && workerListenerRef.current) {
+        worker.removeEventListener("message", workerListenerRef.current);
+      }
+    };
+  }, []);
+
   /**
    * Remove the worker listener if capture is stopped and no flushes are pending.
    */

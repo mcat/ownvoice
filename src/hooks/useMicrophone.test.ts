@@ -318,6 +318,72 @@ describe("useMicrophone", () => {
     });
   });
 
+  describe("unmount cleanup", () => {
+    it("releases the media stream when the hook unmounts mid-capture", async () => {
+      mockModelManager.isReady.mockReturnValue(true);
+      mockModelManager.getWorker.mockReturnValue(mockWorker);
+      setupAudioContextMock();
+
+      const mockStream = createMockStream();
+      vi.mocked(navigator.mediaDevices.getUserMedia).mockResolvedValueOnce(mockStream);
+
+      const { result, unmount } = renderHook(() => useMicrophone());
+
+      await act(async () => {
+        await result.current.startCapture();
+      });
+
+      // User closes the panel without tapping the Stop button — component unmounts.
+      unmount();
+
+      for (const track of mockStream.getTracks()) {
+        expect(track.stop).toHaveBeenCalled();
+      }
+    });
+
+    it("closes the AudioContext and disconnects the processor on unmount", async () => {
+      mockModelManager.isReady.mockReturnValue(true);
+      mockModelManager.getWorker.mockReturnValue(mockWorker);
+      const { mockCtx, mockProcessor } = setupAudioContextMock();
+
+      const mockStream = createMockStream();
+      vi.mocked(navigator.mediaDevices.getUserMedia).mockResolvedValueOnce(mockStream);
+
+      const { result, unmount } = renderHook(() => useMicrophone());
+
+      await act(async () => {
+        await result.current.startCapture();
+      });
+
+      unmount();
+
+      expect(mockProcessor.disconnect).toHaveBeenCalled();
+      expect(mockCtx.close).toHaveBeenCalled();
+    });
+
+    it("removes the worker message listener on unmount", async () => {
+      mockModelManager.isReady.mockReturnValue(true);
+      mockModelManager.getWorker.mockReturnValue(mockWorker);
+      setupAudioContextMock();
+
+      const mockStream = createMockStream();
+      vi.mocked(navigator.mediaDevices.getUserMedia).mockResolvedValueOnce(mockStream);
+
+      const { result, unmount } = renderHook(() => useMicrophone());
+
+      await act(async () => {
+        await result.current.startCapture();
+      });
+
+      unmount();
+
+      expect(mockWorker.removeEventListener).toHaveBeenCalledWith(
+        "message",
+        expect.any(Function),
+      );
+    });
+  });
+
   describe("audio processing and VAD", () => {
     it("accumulates audio chunks and sends to STT on the streaming interval", async () => {
       vi.useFakeTimers();
