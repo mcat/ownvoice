@@ -313,8 +313,7 @@ export function MyWishes({
           }}
         >
           {topic.responses.map((response) => {
-            const selIdx = selected.indexOf(response);
-            const isSelected = selIdx >= 0;
+            const isSelected = selected.includes(response);
 
             return (
               <Btn
@@ -336,22 +335,23 @@ export function MyWishes({
                 }}
               >
                 <div
+                  aria-hidden="true"
                   style={{
                     width: 32,
                     height: 32,
                     borderRadius: 16,
                     border: `2px solid ${isSelected ? blue : t.border}`,
                     backgroundColor: isSelected ? blue : "transparent",
-                    color: isSelected ? "#fff" : t.sub,
+                    color: "#fff",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    fontSize: 14,
+                    fontSize: 18,
                     fontWeight: 700,
                     flexShrink: 0,
                   }}
                 >
-                  {isSelected ? selIdx + 1 : ""}
+                  {isSelected ? "✓" : ""}
                 </div>
                 <span>{response}</span>
               </Btn>
