@@ -17,7 +17,11 @@ npm run preview        # Preview production build locally
 npm test               # Run Vitest once
 npm run test:watch     # Vitest in watch mode
 npm run test:coverage  # Vitest with coverage
+npm run manifest:regen # Refresh public/models-manifest.json from disk sizes
+npm run manifest:check # Verify manifest is in sync with disk (CI-safe)
 ```
+
+**After adding/replacing any file under `public/models/**`:** run `npm run manifest:regen` and commit the diff. The `manifestIntegrity` vitest covers drift automatically in CI.
 
 Stack: TypeScript + Preact + Vite + Vitest. ESLint with `typescript-eslint` and `eslint-plugin-jsx-a11y`.
 

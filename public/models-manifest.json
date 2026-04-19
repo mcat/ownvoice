@@ -4,38 +4,126 @@
     "tts": {
       "baseUrl": "/models/chatterbox-turbo/",
       "files": [
-        { "name": "embed_tokens_q4f16.onnx", "size": 2548, "magic": "onnx" },
-        { "name": "embed_tokens_q4f16.onnx_data", "size": 33648688, "magic": null },
-        { "name": "embed_tokens_q4f16_webgpu.onnx", "size": 2668, "magic": "onnx" },
-        { "name": "embed_tokens_q4f16_webgpu.onnx_data", "size": 33648688, "magic": null },
-        { "name": "language_model_q4f16.onnx", "size": 276803, "magic": "onnx" },
-        { "name": "language_model_q4f16.onnx_data", "size": 183981430, "magic": null },
-        { "name": "language_model_q4f16_webgpu.onnx", "size": 281934, "magic": "onnx" },
-        { "name": "language_model_q4f16_webgpu.onnx_data", "size": 183981430, "magic": null },
-        { "name": "conditional_decoder_q4f16.onnx", "size": 2394210, "magic": "onnx" },
-        { "name": "conditional_decoder_q4f16.onnx_data", "size": 162996136, "magic": null },
-        { "name": "conditional_decoder_q4f16_webgpu.onnx", "size": 2413793, "magic": "onnx" },
-        { "name": "conditional_decoder_q4f16_webgpu.onnx_data", "size": 162996136, "magic": null },
-        { "name": "speech_encoder_q4f16.onnx", "size": 178452361, "magic": "onnx" },
-        { "name": "tokenizer.json", "size": 3562272, "magic": "json" }
+        {
+          "name": "embed_tokens_q4f16.onnx",
+          "size": 2548,
+          "magic": "onnx"
+        },
+        {
+          "name": "embed_tokens_q4f16.onnx_data",
+          "size": 33648688,
+          "magic": null
+        },
+        {
+          "name": "embed_tokens_q4f16_webgpu.onnx",
+          "size": 2668,
+          "magic": "onnx"
+        },
+        {
+          "name": "embed_tokens_q4f16_webgpu.onnx_data",
+          "size": 33648688,
+          "magic": null
+        },
+        {
+          "name": "language_model_q4f16.onnx",
+          "size": 276803,
+          "magic": "onnx"
+        },
+        {
+          "name": "language_model_q4f16.onnx_data",
+          "size": 183981430,
+          "magic": null
+        },
+        {
+          "name": "language_model_q4f16_webgpu.onnx",
+          "size": 281934,
+          "magic": "onnx"
+        },
+        {
+          "name": "language_model_q4f16_webgpu.onnx_data",
+          "size": 183981430,
+          "magic": null
+        },
+        {
+          "name": "conditional_decoder_q4f16.onnx",
+          "size": 2394210,
+          "magic": "onnx"
+        },
+        {
+          "name": "conditional_decoder_q4f16.onnx_data",
+          "size": 162996136,
+          "magic": null
+        },
+        {
+          "name": "conditional_decoder_q4f16_webgpu.onnx",
+          "size": 2413793,
+          "magic": "onnx"
+        },
+        {
+          "name": "conditional_decoder_q4f16_webgpu.onnx_data",
+          "size": 162996136,
+          "magic": null
+        },
+        {
+          "name": "speech_encoder_q4f16.onnx",
+          "size": 178452361,
+          "magic": "onnx"
+        },
+        {
+          "name": "tokenizer.json",
+          "size": 3562272,
+          "magic": "json"
+        }
       ]
     },
     "llm": {
       "baseUrl": "/models/lfm2-1.2b-instruct/",
       "files": [
-        { "name": "model_q4.onnx", "size": 183173, "magic": "onnx" },
-        { "name": "model_q4.onnx_data", "size": 850059264, "magic": null },
-        { "name": "tokenizer.json", "size": 3297799, "magic": "json" },
-        { "name": "config.json", "size": 1599, "magic": "json" },
-        { "name": "chat_template.jinja", "size": 1783, "magic": null }
+        {
+          "name": "model_q4.onnx",
+          "size": 183173,
+          "magic": "onnx"
+        },
+        {
+          "name": "model_q4.onnx_data",
+          "size": 850059264,
+          "magic": null
+        },
+        {
+          "name": "tokenizer.json",
+          "size": 3297799,
+          "magic": "json"
+        },
+        {
+          "name": "config.json",
+          "size": 1599,
+          "magic": "json"
+        },
+        {
+          "name": "chat_template.jinja",
+          "size": 1783,
+          "magic": null
+        }
       ]
     },
     "stt": {
       "baseUrl": "/models/whisper-small/",
       "files": [
-        { "name": "encoder_model_q4.onnx", "size": 66182104, "magic": "onnx" },
-        { "name": "decoder_model_merged_q4.onnx", "size": 233146255, "magic": "onnx" },
-        { "name": "tokenizer.json", "size": 2405679, "magic": "json" }
+        {
+          "name": "encoder_model_q4.onnx",
+          "size": 66182104,
+          "magic": "onnx"
+        },
+        {
+          "name": "decoder_model_merged_q4.onnx",
+          "size": 233146255,
+          "magic": "onnx"
+        },
+        {
+          "name": "tokenizer.json",
+          "size": 2405679,
+          "magic": "json"
+        }
       ]
     }
   }
