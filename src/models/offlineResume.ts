@@ -30,7 +30,7 @@ async function runPrimer(): Promise<void> {
   await drivePrimer();
 }
 
-async function maybeResume(): Promise<void> {
+export async function maybeResume(): Promise<void> {
   if (useOfflineStore.getState().primerRunning) return;
   if (!(await hasPendingDownloads())) return;
   try {

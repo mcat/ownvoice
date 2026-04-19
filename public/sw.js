@@ -11,7 +11,7 @@
 //
 // Cache name bumps on every shipped SW change. Old caches are cleaned on activate.
 
-const CACHE_NAME = "ownvoice-v3";
+const CACHE_NAME = "ownvoice-v4";
 const SHELL_ASSETS = ["/", "/index.html"];
 
 self.addEventListener("install", (event) => {
@@ -112,4 +112,21 @@ self.addEventListener("fetch", (event) => {
   }
 
   event.respondWith(cacheFirstImmutable(event.request));
+});
+
+// BackgroundSync: when the browser fires a sync event (connectivity restored),
+// notify any open clients so they can re-run the opportunistic resume logic.
+// On platforms without BackgroundSync (Safari today) this listener is never
+// invoked — the visibilitychange fallback in offlineResume.ts handles those.
+self.addEventListener("sync", (event) => {
+  if (event.tag !== "resume-model-dl") return;
+
+  event.waitUntil(
+    self.clients.matchAll({ type: "window" }).then((cs) => {
+      console.log(
+        `[OwnVoice SW] sync:resume-model-dl fired, notifying ${cs.length} client(s)`,
+      );
+      cs.forEach((c) => c.postMessage({ type: "resume-partials" }));
+    }),
+  );
 });
