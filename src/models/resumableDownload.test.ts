@@ -65,6 +65,31 @@ describe("resumableDownload", () => {
   });
   afterEach(() => vi.restoreAllMocks());
 
+  it("does not emit the range-fallback warning on a fresh download (resumeFrom=0)", async () => {
+    // Guards the `resumeFrom > 0 && response.status !== 206` branch against
+    // mutants that would drop the resumeFrom guard and trigger the warn+clear
+    // path for every non-206 response, including legitimate fresh downloads.
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    globalThis.fetch = vi.fn(async () =>
+      new Response(new Uint8Array([1, 2]), {
+        status: 200,
+        headers: { "content-length": "2" },
+      }),
+    ) as typeof fetch;
+
+    await resumableDownload({
+      url: "/models/tts/a.onnx",
+      dir: opfs.root,
+      filename: "a.onnx",
+      expectedSize: 2,
+    });
+
+    const warnedAboutRange = warn.mock.calls.some((call) =>
+      String(call[0]).includes("Range request"),
+    );
+    expect(warnedAboutRange).toBe(false);
+  });
+
   it("downloads a fresh file and writes bytes to OPFS", async () => {
     const body = new Uint8Array([1, 2, 3, 4, 5]);
     globalThis.fetch = vi.fn(async () =>
