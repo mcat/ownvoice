@@ -6,6 +6,9 @@ const mockSetWorker = vi.fn();
 const mockSetReady = vi.fn();
 const mockSetError = vi.fn();
 const mockIsReady = vi.fn(() => false);
+const mockVerifyOPFSCache = vi.fn(() =>
+  Promise.resolve({ ok: true, files: [] }),
+);
 
 vi.mock("./modelManager", () => ({
   getModelManager: () => ({
@@ -14,7 +17,19 @@ vi.mock("./modelManager", () => ({
     setReady: mockSetReady,
     setError: mockSetError,
     isReady: mockIsReady,
+    verifyOPFSCache: mockVerifyOPFSCache,
   }),
+}));
+
+vi.mock("./modelsManifest", () => ({
+  loadManifest: vi.fn(async () => ({
+    version: 1,
+    models: {
+      tts: { baseUrl: "/models/tts/", files: [{ name: "a.onnx", size: 10, magic: "onnx" }] },
+      llm: { baseUrl: "/models/llm/", files: [] },
+      stt: { baseUrl: "/models/stt/", files: [] },
+    },
+  })),
 }));
 
 // --- Mock Worker constructor ---
@@ -218,5 +233,26 @@ describe("bootModels", () => {
 
     // TTS and LLM should still be created
     expect(createdWorkers).toHaveLength(2);
+  });
+});
+
+describe("verifyAllOnBoot", () => {
+  it("populates offlineStore.verified with per-model results", async () => {
+    const { verifyAllOnBoot } = await import("./bootModels");
+    const { useOfflineStore } = await import("../stores/offlineStore");
+    useOfflineStore.getState().reset();
+
+    mockVerifyOPFSCache.mockImplementation(async (id: string) => ({
+      ok: id !== "llm",
+      files: [],
+    }));
+
+    await verifyAllOnBoot();
+
+    expect(useOfflineStore.getState().verified).toEqual({
+      tts: true,
+      llm: false,
+      stt: true,
+    });
   });
 });

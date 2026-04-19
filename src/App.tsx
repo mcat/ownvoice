@@ -22,7 +22,7 @@ import { SettingsPanel } from "./components/settings/SettingsPanel";
 import { PinGate } from "./components/shared/PinGate";
 import { Setup } from "./components/settings/Setup";
 import { getModelManager } from "./models/modelManager";
-import { bootModels } from "./models/bootModels";
+import { bootModels, verifyAllOnBoot } from "./models/bootModels";
 import { initGPU, isGPUReady, onGPUReady } from "./models/ttsEngine";
 import { MODEL_URLS } from "./models/types";
 import { primeSpeechSynthesis, setFallbackVoice } from "./speak";
@@ -74,6 +74,11 @@ export function App() {
       console.warn("[OwnVoice] GPU TTS error:", err);
       bootModels();
     });
+    // Run OPFS integrity check in parallel — surfaces stale/partial models
+    // in Settings without blocking inference boot.
+    verifyAllOnBoot().catch((err) =>
+      console.warn("[OwnVoice] boot verify failed:", err),
+    );
     primeSpeechSynthesis();
   }, []);
 

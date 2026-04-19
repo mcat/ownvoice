@@ -1,5 +1,7 @@
 import { getModelManager } from "./modelManager";
 import { MODEL_URLS } from "./types";
+import { loadManifest, type ModelId } from "./modelsManifest";
+import { useOfflineStore } from "../stores/offlineStore";
 
 /**
  * Boot all on-device models.
@@ -112,6 +114,26 @@ function bootSTT(mgr: ReturnType<typeof getModelManager>): void {
   }
 
   bootSTTWasm(mgr);
+}
+
+/**
+ * Boot-time integrity pass over OPFS. Cheap (reads first 2 bytes per ONNX
+ * file), runs in parallel, populates offlineStore.verified so Settings can
+ * indicate which models need the "Prepare for offline" primer rerun.
+ *
+ * Does not block worker boot — runs fire-and-forget alongside bootModels().
+ */
+export async function verifyAllOnBoot(): Promise<void> {
+  const mgr = getModelManager();
+  const manifest = await loadManifest();
+  const setModelVerified = useOfflineStore.getState().setModelVerified;
+  const ids = Object.keys(manifest.models) as ModelId[];
+  await Promise.all(
+    ids.map(async (id) => {
+      const report = await mgr.verifyOPFSCache(id, manifest.models[id]);
+      setModelVerified(id, report.ok);
+    }),
+  );
 }
 
 /** Start the WASM STT worker (Vite-bundled, onnxruntime-web base package). */
