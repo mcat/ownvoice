@@ -319,7 +319,10 @@ function createOPFSMock() {
         let buf = writeOpts?.keepExistingData
           ? new Uint8Array(store.get(path) ?? new ArrayBuffer(0))
           : new Uint8Array(0);
-        let cursor = buf.byteLength;
+        // Per OPFS spec, cursor starts at 0 regardless of keepExistingData —
+        // callers that want to append must seek() explicitly. Prior mock
+        // defaulted to buf.byteLength, which silently hid missing seek() calls.
+        let cursor = 0;
         return {
           seek: async (offset: number) => {
             cursor = offset;
