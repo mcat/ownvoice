@@ -1,7 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "preact/hooks";
 import type { ComponentChildren } from "preact";
-import type { ThemeTokens, ThemeName } from "../../../theme/tokens";
-import { colors } from "../../../theme/tokens";
+import type { ThemeTokens } from "../../../theme/tokens";
 import { Btn } from "../../shared/Btn";
 import { drivePrimer } from "../../../models/drivePrimer";
 import { verifyAllOnBoot } from "../../../models/bootModels";
@@ -14,7 +13,6 @@ import { useStorageHealth } from "../../../hooks/useStorageHealth";
 
 interface Props {
   t: ThemeTokens;
-  theme: ThemeName;
 }
 
 function formatBytes(n: number | null): string {
@@ -25,9 +23,7 @@ function formatBytes(n: number | null): string {
   return `${(n / 1024 / 1024 / 1024).toFixed(2)} GB`;
 }
 
-export function OfflineReadinessSection({ t, theme }: Props) {
-  const accent = colors.patient[theme];
-  const accentText = theme === "light" ? "#FFFFFF" : "#0A0A0A";
+export function OfflineReadinessSection({ t }: Props) {
   const primerRunning = useOfflineStore((s) => s.primerRunning);
   const progress = useOfflineStore((s) => s.progress);
   const verified = useOfflineStore((s) => s.verified);
@@ -127,32 +123,58 @@ export function OfflineReadinessSection({ t, theme }: Props) {
   }
 
   const verifiedEntries = Object.entries(verified);
+  const statuses = verifiedEntries.map(([, s]) => s);
+  const allVerified =
+    statuses.length > 0 && statuses.every((s) => s === "verified");
+  const anyNeedsRetry = statuses.some((s) => s === "needs-retry");
 
   return (
     <Section label="Offline readiness" t={t}>
       <p style={{ margin: "0 0 14px", color: t.sub, fontSize: 14 }}>
-        Download and verify all voice files so the device works without Wi-Fi.
+        Status of the AI models the app uses on-device for voice generation,
+        suggestions, and speech recognition.
       </p>
 
-      <Btn
-        onClick={runPrimer}
-        disabled={offlineActionRunning}
-        style={{
-          width: "100%",
-          minHeight: 64,
-          padding: "14px 20px",
-          borderRadius: 12,
-          border: "none",
-          background: offlineActionRunning ? t.muted : accent,
-          color: accentText,
-          fontSize: 16,
-          fontWeight: 600,
-          fontFamily: "inherit",
-          opacity: offlineActionRunning ? 0.7 : 1,
-        }}
-      >
-        {primerRunning ? "Preparing…" : "Download and verify voice files"}
-      </Btn>
+      {primerRunning && (
+        <p style={{ margin: "0 0 10px", color: t.sub, fontSize: 14, fontWeight: 500 }}>
+          Downloading models for offline use…
+        </p>
+      )}
+
+      {allVerified && !primerRunning && (
+        <p
+          style={{
+            margin: "0 0 10px",
+            color: t.text,
+            fontSize: 15,
+            fontWeight: 600,
+          }}
+        >
+          All models ready
+        </p>
+      )}
+
+      {anyNeedsRetry && !primerRunning && (
+        <Btn
+          onClick={runPrimer}
+          disabled={offlineActionRunning}
+          style={{
+            width: "100%",
+            minHeight: 64,
+            padding: "14px 20px",
+            borderRadius: 12,
+            border: "none",
+            background: offlineActionRunning ? t.muted : warnColor,
+            color: "#FFFFFF",
+            fontSize: 16,
+            fontWeight: 600,
+            fontFamily: "inherit",
+            opacity: offlineActionRunning ? 0.7 : 1,
+          }}
+        >
+          Redownload models
+        </Btn>
+      )}
 
       {alreadyReady && (
         <p style={{ marginTop: 8, fontSize: 14, color: t.sub, fontWeight: 500 }}>
@@ -178,7 +200,7 @@ export function OfflineReadinessSection({ t, theme }: Props) {
           opacity: offlineActionRunning ? 0.6 : 1,
         }}
       >
-        {verifying ? "Checking…" : "Check existing files only"}
+        {verifying ? "Checking…" : "Check existing models"}
       </Btn>
 
       {verifiedEntries.length > 0 && (
@@ -193,9 +215,9 @@ export function OfflineReadinessSection({ t, theme }: Props) {
           {verifiedEntries.map(([model, status]) => {
             const { label, color } =
               status === "verified"
-                ? { label: "verified", color: t.text }
+                ? { label: "ready", color: t.text }
                 : status === "not-primed"
-                  ? { label: "not yet downloaded", color: t.muted }
+                  ? { label: "downloading…", color: t.muted }
                   : { label: "needs retry", color: warnColor };
             return (
               <li key={model} style={{ color, padding: "4px 0" }}>

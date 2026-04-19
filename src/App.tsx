@@ -23,7 +23,9 @@ import { PinGate } from "./components/shared/PinGate";
 import { Setup } from "./components/settings/Setup";
 import { getModelManager } from "./models/modelManager";
 import { bootModels, verifyAllOnBoot } from "./models/bootModels";
+import { drivePrimer } from "./models/drivePrimer";
 import { resumePendingOnVisible } from "./models/offlineResume";
+import { useOfflineStore } from "./stores/offlineStore";
 import { initGPU, isGPUReady, onGPUReady } from "./models/ttsEngine";
 import { MODEL_URLS } from "./models/types";
 import { primeSpeechSynthesis, setFallbackVoice } from "./speak";
@@ -75,11 +77,24 @@ export function App() {
       console.warn("[OwnVoice] GPU TTS error:", err);
       bootModels();
     });
-    // Run OPFS integrity check in parallel — surfaces stale/partial models
-    // in Settings without blocking inference boot.
-    verifyAllOnBoot().catch((err) =>
-      console.warn("[OwnVoice] boot verify failed:", err),
-    );
+    // Run OPFS integrity check in parallel, then auto-prime if needed.
+    // The primer moves models into OPFS with resumable downloads + integrity
+    // verification. Without this, the app still works on first boot (workers
+    // fetch via the SW → network), but the bytes don't persist in a way that
+    // survives storage-pressure eviction.
+    verifyAllOnBoot()
+      .then(() => {
+        const verified = useOfflineStore.getState().verified;
+        const needsPriming = Object.values(verified).some(
+          (s) => s !== "verified",
+        );
+        if (needsPriming) {
+          drivePrimer().catch((err) =>
+            console.warn("[OwnVoice] auto-prime failed:", err),
+          );
+        }
+      })
+      .catch((err) => console.warn("[OwnVoice] boot verify failed:", err));
     // Resume any interrupted model downloads — fires on boot if partials
     // exist, and again whenever the tab returns to the foreground.
     const unsubResume = resumePendingOnVisible();
