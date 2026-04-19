@@ -152,6 +152,43 @@ select:focus-visible {
   }
 }
 
+/**
+ * Breath-paced fade for coaching messages: fade in, hold, fade out —
+ * each proportionally to the total animation duration. Used by the
+ * VoiceCapture countdown timeline so every beat has a calm, symmetric
+ * envelope rather than a hard cut.
+ */
+@keyframes voiceCoachFade {
+  0%,
+  100% {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  18%,
+  82% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/**
+ * Slow, symmetric breath animation — 4s inhale (expand) + 4s exhale
+ * (contract). Infinite, so two full breath cycles fit in a 16s beat.
+ * Used by the VoiceCapture countdown's silent beats to cue the patient
+ * to breathe at a genuinely calming pace.
+ */
+@keyframes voiceCoachBreath {
+  0%,
+  100% {
+    transform: scale(0.55);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.35);
+    opacity: 1;
+  }
+}
+
 @keyframes pulseGlow {
   0%,
   100% {

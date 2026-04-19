@@ -24,6 +24,8 @@ Existing high-technology AAC tools for the ICU (VidaTalk, CommuniCare, YoDoc) pr
 
 Loss of voice is consistently reported as one of the most distressing aspects of ICU admission (Khalaila et al., 2011; Carroll, 2007). Voice is a core marker of personal identity. Zero-shot voice cloning technology now enables the recreation of an individual's voice characteristics from a 3–10 second audio sample. No published study has examined the effect of hearing one's own cloned voice — versus a generic synthesized voice — on patient emotional wellbeing, identity preservation, and family experience during critical illness.
 
+**Recording protocol.** OwnVoice captures 15 seconds of audio and extracts a 192-dim x-vector speaker embedding using Chatterbox Turbo's CAMPPlus encoder (Resemble AI, 2025). Because this is a statistical embedding — spectral envelope, pitch statistics, and formant structure averaged across the clip — phonetic and prosodic coverage of the reference audio directly shapes clone quality (Casanova et al., 2022; Wang et al., 2023). The English-locale recording protocol therefore prompts the patient to read the opening two sentences of the Rainbow Passage (Fairbanks, 1960), the canonical phonetically balanced passage used in the VCTK corpus (Veaux et al., 2019). Full rationale and citations in `docs/BIBLIOGRAPHY.md` §9.
+
 ### 2.3 Goals-of-Care Conversations with Nonverbal Patients
 
 The Serious Illness Conversation Guide (SICG) from Ariadne Labs has demonstrated significant improvements in goals-of-care communication: more conversations about values and goals (89% vs. 44%), earlier conversations (5 months vs. 2.5 months before death), increased documentation (61% vs. 11%), and reduced anxiety and depression (Bernacki et al., 2019; Paladino et al., 2019). However, the SICG was designed for patients who can speak. No published study has examined whether structured goals-of-care conversations can be conducted effectively with nonverbal patients using AAC technology.
@@ -66,6 +68,7 @@ Evaluate whether OwnVoice improves patient-reported communication satisfaction c
 - Assess the accuracy and clinical acceptability of on-device Whisper speech-to-text for capturing provider communication
 - Examine family member experience of hearing the patient's cloned voice during goals-of-care conversations
 - Characterize patient phrase usage patterns to inform future phrase library design
+- **Reference-audio protocol efficacy.** Compare clone quality (patient-rated similarity; optionally Mean Opinion Score from blinded raters) between patients who read the Rainbow Passage and those who free-speak for 15 seconds. The scripted-read hypothesis — that phonetic and prosodic balance improves the Chatterbox Turbo speaker embedding in ways patients can perceive — is well-supported in general speech science but unbenchmarked against this specific model and population (ICU patients with possible vocal fatigue)
 
 ---
 

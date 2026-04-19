@@ -113,4 +113,52 @@ describe("audioCacheStore", () => {
     expect(s.runs).toEqual({});
     expect(s.activeKey).toBeNull();
   });
+
+  it("pauseAllRuns flips running status to 'paused' without losing progress", () => {
+    const { start, progress, pauseAllRuns } = useAudioCacheStore.getState();
+    start("patient", 10, "en", "fp");
+    progress("patient", "phrase 5", 5);
+
+    pauseAllRuns();
+
+    const r = useAudioCacheStore.getState().runs.patient!;
+    expect(r.status).toBe("paused");
+    expect(r.current).toBe(5);
+    expect(r.total).toBe(10);
+    expect(useAudioCacheStore.getState().activeKey).toBeNull();
+  });
+
+  it("pauseAllRuns leaves non-running statuses untouched", () => {
+    const { start, finish, pauseAllRuns } = useAudioCacheStore.getState();
+    start("patient", 5, "en", "fp");
+    finish("patient"); // status becomes "done"
+
+    pauseAllRuns();
+
+    expect(useAudioCacheStore.getState().runs.patient!.status).toBe("done");
+  });
+
+  it("discard removes a single key without affecting others", () => {
+    const { start, discard } = useAudioCacheStore.getState();
+    start("patient", 5, "en", "fp");
+    start("provider:0", 3, "en", "fp2");
+
+    discard("patient");
+
+    const s = useAudioCacheStore.getState();
+    expect(s.runs.patient).toBeUndefined();
+    expect(s.runs["provider:0"]).toBeDefined();
+    // activeKey was "provider:0" (the most recent start), so discarding
+    // patient should NOT clear it.
+    expect(s.activeKey).toBe("provider:0");
+  });
+
+  it("discard clears activeKey when it matches the discarded speaker", () => {
+    const { start, discard } = useAudioCacheStore.getState();
+    start("patient", 5, "en", "fp");
+
+    discard("patient");
+
+    expect(useAudioCacheStore.getState().activeKey).toBeNull();
+  });
 });

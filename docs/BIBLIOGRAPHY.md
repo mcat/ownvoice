@@ -383,7 +383,87 @@ Methodology for qualitative analysis of interview data in the research plan.
 
 ---
 
-## 9. Elements Awaiting Validation
+## 9. Voice Cloning Reference Audio
+
+Research informing the recording-capture UX: what the patient sees while we capture 15 seconds of audio for speaker-embedding extraction.
+
+### The Rainbow Passage
+
+> Fairbanks, G. (1960). *Voice and Articulation Drillbook*, 2nd ed. Harper & Row. (Rainbow Passage pp. 124–139.)
+
+**What it is:** A ~330-word paragraph engineered for proportional English phoneme coverage. The opening two sentences — *"When the sunlight strikes raindrops in the air, they act like a prism and form a rainbow. The rainbow is a division of white light into many beautiful colors."* — run approximately 12–15 seconds at conversational pace and cover a representative distribution of English phonemes, including most vowels and consonant clusters.
+
+**Why it's the default recording script:** The Rainbow Passage is the canonical reference passage in the VCTK Corpus (Veaux et al., 2019) — the most widely used multi-speaker TTS training corpus — and in decades of speech-science research. For a 15-second recording budget, no free-form speech sample reliably matches its phonetic balance.
+
+**Where it's applied:**
+
+| Decision | Implementation |
+|---|---|
+| English-locale voice capture shows the Rainbow Passage opening as a scripted read | `src/data/recordingScripts.ts` — `english.passage` |
+| Patient reads aloud; the embedding captures their full phonetic and prosodic range | `src/components/shared/VoiceCapture.tsx` — recording-state render |
+| Pre-recording orientation sequence (intro → breathing → "Ready" → 5-4-3-2-1) runs before the 15 s capture begins, so the clock doesn't start until the patient is settled | `VoiceCapture.tsx` — `COUNTDOWN_TIMELINE`; `beginCountdownTimeline()` |
+| Soft sine-wave tones (not speech) mark each beat with long fade envelopes to avoid startle | `VoiceCapture.tsx` — `playTone()` |
+| Messages fade in / hold / fade out rather than hard cutting | `src/app.css` — `@keyframes voiceCoachFade` |
+| Closing cue appears only in the final 3 s of the capture; middle stays quiet | `VoiceCapture.tsx` — recording-state `coaching` logic |
+| Non-English locales fall back to free-speak coaching until a native-speaker-reviewed passage is added | `src/data/recordingScripts.ts` — `freeSpeakFallback` |
+
+**Validation status:** The *use* of the Rainbow Passage is well-validated for English phonetic balance in speech research. Its *efficacy specifically for Chatterbox Turbo embedding quality* in an ICU recording context is an educated prediction — see §4 below. Co-design target: native-speaker-reviewed balanced passages for each of the other 22 Chatterbox-supported languages.
+
+---
+
+### Zero-Shot Voice Cloning and Reference-Audio Requirements
+
+> Casanova, E., et al. (2022). YourTTS: Towards Zero-Shot Multi-Speaker TTS and Zero-Shot Voice Conversion for everyone. *ICML 2022*.
+>
+> Wang, C., et al. (2023). Neural Codec Language Models are Zero-Shot Text to Speech Synthesizers (VALL-E). *arXiv:2301.02111*.
+>
+> Coqui AI. XTTS-v2 model card and documentation.
+>
+> Veaux, C., Yamagishi, J., & MacDonald, K. (2019). CSTR VCTK Corpus: English Multi-speaker Corpus for CSTR Voice Cloning Toolkit (version 0.92). University of Edinburgh.
+
+**Finding:** Across the zero-shot voice-cloning literature and community documentation, there is convergent guidance on reference audio:
+
+- **10–15 seconds is the consensus sweet spot.** Quality improves up to roughly 20 seconds then plateaus; samples under 3 seconds produce noticeably degraded embeddings (NVIDIA NIM Voice Cloning docs).
+- **Phonetic diversity matters more than length.** Speaker encoders average spectral envelope, pitch statistics, and formant structure across the clip — diverse phonemes exercise different vocal-tract configurations.
+- **Prosodic variety improves pitch-range capture.** Including a question alongside statements exercises both declarative and interrogative intonation, which is reflected in the embedding's F0 statistics.
+- **Avoid:** whispered or breathy speech (distorts formants), monotone reading (under-estimates F0 variance), background noise and reverb (contaminate the embedding), multiple speakers, shouting, and clips over 30 seconds (diminishing returns and posture drift).
+
+**Where it's applied:**
+
+| Decision | Implementation |
+|---|---|
+| 15-second recording budget | `src/components/shared/VoiceCapture.tsx` — `RECORD_DURATION = 15` |
+| Scripted read (phonetically balanced, prosodically varied) preferred over free-form speech | `src/data/recordingScripts.ts` |
+| Contraindication guidance communicated via warm, non-alarming UI (no red) | `VoiceCapture.tsx` — amber palette for recording state |
+| Microphone-noise prevention handled at capture (single-speaker, clean audio assumed) | `src/hooks/useMicrophone.ts`; Web Audio post-processing in `src/speak.ts` |
+
+---
+
+### Chatterbox Turbo Speaker Encoder (CAMPPlus)
+
+> Wang, H., et al. (2023). CAM++: A Fast and Efficient Network for Speaker Verification Using Context-Aware Masking. *Interspeech 2023*.
+>
+> Resemble AI. Chatterbox Turbo. <https://huggingface.co/ResembleAI/chatterbox-turbo>
+>
+> Resemble AI. Zero-Shot Voice Cloning Guide. <https://www.resemble.ai/zero-shot-voice-cloning-guide/>
+
+**Finding:** Chatterbox Turbo's speaker representation is a 192-dimensional x-vector produced by the CAMPPlus encoder (a variant of CAM++). This is a *statistical* embedding — it summarizes the reference speaker's spectral and prosodic characteristics into a fixed-size vector, which the synthesis model then conditions on. It is **not** an in-context-learning prompt, so what the patient says directly shapes what the clone *can* sound like.
+
+Resemble AI's product page suggests 5 seconds minimum; community guidance converges on 10–30 seconds with 10–15 seconds optimal. No official Resemble script is published (GitHub issues [#39](https://github.com/resemble-ai/chatterbox/issues/39) and [#411](https://github.com/resemble-ai/chatterbox/issues/411) remain open on this topic as of research date).
+
+**Where it's applied:**
+
+| Decision | Implementation |
+|---|---|
+| 15-second recording budget chosen within the published 10–30s community range | `VoiceCapture.tsx` — `RECORD_DURATION = 15` |
+| Scripted read chosen to exploit the "statistical embedding" property (patient's full range captured in one pass) | `src/data/recordingScripts.ts`; `docs/PRD.md` §6.1 |
+| Embedding stored as `speakerData` in the settings store, never transmitted | `src/stores/settingsStore.ts` — on-device only |
+
+**Validation status:** The model architecture facts (192-dim, CAMPPlus, statistical averaging) are from Resemble's published materials and the CAM++ paper. The specific claim that the Rainbow Passage produces a *measurably better* Chatterbox embedding than 15 seconds of free speech for the same patient is an educated prediction — consistent with decades of speech-science research but not specifically benchmarked against Chatterbox. A Phase 2 study could quantify this via MOS comparison.
+
+---
+
+## 10. Elements Awaiting Validation
 
 The following elements are informed by the research above but have not been independently validated. They are marked as co-design targets.
 

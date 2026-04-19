@@ -98,6 +98,7 @@ export function PatientInfoSection({
             useSettingsStore.getState().setSpeakerData(null);
           }}
           onPreview={previewClonedVoice}
+          locale={cfg.patientLang}
           compact
           color={{
             text: t.text, sub: t.sub, muted: t.muted,
