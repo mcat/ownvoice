@@ -10,15 +10,16 @@ import type { AppSettings } from "../../../types";
 
 const drivePrimerMock = vi.fn(async () => {
   const s = useOfflineStore.getState();
-  s.setModelVerified("tts", true);
+  s.setModelVerified("tts", "verified");
   s.markPrimerComplete();
+  return { downloadedCount: 1 };
 });
 vi.mock("../../../models/drivePrimer", () => ({
   drivePrimer: (...args: unknown[]) => drivePrimerMock(...args),
 }));
 
 const verifyAllOnBootMock = vi.fn(async () => {
-  useOfflineStore.getState().setModelVerified("tts", true);
+  useOfflineStore.getState().setModelVerified("tts", "verified");
 });
 vi.mock("../../../models/bootModels", () => ({
   verifyAllOnBoot: () => verifyAllOnBootMock(),
@@ -53,6 +54,9 @@ function seedSettings() {
   });
 }
 
+const PRIMER_NAME = /download and verify voice files/i;
+const VERIFY_NAME = /check existing files only/i;
+
 describe("OfflineReadinessSection", () => {
   beforeEach(() => {
     useOfflineStore.getState().reset();
@@ -63,23 +67,22 @@ describe("OfflineReadinessSection", () => {
     clearAudioCacheMock.mockClear();
     abortRunnerMock.mockClear();
     runPreGenerationMock.mockClear();
-    installStorageEstimate(500, 10_000); // 5% usage — no warning
+    installStorageEstimate(500, 10_000); // 5% — no quota warning
   });
   afterEach(() => vi.clearAllMocks());
 
-  it("shows a 'Prepare for offline' button with accessible label", () => {
-    render(<OfflineReadinessSection t={light} />);
-    expect(
-      screen.getByRole("button", { name: /prepare for offline/i }),
-    ).toBeTruthy();
+  it("renders the primary and secondary offline-prep buttons", () => {
+    render(<OfflineReadinessSection t={light} theme="light" />);
+    expect(screen.getByRole("button", { name: PRIMER_NAME })).toBeTruthy();
+    expect(screen.getByRole("button", { name: VERIFY_NAME })).toBeTruthy();
   });
 
-  it("runs the primer when the button is clicked and updates store", async () => {
-    render(<OfflineReadinessSection t={light} />);
-    fireEvent.click(screen.getByRole("button", { name: /^prepare for offline$/i }));
+  it("runs the primer when the primary button is clicked and marks tts verified", async () => {
+    render(<OfflineReadinessSection t={light} theme="light" />);
+    fireEvent.click(screen.getByRole("button", { name: PRIMER_NAME }));
 
     await waitFor(() => {
-      expect(useOfflineStore.getState().verified.tts).toBe(true);
+      expect(useOfflineStore.getState().verified.tts).toBe("verified");
     });
     await waitFor(() => {
       expect(useOfflineStore.getState().primerRunning).toBe(false);
@@ -87,7 +90,7 @@ describe("OfflineReadinessSection", () => {
   });
 
   it("surfaces storage health info", async () => {
-    render(<OfflineReadinessSection t={light} />);
+    render(<OfflineReadinessSection t={light} theme="light" />);
     await waitFor(() => {
       const text = document.body.textContent ?? "";
       expect(text).toMatch(/Storage:/i);
@@ -95,29 +98,44 @@ describe("OfflineReadinessSection", () => {
     });
   });
 
-  it("runs verifyAllOnBoot and marks complete when 'Verify without downloading' is clicked", async () => {
-    render(<OfflineReadinessSection t={light} />);
-    fireEvent.click(
-      screen.getByRole("button", { name: /verify without downloading/i }),
-    );
+  it("runs verifyAllOnBoot and marks complete when the secondary button is clicked", async () => {
+    render(<OfflineReadinessSection t={light} theme="light" />);
+    fireEvent.click(screen.getByRole("button", { name: VERIFY_NAME }));
 
     await waitFor(() => {
       expect(verifyAllOnBootMock).toHaveBeenCalled();
-      expect(useOfflineStore.getState().verified.tts).toBe(true);
+      expect(useOfflineStore.getState().verified.tts).toBe("verified");
       expect(useOfflineStore.getState().lastVerifiedAt).not.toBeNull();
     });
   });
 
+  it("renders 'not yet downloaded' for models in the not-primed state", () => {
+    useOfflineStore.getState().setModelVerified("tts", "not-primed");
+    useOfflineStore.getState().setModelVerified("llm", "not-primed");
+    render(<OfflineReadinessSection t={light} theme="light" />);
+    const text = document.body.textContent ?? "";
+    expect(text).toMatch(/tts: not yet downloaded/i);
+    expect(text).toMatch(/llm: not yet downloaded/i);
+    // Should NOT say "needs retry" for a fresh install
+    expect(text).not.toMatch(/needs retry/i);
+  });
+
+  it("renders 'needs retry' only when a model is in the needs-retry state", () => {
+    useOfflineStore.getState().setModelVerified("tts", "needs-retry");
+    render(<OfflineReadinessSection t={light} theme="light" />);
+    expect((document.body.textContent ?? "")).toMatch(/tts: needs retry/i);
+  });
+
   it("hides the 'Clear audio cache' button when storage is healthy", () => {
-    render(<OfflineReadinessSection t={light} />);
+    render(<OfflineReadinessSection t={light} theme="light" />);
     expect(
       screen.queryByRole("button", { name: /clear audio cache/i }),
     ).toBeNull();
   });
 
   it("shows 'Clear audio cache' only when storage usage is at or above warning threshold", async () => {
-    installStorageEstimate(9000, 10_000); // 90% — triggers warning
-    render(<OfflineReadinessSection t={light} />);
+    installStorageEstimate(9000, 10_000);
+    render(<OfflineReadinessSection t={light} theme="light" />);
     await waitFor(() => {
       expect(
         screen.getByRole("button", { name: /clear audio cache/i }),
@@ -128,13 +146,13 @@ describe("OfflineReadinessSection", () => {
   it("shows 'Already up to date' when primer completes with zero downloads", async () => {
     drivePrimerMock.mockImplementation(async () => {
       const s = useOfflineStore.getState();
-      s.setModelVerified("tts", true);
+      s.setModelVerified("tts", "verified");
       s.markPrimerComplete();
       return { downloadedCount: 0 };
     });
 
-    render(<OfflineReadinessSection t={light} />);
-    fireEvent.click(screen.getByRole("button", { name: /^prepare for offline$/i }));
+    render(<OfflineReadinessSection t={light} theme="light" />);
+    fireEvent.click(screen.getByRole("button", { name: PRIMER_NAME }));
 
     await waitFor(() => {
       expect(screen.getByText(/already up to date/i)).toBeTruthy();
@@ -145,20 +163,18 @@ describe("OfflineReadinessSection", () => {
     vi.useFakeTimers();
     drivePrimerMock.mockImplementation(async () => {
       const s = useOfflineStore.getState();
-      s.setModelVerified("tts", true);
+      s.setModelVerified("tts", "verified");
       s.markPrimerComplete();
       return { downloadedCount: 0 };
     });
 
-    render(<OfflineReadinessSection t={light} />);
-    fireEvent.click(screen.getByRole("button", { name: /^prepare for offline$/i }));
+    render(<OfflineReadinessSection t={light} theme="light" />);
+    fireEvent.click(screen.getByRole("button", { name: PRIMER_NAME }));
 
-    // Wait for the message to appear
     await waitFor(() => {
       expect(screen.getByText(/already up to date/i)).toBeTruthy();
     });
 
-    // Advance past the 3s dismiss timer
     vi.advanceTimersByTime(3100);
 
     await waitFor(() => {
@@ -171,13 +187,13 @@ describe("OfflineReadinessSection", () => {
   it("does not show 'Already up to date' when primer downloaded files", async () => {
     drivePrimerMock.mockImplementation(async () => {
       const s = useOfflineStore.getState();
-      s.setModelVerified("tts", true);
+      s.setModelVerified("tts", "verified");
       s.markPrimerComplete();
       return { downloadedCount: 3 };
     });
 
-    render(<OfflineReadinessSection t={light} />);
-    fireEvent.click(screen.getByRole("button", { name: /^prepare for offline$/i }));
+    render(<OfflineReadinessSection t={light} theme="light" />);
+    fireEvent.click(screen.getByRole("button", { name: PRIMER_NAME }));
 
     await waitFor(() => {
       expect(useOfflineStore.getState().lastVerifiedAt).not.toBeNull();
@@ -188,7 +204,7 @@ describe("OfflineReadinessSection", () => {
 
   it("aborts the runner, clears the audio cache, and does not re-kick without cfg/speakerData", async () => {
     installStorageEstimate(9000, 10_000);
-    render(<OfflineReadinessSection t={light} />);
+    render(<OfflineReadinessSection t={light} theme="light" />);
 
     const btn = await screen.findByRole("button", { name: /clear audio cache/i });
     fireEvent.click(btn);
@@ -197,14 +213,13 @@ describe("OfflineReadinessSection", () => {
       expect(abortRunnerMock).toHaveBeenCalled();
       expect(clearAudioCacheMock).toHaveBeenCalled();
     });
-    // No cfg/speakerData seeded in the store, so runPreGeneration should be skipped.
     expect(runPreGenerationMock).not.toHaveBeenCalled();
   });
 
   it("clicking Clear triggers abort, clearAudioCache, and runPreGeneration in order", async () => {
     installStorageEstimate(9000, 10_000);
     seedSettings();
-    render(<OfflineReadinessSection t={light} />);
+    render(<OfflineReadinessSection t={light} theme="light" />);
 
     const btn = await screen.findByRole("button", { name: /clear audio cache/i });
     fireEvent.click(btn);
@@ -216,14 +231,13 @@ describe("OfflineReadinessSection", () => {
     });
   });
 
-  it("shows 'Rebuilding: N / M' during rebuild phase and keeps button disabled", async () => {
+  it("shows 'Rebuilding: N / M' during rebuild phase and keeps Clear button disabled", async () => {
     installStorageEstimate(9000, 10_000);
     seedSettings();
-    // Pre-seed the audio cache store to simulate an active rebuild
     useAudioCacheStore.getState().start("patient", 150, "en", "fp-abc");
     useAudioCacheStore.getState().progress("patient", "Hello", 42);
 
-    render(<OfflineReadinessSection t={light} />);
+    render(<OfflineReadinessSection t={light} theme="light" />);
 
     await waitFor(() => {
       const btn = screen.getByRole("button", { name: /rebuilding/i });
@@ -236,12 +250,11 @@ describe("OfflineReadinessSection", () => {
   it("returns to 'Clear audio cache' when rebuild completes", async () => {
     installStorageEstimate(9000, 10_000);
     seedSettings();
-    // Start a rebuild then complete it
     useAudioCacheStore.getState().start("patient", 10, "en", "fp-abc");
     useAudioCacheStore.getState().progress("patient", "Done", 10);
     useAudioCacheStore.getState().finish("patient");
 
-    render(<OfflineReadinessSection t={light} />);
+    render(<OfflineReadinessSection t={light} theme="light" />);
 
     await waitFor(() => {
       const btn = screen.getByRole("button", { name: /clear audio cache/i });
@@ -250,19 +263,24 @@ describe("OfflineReadinessSection", () => {
     });
   });
 
-  it("disables Prepare and Verify buttons during rebuild", async () => {
-    installStorageEstimate(9000, 10_000);
+  it("does NOT disable the primary/secondary buttons during audio-cache rebuild", async () => {
+    // Regression: PR #37 originally folded rebuildingCache into anyActionRunning,
+    // leaving all four buttons disabled any time the audio-cache pre-generation
+    // runner was active — which is the normal background state whenever a voice
+    // clone is configured. This test locks the fix: rebuild only disables Clear.
+    installStorageEstimate(500, 10_000); // healthy — no Clear button
     seedSettings();
-    // Simulate an active rebuild
     useAudioCacheStore.getState().start("patient", 100, "en", "fp-abc");
 
-    render(<OfflineReadinessSection t={light} />);
+    render(<OfflineReadinessSection t={light} theme="light" />);
 
     await waitFor(() => {
-      const prepareBtn = screen.getByRole("button", { name: /prepare for offline/i });
-      const verifyBtn = screen.getByRole("button", { name: /verify without downloading/i });
-      expect(prepareBtn).toHaveProperty("disabled", true);
-      expect(verifyBtn).toHaveProperty("disabled", true);
+      expect(
+        screen.getByRole("button", { name: PRIMER_NAME }),
+      ).toHaveProperty("disabled", false);
+      expect(
+        screen.getByRole("button", { name: VERIFY_NAME }),
+      ).toHaveProperty("disabled", false);
     });
   });
 });

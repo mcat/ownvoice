@@ -32,7 +32,11 @@ export async function drivePrimer(opts?: {
           .getState()
           .reportProgress(ev.model, ev.file, ev.loaded, ev.total);
       } else if (ev.type === "model-verified") {
-        useOfflineStore.getState().setModelVerified(ev.model, ev.ok);
+        // After a primer run, files are either present+ok or present+failed.
+        // "not-primed" only applies before a primer has ever run.
+        useOfflineStore
+          .getState()
+          .setModelVerified(ev.model, ev.ok ? "verified" : "needs-retry");
       } else if (ev.type === "complete") {
         downloadedCount = ev.downloadedCount;
         useOfflineStore.getState().markPrimerComplete();

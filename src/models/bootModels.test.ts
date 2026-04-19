@@ -237,22 +237,58 @@ describe("bootModels", () => {
 });
 
 describe("verifyAllOnBoot", () => {
-  it("populates offlineStore.verified with per-model results", async () => {
+  it("marks models 'verified' when integrity passes", async () => {
     const { verifyAllOnBoot } = await import("./bootModels");
     const { useOfflineStore } = await import("../stores/offlineStore");
     useOfflineStore.getState().reset();
 
-    mockVerifyOPFSCache.mockImplementation(async (id: string) => ({
-      ok: id !== "llm",
-      files: [],
+    mockVerifyOPFSCache.mockImplementation(async () => ({
+      ok: true,
+      files: [{ name: "a.onnx", ok: true }],
     }));
 
     await verifyAllOnBoot();
+    const v = useOfflineStore.getState().verified;
+    expect(v.tts).toBe("verified");
+    expect(v.llm).toBe("verified");
+    expect(v.stt).toBe("verified");
+  });
 
-    expect(useOfflineStore.getState().verified).toEqual({
-      tts: true,
-      llm: false,
-      stt: true,
-    });
+  it("marks models 'not-primed' when every file is missing (fresh install, OPFS empty)", async () => {
+    const { verifyAllOnBoot } = await import("./bootModels");
+    const { useOfflineStore } = await import("../stores/offlineStore");
+    useOfflineStore.getState().reset();
+
+    mockVerifyOPFSCache.mockImplementation(async () => ({
+      ok: false,
+      files: [
+        { name: "a.onnx", ok: false, reason: "file missing from OPFS" },
+        { name: "b.onnx_data", ok: false, reason: "file missing from OPFS" },
+      ],
+    }));
+
+    await verifyAllOnBoot();
+    const v = useOfflineStore.getState().verified;
+    expect(v.tts).toBe("not-primed");
+    expect(v.llm).toBe("not-primed");
+    expect(v.stt).toBe("not-primed");
+  });
+
+  it("marks models 'needs-retry' when some files are present but fail verification", async () => {
+    const { verifyAllOnBoot } = await import("./bootModels");
+    const { useOfflineStore } = await import("../stores/offlineStore");
+    useOfflineStore.getState().reset();
+
+    mockVerifyOPFSCache.mockImplementation(async () => ({
+      ok: false,
+      files: [
+        { name: "a.onnx", ok: false, reason: "size 50 != expected 100" },
+        { name: "b.onnx_data", ok: false, reason: "file missing from OPFS" },
+      ],
+    }));
+
+    await verifyAllOnBoot();
+    const v = useOfflineStore.getState().verified;
+    expect(v.tts).toBe("needs-retry");
   });
 });
