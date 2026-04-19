@@ -92,7 +92,7 @@ export async function resumableDownload(opts: ResumableDownloadOpts): Promise<vo
   const reader = response.body?.getReader();
   if (!reader) {
     await writable.close();
-    throw new Error("response has no body");
+    throw new Error("No response body");
   }
 
   try {
