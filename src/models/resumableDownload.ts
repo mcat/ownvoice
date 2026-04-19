@@ -1,3 +1,5 @@
+import { registerResumeSync } from "./backgroundSyncResume";
+
 export interface ResumableProgress {
   bytesWritten: number;
   expectedSize: number;
@@ -114,6 +116,9 @@ export async function resumableDownload(opts: ResumableDownloadOpts): Promise<vo
   } catch (err) {
     await writable.close();
     await writeProgress(dir, filename, { bytesWritten, expectedSize });
+    // Fire-and-forget: register BackgroundSync so the SW can wake on
+    // connectivity even if the app tab closes before the user retries.
+    void registerResumeSync();
     throw err;
   }
 
@@ -121,6 +126,7 @@ export async function resumableDownload(opts: ResumableDownloadOpts): Promise<vo
 
   if (bytesWritten !== expectedSize) {
     await writeProgress(dir, filename, { bytesWritten, expectedSize });
+    void registerResumeSync();
     throw new Error(
       `size mismatch after download: got ${bytesWritten}, expected ${expectedSize}`,
     );
