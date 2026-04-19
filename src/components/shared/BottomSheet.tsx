@@ -39,7 +39,7 @@ export interface BottomSheetProps {
 export function BottomSheet({
   onClose,
   t,
-  heightVh = "auto",
+  heightVh = 88,
   zIndex = zScale.sheet,
   children,
 }: BottomSheetProps) {

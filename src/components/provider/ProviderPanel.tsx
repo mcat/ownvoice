@@ -81,7 +81,7 @@ export function ProviderPanel({
   };
 
   return (
-    <BottomSheet onClose={onClose} t={t} heightVh={80}>
+    <BottomSheet onClose={onClose} t={t}>
       <BottomSheet.Header>
         <BottomSheet.Title>Care Team</BottomSheet.Title>
         <BottomSheet.CloseButton aria-label="Close panel" />

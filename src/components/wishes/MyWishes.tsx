@@ -115,7 +115,7 @@ export function MyWishes({
     );
 
     return (
-      <BottomSheet onClose={onClose} t={t} heightVh={92}>
+      <BottomSheet onClose={onClose} t={t}>
         <BottomSheet.Header>
           <BottomSheet.Title>{patientName}'s Wishes</BottomSheet.Title>
           <BottomSheet.CloseButton aria-label="Close" />
@@ -207,7 +207,7 @@ export function MyWishes({
   /* ── Active topic screen ───────────────────────────────── */
 
   return (
-    <BottomSheet onClose={onClose} t={t} heightVh={92}>
+    <BottomSheet onClose={onClose} t={t}>
       <BottomSheet.Header>
         <BottomSheet.Title>My Wishes</BottomSheet.Title>
         <BottomSheet.CloseButton aria-label="Close" />

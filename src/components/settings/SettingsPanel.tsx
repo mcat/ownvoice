@@ -55,7 +55,7 @@ export function SettingsPanel({
   }
 
   return (
-    <BottomSheet onClose={onClose} t={t} heightVh={85} zIndex={z.sheetStacked}>
+    <BottomSheet onClose={onClose} t={t} zIndex={z.sheetStacked}>
       <BottomSheet.Header>
         {/* Drag handle — visual affordance only, not interactive (gestures are disabled). */}
         <div

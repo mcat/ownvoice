@@ -145,7 +145,7 @@ export function ListenPanel({
   };
 
   return (
-    <BottomSheet onClose={onClose} t={t} heightVh={80}>
+    <BottomSheet onClose={onClose} t={t}>
       <BottomSheet.Header>
         <BottomSheet.Title>Listen</BottomSheet.Title>
         <BottomSheet.CloseButton aria-label="Close panel" />
