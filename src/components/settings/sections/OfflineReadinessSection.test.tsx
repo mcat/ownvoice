@@ -3,7 +3,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/preact";
 import { OfflineReadinessSection } from "./OfflineReadinessSection";
 import { useOfflineStore } from "../../../stores/offlineStore";
+import { useAudioCacheStore } from "../../../stores/audioCacheStore";
+import { useSettingsStore } from "../../../stores/settingsStore";
 import { light } from "../../../theme/tokens";
+import type { AppSettings } from "../../../types";
 
 const drivePrimerMock = vi.fn(async () => {
   const s = useOfflineStore.getState();
@@ -42,9 +45,19 @@ function installStorageEstimate(usage: number, quota: number) {
   });
 }
 
+/** Seed settingsStore with enough for runPreGeneration to fire. */
+function seedSettings() {
+  useSettingsStore.setState({
+    cfg: { patientLang: "en", providers: [] } as unknown as AppSettings,
+    speakerData: { embedding: [1, 2, 3] },
+  });
+}
+
 describe("OfflineReadinessSection", () => {
   beforeEach(() => {
     useOfflineStore.getState().reset();
+    useAudioCacheStore.getState().abortAll();
+    useSettingsStore.getState().reset();
     drivePrimerMock.mockClear();
     verifyAllOnBootMock.mockClear();
     clearAudioCacheMock.mockClear();
@@ -125,5 +138,70 @@ describe("OfflineReadinessSection", () => {
     });
     // No cfg/speakerData seeded in the store, so runPreGeneration should be skipped.
     expect(runPreGenerationMock).not.toHaveBeenCalled();
+  });
+
+  it("clicking Clear triggers abort, clearAudioCache, and runPreGeneration in order", async () => {
+    installStorageEstimate(9000, 10_000);
+    seedSettings();
+    render(<OfflineReadinessSection t={light} />);
+
+    const btn = await screen.findByRole("button", { name: /clear audio cache/i });
+    fireEvent.click(btn);
+
+    await waitFor(() => {
+      expect(abortRunnerMock).toHaveBeenCalled();
+      expect(clearAudioCacheMock).toHaveBeenCalled();
+      expect(runPreGenerationMock).toHaveBeenCalled();
+    });
+  });
+
+  it("shows 'Rebuilding: N / M' during rebuild phase and keeps button disabled", async () => {
+    installStorageEstimate(9000, 10_000);
+    seedSettings();
+    // Pre-seed the audio cache store to simulate an active rebuild
+    useAudioCacheStore.getState().start("patient", 150, "en", "fp-abc");
+    useAudioCacheStore.getState().progress("patient", "Hello", 42);
+
+    render(<OfflineReadinessSection t={light} />);
+
+    await waitFor(() => {
+      const btn = screen.getByRole("button", { name: /rebuilding/i });
+      expect(btn).toBeTruthy();
+      expect(btn.textContent).toMatch(/42\s*\/\s*150/);
+      expect(btn).toHaveProperty("disabled", true);
+    });
+  });
+
+  it("returns to 'Clear audio cache' when rebuild completes", async () => {
+    installStorageEstimate(9000, 10_000);
+    seedSettings();
+    // Start a rebuild then complete it
+    useAudioCacheStore.getState().start("patient", 10, "en", "fp-abc");
+    useAudioCacheStore.getState().progress("patient", "Done", 10);
+    useAudioCacheStore.getState().finish("patient");
+
+    render(<OfflineReadinessSection t={light} />);
+
+    await waitFor(() => {
+      const btn = screen.getByRole("button", { name: /clear audio cache/i });
+      expect(btn).toBeTruthy();
+      expect(btn).toHaveProperty("disabled", false);
+    });
+  });
+
+  it("disables Prepare and Verify buttons during rebuild", async () => {
+    installStorageEstimate(9000, 10_000);
+    seedSettings();
+    // Simulate an active rebuild
+    useAudioCacheStore.getState().start("patient", 100, "en", "fp-abc");
+
+    render(<OfflineReadinessSection t={light} />);
+
+    await waitFor(() => {
+      const prepareBtn = screen.getByRole("button", { name: /prepare for offline/i });
+      const verifyBtn = screen.getByRole("button", { name: /verify without downloading/i });
+      expect(prepareBtn).toHaveProperty("disabled", true);
+      expect(verifyBtn).toHaveProperty("disabled", true);
+    });
   });
 });

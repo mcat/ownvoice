@@ -8,6 +8,7 @@ import { clearAudioCache } from "../../../models/audioCache";
 import * as audioCacheRunner from "../../../models/audioCacheRunner";
 import { useOfflineStore } from "../../../stores/offlineStore";
 import { useSettingsStore } from "../../../stores/settingsStore";
+import { useAudioCacheStore } from "../../../stores/audioCacheStore";
 import { useStorageHealth } from "../../../hooks/useStorageHealth";
 
 interface Props {
@@ -32,12 +33,27 @@ export function OfflineReadinessSection({ t }: Props) {
   const cfg = useSettingsStore((s) => s.cfg);
   const speakerData = useSettingsStore((s) => s.speakerData);
 
+  const cacheRuns = useAudioCacheStore((s) => s.runs);
+  const rebuildingCache = Object.values(cacheRuns).some(
+    (r) => r != null && r.status === "running",
+  );
+  /** Aggregate progress across all running speakers. */
+  const rebuildCurrent = Object.values(cacheRuns).reduce(
+    (sum, r) => sum + (r?.status === "running" ? r.current : 0),
+    0,
+  );
+  const rebuildTotal = Object.values(cacheRuns).reduce(
+    (sum, r) => sum + (r?.status === "running" ? r.total : 0),
+    0,
+  );
+
   const [error, setError] = useState<string | null>(null);
   const [verifying, setVerifying] = useState(false);
   const [clearingCache, setClearingCache] = useState(false);
   const health = useStorageHealth();
 
-  const anyActionRunning = primerRunning || verifying || clearingCache;
+  const anyActionRunning =
+    primerRunning || verifying || clearingCache || rebuildingCache;
   const warnColor = "#DC2626";
 
   async function runPrimer() {
@@ -205,7 +221,11 @@ export function OfflineReadinessSection({ t }: Props) {
             fontFamily: "inherit",
           }}
         >
-          {clearingCache ? "Clearing…" : "Clear audio cache"}
+          {clearingCache
+            ? "Clearing…"
+            : rebuildingCache
+              ? `Rebuilding: ${rebuildCurrent} / ${rebuildTotal}`
+              : "Clear audio cache"}
         </Btn>
       )}
     </Section>
