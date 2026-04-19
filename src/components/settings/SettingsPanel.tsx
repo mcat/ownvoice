@@ -1,15 +1,12 @@
 import { useState, useId } from "preact/hooks";
 import type { AppSettings, FallbackVoice, Provider } from "../../types";
 import type { ThemeTokens, ThemeName } from "../../theme/tokens";
-import { LANGS } from "../../data/phrases";
 import { Btn } from "../shared/Btn";
 import { VoiceCapture } from "../shared/VoiceCapture";
-import { FallbackVoicePicker } from "../shared/FallbackVoicePicker";
 import { VoiceCacheProgress } from "./VoiceCacheProgress";
 import { useSettingsStore } from "../../stores/settingsStore";
-import { speak } from "../../speak";
-import type { Speaker } from "../../types";
 import { useDialog } from "../../hooks/useDialog";
+import { PatientInfoSection } from "./sections/PatientInfoSection";
 
 const EMOJIS = [
   "\uD83D\uDC69\u200D\u2695\uFE0F", // woman health worker
@@ -59,14 +56,6 @@ export function SettingsPanel({
   const titleId = useId();
   const { dialogRef } = useDialog({ onClose, titleId });
 
-  function previewClonedVoice() {
-    const embedding = useSettingsStore.getState().speakerData;
-    if (!embedding) return;
-    const text = cfg.patientName ? `Hi, I'm ${cfg.patientName}` : "Hello, this is my voice";
-    const speaker: Speaker = { name: cfg.patientName || "Patient", type: "patient", embedding, lang: cfg.patientLang };
-    speak(text, speaker);
-  }
-
   const providersChanged =
     providers.length !== cfg.providers.length ||
     providers.some(
@@ -83,8 +72,6 @@ export function SettingsPanel({
     patientVoice !== cfg.patientVoice ||
     (fallbackVoice?.voiceURI ?? null) !== (cfg.fallbackVoice?.voiceURI ?? null) ||
     providersChanged;
-
-  const selectedLang = LANGS.find((l) => l.code === cfg.patientLang);
 
   function save() {
     onUpdate({ ...cfg, patientName: name, bed, providers, patientVoice, fallbackVoice });
@@ -208,116 +195,21 @@ export function SettingsPanel({
         </div>
 
         <div style={{ padding: "0 24px" }}>
-          {/* Patient info section */}
-          <Section label="Patient Information" t={t}>
-            <label htmlFor="settings-name" style={labelStyle(t)}>Name</label>
-            <input
-              id="settings-name"
-              type="text"
-              value={name}
-              onInput={(e) => setName((e.target as HTMLInputElement).value)}
-              style={inputStyle(t, isDark)}
-            />
-
-            <label htmlFor="settings-bed" style={{ ...labelStyle(t), marginTop: 16 }}>
-              Bed / Room
-            </label>
-            <input
-              id="settings-bed"
-              type="text"
-              value={bed}
-              onInput={(e) => setBed((e.target as HTMLInputElement).value)}
-              style={inputStyle(t, isDark)}
-            />
-
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginTop: 16,
-              }}
-            >
-              <span style={{ fontSize: 15, color: t.sub }}>Language</span>
-              <span style={{ fontSize: 15, color: t.text, fontWeight: 500 }}>
-                {selectedLang
-                  ? `${selectedLang.flag} ${selectedLang.label}`
-                  : cfg.patientLang}
-              </span>
-            </div>
-
-            <div style={{ marginTop: 16 }}>
-              <div style={labelStyle(t)}>Voice</div>
-              <VoiceCapture
-                label="Patient"
-                hasVoice={patientVoice}
-                hasEmbedding={!!useSettingsStore.getState().speakerData}
-                onCapture={(_blob, embedding) => {
-                  setPatientVoice(true);
-                  if (embedding) useSettingsStore.getState().setSpeakerData(embedding);
-                }}
-                onRemove={() => {
-                  setPatientVoice(false);
-                  useSettingsStore.getState().setSpeakerData(null);
-                }}
-                onPreview={previewClonedVoice}
-                compact
-                color={{
-                  text: t.text,
-                  sub: t.sub,
-                  muted: t.muted,
-                  border: isDark ? "rgba(255,255,255,0.12)" : "#E5E7EB",
-                  cardBg: isDark ? "rgba(255,255,255,0.05)" : "#FFFFFF",
-                }}
-              />
-              <VoiceCacheProgress
-                speakerKey="patient"
-                speakerLabel={cfg.patientName || "Patient"}
-                cfg={cfg}
-                patientSpeakerData={useSettingsStore.getState().speakerData}
-              />
-            </div>
-
-            <div style={{ marginTop: 20 }}>
-              <div style={labelStyle(t)}>Backup voice</div>
-              <p style={{ fontSize: 13, color: t.muted, margin: "0 0 10px" }}>
-                System voice used while the voice clone loads.
-                Tap to preview.
-              </p>
-              <FallbackVoicePicker
-                selectedVoice={fallbackVoice}
-                onSelect={setFallbackVoice}
-                lang={cfg.patientLang}
-                color={{
-                  text: t.text,
-                  sub: t.sub,
-                  muted: t.muted,
-                  border: isDark ? "rgba(255,255,255,0.12)" : "#E5E7EB",
-                  cardBg: isDark ? "rgba(255,255,255,0.05)" : "#FFFFFF",
-                }}
-              />
-            </div>
-
-            {hasChanges && (
-              <Btn
-                onClick={save}
-                style={{
-                  marginTop: 20,
-                  width: "100%",
-                  padding: "14px 20px",
-                  borderRadius: 12,
-                  border: "none",
-                  background: "#2563EB",
-                  color: "#FFFFFF",
-                  fontSize: 16,
-                  fontWeight: 600,
-                  fontFamily: "inherit",
-                }}
-              >
-                Save changes
-              </Btn>
-            )}
-          </Section>
+          <PatientInfoSection
+            cfg={cfg}
+            name={name}
+            bed={bed}
+            patientVoice={patientVoice}
+            fallbackVoice={fallbackVoice}
+            hasChanges={hasChanges}
+            onNameChange={setName}
+            onBedChange={setBed}
+            onPatientVoiceChange={setPatientVoice}
+            onFallbackVoiceChange={setFallbackVoice}
+            onSave={save}
+            t={t}
+            theme={theme}
+          />
 
           {/* Care team section */}
           <Section label="Care Team" t={t}>
