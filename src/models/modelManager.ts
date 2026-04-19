@@ -1,4 +1,6 @@
 import type { ModelId, ModelStatus, LoadProgress } from "./types";
+import type { ManifestModel } from "./modelsManifest";
+import type { IntegrityReport } from "./integrityCheck";
 
 interface ModelEntry {
   status: ModelStatus;
@@ -101,83 +103,87 @@ class ModelManager {
   }
 
   /**
-   * Download a model file and cache it in OPFS.
-   * Returns the OPFS file path for the worker to load.
+   * Download a model file and cache it in OPFS using resumable streaming.
+   * If a partial file + progress marker exist from a prior attempt, resumes
+   * with `Range: bytes=N-` — survives spotty wifi across dropouts.
+   *
+   * `expectedSize` comes from the manifest. Mid-download truncation is
+   * detected at close time and preserved as a progress marker for the next
+   * attempt to pick up where this one died.
    */
   async downloadAndCache(
     id: ModelId,
     url: string,
     filename: string,
+    expectedSize: number,
   ): Promise<File> {
-    this.updateModel(id, { status: "downloading" });
+    this.updateModel(id, { status: "downloading", total: expectedSize });
 
-    // Check OPFS cache first
     try {
       const root = await navigator.storage.getDirectory();
-      const modelsDir = await root.getDirectoryHandle("models", {
-        create: true,
-      });
+      const modelsDir = await root.getDirectoryHandle("models", { create: true });
       const modelDir = await modelsDir.getDirectoryHandle(id, { create: true });
 
-      // Try to read from cache
+      // Fast path: fully present and size matches.
       try {
-        const fileHandle = await modelDir.getFileHandle(filename);
-        const file = await fileHandle.getFile();
-        if (file.size > 0) {
+        const existing = await modelDir.getFileHandle(filename);
+        const file = await existing.getFile();
+        if (file.size === expectedSize) {
           console.log(`[OwnVoice] ${id}/${filename} loaded from OPFS cache`);
-          this.updateModel(id, {
-            loaded: file.size,
-            total: file.size,
-          });
+          this.updateModel(id, { loaded: expectedSize });
           return file;
         }
       } catch {
-        // Not cached, download
+        // Missing — proceed to download.
       }
 
-      // Download with progress
-      console.log(`[OwnVoice] Downloading ${id}/${filename}...`);
-      const response = await fetch(url + filename);
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const total = Number(response.headers.get("content-length")) || 0;
-      this.updateModel(id, { total });
-
-      const reader = response.body?.getReader();
-      if (!reader) throw new Error("No response body");
-
-      const chunks: Uint8Array[] = [];
-      let loaded = 0;
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        chunks.push(value);
-        loaded += value.length;
-        this.updateModel(id, { loaded });
-      }
-
-      // Combine chunks
-      const blob = new Blob(chunks as BlobPart[]);
-
-      // Cache in OPFS
-      const fileHandle = await modelDir.getFileHandle(filename, {
-        create: true,
+      const { resumableDownload } = await import("./resumableDownload");
+      await resumableDownload({
+        url: url + filename,
+        dir: modelDir,
+        filename,
+        expectedSize,
+        onProgress: ({ bytesWritten }) => {
+          this.updateModel(id, { loaded: bytesWritten });
+        },
       });
-      const writable = await fileHandle.createWritable();
-      await writable.write(blob);
-      await writable.close();
 
+      const handle = await modelDir.getFileHandle(filename);
+      const file = await handle.getFile();
       console.log(
-        `[OwnVoice] ${id}/${filename} cached in OPFS (${(loaded / 1e6).toFixed(1)} MB)`,
+        `[OwnVoice] ${id}/${filename} cached in OPFS (${(file.size / 1e6).toFixed(1)} MB)`,
       );
-      return new File([blob], filename);
+      return file;
     } catch (err) {
       const message = err instanceof Error ? err.message : "Download failed";
       this.updateModel(id, { status: "error", error: message });
       throw err;
+    }
+  }
+
+  /**
+   * Verify every file of a model against the manifest. Cheap (reads first
+   * 2 bytes per ONNX file + full text for JSON), safe to run on every boot.
+   */
+  async verifyOPFSCache(
+    id: ModelId,
+    model: ManifestModel,
+  ): Promise<IntegrityReport> {
+    const { verifyModel } = await import("./integrityCheck");
+    try {
+      const root = await navigator.storage.getDirectory();
+      const modelsDir = await root.getDirectoryHandle("models", { create: true });
+      const modelDir = await modelsDir.getDirectoryHandle(id, { create: true });
+      return verifyModel(modelDir, model);
+    } catch {
+      return {
+        ok: false,
+        files: model.files.map((f) => ({
+          name: f.name,
+          ok: false,
+          reason: "OPFS unavailable",
+        })),
+      };
     }
   }
 

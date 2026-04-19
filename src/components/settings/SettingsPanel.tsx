@@ -6,6 +6,7 @@ import { BottomSheet } from "../shared/BottomSheet";
 import { PatientInfoSection } from "./sections/PatientInfoSection";
 import { CareTeamSection } from "./sections/CareTeamSection";
 import { AboutSection } from "./sections/AboutSection";
+import { OfflineReadinessSection } from "./sections/OfflineReadinessSection";
 import { ResetSection } from "./sections/ResetSection";
 
 interface SettingsPanelProps {
@@ -100,6 +101,7 @@ export function SettingsPanel({
             theme={theme}
           />
           <AboutSection t={t} />
+          <OfflineReadinessSection t={t} />
           <ResetSection onReset={onReset} t={t} theme={theme} />
         </div>
       </BottomSheet.Body>

@@ -55,6 +55,17 @@ The app is decomposed into focused modules. Colocated `*.test.ts(x)` files live 
 2. `speak()` tries in order: GPU Chatterbox Turbo (if `speaker.embedding` and `isGPUReady()`) → WASM TTS worker → Web Speech API → confirmation tone. Post-processes raw PCM before playback.
 3. Provider taps use `speakAsProvider` — no embedding, so always Web Speech or tone.
 
+### Offline storage
+
+OPFS is the authoritative store for model weights after the primer runs. The service worker intercepts `/models/*` fetches and serves directly from OPFS (single copy of the bytes). `public/models-manifest.json` is the source of truth for expected files + byte sizes; `src/models/resumableDownload.ts` streams downloads with `Range:` resumption; `src/models/integrityCheck.ts` validates ONNX magic + size on boot.
+
+- **`loadManifest()` → `ModelsManifest`** — fetched once on boot (`cache: "no-store"`)
+- **`primeOffline(manifest)`** — async generator yielding `PrimerEvent`s; invoked from Settings "Prepare for offline"
+- **`verifyAllOnBoot()`** — cheap parallel integrity pass run at app start; populates `offlineStore.verified`
+- **SW strategy split** — stale-while-revalidate for `/`, `/index.html`, `/src/*`, `/models-manifest.json`; OPFS proxy for `/models/*`; cache-first-immutable for everything else. Bump `CACHE_NAME` in `public/sw.js` on every SW change.
+
+Clinicians use the "Prepare for offline" button in Settings before shifts to guarantee offline readiness. `navigator.storage.persist()` is called once by `ModelManager.init` to protect the whole origin from eviction.
+
 ### Inline styling is intentional (for now)
 
 Components use inline style objects with tokens from the `theme` module. This keeps theming dynamic and dependency-free. Production may move to CSS modules or equivalent.

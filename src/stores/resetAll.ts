@@ -1,6 +1,7 @@
 import { useSettingsStore } from "./settingsStore";
 import { useConversationStore } from "./conversationStore";
 import { useUIStore } from "./uiStore";
+import { useOfflineStore } from "./offlineStore";
 import { clearAll } from "../store";
 import { clearAudioCache } from "../models/audioCache";
 import * as audioCacheRunner from "../models/audioCacheRunner";
@@ -32,6 +33,7 @@ export async function resetAll(): Promise<void> {
   useSettingsStore.getState().reset();
   useConversationStore.getState().clear();
   useUIStore.getState().resetUI();
+  useOfflineStore.getState().reset();
 
   // 3. localStorage
   localStorage.removeItem("ov-theme");

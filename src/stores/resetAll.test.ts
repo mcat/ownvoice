@@ -1,6 +1,7 @@
 import { useSettingsStore } from "./settingsStore";
 import { useConversationStore } from "./conversationStore";
 import { useUIStore } from "./uiStore";
+import { useOfflineStore } from "./offlineStore";
 
 // Mock external deps that touch OPFS / workers
 vi.mock("../store", () => ({
@@ -102,6 +103,14 @@ describe("resetAll", () => {
     const ui = useUIStore.getState();
     expect(ui.tab).toBe("quick");
     expect(ui.wishesOpen).toBe(false);
+  });
+
+  it("clears offlineStore", async () => {
+    useOfflineStore.getState().setModelVerified("tts", true);
+    useOfflineStore.getState().markPrimerComplete();
+    await resetAll();
+    expect(useOfflineStore.getState().verified).toEqual({});
+    expect(useOfflineStore.getState().lastVerifiedAt).toBeNull();
   });
 
   it("clears localStorage theme override", async () => {

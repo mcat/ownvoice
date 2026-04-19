@@ -315,18 +315,42 @@ function createOPFSMock() {
         const buf = store.get(path) ?? new ArrayBuffer(0);
         return new File([buf], path.split("/").pop() ?? "");
       },
-      createWritable: async () => ({
-        write: async (data: unknown) => {
-          if (typeof data === "string") {
-            store.set(path, new TextEncoder().encode(data).buffer as ArrayBuffer);
-          } else if (data instanceof Blob) {
-            store.set(path, await data.arrayBuffer());
-          } else if (data instanceof ArrayBuffer) {
-            store.set(path, data);
-          }
-        },
-        close: async () => {},
-      }),
+      createWritable: async (writeOpts?: { keepExistingData?: boolean }) => {
+        let buf = writeOpts?.keepExistingData
+          ? new Uint8Array(store.get(path) ?? new ArrayBuffer(0))
+          : new Uint8Array(0);
+        let cursor = buf.byteLength;
+        return {
+          seek: async (offset: number) => {
+            cursor = offset;
+          },
+          write: async (data: unknown) => {
+            let chunk: Uint8Array;
+            if (typeof data === "string") {
+              chunk = new TextEncoder().encode(data);
+            } else if (data instanceof Blob) {
+              chunk = new Uint8Array(await data.arrayBuffer());
+            } else if (data instanceof Uint8Array) {
+              chunk = data;
+            } else if (data instanceof ArrayBuffer) {
+              chunk = new Uint8Array(data);
+            } else {
+              return;
+            }
+            const needed = cursor + chunk.byteLength;
+            if (needed > buf.byteLength) {
+              const next = new Uint8Array(needed);
+              next.set(buf, 0);
+              buf = next;
+            }
+            buf.set(chunk, cursor);
+            cursor += chunk.byteLength;
+          },
+          close: async () => {
+            store.set(path, buf.buffer.slice(0, buf.byteLength));
+          },
+        };
+      },
     };
   }
 
@@ -336,9 +360,10 @@ function createOPFSMock() {
         makeFileHandle(`${prefix}/${name}`, opts),
       getDirectoryHandle: async (name: string, _opts?: { create?: boolean }) =>
         makeDirHandle(`${prefix}/${name}`),
-      removeEntry: async () => {
-        for (const key of store.keys()) {
-          if (key.startsWith(`${prefix}/`)) store.delete(key);
+      removeEntry: async (name: string) => {
+        const target = `${prefix}/${name}`;
+        for (const key of [...store.keys()]) {
+          if (key === target || key.startsWith(`${target}/`)) store.delete(key);
         }
       },
     };
@@ -422,15 +447,14 @@ describe("ModelManager — markComplete", () => {
 });
 
 describe("ModelManager — downloadAndCache", () => {
-  it("returns cached file when it already exists in OPFS", async () => {
+  it("returns cached file when it already exists in OPFS with matching size", async () => {
     const opfs = createOPFSMock();
-    // Pre-populate OPFS cache with a file
     const data = new Uint8Array([1, 2, 3, 4]);
     opfs.store.set("/models/tts/model.onnx", data.buffer as ArrayBuffer);
     opfs.install();
 
     const mgr = getModelManager();
-    const file = await mgr.downloadAndCache("tts", "/cdn/", "model.onnx");
+    const file = await mgr.downloadAndCache("tts", "/cdn/", "model.onnx", 4);
     expect(file).toBeInstanceOf(File);
     expect(file.size).toBe(4);
   });
@@ -439,33 +463,28 @@ describe("ModelManager — downloadAndCache", () => {
     const opfs = createOPFSMock();
     opfs.install();
 
-    // Mock fetch with streaming body
     const mockData = new Uint8Array([10, 20, 30, 40, 50]);
-    const mockFetch = vi.fn().mockResolvedValue({
-      ok: true,
-      headers: { get: () => String(mockData.length) },
-      body: {
-        getReader: () => ({
-          read: vi
-            .fn()
-            .mockResolvedValueOnce({ done: false, value: mockData })
-            .mockResolvedValueOnce({ done: true }),
+    const mockFetch = vi.fn(
+      async () =>
+        new Response(mockData, {
+          status: 200,
+          headers: { "content-length": "5" },
         }),
-      },
-    });
+    );
     vi.stubGlobal("fetch", mockFetch);
 
     const mgr = getModelManager();
     const cb = vi.fn();
     mgr.onProgress(cb);
 
-    const file = await mgr.downloadAndCache("tts", "/cdn/", "model.onnx");
+    const file = await mgr.downloadAndCache("tts", "/cdn/", "model.onnx", 5);
 
     expect(file).toBeInstanceOf(File);
-    expect(mockFetch).toHaveBeenCalledWith("/cdn/model.onnx");
-    // Progress callback should have been called (status=downloading + loaded updates)
+    expect(mockFetch).toHaveBeenCalledWith(
+      "/cdn/model.onnx",
+      expect.objectContaining({ cache: "no-store" }),
+    );
     expect(cb).toHaveBeenCalled();
-    // The file should now be cached in OPFS
     expect(opfs.store.has("/models/tts/model.onnx")).toBe(true);
   });
 
@@ -475,60 +494,137 @@ describe("ModelManager — downloadAndCache", () => {
 
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue({
-        ok: false,
-        status: 404,
-        statusText: "Not Found",
-      }),
+      vi.fn(
+        async () =>
+          new Response(null, { status: 404, statusText: "Not Found" }),
+      ),
     );
 
     const mgr = getModelManager();
     await expect(
-      mgr.downloadAndCache("tts", "/cdn/", "model.onnx"),
-    ).rejects.toThrow("HTTP 404");
+      mgr.downloadAndCache("tts", "/cdn/", "model.onnx", 5),
+    ).rejects.toThrow(/HTTP 404/);
 
     const progress = mgr.getProgress();
     const tts = progress.find((p) => p.model === "tts");
     expect(tts?.status).toBe("error");
-  });
-
-  it("sets error status when response body is missing", async () => {
-    const opfs = createOPFSMock();
-    opfs.install();
-
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue({
-        ok: true,
-        headers: { get: () => "0" },
-        body: null,
-      }),
-    );
-
-    const mgr = getModelManager();
-    await expect(
-      mgr.downloadAndCache("tts", "/cdn/", "model.onnx"),
-    ).rejects.toThrow("No response body");
   });
 
   it("handles non-Error exceptions in the download path", async () => {
     const opfs = createOPFSMock();
     opfs.install();
 
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockRejectedValue("string error"),
-    );
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue("string error"));
 
     const mgr = getModelManager();
     await expect(
-      mgr.downloadAndCache("tts", "/cdn/", "model.onnx"),
+      mgr.downloadAndCache("tts", "/cdn/", "model.onnx", 5),
     ).rejects.toBe("string error");
 
     const progress = mgr.getProgress();
     const tts = progress.find((p) => p.model === "tts");
     expect(tts?.status).toBe("error");
     expect(tts?.error).toBe("Download failed");
+  });
+});
+
+describe("ModelManager — verifyOPFSCache", () => {
+  it("returns ok when all manifest files pass integrity", async () => {
+    const opfs = createOPFSMock();
+    const good = new Uint8Array(10);
+    good[0] = 0x08;
+    good[1] = 0x01;
+    opfs.store.set("/models/tts/good.onnx", good.buffer.slice(0));
+    opfs.install();
+
+    const mgr = getModelManager();
+    const report = await mgr.verifyOPFSCache("tts", {
+      baseUrl: "/models/tts/",
+      files: [{ name: "good.onnx", size: 10, magic: "onnx" }],
+    });
+    expect(report.ok).toBe(true);
+  });
+
+  it("returns not-ok with per-file reasons when a file is missing", async () => {
+    const opfs = createOPFSMock();
+    opfs.install();
+    const mgr = getModelManager();
+    const report = await mgr.verifyOPFSCache("tts", {
+      baseUrl: "/models/tts/",
+      files: [{ name: "missing.onnx", size: 10, magic: "onnx" }],
+    });
+    expect(report.ok).toBe(false);
+    expect(report.files[0].reason).toMatch(/missing/i);
+  });
+});
+
+describe("ModelManager — downloadAndCache streams to OPFS", () => {
+  it("writes streamed chunks to OPFS", async () => {
+    const opfs = createOPFSMock();
+    opfs.install();
+
+    const body = new ReadableStream({
+      async start(c) {
+        c.enqueue(new Uint8Array([1, 2, 3]));
+        c.enqueue(new Uint8Array([4, 5]));
+        c.close();
+      },
+    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        async () =>
+          new Response(body, {
+            status: 200,
+            headers: { "content-length": "5" },
+          }),
+      ),
+    );
+
+    const mgr = getModelManager();
+    const file = await mgr.downloadAndCache("tts", "/cdn/", "model.onnx", 5);
+    expect(file.size).toBe(5);
+    expect(new Uint8Array(opfs.store.get("/models/tts/model.onnx")!)).toEqual(
+      new Uint8Array([1, 2, 3, 4, 5]),
+    );
+  });
+
+  it("resumes from a partial download", async () => {
+    const opfs = createOPFSMock();
+    opfs.store.set(
+      "/models/tts/model.onnx",
+      new Uint8Array([1, 2, 3]).buffer as ArrayBuffer,
+    );
+    opfs.store.set(
+      "/models/tts/model.onnx._progress.json",
+      new TextEncoder()
+        .encode(JSON.stringify({ bytesWritten: 3, expectedSize: 5 }))
+        .slice().buffer,
+    );
+    opfs.install();
+
+    const fetchMock = vi.fn(async (_url, init?: RequestInit) => {
+      const range = new Headers(init?.headers).get("range");
+      if (range !== "bytes=3-") throw new Error(`bad range: ${range}`);
+      const body = new ReadableStream({
+        start(c) {
+          c.enqueue(new Uint8Array([4, 5]));
+          c.close();
+        },
+      });
+      return new Response(body, {
+        status: 206,
+        headers: { "content-length": "2", "content-range": "bytes 3-4/5" },
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const mgr = getModelManager();
+    await mgr.downloadAndCache("tts", "/cdn/", "model.onnx", 5);
+
+    expect(new Uint8Array(opfs.store.get("/models/tts/model.onnx")!)).toEqual(
+      new Uint8Array([1, 2, 3, 4, 5]),
+    );
   });
 });
 
