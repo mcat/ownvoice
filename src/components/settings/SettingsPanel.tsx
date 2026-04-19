@@ -1,7 +1,8 @@
-import { useState, useId } from "preact/hooks";
+import { useState } from "preact/hooks";
 import type { AppSettings, FallbackVoice, Provider } from "../../types";
 import type { ThemeTokens, ThemeName } from "../../theme/tokens";
-import { useDialog } from "../../hooks/useDialog";
+import { z } from "../../theme/z";
+import { BottomSheet } from "../shared/BottomSheet";
 import { PatientInfoSection } from "./sections/PatientInfoSection";
 import { CareTeamSection } from "./sections/CareTeamSection";
 import { AboutSection } from "./sections/AboutSection";
@@ -32,10 +33,6 @@ export function SettingsPanel({
     cfg.fallbackVoice ?? null,
   );
 
-  const isDark = theme === "dark";
-  const titleId = useId();
-  const { dialogRef } = useDialog({ onClose, titleId });
-
   const providersChanged =
     providers.length !== cfg.providers.length ||
     providers.some(
@@ -58,50 +55,16 @@ export function SettingsPanel({
   }
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 8000,
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "flex-end",
-      }}
-    >
-      {/* Backdrop: passive surface — click closes; Escape closes via useDialog. */}
-      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
-      <div
-        onClick={onClose}
-        style={{
-          position: "absolute",
-          inset: 0,
-          background: "rgba(0,0,0,0.4)",
-        }}
-      />
-
-      {/* Bottom sheet */}
-      <div
-        ref={dialogRef}
-        tabIndex={-1}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        style={{
-          position: "relative",
-          background: t.bg,
-          borderRadius: "20px 20px 0 0",
-          maxHeight: "85vh",
-          overflowY: "auto",
-          padding: "0 0 40px",
-          scrollPaddingBottom: 120,
-        }}
-      >
-        {/* Handle */}
+    <BottomSheet onClose={onClose} t={t} heightVh={85} zIndex={z.sheetStacked}>
+      <BottomSheet.Header>
+        {/* Drag handle — visual affordance only, not interactive (gestures are disabled). */}
         <div
+          aria-hidden="true"
           style={{
+            flexBasis: "100%",
             display: "flex",
             justifyContent: "center",
-            padding: "12px 0 8px",
+            paddingBottom: 8,
           }}
         >
           <div
@@ -109,42 +72,30 @@ export function SettingsPanel({
               width: 40,
               height: 4,
               borderRadius: 2,
-              background: isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.15)",
+              background: theme === "dark" ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.15)",
             }}
           />
         </div>
-
-        {/* Header */}
-        <div
+        <BottomSheet.Title>Settings</BottomSheet.Title>
+        {/* "Done" text link instead of X — matches iPadOS convention for settings sheets. */}
+        <BottomSheet.CloseButton
+          aria-label="Close settings"
           style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            padding: "4px 24px 20px",
-            borderBottom: `1px solid ${t.border}`,
+            fontSize: 16,
+            color: t.muted,
+            padding: "8px 12px",
+            minWidth: 64,
+            minHeight: 64,
+            fontFamily:
+              "'Atkinson Hyperlegible Next', system-ui, -apple-system, sans-serif",
           }}
         >
-          <h2 id={titleId} style={{ fontSize: 22, fontWeight: 700, color: t.text, margin: 0 }}>
-            Settings
-          </h2>
-          <button
-            onClick={onClose}
-            style={{
-              background: "none",
-              border: "none",
-              fontSize: 16,
-              color: t.muted,
-              cursor: "pointer",
-              padding: "8px 12px",
-              fontFamily:
-                "'Atkinson Hyperlegible Next', system-ui, -apple-system, sans-serif",
-            }}
-          >
-            Done
-          </button>
-        </div>
+          Done
+        </BottomSheet.CloseButton>
+      </BottomSheet.Header>
 
-        <div style={{ padding: "0 24px" }}>
+      <BottomSheet.Body>
+        <div style={{ padding: "0 4px" }}>
           <PatientInfoSection
             cfg={cfg}
             name={name}
@@ -160,7 +111,6 @@ export function SettingsPanel({
             t={t}
             theme={theme}
           />
-
           <CareTeamSection
             cfg={cfg}
             providers={providers}
@@ -168,12 +118,10 @@ export function SettingsPanel({
             t={t}
             theme={theme}
           />
-
           <AboutSection t={t} />
-
           <ResetSection onReset={onReset} t={t} theme={theme} />
         </div>
-      </div>
-    </div>
+      </BottomSheet.Body>
+    </BottomSheet>
   );
 }

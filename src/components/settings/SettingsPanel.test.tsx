@@ -132,26 +132,23 @@ describe("SettingsPanel", () => {
     expect(screen.getByText("Reset app for new patient")).toBeInTheDocument();
   });
 
-  it("'Done' button calls onClose", () => {
+  it("'Done' button calls onClose (after exit transition)", () => {
     renderPanel();
     fireEvent.click(screen.getByText("Done"));
+    const evt = new Event("transitionend", { bubbles: true });
+    (evt as unknown as { propertyName: string }).propertyName = "transform";
+    screen.getByRole("dialog").dispatchEvent(evt);
     expect(onClose).toHaveBeenCalledOnce();
   });
 
-  it("backdrop click calls onClose", () => {
-    renderPanel();
-    // The backdrop is the first child div with onClick=onClose
-    // Click on the settings heading area — we'll click the backdrop via the role
-    // The backdrop has no text/role, so we find it by the container structure
-    // The Done button triggers onClose; let's verify backdrop too
-    // The backdrop div has style with position absolute, inset 0
-    // We can test it by clicking outside the bottom sheet area
-    const backdrop = screen.getByText("Settings").closest("div[style]")!
-      .parentElement!.querySelector("div[style]") as HTMLElement;
-    // Actually, let's just verify the Done button works as the primary close mechanism
-    // The backdrop test is covered by the onClick={onClose} on the backdrop div
-    expect(onClose).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByText("Done"));
+  it("backdrop click calls onClose (after exit transition)", () => {
+    const { container } = renderPanel();
+    const backdrop = container.querySelector("[data-testid='bottom-sheet-backdrop']");
+    expect(backdrop).not.toBeNull();
+    fireEvent.click(backdrop as Element);
+    const evt = new Event("transitionend", { bubbles: true });
+    (evt as unknown as { propertyName: string }).propertyName = "transform";
+    screen.getByRole("dialog").dispatchEvent(evt);
     expect(onClose).toHaveBeenCalledOnce();
   });
 
