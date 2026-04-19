@@ -19,11 +19,13 @@ describe("MyWishes", () => {
     vi.clearAllMocks();
   });
 
-  it("renders the first topic (My Goals)", () => {
+  it("renders the first topic's question and hides the label on the active step", () => {
     render(<MyWishes {...baseProps} />);
     expect(screen.getByText("My Wishes")).toBeInTheDocument();
-    expect(screen.getByText(SICG_TOPICS[0].label)).toBeInTheDocument();
     expect(screen.getByText(SICG_TOPICS[0].question)).toBeInTheDocument();
+    // The label (e.g., "My Goals") appears only on the completion screen's
+    // summary cards, not on the active-step header.
+    expect(screen.queryByText(SICG_TOPICS[0].label)).not.toBeInTheDocument();
   });
 
   it("renders all response options for the first topic", () => {
@@ -77,8 +79,8 @@ describe("MyWishes", () => {
   it("tapping Skip advances to the next topic", () => {
     render(<MyWishes {...baseProps} />);
     fireEvent.click(screen.getByText("Skip"));
-    // Now on topic 2 — My Worries
-    expect(screen.getByText(SICG_TOPICS[1].label)).toBeInTheDocument();
+    // Now on topic 2 — My Worries. Assert via the question (not the label,
+    // which no longer renders on the active step).
     expect(screen.getByText(SICG_TOPICS[1].question)).toBeInTheDocument();
   });
 
@@ -201,7 +203,7 @@ describe("MyWishes", () => {
     expect(onSpeak).not.toHaveBeenCalled();
     expect(onAddToThread).not.toHaveBeenCalled();
     // Should still be on topic 0 (not advanced)
-    expect(screen.getByText(SICG_TOPICS[0].label)).toBeInTheDocument();
+    expect(screen.getByText(SICG_TOPICS[0].question)).toBeInTheDocument();
   });
 
   it("completion screen Close button calls onClose", () => {

@@ -288,21 +288,21 @@ export function MyWishes({
           </div>
         )}
 
-        {/* Topic header */}
-        <div style={{ marginBottom: 16, textAlign: "center" }}>
-          <div style={{ fontSize: 36, marginBottom: 8 }}>{topic.icon}</div>
-          <div
-            style={{
-              fontSize: 20,
-              fontWeight: 700,
-              color: t.text,
-              marginBottom: 4,
-            }}
-          >
-            {topic.label}
-          </div>
-          <div style={{ fontSize: 18, color: t.sub }}>{topic.question}</div>
-        </div>
+        {/* Topic header — question only; emoji & label are used on the
+            completion screen, not here. */}
+        <h2
+          style={{
+            marginTop: 16,
+            marginBottom: 24,
+            textAlign: "center",
+            fontSize: 20,
+            fontWeight: 600,
+            color: t.text,
+            lineHeight: 1.35,
+          }}
+        >
+          {topic.question}
+        </h2>
 
         {/* Response buttons */}
         <div
