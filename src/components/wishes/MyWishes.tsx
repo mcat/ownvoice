@@ -1,14 +1,9 @@
-import { useState, useRef, useEffect } from "preact/hooks";
+import { useState } from "preact/hooks";
 import type { JSX } from "preact";
 import type { ThemeTokens, ThemeName } from "../../theme/tokens";
 import { getWishTopics, composeWishSentence } from "../../data/phraseRegistry";
 import { Btn } from "../shared/Btn";
 import { BottomSheet } from "../shared/BottomSheet";
-
-interface WishMessage {
-  from: "patient" | "provider";
-  text: string;
-}
 
 interface MyWishesProps {
   onSpeak: (text: string) => void;
@@ -36,22 +31,13 @@ export function MyWishes({
   const SICG_TOPICS = getWishTopics(locale);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [selections, setSelections] = useState<Record<string, string[]>>({});
-  const [thread, setThread] = useState<WishMessage[]>([]);
   const [complete, setComplete] = useState(false);
-
-  const threadRef = useRef<HTMLDivElement>(null);
 
   const blue = theme === "dark" ? "#60A5FA" : "#2563EB";
   const blueBg = theme === "dark" ? "#1E3A5F" : "#EFF6FF";
 
   const topic = SICG_TOPICS[currentIdx];
   const selected = selections[topic?.id] ?? [];
-
-  useEffect(() => {
-    if (threadRef.current) {
-      threadRef.current.scrollTop = threadRef.current.scrollHeight;
-    }
-  }, [thread.length]);
 
   function toggleResponse(response: string) {
     const topicId = topic.id;
@@ -70,11 +56,6 @@ export function MyWishes({
   function handleShare() {
     if (!selected.length) return;
     const sentence = composeWishSentence(locale, topic, selected);
-    setThread((prev) => [
-      ...prev,
-      { from: "provider", text: topic.question },
-      { from: "patient", text: sentence },
-    ]);
     onAddToThread(topic.question, "provider", "My Wishes");
     onSpeak(sentence);
     advance();
@@ -101,9 +82,6 @@ export function MyWishes({
       }
     }
   }
-
-  const preview =
-    selected.length > 0 ? composeWishSentence(locale, topic, selected) : "";
 
   const progressRow: JSX.CSSProperties = { display: "flex", gap: 6 };
 
@@ -250,80 +228,21 @@ export function MyWishes({
       </BottomSheet.Header>
 
       <BottomSheet.Body>
-        {thread.length > 0 && (
-          <div
-            ref={threadRef}
-            style={{
-              maxHeight: "38vh",
-              overflowY: "auto",
-              marginBottom: 12,
-              paddingBottom: 12,
-              borderBottom: `1px solid ${t.border}`,
-            }}
-          >
-            {thread.map((msg, i) => (
-              <div
-                key={i}
-                style={{
-                  display: "flex",
-                  justifyContent:
-                    msg.from === "patient" ? "flex-end" : "flex-start",
-                  marginBottom: 8,
-                }}
-              >
-                <div
-                  style={{
-                    maxWidth: "80%",
-                    padding: "10px 14px",
-                    borderRadius: 12,
-                    fontSize: 16,
-                    lineHeight: 1.4,
-                    backgroundColor:
-                      msg.from === "patient" ? blueBg : t.activeBg,
-                    color: msg.from === "patient" ? blue : t.sub,
-                    fontWeight: msg.from === "patient" ? 500 : 400,
-                  }}
-                >
-                  {msg.text}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Topic header */}
-        <div style={{ marginBottom: 16, textAlign: "center" }}>
-          <div style={{ fontSize: 36, marginBottom: 8 }}>{topic.icon}</div>
-          <div
-            style={{
-              fontSize: 20,
-              fontWeight: 700,
-              color: t.text,
-              marginBottom: 4,
-            }}
-          >
-            {topic.label}
-          </div>
-          <div style={{ fontSize: 18, color: t.sub }}>{topic.question}</div>
-        </div>
-
-        {/* Live sentence preview */}
-        {preview && (
-          <div
-            style={{
-              padding: "12px 16px",
-              borderRadius: 12,
-              backgroundColor: blueBg,
-              color: blue,
-              fontSize: 17,
-              fontWeight: 500,
-              marginBottom: 16,
-              lineHeight: 1.4,
-            }}
-          >
-            {preview}
-          </div>
-        )}
+        {/* Topic header — question only; emoji & label are used on the
+            completion screen, not here. */}
+        <h2
+          style={{
+            marginTop: 16,
+            marginBottom: 24,
+            textAlign: "center",
+            fontSize: 20,
+            fontWeight: 600,
+            color: t.text,
+            lineHeight: 1.35,
+          }}
+        >
+          {topic.question}
+        </h2>
 
         {/* Response buttons */}
         <div
@@ -334,8 +253,7 @@ export function MyWishes({
           }}
         >
           {topic.responses.map((response) => {
-            const selIdx = selected.indexOf(response);
-            const isSelected = selIdx >= 0;
+            const isSelected = selected.includes(response);
 
             return (
               <Btn
@@ -357,22 +275,23 @@ export function MyWishes({
                 }}
               >
                 <div
+                  aria-hidden="true"
                   style={{
                     width: 32,
                     height: 32,
                     borderRadius: 16,
                     border: `2px solid ${isSelected ? blue : t.border}`,
                     backgroundColor: isSelected ? blue : "transparent",
-                    color: isSelected ? "#fff" : t.sub,
+                    color: "#fff",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    fontSize: 14,
+                    fontSize: 18,
                     fontWeight: 700,
                     flexShrink: 0,
                   }}
                 >
-                  {isSelected ? selIdx + 1 : ""}
+                  {isSelected ? "✓" : ""}
                 </div>
                 <span>{response}</span>
               </Btn>

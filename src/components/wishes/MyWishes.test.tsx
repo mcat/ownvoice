@@ -19,11 +19,13 @@ describe("MyWishes", () => {
     vi.clearAllMocks();
   });
 
-  it("renders the first topic (My Goals)", () => {
+  it("renders the first topic's question and hides the label on the active step", () => {
     render(<MyWishes {...baseProps} />);
     expect(screen.getByText("My Wishes")).toBeInTheDocument();
-    expect(screen.getByText(SICG_TOPICS[0].label)).toBeInTheDocument();
     expect(screen.getByText(SICG_TOPICS[0].question)).toBeInTheDocument();
+    // The label (e.g., "My Goals") appears only on the completion screen's
+    // summary cards, not on the active-step header.
+    expect(screen.queryByText(SICG_TOPICS[0].label)).not.toBeInTheDocument();
   });
 
   it("renders all response options for the first topic", () => {
@@ -39,14 +41,16 @@ describe("MyWishes", () => {
     expect(screen.getByText("Skip")).toBeInTheDocument();
   });
 
-  it("toggling a response selects it and shows a preview", () => {
+  it("toggling a response marks it as selected", () => {
     render(<MyWishes {...baseProps} />);
     const firstResponse = SICG_TOPICS[0].responses[0]; // "Being with my family"
-    fireEvent.click(screen.getByText(firstResponse));
-    // Preview should contain a composed sentence
     expect(
-      screen.getByText(/what matters most to me is being with my family/i),
-    ).toBeInTheDocument();
+      screen.getByText(firstResponse).closest("button"),
+    ).toHaveAttribute("aria-pressed", "false");
+    fireEvent.click(screen.getByText(firstResponse));
+    expect(
+      screen.getByText(firstResponse).closest("button"),
+    ).toHaveAttribute("aria-pressed", "true");
   });
 
   it("tapping Share calls onSpeak with composed sentence and onAddToThread", () => {
@@ -75,8 +79,8 @@ describe("MyWishes", () => {
   it("tapping Skip advances to the next topic", () => {
     render(<MyWishes {...baseProps} />);
     fireEvent.click(screen.getByText("Skip"));
-    // Now on topic 2 — My Worries
-    expect(screen.getByText(SICG_TOPICS[1].label)).toBeInTheDocument();
+    // Now on topic 2 — My Worries. Assert via the question (not the label,
+    // which no longer renders on the active step).
     expect(screen.getByText(SICG_TOPICS[1].question)).toBeInTheDocument();
   });
 
@@ -167,19 +171,22 @@ describe("MyWishes", () => {
   });
 
   it("tapping a selected response deselects it", () => {
+    vi.useFakeTimers();
     render(<MyWishes {...baseProps} />);
     const firstResponse = SICG_TOPICS[0].responses[0];
     // Select
     fireEvent.click(screen.getByText(firstResponse));
     expect(
-      screen.getByText(/what matters most to me is being with my family/i),
-    ).toBeInTheDocument();
+      screen.getByText(firstResponse).closest("button"),
+    ).toHaveAttribute("aria-pressed", "true");
+    // Advance past the Btn 300ms debounce
+    vi.advanceTimersByTime(300);
     // Deselect by tapping again
     fireEvent.click(screen.getByText(firstResponse));
-    // Preview should disappear (no selections)
     expect(
-      screen.queryByText(/what matters most to me is being with my family/i),
-    ).not.toBeInTheDocument();
+      screen.getByText(firstResponse).closest("button"),
+    ).toHaveAttribute("aria-pressed", "false");
+    vi.useRealTimers();
   });
 
   it("Share with no selections does nothing", () => {
@@ -196,7 +203,7 @@ describe("MyWishes", () => {
     expect(onSpeak).not.toHaveBeenCalled();
     expect(onAddToThread).not.toHaveBeenCalled();
     // Should still be on topic 0 (not advanced)
-    expect(screen.getByText(SICG_TOPICS[0].label)).toBeInTheDocument();
+    expect(screen.getByText(SICG_TOPICS[0].question)).toBeInTheDocument();
   });
 
   it("completion screen Close button calls onClose", () => {
