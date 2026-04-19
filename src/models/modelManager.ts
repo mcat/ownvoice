@@ -84,25 +84,6 @@ class ModelManager {
   }
 
   /**
-   * Check if a model's files are cached in OPFS.
-   * Returns the OPFS directory handle if cached, null otherwise.
-   */
-  async getOPFSCache(id: ModelId): Promise<FileSystemDirectoryHandle | null> {
-    try {
-      const root = await navigator.storage.getDirectory();
-      const modelsDir = await root.getDirectoryHandle("models", {
-        create: true,
-      });
-      const modelDir = await modelsDir.getDirectoryHandle(id);
-      // Check for a sentinel file that marks a complete download
-      await modelDir.getFileHandle("_complete");
-      return modelDir;
-    } catch {
-      return null;
-    }
-  }
-
-  /**
    * Download a model file and cache it in OPFS using resumable streaming.
    * If a partial file + progress marker exist from a prior attempt, resumes
    * with `Range: bytes=N-` — survives spotty wifi across dropouts.
@@ -184,25 +165,6 @@ class ModelManager {
           reason: "OPFS unavailable",
         })),
       };
-    }
-  }
-
-  /** Mark a model download as complete (write sentinel file) */
-  async markComplete(id: ModelId): Promise<void> {
-    try {
-      const root = await navigator.storage.getDirectory();
-      const modelsDir = await root.getDirectoryHandle("models", {
-        create: true,
-      });
-      const modelDir = await modelsDir.getDirectoryHandle(id, { create: true });
-      const sentinel = await modelDir.getFileHandle("_complete", {
-        create: true,
-      });
-      const writable = await sentinel.createWritable();
-      await writable.write("ok");
-      await writable.close();
-    } catch {
-      // Non-critical
     }
   }
 
