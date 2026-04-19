@@ -280,12 +280,14 @@ describe("Setup", () => {
       expect(screen.getByText("Upload file")).toBeInTheDocument();
     });
 
-    it("file upload error shows error message", async () => {
+    it("file upload error shows a friendly message and a Retry affordance, not the raw error", async () => {
       goToStep1();
       const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
       expect(fileInput).not.toBeNull();
 
-      // Mock AudioContext.decodeAudioData to throw
+      // Mock AudioContext.decodeAudioData to throw. The raw error string ("bad
+      // format") must NEVER reach the user-facing DOM — it should be translated
+      // into an actionable sentence via friendlyVoiceError().
       (globalThis as any).AudioContext = vi.fn(function() {
         return {
           decodeAudioData: vi.fn().mockRejectedValue(new Error("bad format")),
@@ -308,10 +310,15 @@ describe("Setup", () => {
       // Preact's onChange handler on file inputs in the test environment
       fileInput.dispatchEvent(new Event("change", { bubbles: true }));
 
-      // Wait for async processAndCapture chain to resolve and update the DOM
+      // Wait for async processAndCapture chain to resolve and update the DOM.
+      // The failure surfaces as the "Clone failed" badge + Retry button + a
+      // non-technical subtitle.
       await waitFor(() => {
-        expect(screen.getByText("bad format")).toBeInTheDocument();
+        expect(screen.getByText(/Clone failed/i)).toBeInTheDocument();
       });
+      expect(screen.getByRole("button", { name: /retry/i })).toBeInTheDocument();
+      // Raw error must NOT be visible to the user.
+      expect(screen.queryByText(/bad format/i)).not.toBeInTheDocument();
     });
 
     it("Remove button clears voice sample", async () => {

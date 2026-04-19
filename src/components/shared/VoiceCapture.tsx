@@ -37,6 +37,26 @@ export interface VoiceCaptureProps {
 
 const RECORD_DURATION = 15;
 
+/**
+ * Translate a raw error message into something a non-technical user can act on.
+ * The raw message is still useful for logs and for developers reading the
+ * console, but it should never be the user-facing copy — `Failed to fetch` and
+ * similar native strings mean nothing at the bedside.
+ */
+export function friendlyVoiceError(raw: string): string {
+  const m = raw.toLowerCase();
+  if (m.includes("failed to fetch") || m.includes("networkerror") || m.includes("network")) {
+    return "Couldn't reach the voice model. Check your connection, then tap Retry.";
+  }
+  if (m.includes("timed out") || m.includes("timeout")) {
+    return "Voice processing took too long. Tap Retry to try again.";
+  }
+  if (m.includes("denied") || m.includes("permission")) {
+    return "Microphone access is blocked. Enable it in your browser settings or upload a file instead.";
+  }
+  return "We couldn't finish preparing your voice. Tap Retry to try again.";
+}
+
 async function decodeAudio(blob: Blob): Promise<Float32Array> {
   const ctx = new AudioContext({ sampleRate: 24000 });
   const arrayBuffer = await blob.arrayBuffer();
@@ -167,6 +187,27 @@ export function VoiceCapture({
     border: color?.border ?? "#E5E7EB",
     cardBg: color?.cardBg ?? "#FFFFFF",
   };
+
+  // Design tokens. `compact` scales decorative properties only; touch-target
+  // floors are invariant (WCAG 2.5.8, iOS HIG). Caregivers may be gloved and
+  // rushed, so hit area and gap cannot shrink with density.
+  const ui = {
+    outerPad: compact ? "10px 14px" : "12px 16px",
+    outerRadius: compact ? 10 : 12,
+    iconSm: compact ? 14 : 16,
+    iconMd: compact ? 16 : 18,
+    iconLg: compact ? 18 : 20,
+    textMd: compact ? 14 : 15,
+    textSm: compact ? 13 : 14,
+  };
+  const btnFloor = {
+    minHeight: 44,
+    minWidth: 44,
+    fontSize: 14,
+    padding: "10px 14px",
+    borderRadius: 10,
+    gap: 12,
+  } as const;
 
   // --- Retry embedding extraction (when model loads after initial capture) ---
   async function retryEmbedding() {
@@ -349,35 +390,45 @@ export function VoiceCapture({
   );
 
   // --- Clone status badge ---
+  // Informational tier: smaller than interactive 44px buttons but still
+  // substantial. Reads as "one notch below a button", not "three notches".
   function CloneStatusBadge() {
-    const s = compact ? 11 : 12;
-    const pad = compact ? "2px 8px" : "3px 10px";
+    const base = {
+      fontSize: 14,
+      fontWeight: 600,
+      borderRadius: 10,
+      padding: "8px 14px",
+      minHeight: 36,
+      display: "inline-flex",
+      alignItems: "center",
+      gap: 8,
+    } as const;
 
     if (cloneStatus === "extracting") {
       return (
-        <span style={{ fontSize: s, fontWeight: 600, color: "#1E40AF", background: "#DBEAFE", borderRadius: 6, padding: pad }}>
-          {"\u23F3"} Creating voice clone...
+        <span style={{ ...base, color: "#1E40AF", background: "#DBEAFE" }}>
+          <span aria-hidden="true">{"\u23F3"}</span> Creating voice clone...
         </span>
       );
     }
     if (cloneStatus === "model-loading") {
       return (
-        <span style={{ fontSize: s, fontWeight: 600, color: "#92400E", background: "#FEF3C7", borderRadius: 6, padding: pad }}>
-          {"\u23F3"} Voice model loading...
+        <span style={{ ...base, color: "#92400E", background: "#FEF3C7" }}>
+          <span aria-hidden="true">{"\u23F3"}</span> Voice model loading...
         </span>
       );
     }
     if (cloneStatus === "ready") {
       return (
-        <span style={{ fontSize: s, fontWeight: 600, color: "#065F46", background: "#D1FAE5", borderRadius: 6, padding: pad }}>
-          {"\u2705"} Voice clone active
+        <span style={{ ...base, color: "#065F46", background: "#D1FAE5" }}>
+          <span aria-hidden="true">{"\u2705"}</span> Voice clone active
         </span>
       );
     }
     if (cloneStatus === "failed") {
       return (
-        <span style={{ fontSize: s, fontWeight: 600, color: "#991B1B", background: "#FEE2E2", borderRadius: 6, padding: pad }}>
-          {"\u26A0\uFE0F"} Clone failed
+        <span style={{ ...base, color: "#991B1B", background: "#FEE2E2" }}>
+          <span aria-hidden="true">{"\u26A0\uFE0F"}</span> Clone failed
         </span>
       );
     }
@@ -462,9 +513,11 @@ export function VoiceCapture({
               onClick={stopRecording}
               style={{
                 flexShrink: 0, background: "none", color: "#991B1B",
-                border: "1px solid #FCA5A5", borderRadius: compact ? 6 : 8,
-                padding: compact ? "4px 10px" : "6px 14px",
-                fontSize: compact ? 12 : 13, fontWeight: 600, fontFamily: "inherit",
+                border: "1px solid #FCA5A5",
+                minHeight: btnFloor.minHeight, minWidth: btnFloor.minWidth,
+                borderRadius: btnFloor.borderRadius,
+                padding: btnFloor.padding,
+                fontSize: btnFloor.fontSize, fontWeight: 600, fontFamily: "inherit",
               }}
             >
               Stop early
@@ -478,31 +531,38 @@ export function VoiceCapture({
   // --- Preview state ---
   if (previewBlob) {
     return (
-      <div style={{ padding: compact ? "8px 12px" : "12px 16px", background: "#FFFBEB", borderRadius: compact ? 10 : 12, border: "1px solid #FCD34D" }}>
+      <div style={{ padding: ui.outerPad, background: "#FFFBEB", borderRadius: ui.outerRadius, border: "1px solid #FCD34D" }}>
         {fileInput}
-        <div style={{ display: "flex", alignItems: "center", gap: compact ? 6 : 10, marginBottom: compact ? 6 : 10 }}>
-          <span style={{ fontSize: compact ? 16 : 20 }}>{"\uD83C\uDFA4"}</span>
-          <span style={{ fontSize: compact ? 13 : 15, fontWeight: 600, color: "#92400E", flex: 1 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: btnFloor.gap, marginBottom: compact ? 10 : 12 }}>
+          <span aria-hidden="true" style={{ fontSize: ui.iconLg }}>{"\uD83C\uDFA4"}</span>
+          <span style={{ fontSize: ui.textMd, fontWeight: 600, color: "#92400E", flex: 1 }}>
             {recordSecs}s recorded
           </span>
           <Btn
             onClick={playing ? stopPlayback : () => playBlob(previewBlob)}
+            aria-label={playing ? "Stop preview playback" : "Play recording preview"}
             style={{
               background: "#D97706", color: "#FFF", border: "none",
-              borderRadius: compact ? 6 : 8, padding: compact ? "4px 12px" : "6px 14px",
-              fontSize: compact ? 12 : 13, fontWeight: 600, fontFamily: "inherit",
+              minHeight: btnFloor.minHeight, minWidth: btnFloor.minWidth,
+              borderRadius: btnFloor.borderRadius,
+              padding: btnFloor.padding,
+              fontSize: btnFloor.fontSize, fontWeight: 600, fontFamily: "inherit",
             }}
           >
-            {playing ? "\u23F9 Stop" : "\u25B6 Play"}
+            <span aria-hidden="true">{playing ? "\u23F9" : "\u25B6"}</span>
+            {" "}
+            {playing ? "Stop" : "Play"}
           </Btn>
         </div>
-        <div style={{ display: "flex", gap: compact ? 6 : 8 }}>
+        <div style={{ display: "flex", gap: btnFloor.gap }}>
           <Btn
             onClick={discardPreview}
             style={{
               flex: 1, background: "none", border: `1px solid ${c.border}`,
-              borderRadius: compact ? 8 : 10, padding: compact ? "8px 10px" : "10px 14px",
-              fontSize: compact ? 13 : 14, fontWeight: 500, color: c.sub, fontFamily: "inherit",
+              minHeight: btnFloor.minHeight,
+              borderRadius: btnFloor.borderRadius,
+              padding: btnFloor.padding,
+              fontSize: btnFloor.fontSize, fontWeight: 500, color: c.sub, fontFamily: "inherit",
             }}
           >
             Re-record
@@ -511,8 +571,10 @@ export function VoiceCapture({
             onClick={acceptRecording}
             style={{
               flex: 1, background: "#059669", color: "#FFF", border: "none",
-              borderRadius: compact ? 8 : 10, padding: compact ? "8px 10px" : "10px 14px",
-              fontSize: compact ? 13 : 14, fontWeight: 600, fontFamily: "inherit",
+              minHeight: btnFloor.minHeight,
+              borderRadius: btnFloor.borderRadius,
+              padding: btnFloor.padding,
+              fontSize: btnFloor.fontSize, fontWeight: 600, fontFamily: "inherit",
             }}
           >
             Use this recording
@@ -526,14 +588,18 @@ export function VoiceCapture({
   // --- Extracting state (processing the voice sample) ---
   if (cloneStatus === "extracting") {
     return (
-      <div style={{
-        display: "flex", alignItems: "center", gap: compact ? 8 : 12,
-        padding: compact ? "8px 12px" : "12px 16px",
-        background: "#EFF6FF", borderRadius: compact ? 10 : 12, border: "1px solid #BFDBFE",
-      }}>
+      <div
+        role="status"
+        aria-live="polite"
+        style={{
+          display: "flex", alignItems: "center", gap: 12,
+          padding: ui.outerPad,
+          background: "#EFF6FF", borderRadius: ui.outerRadius, border: "1px solid #BFDBFE",
+        }}
+      >
         {fileInput}
-        <span style={{ fontSize: compact ? 16 : 18, animation: "spin 1s linear infinite" }}>{"\u23F3"}</span>
-        <span style={{ fontSize: compact ? 13 : 15, fontWeight: 500, color: "#1E40AF" }}>
+        <span aria-hidden="true" style={{ fontSize: ui.iconMd, animation: "spin 1s linear infinite" }}>{"\u23F3"}</span>
+        <span style={{ fontSize: ui.textMd, fontWeight: 500, color: "#1E40AF" }}>
           Creating voice clone from sample...
         </span>
       </div>
@@ -547,70 +613,100 @@ export function VoiceCapture({
       <div>
         {fileInput}
         <div style={{
-          display: "flex", alignItems: "center", gap: compact ? 6 : 8,
-          padding: compact ? "6px 10px" : "10px 14px",
-          background: "#F0FDF4", borderRadius: compact ? 8 : 10, border: "1px solid #BBF7D0",
+          display: "flex", alignItems: "center", gap: btnFloor.gap,
+          padding: ui.outerPad,
+          background: "#F0FDF4", borderRadius: ui.outerRadius, border: "1px solid #BBF7D0",
           flexWrap: "wrap",
         }}>
-          <span style={{ fontSize: compact ? 14 : 16 }}>{"\u2705"}</span>
-          <span style={{ fontSize: compact ? 13 : 14, color: "#166534", fontWeight: 500, flex: 1 }}>
+          <span aria-hidden="true" style={{ fontSize: ui.iconSm }}>{"\u2705"}</span>
+          <span style={{ fontSize: ui.textSm, color: "#166534", fontWeight: 500, flex: 1, minWidth: 120 }}>
             Voice captured
           </span>
           {canPlay && (
             <Btn
               onClick={playing ? stopPlayback : () => playBlob((savedBlob || externalBlob)!)}
+              aria-label={playing ? "Stop playback of recorded sample" : "Play recorded voice sample"}
               style={{
                 background: "#059669", color: "#FFF", border: "none",
-                borderRadius: compact ? 6 : 8, padding: compact ? "2px 10px" : "4px 12px",
-                fontSize: compact ? 11 : 12, fontWeight: 600, fontFamily: "inherit",
+                minHeight: btnFloor.minHeight, minWidth: btnFloor.minWidth,
+                borderRadius: btnFloor.borderRadius,
+                padding: btnFloor.padding,
+                fontSize: btnFloor.fontSize, fontWeight: 600, fontFamily: "inherit",
               }}
             >
-              {playing ? "\u23F9 Stop" : "\u25B6 Play"}
+              <span aria-hidden="true">{playing ? "\u23F9" : "\u25B6"}</span>
+              {" "}
+              {playing ? "Stop" : "Play"}
             </Btn>
           )}
           <Btn
             onClick={handleRemove}
+            aria-label="Remove voice sample"
             style={{
-              background: "none", border: "none", color: "#6B7280",
-              fontSize: compact ? 12 : 13, fontFamily: "inherit",
-              padding: compact ? "2px 6px" : "4px 8px",
+              background: "none",
+              border: `1px solid ${c.border}`,
+              color: "#374151",
+              minHeight: btnFloor.minHeight, minWidth: btnFloor.minWidth,
+              borderRadius: btnFloor.borderRadius,
+              padding: btnFloor.padding,
+              fontSize: btnFloor.fontSize, fontWeight: 500, fontFamily: "inherit",
             }}
           >
             Remove
           </Btn>
         </div>
-        {/* Clone status indicator — live region so transitions are announced */}
+        {/* Clone status indicator — live region so transitions are announced.
+            When failed, the badge + Retry + friendly subtitle below are the
+            complete UX; we deliberately do NOT also render <ErrorRow> to
+            avoid duplicate red-on-red styling for the same failure. */}
         <div
           aria-live="polite"
-          style={{ marginTop: compact ? 4 : 6, display: "flex", alignItems: "center", gap: 8 }}
+          style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}
         >
-          <CloneStatusBadge />
-          {cloneStatus === "ready" && onPreview && (
-            <Btn
-              onClick={onPreview}
-              style={{
-                background: "none", border: "1px solid #BBF7D0",
-                borderRadius: 6, padding: "2px 10px",
-                fontSize: compact ? 11 : 12, fontWeight: 600, color: "#065F46", fontFamily: "inherit",
-              }}
-            >
-              {"\u25B6"} Preview voice
-            </Btn>
-          )}
-          {cloneStatus === "failed" && (
-            <Btn
-              onClick={retryEmbedding}
-              style={{
-                background: "none", border: "1px solid #FCA5A5",
-                borderRadius: 6, padding: "2px 10px",
-                fontSize: 12, fontWeight: 600, color: "#991B1B", fontFamily: "inherit",
-              }}
-            >
-              Retry
-            </Btn>
+          <div style={{ display: "flex", alignItems: "center", gap: btnFloor.gap, flexWrap: "wrap" }}>
+            <CloneStatusBadge />
+            {cloneStatus === "ready" && onPreview && (
+              <Btn
+                onClick={onPreview}
+                aria-label="Preview synthesized voice clone"
+                style={{
+                  background: "none", border: "1px solid #BBF7D0",
+                  minHeight: btnFloor.minHeight, minWidth: btnFloor.minWidth,
+                  borderRadius: btnFloor.borderRadius,
+                  padding: btnFloor.padding,
+                  fontSize: btnFloor.fontSize, fontWeight: 600, color: "#065F46", fontFamily: "inherit",
+                }}
+              >
+                <span aria-hidden="true">{"\u25B6"}</span> Preview voice
+              </Btn>
+            )}
+            {cloneStatus === "failed" && (
+              <Btn
+                onClick={retryEmbedding}
+                aria-label="Retry voice clone extraction"
+                style={{
+                  background: "none", border: "1px solid #FCA5A5",
+                  minHeight: btnFloor.minHeight, minWidth: btnFloor.minWidth,
+                  borderRadius: btnFloor.borderRadius,
+                  padding: btnFloor.padding,
+                  fontSize: btnFloor.fontSize, fontWeight: 600, color: "#991B1B", fontFamily: "inherit",
+                }}
+              >
+                Retry
+              </Btn>
+            )}
+          </div>
+          {cloneStatus === "failed" && error && (
+            <p style={{
+              margin: 0,
+              fontSize: 14,
+              lineHeight: 1.4,
+              color: c.sub,
+            }}>
+              {friendlyVoiceError(error)}
+            </p>
           )}
         </div>
-        {error && <ErrorRow compact={compact} message={error} />}
       </div>
     );
   }
@@ -619,33 +715,41 @@ export function VoiceCapture({
   return (
     <div>
       {fileInput}
-      <div style={{ display: "flex", gap: compact ? 6 : 8 }}>
+      <div style={{ display: "flex", gap: btnFloor.gap }}>
         <Btn
           onClick={() => fileInputRef.current?.click()}
+          aria-label="Upload voice sample from file"
           style={{
             flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
-            gap: compact ? 4 : 6, padding: compact ? "8px 10px" : "12px 14px",
-            borderRadius: compact ? 8 : 10, border: `1px solid ${c.border}`,
-            background: c.cardBg, fontSize: compact ? 13 : 14,
+            gap: 8,
+            minHeight: btnFloor.minHeight,
+            padding: btnFloor.padding,
+            borderRadius: btnFloor.borderRadius,
+            border: `1px solid ${c.border}`,
+            background: c.cardBg,
+            fontSize: btnFloor.fontSize,
             fontWeight: 500, color: c.text, fontFamily: "inherit",
-            minHeight: compact ? 36 : 44,
           }}
         >
-          <span style={{ fontSize: compact ? 14 : 16 }}>{"\uD83D\uDCC1"}</span>
+          <span aria-hidden="true" style={{ fontSize: ui.iconSm }}>{"\uD83D\uDCC1"}</span>
           Upload file
         </Btn>
         <Btn
           onClick={startRecording}
+          aria-label="Record voice sample from microphone"
           style={{
             flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
-            gap: compact ? 4 : 6, padding: compact ? "8px 10px" : "12px 14px",
-            borderRadius: compact ? 8 : 10, border: `1px solid ${c.border}`,
-            background: c.cardBg, fontSize: compact ? 13 : 14,
+            gap: 8,
+            minHeight: btnFloor.minHeight,
+            padding: btnFloor.padding,
+            borderRadius: btnFloor.borderRadius,
+            border: `1px solid ${c.border}`,
+            background: c.cardBg,
+            fontSize: btnFloor.fontSize,
             fontWeight: 500, color: c.text, fontFamily: "inherit",
-            minHeight: compact ? 36 : 44,
           }}
         >
-          <span style={{ fontSize: compact ? 14 : 16 }}>{"\uD83C\uDF99\uFE0F"}</span>
+          <span aria-hidden="true" style={{ fontSize: ui.iconSm }}>{"\uD83C\uDF99\uFE0F"}</span>
           Record
         </Btn>
       </div>

@@ -35,27 +35,27 @@ export function VoiceCacheProgress({
         role="status"
         aria-live="polite"
         style={{
-          marginTop: 6,
-          padding: "8px 12px",
+          marginTop: 10,
+          padding: "12px 16px",
           background: "#EFF6FF",
-          borderRadius: 8,
+          borderRadius: 10,
           border: "1px solid #BFDBFE",
         }}
       >
         <div
           style={{
-            fontSize: 12,
+            fontSize: 14,
             fontWeight: 600,
             color: "#1E40AF",
-            marginBottom: 6,
+            marginBottom: 8,
           }}
         >
           Preparing {speakerLabel}'s voice… {run.current} / {run.total}
         </div>
         <div
           style={{
-            height: 4,
-            borderRadius: 2,
+            height: 8,
+            borderRadius: 4,
             background: "#DBEAFE",
             overflow: "hidden",
           }}
@@ -64,7 +64,7 @@ export function VoiceCacheProgress({
             style={{
               width: `${pct}%`,
               height: "100%",
-              borderRadius: 2,
+              borderRadius: 4,
               background: "#2563EB",
               transition: "width 200ms linear",
             }}
@@ -78,17 +78,22 @@ export function VoiceCacheProgress({
     return (
       <div
         style={{
-          marginTop: 6,
-          padding: "6px 10px",
-          fontSize: 12,
+          marginTop: 10,
+          padding: "10px 14px",
+          fontSize: 14,
           fontWeight: 600,
           color: "#065F46",
           background: "#D1FAE5",
           border: "1px solid #BBF7D0",
-          borderRadius: 8,
+          borderRadius: 10,
+          minHeight: 36,
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
         }}
       >
-        {"\u2713"} All {run.total} phrases ready in {speakerLabel}'s voice
+        <span aria-hidden="true">{"\u2713"}</span>
+        All {run.total} phrases ready in {speakerLabel}'s voice
       </div>
     );
   }
@@ -98,28 +103,33 @@ export function VoiceCacheProgress({
       <div
         role="alert"
         style={{
-          marginTop: 6,
-          padding: "8px 12px",
+          marginTop: 10,
+          padding: "12px 16px",
           background: "#FEF2F2",
-          borderRadius: 8,
+          borderRadius: 10,
           border: "1px solid #FCA5A5",
           display: "flex",
           alignItems: "center",
-          gap: 10,
+          gap: 12,
+          flexWrap: "wrap",
         }}
       >
-        <span style={{ fontSize: 12, fontWeight: 600, color: "#991B1B", flex: 1 }}>
-          {"\u26A0\uFE0F"} {run.failedPhrases.length} phrase
+        <span style={{ fontSize: 14, fontWeight: 600, color: "#991B1B", flex: 1, minWidth: 180 }}>
+          <span aria-hidden="true">{"\u26A0\uFE0F"}</span>{" "}
+          {run.failedPhrases.length} phrase
           {run.failedPhrases.length === 1 ? "" : "s"} failed for {speakerLabel}
         </span>
         <Btn
           onClick={() => audioCacheRunner.retryFailed(cfg, patientSpeakerData, speakerKey)}
+          aria-label="Retry failed voice cache phrases"
           style={{
             background: "none",
             border: "1px solid #FCA5A5",
-            borderRadius: 6,
-            padding: "2px 10px",
-            fontSize: 12,
+            minHeight: 44,
+            minWidth: 44,
+            borderRadius: 10,
+            padding: "10px 14px",
+            fontSize: 14,
             fontWeight: 600,
             color: "#991B1B",
             fontFamily: "inherit",
