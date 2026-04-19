@@ -1,9 +1,9 @@
-import { useState, useRef, useEffect, useId } from "preact/hooks";
+import { useState, useRef, useEffect } from "preact/hooks";
 import type { JSX } from "preact";
 import type { ThemeTokens, ThemeName } from "../../theme/tokens";
 import { getWishTopics, composeWishSentence } from "../../data/phraseRegistry";
 import { Btn } from "../shared/Btn";
-import { useDialog } from "../../hooks/useDialog";
+import { BottomSheet } from "../shared/BottomSheet";
 
 interface WishMessage {
   from: "patient" | "provider";
@@ -40,9 +40,6 @@ export function MyWishes({
   const [complete, setComplete] = useState(false);
 
   const threadRef = useRef<HTMLDivElement>(null);
-  const responsesRef = useRef<HTMLDivElement>(null);
-  const titleId = useId();
-  const { dialogRef } = useDialog({ onClose, titleId });
 
   const blue = theme === "dark" ? "#60A5FA" : "#2563EB";
   const blueBg = theme === "dark" ? "#1E3A5F" : "#EFF6FF";
@@ -50,7 +47,6 @@ export function MyWishes({
   const topic = SICG_TOPICS[currentIdx];
   const selected = selections[topic?.id] ?? [];
 
-  // Scroll thread to bottom when messages added
   useEffect(() => {
     if (threadRef.current) {
       threadRef.current.scrollTop = threadRef.current.scrollHeight;
@@ -73,22 +69,14 @@ export function MyWishes({
 
   function handleShare() {
     if (!selected.length) return;
-
-    const sentence = composeWishSentence(locale,topic, selected);
-
-    // Add clinician question + patient response to internal thread
+    const sentence = composeWishSentence(locale, topic, selected);
     setThread((prev) => [
       ...prev,
       { from: "provider", text: topic.question },
       { from: "patient", text: sentence },
     ]);
-
-    // Add clinician question silently to main thread
     onAddToThread(topic.question, "provider", "My Wishes");
-
-    // Speak patient response (also adds to main thread)
     onSpeak(sentence);
-
     advance();
   }
 
@@ -105,249 +93,125 @@ export function MyWishes({
   }
 
   function handleShareAll() {
-    // Re-speak all composed sentences
-    for (const t of SICG_TOPICS) {
-      const sel = selections[t.id];
+    for (const tp of SICG_TOPICS) {
+      const sel = selections[tp.id];
       if (sel && sel.length > 0) {
-        const sentence = composeWishSentence(locale,t, sel);
+        const sentence = composeWishSentence(locale, tp, sel);
         onSpeak(sentence);
       }
     }
   }
 
-  const preview = selected.length > 0 ? composeWishSentence(locale,topic, selected) : "";
+  const preview =
+    selected.length > 0 ? composeWishSentence(locale, topic, selected) : "";
 
-  // --- Styles ---
+  const progressRow: JSX.CSSProperties = { display: "flex", gap: 6 };
 
-  const overlay: JSX.CSSProperties = {
-    position: "fixed",
-    inset: 0,
-    zIndex: 1000,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "flex-end",
-  };
+  /* ── Completion screen ─────────────────────────────────── */
 
-  const card: JSX.CSSProperties = {
-    height: "92vh",
-    backgroundColor: t.card,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    display: "flex",
-    flexDirection: "column",
-    overflow: "hidden",
-  };
-
-  const header: JSX.CSSProperties = {
-    padding: "16px 20px 12px",
-    borderBottom: `1px solid ${t.border}`,
-    flexShrink: 0,
-  };
-
-  const headerRow: JSX.CSSProperties = {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 12,
-  };
-
-  const titleStyle: JSX.CSSProperties = {
-    fontSize: 22,
-    fontWeight: 700,
-    color: t.text,
-    margin: 0,
-  };
-
-  const progressRow: JSX.CSSProperties = {
-    display: "flex",
-    gap: 6,
-  };
-
-  const threadPane: JSX.CSSProperties = {
-    maxHeight: "38%",
-    overflowY: "auto",
-    padding: "12px 20px",
-    flexShrink: 0,
-  };
-
-  const bottomPane: JSX.CSSProperties = {
-    flex: 1,
-    overflowY: "auto",
-    padding: "16px 20px",
-    borderTop: `1px solid ${t.border}`,
-    scrollPaddingBottom: 96,
-  };
-
-  const actionBar: JSX.CSSProperties = {
-    display: "flex",
-    gap: 12,
-    padding: "12px 20px",
-    borderTop: `1px solid ${t.border}`,
-    flexShrink: 0,
-  };
-
-  // --- Completion screen ---
   if (complete) {
     const answeredTopics = SICG_TOPICS.filter(
-      (t) => selections[t.id] && selections[t.id].length > 0,
+      (tp) => selections[tp.id] && selections[tp.id].length > 0,
     );
 
     return (
-      <div style={overlay} onClick={onClose}>
-        <div
-          ref={dialogRef}
-          tabIndex={-1}
-          style={card}
-          onClick={(e) => e.stopPropagation()}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby={titleId}
-        >
-          <div style={header}>
-            <div style={headerRow}>
-              <h2 id={titleId} style={titleStyle}>{patientName}'s Wishes</h2>
-              <Btn
-                onClick={onClose}
-                style={{
-                  background: "none",
-                  border: "none",
-                  fontSize: 28,
-                  color: t.sub,
-                  padding: 8,
-                  minWidth: 64,
-                  minHeight: 64,
-                }}
-                aria-label="Close"
-              >
-                &#x2715;
-              </Btn>
-            </div>
-          </div>
+      <BottomSheet onClose={onClose} t={t} heightVh={92}>
+        <BottomSheet.Header>
+          <BottomSheet.Title>{patientName}'s Wishes</BottomSheet.Title>
+          <BottomSheet.CloseButton aria-label="Close" />
+        </BottomSheet.Header>
 
-          <div style={{ flex: 1, overflowY: "auto", padding: "20px" }}>
-            {answeredTopics.length === 0 ? (
-              <p
-                style={{
-                  color: t.sub,
-                  fontSize: 18,
-                  textAlign: "center",
-                  marginTop: 40,
-                }}
-              >
-                No wishes were shared.
-              </p>
-            ) : (
-              answeredTopics.map((topic) => {
-                const sentence = composeWishSentence(locale,
-                  topic,
-                  selections[topic.id],
-                );
-                return (
-                  <div
-                    key={topic.id}
-                    style={{
-                      marginBottom: 16,
-                      padding: 16,
-                      borderRadius: 12,
-                      backgroundColor: blueBg,
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: 16,
-                        fontWeight: 600,
-                        color: t.text,
-                        marginBottom: 6,
-                      }}
-                    >
-                      {topic.icon} {topic.label}
-                    </div>
-                    <div style={{ fontSize: 18, color: t.text }}>
-                      {sentence}
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-
-          <div style={actionBar}>
-            {answeredTopics.length > 0 && (
-              <Btn
-                onClick={handleShareAll}
-                style={{
-                  flex: 1,
-                  padding: "16px",
-                  borderRadius: 12,
-                  border: "none",
-                  fontSize: 18,
-                  fontWeight: 600,
-                  color: "#fff",
-                  backgroundColor: blue,
-                  minHeight: 64,
-                }}
-              >
-                Share all wishes again
-              </Btn>
-            )}
-            <Btn
-              onClick={onClose}
+        <BottomSheet.Body>
+          {answeredTopics.length === 0 ? (
+            <p
               style={{
-                flex: answeredTopics.length > 0 ? undefined : 1,
-                padding: "16px 24px",
-                borderRadius: 12,
-                border: `2px solid ${t.border}`,
+                color: t.sub,
                 fontSize: 18,
-                fontWeight: 600,
-                color: t.text,
-                backgroundColor: t.card,
-                minHeight: 64,
-                minWidth: 64,
+                textAlign: "center",
+                marginTop: 40,
               }}
             >
-              Close
+              No wishes were shared.
+            </p>
+          ) : (
+            answeredTopics.map((tp) => {
+              const sentence = composeWishSentence(locale, tp, selections[tp.id]);
+              return (
+                <div
+                  key={tp.id}
+                  style={{
+                    marginBottom: 16,
+                    padding: 16,
+                    borderRadius: 12,
+                    backgroundColor: blueBg,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 16,
+                      fontWeight: 600,
+                      color: t.text,
+                      marginBottom: 6,
+                    }}
+                  >
+                    {tp.icon} {tp.label}
+                  </div>
+                  <div style={{ fontSize: 18, color: t.text }}>{sentence}</div>
+                </div>
+              );
+            })
+          )}
+        </BottomSheet.Body>
+
+        <BottomSheet.Actions>
+          {answeredTopics.length > 0 && (
+            <Btn
+              onClick={handleShareAll}
+              style={{
+                flex: 1,
+                padding: "16px",
+                borderRadius: 12,
+                border: "none",
+                fontSize: 18,
+                fontWeight: 600,
+                color: "#fff",
+                backgroundColor: blue,
+                minHeight: 64,
+              }}
+            >
+              Share all wishes again
             </Btn>
-          </div>
-        </div>
-      </div>
+          )}
+          <Btn
+            onClick={onClose}
+            style={{
+              flex: answeredTopics.length > 0 ? undefined : 1,
+              padding: "16px 24px",
+              borderRadius: 12,
+              border: `2px solid ${t.border}`,
+              fontSize: 18,
+              fontWeight: 600,
+              color: t.text,
+              backgroundColor: t.card,
+              minHeight: 64,
+              minWidth: 64,
+            }}
+          >
+            Close
+          </Btn>
+        </BottomSheet.Actions>
+      </BottomSheet>
     );
   }
 
-  // --- Active topic screen ---
-  return (
-    <div style={overlay} onClick={onClose}>
-      <div
-        ref={dialogRef}
-        tabIndex={-1}
-        style={card}
-        onClick={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-      >
-        {/* Fixed Header */}
-        <div style={header}>
-          <div style={headerRow}>
-            <h2 id={titleId} style={titleStyle}>My Wishes</h2>
-            <Btn
-              onClick={onClose}
-              style={{
-                background: "none",
-                border: "none",
-                fontSize: 28,
-                color: t.sub,
-                padding: 8,
-                minWidth: 64,
-                minHeight: 64,
-              }}
-              aria-label="Close"
-            >
-              &#x2715;
-            </Btn>
-          </div>
+  /* ── Active topic screen ───────────────────────────────── */
 
-          {/* Progress: visible step-count + individual bars with aria-current */}
+  return (
+    <BottomSheet onClose={onClose} t={t} heightVh={92}>
+      <BottomSheet.Header>
+        <BottomSheet.Title>My Wishes</BottomSheet.Title>
+        <BottomSheet.CloseButton aria-label="Close" />
+        <div style={{ flexBasis: "100%" }}>
           <div
             class="font-sans"
             style={{ fontSize: 13, color: t.muted, marginBottom: 6 }}
@@ -362,7 +226,7 @@ export function MyWishes({
               if (i < currentIdx || answered) {
                 bg = blue;
               } else if (i === currentIdx) {
-                bg = theme === "dark" ? "#93C5FD" : "#93C5FD";
+                bg = "#93C5FD";
               } else {
                 // 3:1 non-text contrast for WCAG 1.4.11 AA
                 bg = theme === "dark" ? "rgba(255,255,255,0.30)" : "#6B7280";
@@ -383,10 +247,20 @@ export function MyWishes({
             })}
           </div>
         </div>
+      </BottomSheet.Header>
 
-        {/* Top pane: internal wishes thread */}
+      <BottomSheet.Body>
         {thread.length > 0 && (
-          <div ref={threadRef} style={threadPane}>
+          <div
+            ref={threadRef}
+            style={{
+              maxHeight: "38vh",
+              overflowY: "auto",
+              marginBottom: 12,
+              paddingBottom: 12,
+              borderBottom: `1px solid ${t.border}`,
+            }}
+          >
             {thread.map((msg, i) => (
               <div
                 key={i}
@@ -406,8 +280,7 @@ export function MyWishes({
                     lineHeight: 1.4,
                     backgroundColor:
                       msg.from === "patient" ? blueBg : t.activeBg,
-                    color:
-                      msg.from === "patient" ? blue : t.sub,
+                    color: msg.from === "patient" ? blue : t.sub,
                     fontWeight: msg.from === "patient" ? 500 : 400,
                   }}
                 >
@@ -418,144 +291,137 @@ export function MyWishes({
           </div>
         )}
 
-        {/* Bottom pane: current topic */}
-        <div ref={responsesRef} style={bottomPane}>
-          {/* Topic header */}
-          <div style={{ marginBottom: 16, textAlign: "center" }}>
-            <div style={{ fontSize: 36, marginBottom: 8 }}>{topic.icon}</div>
-            <div
-              style={{
-                fontSize: 20,
-                fontWeight: 700,
-                color: t.text,
-                marginBottom: 4,
-              }}
-            >
-              {topic.label}
-            </div>
-            <div style={{ fontSize: 18, color: t.sub }}>
-              {topic.question}
-            </div>
-          </div>
-
-          {/* Live sentence preview */}
-          {preview && (
-            <div
-              style={{
-                padding: "12px 16px",
-                borderRadius: 12,
-                backgroundColor: blueBg,
-                color: blue,
-                fontSize: 17,
-                fontWeight: 500,
-                marginBottom: 16,
-                lineHeight: 1.4,
-              }}
-            >
-              {preview}
-            </div>
-          )}
-
-          {/* Response buttons */}
+        {/* Topic header */}
+        <div style={{ marginBottom: 16, textAlign: "center" }}>
+          <div style={{ fontSize: 36, marginBottom: 8 }}>{topic.icon}</div>
           <div
             style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 10,
+              fontSize: 20,
+              fontWeight: 700,
+              color: t.text,
+              marginBottom: 4,
             }}
           >
-            {topic.responses.map((response) => {
-              const selIdx = selected.indexOf(response);
-              const isSelected = selIdx >= 0;
+            {topic.label}
+          </div>
+          <div style={{ fontSize: 18, color: t.sub }}>{topic.question}</div>
+        </div>
 
-              return (
-                <Btn
-                  key={response}
-                  onClick={() => toggleResponse(response)}
-                  aria-pressed={isSelected}
+        {/* Live sentence preview */}
+        {preview && (
+          <div
+            style={{
+              padding: "12px 16px",
+              borderRadius: 12,
+              backgroundColor: blueBg,
+              color: blue,
+              fontSize: 17,
+              fontWeight: 500,
+              marginBottom: 16,
+              lineHeight: 1.4,
+            }}
+          >
+            {preview}
+          </div>
+        )}
+
+        {/* Response buttons */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 10,
+          }}
+        >
+          {topic.responses.map((response) => {
+            const selIdx = selected.indexOf(response);
+            const isSelected = selIdx >= 0;
+
+            return (
+              <Btn
+                key={response}
+                onClick={() => toggleResponse(response)}
+                aria-pressed={isSelected}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  padding: "14px 16px",
+                  borderRadius: 12,
+                  border: `2px solid ${isSelected ? blue : t.border}`,
+                  backgroundColor: isSelected ? blueBg : t.card,
+                  fontSize: 18,
+                  color: t.text,
+                  textAlign: "left",
+                  minHeight: 64,
+                }}
+              >
+                <div
                   style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 16,
+                    border: `2px solid ${isSelected ? blue : t.border}`,
+                    backgroundColor: isSelected ? blue : "transparent",
+                    color: isSelected ? "#fff" : t.sub,
                     display: "flex",
                     alignItems: "center",
-                    gap: 12,
-                    padding: "14px 16px",
-                    borderRadius: 12,
-                    border: `2px solid ${isSelected ? blue : t.border}`,
-                    backgroundColor: isSelected ? blueBg : t.card,
-                    fontSize: 18,
-                    color: t.text,
-                    textAlign: "left",
-                    minHeight: 64,
+                    justifyContent: "center",
+                    fontSize: 14,
+                    fontWeight: 700,
+                    flexShrink: 0,
                   }}
                 >
-                  {/* Numbered circle or empty circle */}
-                  <div
-                    style={{
-                      width: 32,
-                      height: 32,
-                      borderRadius: 16,
-                      border: `2px solid ${isSelected ? blue : t.border}`,
-                      backgroundColor: isSelected ? blue : "transparent",
-                      color: isSelected ? "#fff" : t.sub,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: 14,
-                      fontWeight: 700,
-                      flexShrink: 0,
-                    }}
-                  >
-                    {isSelected ? selIdx + 1 : ""}
-                  </div>
-                  <span>{response}</span>
-                </Btn>
-              );
-            })}
-          </div>
+                  {isSelected ? selIdx + 1 : ""}
+                </div>
+                <span>{response}</span>
+              </Btn>
+            );
+          })}
         </div>
+      </BottomSheet.Body>
 
-        {/* Fixed bottom action bar */}
-        <div style={actionBar}>
-          <Btn
-            onClick={handleShare}
-            disabled={selected.length === 0}
-            style={{
-              flex: 1,
-              padding: "16px",
-              borderRadius: 12,
-              border: "none",
-              fontSize: 18,
-              fontWeight: 600,
-              color: "#fff",
-              backgroundColor:
-                selected.length > 0
-                  ? blue
-                  : theme === "dark"
-                    ? "#374151"
-                    : "#D1D5DB",
-              minHeight: 64,
-              opacity: selected.length === 0 ? 0.6 : 1,
-            }}
-          >
-            Share
-          </Btn>
-          <Btn
-            onClick={handleSkip}
-            style={{
-              padding: "16px 24px",
-              borderRadius: 12,
-              border: `2px solid ${t.border}`,
-              fontSize: 18,
-              fontWeight: 600,
-              color: t.sub,
-              backgroundColor: t.card,
-              minHeight: 64,
-              minWidth: 64,
-            }}
-          >
-            Skip
-          </Btn>
-        </div>
-      </div>
-    </div>
+      <BottomSheet.Actions>
+        <Btn
+          onClick={handleShare}
+          disabled={selected.length === 0}
+          style={{
+            flex: 1,
+            padding: "16px",
+            borderRadius: 12,
+            border: "none",
+            fontSize: 18,
+            fontWeight: 600,
+            color: "#fff",
+            backgroundColor:
+              selected.length > 0
+                ? blue
+                : theme === "dark"
+                  ? "#374151"
+                  : "#D1D5DB",
+            minHeight: 64,
+            opacity: selected.length === 0 ? 0.6 : 1,
+          }}
+        >
+          Share
+        </Btn>
+        <Btn
+          onClick={handleSkip}
+          style={{
+            padding: "16px 24px",
+            borderRadius: 12,
+            border: `2px solid ${t.border}`,
+            fontSize: 18,
+            fontWeight: 600,
+            color: t.sub,
+            backgroundColor: t.card,
+            minHeight: 64,
+            minWidth: 64,
+          }}
+        >
+          Skip
+        </Btn>
+      </BottomSheet.Actions>
+    </BottomSheet>
   );
 }
