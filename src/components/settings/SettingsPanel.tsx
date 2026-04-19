@@ -57,25 +57,6 @@ export function SettingsPanel({
   return (
     <BottomSheet onClose={onClose} t={t} zIndex={z.sheetStacked}>
       <BottomSheet.Header>
-        {/* Drag handle — visual affordance only, not interactive (gestures are disabled). */}
-        <div
-          aria-hidden="true"
-          style={{
-            flexBasis: "100%",
-            display: "flex",
-            justifyContent: "center",
-            paddingBottom: 8,
-          }}
-        >
-          <div
-            style={{
-              width: 40,
-              height: 4,
-              borderRadius: 2,
-              background: theme === "dark" ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.15)",
-            }}
-          />
-        </div>
         <BottomSheet.Title>Settings</BottomSheet.Title>
         {/* "Done" text link instead of X — matches iPadOS convention for settings sheets. */}
         <BottomSheet.CloseButton
