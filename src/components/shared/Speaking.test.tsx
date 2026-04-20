@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/preact";
+import { act, render, screen } from "@testing-library/preact";
 import { Speaking } from "./Speaking";
 import { light } from "../../theme/tokens";
 
@@ -64,5 +64,25 @@ describe("Speaking", () => {
     // The 400ms delay after progress reaches 1.0
     vi.advanceTimersByTime(400);
     expect(onDone).toHaveBeenCalledOnce();
+  });
+
+  it("switches to the slideUp animation when the phrase finishes", () => {
+    render(<Speaking {...baseProps} text="I need water" />);
+    // Before completion: slideDown entrance
+    expect(
+      (screen.getByRole("status") as HTMLElement).style.animation,
+    ).toMatch(/slideDown/);
+
+    // Let the rAF loop cross the 1400ms duration threshold. Wrap in act
+    // so Preact flushes the state update that flips `exiting` to true.
+    act(() => {
+      vi.advanceTimersByTime(1400 + 100);
+    });
+
+    // Entry animation is replaced with slideUp exit — overlay stays mounted
+    // for the ~400ms exit before onDone is called.
+    expect(
+      (screen.getByRole("status") as HTMLElement).style.animation,
+    ).toMatch(/slideUp/);
   });
 });
