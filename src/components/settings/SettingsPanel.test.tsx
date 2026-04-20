@@ -2,6 +2,7 @@ import { render, screen, fireEvent } from "@testing-library/preact";
 import { SettingsPanel } from "./SettingsPanel";
 import type { AppSettings } from "../../types";
 import { light } from "../../theme/tokens";
+import { useSettingsStore } from "../../stores/settingsStore";
 
 const makeCfg = (overrides?: Partial<AppSettings>): AppSettings => ({
   patientName: "Maria",
@@ -12,6 +13,13 @@ const makeCfg = (overrides?: Partial<AppSettings>): AppSettings => ({
   providers: [],
   ...overrides,
 });
+
+// CareTeamSection reads providers directly from the settings store (so
+// voice-capture can commit without waiting on a Save click). Tests that
+// render provider rows or mutate them must seed the store to match.
+function seedStore(cfg: AppSettings) {
+  useSettingsStore.setState({ cfg, speakerData: null, _hasHydrated: true });
+}
 
 describe("SettingsPanel", () => {
   const onUpdate = vi.fn();
@@ -30,9 +38,11 @@ describe("SettingsPanel", () => {
   });
 
   function renderPanel(cfgOverrides?: Partial<AppSettings>) {
+    const cfg = makeCfg(cfgOverrides);
+    seedStore(cfg);
     return render(
       <SettingsPanel
-        cfg={makeCfg(cfgOverrides)}
+        cfg={cfg}
         onUpdate={onUpdate}
         onReset={onReset}
         onClose={onClose}
@@ -224,7 +234,7 @@ describe("SettingsPanel", () => {
 
   /* ---------- Provider add ---------- */
   describe("Provider add", () => {
-    it("typing a name and clicking Add shows the provider in the list", () => {
+    it("typing a name and clicking Add commits to the store and renders the provider", () => {
       renderPanel({ providers: [] });
 
       const nameInput = screen.getByPlaceholderText("Dr. Smith, Nurse Jay...");
@@ -234,12 +244,16 @@ describe("SettingsPanel", () => {
       vi.advanceTimersByTime(300);
 
       expect(screen.getByText("Dr. New")).toBeInTheDocument();
+      // Provider writes are live — no Save click required.
+      const stored = useSettingsStore.getState().cfg?.providers ?? [];
+      expect(stored.map((p) => p.name)).toEqual(["Dr. New"]);
+      expect(onUpdate).not.toHaveBeenCalled();
     });
   });
 
   /* ---------- Provider remove ---------- */
   describe("Provider remove", () => {
-    it("clicking remove button next to a provider removes it, and saving updates the providers list", () => {
+    it("clicking remove wipes the provider from the store without needing Save", () => {
       renderPanel({
         providers: [
           { name: "Dr. Smith", hasVoice: false, emoji: "\uD83D\uDC69\u200D\u2695\uFE0F" },
@@ -248,23 +262,13 @@ describe("SettingsPanel", () => {
 
       expect(screen.getByText("Dr. Smith")).toBeInTheDocument();
 
-      // Click the remove (✕) button
       fireEvent.click(screen.getByText("\u2715"));
 
-      // Provider should be removed from the list
       expect(screen.queryByText("Dr. Smith")).not.toBeInTheDocument();
-
-      // Save button should appear (providers changed)
-      const saveBtn = screen.getByText("Save changes");
-      fireEvent.click(saveBtn);
-      vi.advanceTimersByTime(300);
-
-      expect(onUpdate).toHaveBeenCalledOnce();
-      expect(onUpdate).toHaveBeenCalledWith(
-        expect.objectContaining({
-          providers: [],
-        }),
-      );
+      // No Save-changes gate for provider mutations — they commit live.
+      expect(screen.queryByText("Save changes")).not.toBeInTheDocument();
+      expect(useSettingsStore.getState().cfg?.providers).toEqual([]);
+      expect(onUpdate).not.toHaveBeenCalled();
     });
   });
 

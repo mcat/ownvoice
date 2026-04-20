@@ -51,6 +51,45 @@ describe("audioCacheRunner.runPreGeneration", () => {
     expect(useAudioCacheStore.getState().runs).toEqual({});
   });
 
+  it("seeds every planned speaker as 'queued' before starting the first run", async () => {
+    // Patient's generator blocks indefinitely so we can snapshot the store
+    // while provider runs are still pending.
+    let resolvePatient: (() => void) | null = null;
+    vi.mocked(generateAllPhrases).mockImplementation((_phrases, embedding) => {
+      const isPatient = embedding === PATIENT_EMBED;
+      return (async function* () {
+        if (isPatient) {
+          await new Promise<void>((resolve) => {
+            resolvePatient = resolve;
+          });
+        }
+      })();
+    });
+
+    const cfg: AppSettings = {
+      ...BASE_CFG,
+      providers: [
+        { name: "Dr. Jones", hasVoice: true, embedding: PROV_EMBED },
+      ],
+    };
+
+    const run = runPreGeneration(cfg, PATIENT_EMBED);
+    // Yield once so runPreGeneration can run the initial synchronous
+    // seeding + patient.start() before we inspect store state.
+    await Promise.resolve();
+
+    const s = useAudioCacheStore.getState();
+    // Patient is actively running — claimed activeKey.
+    expect(s.runs.patient?.status).toBe("running");
+    // Provider is queued and visible, not undefined.
+    expect(s.runs["provider:0"]?.status).toBe("queued");
+    expect(s.runs["provider:0"]?.total).toBeGreaterThan(0);
+
+    // Let the patient run finish so the runner can proceed / clean up.
+    resolvePatient?.();
+    await run;
+  });
+
   it("runs patient then each provider sequentially", async () => {
     const calls: string[] = [];
     vi.mocked(generateAllPhrases).mockImplementation((phrases, embedding) => {

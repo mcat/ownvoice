@@ -5,6 +5,28 @@ beforeEach(() => {
 });
 
 describe("audioCacheStore", () => {
+  it("queue seeds a 'queued' run without claiming activeKey", () => {
+    useAudioCacheStore.getState().queue("provider:0", 25, "en", "fp-p0");
+
+    const s = useAudioCacheStore.getState();
+    expect(s.runs["provider:0"]?.status).toBe("queued");
+    expect(s.runs["provider:0"]?.total).toBe(25);
+    expect(s.runs["provider:0"]?.locale).toBe("en");
+    expect(s.runs["provider:0"]?.fingerprint).toBe("fp-p0");
+    // Queueing must not steal activeKey — another speaker is actively running.
+    expect(s.activeKey).toBeNull();
+  });
+
+  it("start transitions a queued run into 'running' and claims activeKey", () => {
+    const { queue, start } = useAudioCacheStore.getState();
+    queue("provider:0", 25, "en", "fp-p0");
+    start("provider:0", 25, "en", "fp-p0");
+
+    const s = useAudioCacheStore.getState();
+    expect(s.runs["provider:0"]?.status).toBe("running");
+    expect(s.activeKey).toBe("provider:0");
+  });
+
   it("start initialises a running state and marks the key active", () => {
     useAudioCacheStore.getState().start("patient", 150, "en", "fp-123");
 
@@ -93,13 +115,38 @@ describe("audioCacheStore", () => {
     expect(prov.failedPhrases).toEqual(["X"]);
   });
 
-  it("resetFailed clears only the given key's failedPhrases", () => {
+  it("resetFailed clears failedPhrases without disturbing status or total", () => {
     const { start, fail, resetFailed } = useAudioCacheStore.getState();
-    start("patient", 1, "en", "fp");
+    start("patient", 7, "en", "fp");
     fail("patient", "bad", 1);
     expect(useAudioCacheStore.getState().runs.patient!.failedPhrases).toEqual(["bad"]);
+
     resetFailed("patient");
-    expect(useAudioCacheStore.getState().runs.patient!.failedPhrases).toEqual([]);
+
+    const run = useAudioCacheStore.getState().runs.patient!;
+    expect(run.failedPhrases).toEqual([]);
+    // Guards against a bug where `const prev = s.runs[key] ?? IDLE` flips to
+    // `&& IDLE` (or similar) and the reset silently replaces everything with
+    // IDLE — which would wipe status/total/fingerprint too.
+    expect(run.status).toBe("running");
+    expect(run.total).toBe(7);
+    expect(run.fingerprint).toBe("fp");
+  });
+
+  // Covers the `?? IDLE` fallback for actions called on a key that was never
+  // seeded via start/queue. Without this test, IDLE's status string is
+  // unreachable and `status: "idle"` can be mutated to anything.
+  it("resetFailed on an unseeded key installs the IDLE default state", () => {
+    useAudioCacheStore.getState().resetFailed("provider:3");
+
+    const run = useAudioCacheStore.getState().runs["provider:3"];
+    expect(run).toBeDefined();
+    expect(run?.status).toBe("idle");
+    expect(run?.total).toBe(0);
+    expect(run?.current).toBe(0);
+    expect(run?.failedPhrases).toEqual([]);
+    expect(run?.locale).toBeNull();
+    expect(run?.fingerprint).toBeNull();
   });
 
   it("abortAll wipes all runs and clears activeKey", () => {

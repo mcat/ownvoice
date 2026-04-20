@@ -38,6 +38,35 @@ describe("VoiceCacheProgress", () => {
     expect(container.firstChild).toBeNull();
   });
 
+  it("renders a Queued state while an earlier speaker is still running", () => {
+    useAudioCacheStore.setState({
+      runs: {
+        "provider:0": {
+          status: "queued",
+          current: 0,
+          total: 25,
+          currentPhrase: null,
+          failedPhrases: [],
+          locale: "en",
+          fingerprint: "fp-p0",
+        },
+      },
+      activeKey: "patient",
+    });
+
+    render(
+      <VoiceCacheProgress
+        speakerKey="provider:0"
+        speakerLabel="Dr. Smith"
+        cfg={CFG}
+        patientSpeakerData={null}
+      />,
+    );
+    expect(
+      screen.getByText(/Queued — Dr\. Smith's voice will prepare next \(25 phrases\)/),
+    ).toBeTruthy();
+  });
+
   it("renders a progress bar while running", () => {
     useAudioCacheStore.setState({
       runs: {
