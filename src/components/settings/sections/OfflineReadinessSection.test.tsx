@@ -149,10 +149,7 @@ describe("OfflineReadinessSection", () => {
     });
   });
 
-  it("shows '✓ Models verified' briefly after a successful check", async () => {
-    // The mock sets tts to "verified"; the section should show a success
-    // confirmation even when the state didn't change (user-visible feedback
-    // for a no-op tap).
+  it("button flashes '✓ Models verified' and disables itself after a successful check", async () => {
     verifyAllOnBootMock.mockImplementation(async () => {
       const s = useOfflineStore.getState();
       s.setModelVerified("tts", "verified");
@@ -163,12 +160,17 @@ describe("OfflineReadinessSection", () => {
     render(<OfflineReadinessSection t={light} />);
     fireEvent.click(screen.getByRole("button", { name: CHECK_NAME }));
 
-    await waitFor(() => {
-      expect(screen.getByText(/models verified/i)).toBeTruthy();
+    const verifiedBtn = await screen.findByRole("button", {
+      name: /models verified/i,
     });
+    expect(verifiedBtn).toBeTruthy();
+    expect(verifiedBtn).toHaveProperty("disabled", true);
+    // The idle label should no longer be on screen while the button is in
+    // confirmation state.
+    expect(screen.queryByRole("button", { name: CHECK_NAME })).toBeNull();
   });
 
-  it("auto-dismisses the verify confirmation after 3 seconds", async () => {
+  it("auto-dismisses the verify confirmation after 3 seconds and re-enables the button", async () => {
     vi.useFakeTimers();
     verifyAllOnBootMock.mockImplementation(async () => {
       const s = useOfflineStore.getState();
@@ -181,21 +183,25 @@ describe("OfflineReadinessSection", () => {
     fireEvent.click(screen.getByRole("button", { name: CHECK_NAME }));
 
     await waitFor(() => {
-      expect(screen.getByText(/models verified/i)).toBeTruthy();
+      expect(
+        screen.getByRole("button", { name: /models verified/i }),
+      ).toBeTruthy();
     });
 
     vi.advanceTimersByTime(3100);
 
     await waitFor(() => {
-      expect(screen.queryByText(/models verified/i)).toBeNull();
+      const btn = screen.getByRole("button", { name: CHECK_NAME });
+      expect(btn).toHaveProperty("disabled", false);
     });
 
     vi.useRealTimers();
   });
 
-  it("does not show the verify confirmation if any model is still not verified after the check", async () => {
-    // The verify result includes a model in needs-retry → the explicit
-    // Redownload button is the feedback, no confirmation checkmark.
+  it("does not flash '✓ Models verified' if any model still needs retry after the check", async () => {
+    // The verify result surfaces a model in needs-retry → the explicit
+    // Redownload button is the feedback, the check button just returns
+    // to its idle label (no confirmation).
     verifyAllOnBootMock.mockImplementation(async () => {
       const s = useOfflineStore.getState();
       s.setModelVerified("tts", "needs-retry");
@@ -209,7 +215,9 @@ describe("OfflineReadinessSection", () => {
     await waitFor(() => {
       expect(useOfflineStore.getState().verified.tts).toBe("needs-retry");
     });
-    expect(screen.queryByText(/models verified/i)).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: /models verified/i }),
+    ).toBeNull();
   });
 
   it("hides the 'Clear audio cache' button when storage is healthy", () => {
