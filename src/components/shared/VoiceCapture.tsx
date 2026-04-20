@@ -614,13 +614,13 @@ export function VoiceCapture({
         </span>
       );
     }
-    if (cloneStatus === "ready") {
-      return (
-        <span style={{ ...base, color: "#065F46", background: "#D1FAE5" }}>
-          <span aria-hidden="true">{"\u2705"}</span> Voice clone active
-        </span>
-      );
-    }
+    // `cloneStatus === "ready"` only means the speaker embedding was
+    // extracted from the 15 s sample — pre-generated audio still hasn't
+    // been built for any phrases. Until the VoiceCacheProgress run
+    // reaches "done", taps fall through to Web Speech, so a green
+    // "Voice clone active" pill here would lie. The VoiceCacheProgress
+    // row below is the single source of truth: queued / preparing /
+    // "Voice clone active — all N phrases ready".
     if (cloneStatus === "failed") {
       return (
         <span style={{ ...base, color: "#991B1B", background: "#FEE2E2" }}>

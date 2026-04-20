@@ -118,7 +118,9 @@ describe("VoiceCacheProgress", () => {
         patientSpeakerData={null}
       />,
     );
-    expect(screen.getByText(/All 150 phrases ready in Alice's voice/)).toBeTruthy();
+    expect(
+      screen.getByText(/Voice clone active — all 150 phrases ready in Alice's voice/),
+    ).toBeTruthy();
   });
 
   it("renders a retry button when status is failed", () => {
