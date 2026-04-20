@@ -11,7 +11,13 @@ import { create } from "zustand";
 
 export type SpeakerKey = "patient" | `provider:${number}`;
 
-export type RunStatus = "idle" | "running" | "paused" | "done" | "failed";
+export type RunStatus =
+  | "idle"
+  | "queued"
+  | "running"
+  | "paused"
+  | "done"
+  | "failed";
 
 export interface RunState {
   status: RunStatus;
@@ -37,6 +43,17 @@ interface AudioCacheState {
   runs: Partial<Record<SpeakerKey, RunState>>;
   activeKey: SpeakerKey | null;
 
+  /**
+   * Seed a speaker as "queued" — used when the runner builds its plan so
+   * every planned speaker has a visible row before we start consuming
+   * them sequentially. Unlike `start`, this does NOT set activeKey.
+   */
+  queue: (
+    key: SpeakerKey,
+    total: number,
+    locale: string,
+    fingerprint: string,
+  ) => void;
   /** Begin a run for a speaker — replaces any prior state for that key. */
   start: (
     key: SpeakerKey,
@@ -68,6 +85,20 @@ interface AudioCacheState {
 export const useAudioCacheStore = create<AudioCacheState>()((set) => ({
   runs: {},
   activeKey: null,
+
+  queue: (key, total, locale, fingerprint) =>
+    set((s) => ({
+      runs: {
+        ...s.runs,
+        [key]: {
+          ...IDLE,
+          status: "queued",
+          total,
+          locale,
+          fingerprint,
+        },
+      },
+    })),
 
   start: (key, total, locale, fingerprint) =>
     set((s) => ({

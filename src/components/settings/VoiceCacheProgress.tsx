@@ -124,6 +124,37 @@ export function VoiceCacheProgress({
     );
   }
 
+  // --- Queued state (waiting for an earlier speaker's run to finish) ---
+  // The runner processes speakers sequentially; a provider sits in "queued"
+  // from the moment their voice is captured until the patient (and any
+  // earlier providers) finish. Rendering this explicitly avoids a silent
+  // empty row that looks like nothing is happening.
+  if (run.status === "queued") {
+    return (
+      <div
+        role="status"
+        aria-live="polite"
+        style={{
+          marginTop: 10,
+          padding: "12px 16px",
+          fontSize: 14,
+          fontWeight: 500,
+          color: "#374151", // gray-700 — ~11:1 on gray-100, AAA
+          background: "#F3F4F6", // gray-100
+          border: "1px solid #D1D5DB", // gray-300, 3.07:1 on bg (passes 3:1 non-text)
+          borderRadius: 10,
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+        }}
+      >
+        <span aria-hidden="true">{"\u23F3"}</span>
+        Queued — {speakerLabel}'s voice will prepare next ({run.total}{" "}
+        phrase{run.total === 1 ? "" : "s"})
+      </div>
+    );
+  }
+
   // --- Running / paused state (progress bar + controls) ---
   if (run.status === "running" || run.status === "paused") {
     const paused = run.status === "paused";

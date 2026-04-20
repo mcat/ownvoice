@@ -7,6 +7,13 @@ import { VoiceCapture } from "../../shared/VoiceCapture";
 import { VoiceCacheProgress } from "../VoiceCacheProgress";
 import { useSettingsStore } from "../../../stores/settingsStore";
 
+// Provider edits (add / remove / voice capture / voice remove) write directly
+// to the settings store instead of buffering through SettingsPanel's draft +
+// Save-changes flow. This mirrors how the patient embedding is committed
+// immediately via setSpeakerData — without it, cfg.providers[i].embedding
+// stayed undefined until save, so runPreGeneration skipped the provider
+// entirely and their cloned voice never played.
+
 const EMOJIS = [
   "\uD83D\uDC69\u200D\u2695\uFE0F",
   "\uD83D\uDC68\u200D\u2695\uFE0F",
@@ -24,27 +31,28 @@ const EMOJIS = [
 
 interface Props {
   cfg: AppSettings;
-  providers: Provider[];
-  onProvidersChange: (next: Provider[]) => void;
   t: ThemeTokens;
   theme: ThemeName;
 }
 
 export function CareTeamSection({
   cfg,
-  providers,
-  onProvidersChange,
   t,
   theme,
 }: Props) {
   const isDark = theme === "dark";
+  const providers = useSettingsStore((s) => s.cfg?.providers ?? []);
   const [newProvName, setNewProvName] = useState("");
   const [newProvEmoji, setNewProvEmoji] = useState(EMOJIS[0]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
+  function commitProviders(next: Provider[]) {
+    useSettingsStore.getState().updateCfg({ providers: next });
+  }
+
   function addProvider() {
     if (!newProvName.trim()) return;
-    onProvidersChange([
+    commitProviders([
       ...providers,
       { name: newProvName.trim(), hasVoice: false, emoji: newProvEmoji },
     ]);
@@ -53,11 +61,11 @@ export function CareTeamSection({
   }
 
   function removeProvider(i: number) {
-    onProvidersChange(providers.filter((_, idx) => idx !== i));
+    commitProviders(providers.filter((_, idx) => idx !== i));
   }
 
   function toggleProviderVoice(index: number, hasVoice: boolean) {
-    onProvidersChange(
+    commitProviders(
       providers.map((p, i) =>
         i === index
           ? { ...p, hasVoice, embedding: hasVoice ? p.embedding : undefined }
@@ -66,9 +74,15 @@ export function CareTeamSection({
     );
   }
 
-  function setProviderEmbedding(index: number, embedding: unknown) {
-    onProvidersChange(
-      providers.map((p, i) => (i === index ? { ...p, embedding } : p)),
+  // Capture commits hasVoice AND embedding in one pass. Doing it as two
+  // separate updateCfg calls would read `providers` from the hook snapshot
+  // both times — the second call would overwrite the first's `hasVoice`
+  // because no re-render happens between synchronous mutations.
+  function captureProviderVoice(index: number, embedding: unknown) {
+    commitProviders(
+      providers.map((p, i) =>
+        i === index ? { ...p, hasVoice: true, embedding } : p,
+      ),
     );
   }
 
@@ -112,8 +126,8 @@ export function CareTeamSection({
               hasVoice={p.hasVoice}
               hasEmbedding={!!p.embedding}
               onCapture={(_blob, embedding) => {
-                toggleProviderVoice(i, true);
-                if (embedding) setProviderEmbedding(i, embedding);
+                if (embedding) captureProviderVoice(i, embedding);
+                else toggleProviderVoice(i, true);
               }}
               onRemove={() => toggleProviderVoice(i, false)}
               locale={cfg.patientLang}

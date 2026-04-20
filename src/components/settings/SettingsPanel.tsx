@@ -1,5 +1,5 @@
 import { useState } from "preact/hooks";
-import type { AppSettings, FallbackVoice, Provider } from "../../types";
+import type { AppSettings, FallbackVoice } from "../../types";
 import type { ThemeTokens, ThemeName } from "../../theme/tokens";
 import { z } from "../../theme/z";
 import { BottomSheet } from "../shared/BottomSheet";
@@ -28,31 +28,23 @@ export function SettingsPanel({
 }: SettingsPanelProps) {
   const [name, setName] = useState(cfg.patientName);
   const [bed, setBed] = useState(cfg.bed);
-  const [providers, setProviders] = useState<Provider[]>(cfg.providers);
   const [patientVoice, setPatientVoice] = useState(cfg.patientVoice);
   const [fallbackVoice, setFallbackVoice] = useState<FallbackVoice | null>(
     cfg.fallbackVoice ?? null,
   );
 
-  const providersChanged =
-    providers.length !== cfg.providers.length ||
-    providers.some(
-      (p, i) =>
-        p.name !== cfg.providers[i]?.name ||
-        p.hasVoice !== cfg.providers[i]?.hasVoice ||
-        p.emoji !== cfg.providers[i]?.emoji ||
-        !!p.embedding !== !!cfg.providers[i]?.embedding,
-    );
-
+  // Provider changes (add / remove / voice capture) commit directly to the
+  // settings store from inside CareTeamSection, mirroring the patient's
+  // immediate setSpeakerData path — so they don't participate in the
+  // draft/save loop here.
   const hasChanges =
     name !== cfg.patientName ||
     bed !== cfg.bed ||
     patientVoice !== cfg.patientVoice ||
-    (fallbackVoice?.voiceURI ?? null) !== (cfg.fallbackVoice?.voiceURI ?? null) ||
-    providersChanged;
+    (fallbackVoice?.voiceURI ?? null) !== (cfg.fallbackVoice?.voiceURI ?? null);
 
   function save() {
-    onUpdate({ ...cfg, patientName: name, bed, providers, patientVoice, fallbackVoice });
+    onUpdate({ ...cfg, patientName: name, bed, patientVoice, fallbackVoice });
   }
 
   return (
@@ -95,8 +87,6 @@ export function SettingsPanel({
           />
           <CareTeamSection
             cfg={cfg}
-            providers={providers}
-            onProvidersChange={setProviders}
             t={t}
             theme={theme}
           />
