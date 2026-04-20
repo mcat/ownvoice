@@ -1,4 +1,4 @@
-import { useState, useEffect } from "preact/hooks";
+import { useState, useEffect, useRef } from "preact/hooks";
 import type { ThemeTokens } from "../../theme/tokens";
 import { z } from "../../theme/z";
 
@@ -18,10 +18,19 @@ export function Speaking({
 }: SpeakingProps) {
   const [progress, setProgress] = useState(0);
 
+  // onDone is typically an inline arrow from the parent — a new reference
+  // every render. Tracking it via a ref keeps the animation effect from
+  // restarting on every unrelated parent re-render.
+  const onDoneRef = useRef(onDone);
+  useEffect(() => {
+    onDoneRef.current = onDone;
+  }, [onDone]);
+
   useEffect(() => {
     const dur = Math.max(1400, text.length * 55);
     const start = Date.now();
     let raf: number;
+    let doneTimer: ReturnType<typeof setTimeout> | null = null;
 
     const tick = () => {
       const elapsed = Math.min(1, (Date.now() - start) / dur);
@@ -29,13 +38,21 @@ export function Speaking({
       if (elapsed < 1) {
         raf = requestAnimationFrame(tick);
       } else {
-        setTimeout(onDone, 400);
+        // Hold the bar visible at 100% for a beat before handing off.
+        // If the effect is cleaned up before this fires (e.g. new phrase
+        // replaces the current one), clearTimeout keeps us from calling
+        // onDone for a text that's no longer on screen.
+        doneTimer = setTimeout(() => onDoneRef.current(), 400);
       }
     };
 
+    setProgress(0);
     raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [text, onDone]);
+    return () => {
+      cancelAnimationFrame(raf);
+      if (doneTimer != null) clearTimeout(doneTimer);
+    };
+  }, [text]);
 
   const gc = isProvider ? "#059669,#047857" : "#2563EB,#1D4ED8";
 

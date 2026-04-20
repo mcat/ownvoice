@@ -27,10 +27,12 @@ export function useSpeakActions() {
         lang: cfg.patientLang,
       };
       addMessage(text, "patient", cfg.patientName);
+      // Speaking drives its own lifecycle via onDone — no external timer
+      // here. Setting a duplicate timeout caused the overlay to unmount
+      // 400ms before the internal animation's natural end, and rapid
+      // successive taps left stale timers from prior phrases pending.
       setSpeaking({ text, from: "patient" });
-      const dur = Math.max(1400, text.length * 55);
       speak(text, speaker);
-      setTimeout(() => setSpeaking(null), dur);
     },
     [cfg, speakerData, addMessage, setSpeaking],
   );
@@ -47,9 +49,7 @@ export function useSpeakActions() {
       };
       addMessage(text, "provider", provName);
       setSpeaking({ text, from: "provider" });
-      const dur = Math.max(1400, text.length * 55);
       speak(text, speaker);
-      setTimeout(() => setSpeaking(null), dur);
     },
     [cfg, activeProv, addMessage, setSpeaking],
   );
@@ -80,9 +80,7 @@ export function useSpeakActions() {
         lang: cfg.patientLang,
       };
       setSpeaking({ text, from });
-      const dur = Math.max(1400, text.length * 55);
       speak(text, speaker);
-      setTimeout(() => setSpeaking(null), dur);
     },
     [cfg, activeProv, speakerData, setSpeaking],
   );
