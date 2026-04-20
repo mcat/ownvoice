@@ -131,7 +131,7 @@ describe("useSpeakActions", () => {
       });
     });
 
-    it("sets speaking overlay and clears it after duration", () => {
+    it("sets speaking overlay and leaves lifecycle to the Speaking component", () => {
       useSettingsStore.setState({ cfg: DEFAULT_CFG });
 
       const { result } = renderHook(() => useSpeakActions());
@@ -140,18 +140,23 @@ describe("useSpeakActions", () => {
         result.current.speakAsPatient("Hi");
       });
 
-      // Speaking should be set
       expect(useUIStore.getState().speaking).toEqual({
         text: "Hi",
         from: "patient",
       });
 
-      // Duration: Math.max(1400, "Hi".length * 55) = Math.max(1400, 110) = 1400
+      // No external timer queued anymore — advancing time must NOT clear
+      // speaking. The Speaking component's onDone callback is the sole
+      // authority for transitioning back to null. Preserves the overlay
+      // across rapid successive taps.
       act(() => {
-        vi.advanceTimersByTime(1400);
+        vi.advanceTimersByTime(5000);
       });
 
-      expect(useUIStore.getState().speaking).toBeNull();
+      expect(useUIStore.getState().speaking).toEqual({
+        text: "Hi",
+        from: "patient",
+      });
     });
   });
 
