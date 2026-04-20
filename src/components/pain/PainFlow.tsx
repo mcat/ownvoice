@@ -54,16 +54,6 @@ export function PainFlow({ onSelect, t, theme, locale = "en" }: PainFlowProps) {
     reset();
   }
 
-  function goBack() {
-    if (step === "location") {
-      setStep("severity");
-      setSeverity(null);
-    } else if (step === "descriptor") {
-      setStep("location");
-      setLocation(null);
-    }
-  }
-
   function goToStep(target: Step) {
     const targetIndex = STEPS.indexOf(target);
     if (targetIndex >= currentIndex) return;
@@ -160,27 +150,10 @@ export function PainFlow({ onSelect, t, theme, locale = "en" }: PainFlowProps) {
     </>
   );
 
-  // --- Back button ---
-  const backButton = currentIndex > 0 && (
-    <div style={{ marginBottom: 12 }}>
-      <Btn
-        onClick={goBack}
-        style={{
-          background: "transparent",
-          border: `1px solid ${t.border}`,
-          borderRadius: 10,
-          padding: "8px 16px",
-          color: t.sub,
-          fontSize: 15,
-          minWidth: 64,
-          minHeight: 44,
-          cursor: "pointer",
-        }}
-      >
-        <span class="font-sans">Back</span>
-      </Btn>
-    </div>
-  );
+  // Back navigation is available via the breadcrumb — past steps are
+  // rendered as buttons that call goToStep. A redundant Back button
+  // above each grid duplicated that affordance and pushed the phrase
+  // grid below the fold on shorter viewports.
 
   // --- Step: Severity ---
   if (step === "severity") {
@@ -276,7 +249,6 @@ export function PainFlow({ onSelect, t, theme, locale = "en" }: PainFlowProps) {
         }}
       >
         {breadcrumb}
-        {backButton}
         <h2 class="font-sans" style={{ color: t.sub, fontSize: 18, fontWeight: 600, margin: "0 0 16px", flexShrink: 0 }}>
           Where is your pain?
         </h2>
@@ -342,7 +314,6 @@ export function PainFlow({ onSelect, t, theme, locale = "en" }: PainFlowProps) {
       }}
     >
       {breadcrumb}
-      {backButton}
       <h2 class="font-sans" style={{ color: t.sub, fontSize: 18, fontWeight: 600, margin: "0 0 16px", flexShrink: 0 }}>
         What does the pain feel like?
       </h2>
