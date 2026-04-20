@@ -291,8 +291,9 @@ export function VoiceCacheProgress({
           gap: 8,
         }}
       >
-        <span aria-hidden="true">{"\u2713"}</span>
-        All {run.total} phrases ready in {speakerLabel}'s voice
+        <span aria-hidden="true">{"\u2705"}</span>
+        Voice clone active — all {run.total} phrases ready in{" "}
+        {speakerLabel}'s voice
       </div>
     );
   }
