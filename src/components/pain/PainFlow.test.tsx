@@ -42,8 +42,23 @@ describe("PainFlow", () => {
       expect(severity.style.fontWeight).toBe("600");
     });
 
-    it("does not show Back button on first step", () => {
+    it("does not render a Back button on any step", () => {
+      // Back navigation lives entirely in the breadcrumb now — the dedicated
+      // Back button was removed so the phrase grid isn't pushed below the
+      // fold on shorter viewports.
       render(<PainFlow {...baseProps} />);
+      expect(screen.queryByText("Back")).not.toBeInTheDocument();
+
+      // Advance to Location step
+      fireEvent.click(screen.getByText(EMOJI_FPS[0].face));
+      expect(screen.getByText("Where is your pain?")).toBeInTheDocument();
+      expect(screen.queryByText("Back")).not.toBeInTheDocument();
+
+      // Advance to Descriptor step
+      fireEvent.click(screen.getByText("Head"));
+      expect(
+        screen.getByText("What does the pain feel like?"),
+      ).toBeInTheDocument();
       expect(screen.queryByText("Back")).not.toBeInTheDocument();
     });
   });
@@ -64,11 +79,6 @@ describe("PainFlow", () => {
       }
     });
 
-    it("shows Back button on location step", () => {
-      render(<PainFlow {...baseProps} />);
-      fireEvent.click(screen.getByText(EMOJI_FPS[0].face));
-      expect(screen.getByText("Back")).toBeInTheDocument();
-    });
   });
 
   describe("descriptor step", () => {
@@ -120,29 +130,6 @@ describe("PainFlow", () => {
 
       // Should have reset back to severity step
       expect(screen.getByText("How much pain do you have?")).toBeInTheDocument();
-    });
-  });
-
-  describe("back button", () => {
-    it("goes back from location to severity", () => {
-      render(<PainFlow {...baseProps} />);
-      fireEvent.click(screen.getByText(EMOJI_FPS[1].face)); // severity 2
-      expect(screen.getByText("Where is your pain?")).toBeInTheDocument();
-
-      fireEvent.click(screen.getByText("Back"));
-      expect(screen.getByText("How much pain do you have?")).toBeInTheDocument();
-    });
-
-    it("goes back from descriptor to location", () => {
-      render(<PainFlow {...baseProps} />);
-      fireEvent.click(screen.getByText(EMOJI_FPS[2].face)); // severity 4
-      fireEvent.click(screen.getByText("Neck"));
-      expect(
-        screen.getByText("What does the pain feel like?"),
-      ).toBeInTheDocument();
-
-      fireEvent.click(screen.getByText("Back"));
-      expect(screen.getByText("Where is your pain?")).toBeInTheDocument();
     });
   });
 
