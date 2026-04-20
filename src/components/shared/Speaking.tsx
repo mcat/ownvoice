@@ -17,6 +17,7 @@ export function Speaking({
   t,
 }: SpeakingProps) {
   const [progress, setProgress] = useState(0);
+  const [exiting, setExiting] = useState(false);
 
   // onDone is typically an inline arrow from the parent — a new reference
   // every render. Tracking it via a ref keeps the animation effect from
@@ -38,15 +39,17 @@ export function Speaking({
       if (elapsed < 1) {
         raf = requestAnimationFrame(tick);
       } else {
-        // Hold the bar visible at 100% for a beat before handing off.
-        // If the effect is cleaned up before this fires (e.g. new phrase
-        // replaces the current one), clearTimeout keeps us from calling
-        // onDone for a text that's no longer on screen.
+        // Trigger the exit slide-up, then hand off after the animation
+        // finishes. If the effect is cleaned up mid-exit (e.g. a new
+        // phrase arrives), clearTimeout keeps us from calling onDone
+        // for a text that's no longer on screen.
+        setExiting(true);
         doneTimer = setTimeout(() => onDoneRef.current(), 400);
       }
     };
 
     setProgress(0);
+    setExiting(false);
     raf = requestAnimationFrame(tick);
     return () => {
       cancelAnimationFrame(raf);
@@ -70,7 +73,9 @@ export function Speaking({
         color: "#F5F5F5",
         padding: "10px 32px",
         zIndex: z.speaking,
-        animation: "slideDown 0.25s ease-out",
+        animation: exiting
+          ? "slideUp 0.4s ease-in forwards"
+          : "slideDown 0.25s ease-out",
         display: "flex",
         alignItems: "center",
         gap: 14,
