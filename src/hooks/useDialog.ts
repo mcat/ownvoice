@@ -21,6 +21,14 @@ export function useDialog(opts: {
   const { onClose, titleId } = opts;
   const dialogRef = useRef<HTMLDivElement>(null);
 
+  // Keep the latest onClose in a ref so the mount effect below can stay
+  // deps-free. Callers typically pass inline closures (e.g.
+  // `onClose={handleClose}` from BottomSheet) whose identity churns every
+  // render; re-running the effect on each render yanked focus back to the
+  // dialog root on every keystroke in child inputs.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
   useEffect(() => {
     // Remember the element that had focus before the dialog opened.
     const previouslyFocused = document.activeElement as HTMLElement | null;
@@ -48,7 +56,7 @@ export function useDialog(opts: {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.stopPropagation();
-        onClose();
+        onCloseRef.current();
       }
     };
     document.addEventListener("keydown", onKey);
@@ -59,7 +67,7 @@ export function useDialog(opts: {
       // Restore focus to the element that originally triggered the dialog.
       previouslyFocused?.focus?.({ preventScroll: true });
     };
-  }, [onClose]);
+  }, []);
 
   return { dialogRef, titleId };
 }
