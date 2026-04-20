@@ -51,6 +51,7 @@ export function OfflineReadinessSection({ t }: Props) {
   const [verifying, setVerifying] = useState(false);
   const [clearingCache, setClearingCache] = useState(false);
   const [alreadyReady, setAlreadyReady] = useState(false);
+  const [justVerified, setJustVerified] = useState(false);
   const [forcingRedownload, setForcingRedownload] = useState(false);
   const dismissTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const health = useStorageHealth();
@@ -126,10 +127,19 @@ export function OfflineReadinessSection({ t }: Props) {
 
   async function runVerifyOnly() {
     setError(null);
+    clearDismissTimer();
+    setJustVerified(false);
     setVerifying(true);
     try {
       await verifyAllOnBoot();
       markPrimerComplete();
+      // Confirm to the clinician that the tap did something, even when the
+      // state didn't change (models were already ok before the check).
+      const v = useOfflineStore.getState().verified;
+      if (Object.values(v).every((s) => s === "verified")) {
+        setJustVerified(true);
+        dismissTimer.current = setTimeout(() => setJustVerified(false), 3000);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -281,6 +291,21 @@ export function OfflineReadinessSection({ t }: Props) {
       >
         {verifying ? "Checking…" : "Check existing models"}
       </Btn>
+
+      {justVerified && (
+        <p
+          role="status"
+          aria-live="polite"
+          style={{
+            marginTop: 8,
+            fontSize: 14,
+            color: t.text,
+            fontWeight: 500,
+          }}
+        >
+          ✓ Models verified
+        </p>
+      )}
 
       {/* Force redownload — lets a clinician or tester trigger a visible
           fresh download even when everything verifies. Wipes OPFS /models/
