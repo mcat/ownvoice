@@ -273,7 +273,8 @@ export function OfflineReadinessSection({ t }: Props) {
 
       <Btn
         onClick={runVerifyOnly}
-        disabled={offlineActionRunning}
+        disabled={offlineActionRunning || justVerified}
+        aria-live="polite"
         style={{
           width: "100%",
           minHeight: 44,
@@ -282,30 +283,19 @@ export function OfflineReadinessSection({ t }: Props) {
           borderRadius: 10,
           border: `1px solid ${t.border}`,
           background: "transparent",
-          color: t.sub,
+          color: justVerified ? t.text : t.sub,
           fontSize: 14,
           fontWeight: 500,
           fontFamily: "inherit",
-          opacity: offlineActionRunning ? 0.6 : 1,
+          opacity: offlineActionRunning && !justVerified ? 0.6 : 1,
         }}
       >
-        {verifying ? "Checking…" : "Check existing models"}
+        {verifying
+          ? "Checking…"
+          : justVerified
+            ? "✓ Models verified"
+            : "Check existing models"}
       </Btn>
-
-      {justVerified && (
-        <p
-          role="status"
-          aria-live="polite"
-          style={{
-            marginTop: 8,
-            fontSize: 14,
-            color: t.text,
-            fontWeight: 500,
-          }}
-        >
-          ✓ Models verified
-        </p>
-      )}
 
       {/* Force redownload — lets a clinician or tester trigger a visible
           fresh download even when everything verifies. Wipes OPFS /models/
