@@ -112,6 +112,15 @@ export function PatientInfoSection({
           cfg={cfg}
           patientSpeakerData={useSettingsStore.getState().speakerData}
         />
+        {/* Separate row for the ~700-phrase pain matrix: runs only on GPU
+            (hardware gated in audioCacheRunner), so on WASM-only systems
+            this row is simply absent — the store has no entry to render. */}
+        <VoiceCacheProgress
+          speakerKey="patient:pain"
+          speakerLabel="Pain descriptions"
+          cfg={cfg}
+          patientSpeakerData={useSettingsStore.getState().speakerData}
+        />
       </div>
 
       <div style={{ marginTop: 20 }}>

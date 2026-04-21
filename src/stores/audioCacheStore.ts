@@ -9,7 +9,7 @@ import { create } from "zustand";
  * this would risk drift from disk state.
  */
 
-export type SpeakerKey = "patient" | `provider:${number}`;
+export type SpeakerKey = "patient" | "patient:pain" | `provider:${number}`;
 
 export type RunStatus =
   | "idle"

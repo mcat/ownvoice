@@ -493,6 +493,28 @@ export function getSuggestionTree(locale: string = "en"): Record<string, string[
  * Excludes composed sentences (pain, wishes, sentence-builder) — those
  * are assembled at runtime from variable parts.
  */
+/**
+ * Every composed pain-report sentence for a locale — the full cross-product of
+ * descriptor × body region × severity. With en defaults that's 9 × 13 × 6 = 702
+ * sentences. Deliberately kept OUT of `getPatientSpeakablePhrases` because this
+ * list is only viable to pre-generate on WebGPU; WASM would take 3–6 hours.
+ * The cache runner enumerates this separately and runs it in a GPU-only pass.
+ */
+export function getPatientPainSentences(locale: string = "en"): string[] {
+  const phrases = new Set<string>();
+  const descriptors = getPainDescriptors(locale);
+  const regions = getBodyRegions(locale);
+  const severities = getEmojiFPS(locale);
+  for (const d of descriptors) {
+    for (const r of regions) {
+      for (const s of severities) {
+        phrases.add(composePainSentence(locale, d.text, r, s.n));
+      }
+    }
+  }
+  return Array.from(phrases);
+}
+
 export function getPatientSpeakablePhrases(locale: string = "en"): string[] {
   const phrases = new Set<string>();
 
