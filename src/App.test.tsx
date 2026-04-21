@@ -233,6 +233,28 @@ describe("App", () => {
     expect(screen.getByRole("heading", { name: "Settings" })).toBeInTheDocument();
   });
 
+  it("auto-saving a Settings field does NOT dismiss the Settings sheet", () => {
+    // Regression guard: in the original Save-button flow, App's onUpdate
+    // handler persisted AND called closeOverlay("settings"). When Settings
+    // switched to auto-save (onUpdate fires on every keystroke), the
+    // close-on-update behaviour silently survived, making every text-field
+    // edit instantly dismiss the panel.
+    useSettingsStore.setState({ _hasHydrated: true, cfg: makeCfg() });
+    useUIStore.setState({ settingsOpen: true });
+    render(<App />);
+
+    // There are two "Name" labels in the panel (patient + CareTeam's add-
+    // provider input). The patient-name field is seeded with "Maria"
+    // above, so getByDisplayValue disambiguates.
+    const nameInput = screen.getByDisplayValue("Maria");
+    fireEvent.input(nameInput, { target: { value: "Ana" } });
+
+    // The edit should have persisted AND the sheet should still be open.
+    expect(useSettingsStore.getState().cfg?.patientName).toBe("Ana");
+    expect(useUIStore.getState().settingsOpen).toBe(true);
+    expect(screen.getByRole("heading", { name: "Settings" })).toBeInTheDocument();
+  });
+
   it("pinEntryOpen overlay renders PinGate", () => {
     useSettingsStore.setState({
       _hasHydrated: true,
