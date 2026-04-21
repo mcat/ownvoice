@@ -1,9 +1,13 @@
 import { useState, useEffect, useRef, useMemo } from "preact/hooks";
 import type { FallbackVoice } from "../../types";
 import { curateVoices, isEnhancedVoice } from "./voiceCuration";
+import { getRecordingScript } from "../../data/recordingScripts";
 
 /**
- * Sample phrases per language — used for the 3-second voice preview.
+ * Short clinical fallback phrases per language. Used for locales where
+ * we don't have a phonetically-balanced reference passage. English uses
+ * the Rainbow Passage from `getRecordingScript("en")` instead — see
+ * `getPreviewPhrase` below.
  */
 const PREVIEW_PHRASES: Record<string, string> = {
   en: "Hello, I need some help please. Can you come here?",
@@ -20,6 +24,31 @@ const PREVIEW_PHRASES: Record<string, string> = {
   tl: "Kumusta, kailangan ko ng tulong.",
   ru: "Здравствуйте, мне нужна помощь.",
 };
+
+/**
+ * Pick the phrase to recite when previewing a backup voice.
+ *
+ * For locales where the recording-coaching script provides a phonetically-
+ * balanced passage (currently English's Rainbow Passage), use it — that's
+ * the same script the patient reads when capturing their voice clone, so
+ * it gives a fair comparison of how the backup voice handles the full
+ * range of English phonemes (sibilants, vowels, plosives) rather than
+ * just the handful in a short greeting.
+ *
+ * For locales without a passage (no native-speaker review), fall back
+ * to the short clinical phrase from `PREVIEW_PHRASES`.
+ */
+function getPreviewPhrase(langPrefix: string): string {
+  const script = getRecordingScript(langPrefix);
+  if (script.passage) return script.passage;
+  return PREVIEW_PHRASES[langPrefix] ?? PREVIEW_PHRASES.en;
+}
+
+// Rainbow Passage runs ~14s at conversational pace; allow generous
+// headroom for slow voices. Acts only as a safety net — the utterance's
+// `onend` handler resolves the playing state when speech finishes
+// naturally, which usually happens well before this fires.
+const PREVIEW_MAX_MS = 25_000;
 
 interface ColorTokens {
   text: string;
@@ -128,7 +157,7 @@ export function FallbackVoicePicker({
     if (cancelTimer.current) clearTimeout(cancelTimer.current);
     stopKeepalive();
 
-    const phrase = PREVIEW_PHRASES[langPrefix] ?? PREVIEW_PHRASES.en;
+    const phrase = getPreviewPhrase(langPrefix);
     const utt = new SpeechSynthesisUtterance(phrase);
     utt.voice = voice;
     utt.rate = 0.9;
@@ -163,12 +192,16 @@ export function FallbackVoicePicker({
       }, 10_000);
     }
 
-    // Auto-stop after 3 seconds
+    // Safety net: cancel after PREVIEW_MAX_MS if the utterance doesn't
+    // signal completion (Chrome bug where long utterances silently
+    // freeze without onend/onerror firing). Natural completion via
+    // utt.onend resolves much sooner — typically ~14s for the Rainbow
+    // Passage at conversational pace, ~3s for the short fallback phrases.
     cancelTimer.current = setTimeout(() => {
       stopKeepalive();
       speechSynthesis.cancel();
       setPlayingURI(null);
-    }, 3000);
+    }, PREVIEW_MAX_MS);
   }
 
   function handleSelect(voice: SpeechSynthesisVoice) {
