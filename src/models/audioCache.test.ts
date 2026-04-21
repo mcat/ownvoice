@@ -24,6 +24,13 @@ vi.mock("./modelManager", () => ({
   getModelManager: () => mockModelManager,
 }));
 
+// Mock postProcessAudio so tests can assert generateAllPhrases applies it
+// on the synthesis path before caching. Identity function keeps existing
+// round-trip tests unaffected (put/get goes direct, never through this).
+vi.mock("../speak", () => ({
+  postProcessAudio: vi.fn((audio: Float32Array) => audio),
+}));
+
 // =============================================================================
 // OPFS mock
 // =============================================================================
@@ -81,8 +88,9 @@ function createOPFSMock() {
     getFileHandle: (name: string, opts?: { create?: boolean }) => Promise<ReturnType<typeof makeFileHandle>>;
     getDirectoryHandle: (name: string, opts?: { create?: boolean }) => Promise<ReturnType<typeof makeDirHandle>>;
     removeEntry: (name: string, opts?: { recursive?: boolean }) => Promise<void>;
+    entries: () => AsyncIterable<[string, unknown]>;
   } {
-    return {
+    const dir = {
       getFileHandle: async (name: string, opts?: { create?: boolean }) =>
         makeFileHandle(`${prefix}/${name}`, opts),
       getDirectoryHandle: async (
@@ -95,7 +103,27 @@ function createOPFSMock() {
           if (key.startsWith(`${prefix}/`)) store.delete(key);
         }
       },
+      /**
+       * Async-iterate over immediate children. Mirrors the real OPFS
+       * FileSystemDirectoryHandle.entries() — yields [name, handle]
+       * tuples for every direct child. The handle is shape-compatible
+       * enough for code that only reads the name.
+       */
+      entries: async function* () {
+        const seen = new Set<string>();
+        for (const key of store.keys()) {
+          if (!key.startsWith(`${prefix}/`)) continue;
+          const tail = key.slice(prefix.length + 1);
+          // Only direct children (no nested path separators)
+          const slash = tail.indexOf("/");
+          const name = slash === -1 ? tail : tail.slice(0, slash);
+          if (seen.has(name)) continue;
+          seen.add(name);
+          yield [name, null] as [string, unknown];
+        }
+      },
     };
+    return dir;
   }
 
   const root = makeDirHandle("");
@@ -150,9 +178,12 @@ describe("audioCache — put / get round-trip", () => {
     expect(result).not.toBeNull();
     expect(result!.sampleRate).toBe(24000);
     expect(result!.audio.length).toBe(AUDIO.length);
-    // Float32Array bytes should match
+    // Int16 storage is lossy at ~3e-5 (1 / 32767). Four-decimal tolerance
+    // covers that cleanly. Post-processing is NOT applied here — that's
+    // the generator's job, so putCachedAudio → getCachedAudio is a pure
+    // lossless-modulo-quantization round-trip.
     for (let i = 0; i < AUDIO.length; i++) {
-      expect(result!.audio[i]).toBeCloseTo(AUDIO[i], 5);
+      expect(result!.audio[i]).toBeCloseTo(AUDIO[i], 4);
     }
   });
 
@@ -166,6 +197,67 @@ describe("audioCache — put / get round-trip", () => {
     await putCachedAudio("Hello", EMBEDDING, AUDIO);
 
     const result = await getCachedAudio("Hello", embedding2);
+    expect(result).toBeNull();
+  });
+});
+
+// =============================================================================
+// Int16 PCM round-trip — clamping & boundaries
+// =============================================================================
+describe("audioCache — int16 PCM clamping", () => {
+  it("clamps out-of-range positive samples to +1.0 on read", async () => {
+    // Input 2.0 is outside the normal ±1.0 range; float32ToInt16 should
+    // clamp to +32767 before writing, and the round-trip result should
+    // be ~+1.0 (not 2.0, and not some wrapped negative value).
+    const overdriven = new Float32Array([2.0, 5.0, 100.0]);
+    await putCachedAudio("overdrive-positive", EMBEDDING, overdriven);
+    const result = await getCachedAudio("overdrive-positive", EMBEDDING);
+
+    expect(result).not.toBeNull();
+    for (let i = 0; i < overdriven.length; i++) {
+      // Clamped to 32767, which divides back to ~1.0 on read.
+      expect(result!.audio[i]).toBeCloseTo(1.0, 4);
+    }
+  });
+
+  it("clamps out-of-range negative samples to -1.0 on read", async () => {
+    const overdriven = new Float32Array([-2.0, -5.0, -100.0]);
+    await putCachedAudio("overdrive-negative", EMBEDDING, overdriven);
+    const result = await getCachedAudio("overdrive-negative", EMBEDDING);
+
+    expect(result).not.toBeNull();
+    for (let i = 0; i < overdriven.length; i++) {
+      // Clamps to -32768; -32768 / 32767 ≈ -1.00003. Tolerance of 3
+      // covers the half-LSB asymmetry without masking sign errors.
+      expect(result!.audio[i]).toBeCloseTo(-1.0, 3);
+    }
+  });
+
+  it("preserves exact boundary values at ±1.0", async () => {
+    // Values right at the boundary: -1.0 maps to -32767 (not -32768,
+    // because 1.0 * 32767 = 32767, and negating gives -32767). The
+    // boundary-inclusive vs -exclusive comparison in the clamp
+    // shouldn't change the stored bytes for in-range input.
+    const edges = new Float32Array([-1.0, -0.5, 0.0, 0.5, 1.0]);
+    await putCachedAudio("edges", EMBEDDING, edges);
+    const result = await getCachedAudio("edges", EMBEDDING);
+
+    expect(result).not.toBeNull();
+    for (let i = 0; i < edges.length; i++) {
+      expect(result!.audio[i]).toBeCloseTo(edges[i], 4);
+    }
+  });
+
+  it("stores an empty audio buffer as zero bytes and rejects it on read", async () => {
+    // Covers the "for (let i = 0; i < samples.length; i++)" loop bound
+    // on empty input. An off-by-one to `<=` would attempt to read
+    // samples[0] which is undefined; the resulting int16 would be NaN
+    // or 0 depending on the branch, either way distinguishable from
+    // the documented "empty file = null" behavior of getCachedAudio.
+    const empty = new Float32Array(0);
+    await putCachedAudio("empty", EMBEDDING, empty);
+    // getCachedAudio returns null when file.size === 0.
+    const result = await getCachedAudio("empty", EMBEDDING);
     expect(result).toBeNull();
   });
 });
@@ -222,6 +314,34 @@ describe("audioCache — countCached", () => {
       EMBEDDING,
     );
     expect(count).toBe(2);
+  });
+
+  it("returns 0 when the embedding is too short to fingerprint", async () => {
+    // Guards the `if (fp === "none") return 0` early-exit. Without this
+    // test, a mutation that always falls through would pass — countCached
+    // would then try to hashKey() against an un-fingerprinted embedding
+    // and return nonsense.
+    const shortEmbedding = new Float32Array([0.1, 0.2]);
+    await putCachedAudio("Hello", shortEmbedding, AUDIO); // stores nothing
+    const count = await countCached(["Hello"], shortEmbedding);
+    expect(count).toBe(0);
+  });
+
+  it("ignores non-.raw entries in the cache directory", async () => {
+    // listCachedKeys filters by filename extension so we don't count
+    // stray files (e.g., a future "index.json" manifest). Without a
+    // non-.raw entry in the dir, the .endsWith(".raw") → true mutation
+    // survives because there's nothing non-matching for it to wrongly
+    // include.
+    await putCachedAudio("Hello", EMBEDDING, AUDIO);
+
+    // Manually poke a non-raw file into the mock OPFS store via the same
+    // backing map the handles use. The CACHE_DIR lives at "/audio-cache-v2".
+    opfs.store.set("/audio-cache-v2/readme.txt", new ArrayBuffer(10));
+    opfs.store.set("/audio-cache-v2/something.json", new ArrayBuffer(10));
+
+    const count = await countCached(["Hello", "Not cached"], EMBEDDING);
+    expect(count).toBe(1); // Only "Hello", NOT the txt/json
   });
 });
 
@@ -290,6 +410,44 @@ describe("audioCache — generateAllPhrases", () => {
     expect(results[0]).toEqual({ phrase: "Hello", current: 1, total: 2 });
     // Second yield: "Goodbye" was generated via worker
     expect(results[1]).toEqual({ phrase: "Goodbye", current: 2, total: 2 });
+  });
+
+  it("applies postProcessAudio before caching synthesized audio", async () => {
+    // Stryker's default mutator set doesn't delete function calls, so a
+    // silent "oops, we forgot to post-process" regression wouldn't get
+    // surfaced by mutation testing. This test is the backstop: the
+    // generator must route synthesized audio through postProcessAudio
+    // (once, with the right sample rate) before handing it to the cache.
+    const { postProcessAudio } = await import("../speak");
+    const mockedPP = vi.mocked(postProcessAudio);
+    mockedPP.mockClear();
+
+    mockModelManager.isReady.mockReturnValue(true);
+    mockModelManager.getWorker.mockReturnValue(mockWorker);
+    const synthAudio = new Float32Array([0.25, -0.25]);
+    mockWorker.addEventListener.mockImplementation(
+      (_event: string, handler: (e: MessageEvent) => void) => {
+        setTimeout(() => {
+          handler({
+            data: { type: "audio", data: synthAudio },
+          } as unknown as MessageEvent);
+        }, 1);
+      },
+    );
+
+    const gen = generateAllPhrases(["Fresh"], EMBEDDING);
+    for await (const _ of gen) { /* drain */ void _; }
+
+    expect(mockedPP).toHaveBeenCalledTimes(1);
+    expect(mockedPP).toHaveBeenCalledWith(
+      expect.any(Float32Array),
+      24000, // SAMPLE_RATE
+    );
+    // The Float32Array passed in must be the synthesis output, not
+    // something else (e.g., the phrase text accidentally re-routed).
+    const passedAudio = mockedPP.mock.calls[0][0];
+    expect(passedAudio.length).toBe(synthAudio.length);
+    expect(passedAudio[0]).toBeCloseTo(synthAudio[0], 6);
   });
 
   it("continues generating even if one phrase fails", async () => {
@@ -523,6 +681,34 @@ describe("audioCache — generateAllPhrases abort", () => {
 
     const results = await promise;
     expect(results).toHaveLength(0); // no progress yielded — run exits cleanly
+  });
+});
+
+// =============================================================================
+// generateAllPhrases — GPU-only gating
+// =============================================================================
+describe("audioCache — generateAllPhrases gpuOnly", () => {
+  beforeEach(() => {
+    // WASM worker IS ready — proves the gpuOnly gate ignores it, rather
+    // than accidentally succeeding because no synth path exists at all.
+    mockModelManager.isReady.mockReturnValue(true);
+    mockModelManager.getWorker.mockReturnValue(mockWorker);
+    mockWorker.postMessage.mockClear();
+    mockWorker.addEventListener.mockClear();
+  });
+
+  it("yields nothing and never calls the WASM worker when GPU is not ready", async () => {
+    // isGPUReady() returns false by default in the test env — no module
+    // mock needed. This is the WASM-only desktop scenario: gpuOnly must
+    // short-circuit rather than silently take the ~3-6 hour WASM path.
+    const gen = generateAllPhrases(["A", "B"], EMBEDDING, undefined, {
+      gpuOnly: true,
+    });
+    const results: unknown[] = [];
+    for await (const r of gen) results.push(r);
+
+    expect(results).toHaveLength(0);
+    expect(mockWorker.postMessage).not.toHaveBeenCalled();
   });
 });
 

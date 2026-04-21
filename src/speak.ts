@@ -219,8 +219,13 @@ function applyBiquad(
  *   6. Peak normalization to 0.85 — consistent volume with headroom
  *   7. Soft limiter — tanh saturation prevents clipping on transients
  *   8. Cosine fade-in/out (5 ms) — prevents start/end clicks
+ *
+ * Exported so the audio-cache pre-gen path can apply it once at write time
+ * rather than re-running the FFT pipeline on every playback. Cached audio
+ * goes in already-processed; this function is only called at playback for
+ * non-cached paths (currently none, reserved for future live-synth).
  */
-function postProcessAudio(raw: Float32Array, sampleRate: number): Float32Array {
+export function postProcessAudio(raw: Float32Array, sampleRate: number): Float32Array {
   const n = raw.length;
   if (n === 0) return raw;
 
@@ -301,7 +306,14 @@ function postProcessAudio(raw: Float32Array, sampleRate: number): Float32Array {
 }
 
 /**
- * Play raw PCM audio data through Web Audio API.
+ * Play PCM audio data through Web Audio API.
+ *
+ * The audio passed in is assumed to be already post-processed — cached
+ * clips get their FFT denoise / EQ / gate / limiter applied once at
+ * cache-write time in audioCache.ts, not on every tap. Keeping the
+ * post-processing off the tap path saves ~10-50ms of main-thread FFT
+ * work per playback, which is the difference between "feels instant"
+ * and "perceptibly slow" for an AAC tap.
  */
 async function playAudioBuffer(
   audio: Float32Array,
@@ -309,19 +321,8 @@ async function playAudioBuffer(
 ): Promise<void> {
   const ctx = await getAudioContext();
 
-  const processed = postProcessAudio(audio, sampleRate);
-
-  let rawMax = 0, rawRms = 0;
-  for (let i = 0; i < audio.length; i++) {
-    const abs = Math.abs(audio[i]);
-    if (abs > rawMax) rawMax = abs;
-    rawRms += audio[i] * audio[i];
-  }
-  rawRms = Math.sqrt(rawRms / audio.length);
-  console.log(`[OwnVoice:TTS] Audio post-process: rawMax=${rawMax.toFixed(4)} rawRms=${rawRms.toFixed(4)} → processed ${processed.length} samples`);
-
-  const buffer = ctx.createBuffer(1, processed.length, sampleRate);
-  buffer.getChannelData(0).set(processed);
+  const buffer = ctx.createBuffer(1, audio.length, sampleRate);
+  buffer.getChannelData(0).set(audio);
 
   return new Promise<void>((resolve) => {
     const source = ctx.createBufferSource();

@@ -1,8 +1,38 @@
 import { getModelManager } from "./modelManager";
 import { isGPUReady, synthesizeGPU } from "./ttsEngine";
+import { postProcessAudio } from "../speak";
 
-const CACHE_DIR = "audio-cache";
+// Bumped from "audio-cache" after two format changes landed together:
+//   1. Stored bytes are now post-processed (denoise/EQ/gate/limiter) rather
+//      than raw decoder output — playback skips the FFT pipeline.
+//   2. Stored bytes are now Int16 PCM (scale 32767) rather than Float32,
+//      halving on-disk footprint.
+// Mixing old and new files in the same directory would break playback for
+// cached pre-upgrade clips. Directory bump orphans them cleanly.
+const CACHE_DIR = "audio-cache-v2";
 const SAMPLE_RATE = 24000; // Chatterbox Turbo output rate
+const INT16_SCALE = 32767;
+
+/** Convert Float32 audio (assumed roughly in ±1.0) to clamped Int16 PCM. */
+function float32ToInt16(samples: Float32Array): Int16Array {
+  const out = new Int16Array(samples.length);
+  for (let i = 0; i < samples.length; i++) {
+    const s = samples[i] * INT16_SCALE;
+    // Clamp after scaling — the post-process limiter bounds output to ±0.9
+    // in practice, so overflow is rare, but we clamp defensively.
+    out[i] = s < -32768 ? -32768 : s > 32767 ? 32767 : s;
+  }
+  return out;
+}
+
+/** Convert Int16 PCM back to Float32 in ±1.0 range. */
+function int16ToFloat32(samples: Int16Array): Float32Array {
+  const out = new Float32Array(samples.length);
+  for (let i = 0; i < samples.length; i++) {
+    out[i] = samples[i] / INT16_SCALE;
+  }
+  return out;
+}
 
 /**
  * Pre-generated audio cache for fixed phrases.
@@ -103,7 +133,7 @@ export async function hasCachedAudio(
   }
 }
 
-/** Retrieve cached audio as a Float32Array */
+/** Retrieve cached audio as a Float32Array (converted from stored Int16). */
 export async function getCachedAudio(
   phrase: string,
   speakerData: unknown,
@@ -117,13 +147,24 @@ export async function getCachedAudio(
     const file = await fileHandle.getFile();
     if (file.size === 0) return null;
     const buffer = await file.arrayBuffer();
-    return { audio: new Float32Array(buffer), sampleRate: SAMPLE_RATE };
+    return {
+      audio: int16ToFloat32(new Int16Array(buffer)),
+      sampleRate: SAMPLE_RATE,
+    };
   } catch {
     return null;
   }
 }
 
-/** Store generated audio in the cache */
+/**
+ * Store audio in the cache as Int16 PCM.
+ *
+ * This is a pure storage primitive — it stores exactly what it's given.
+ * Callers on the synthesis path are expected to have already applied
+ * postProcessAudio, because post-processing at write time (once) is
+ * cheaper than at read time (on every tap replay). Int16 storage halves
+ * disk footprint — a 5s clip drops from 480 KB to 240 KB.
+ */
 export async function putCachedAudio(
   phrase: string,
   speakerData: unknown,
@@ -136,7 +177,8 @@ export async function putCachedAudio(
     const key = hashKey(phrase, fp);
     const fileHandle = await dir.getFileHandle(`${key}.raw`, { create: true });
     const writable = await fileHandle.createWritable();
-    await writable.write(audio.buffer as ArrayBuffer);
+    const pcm = float32ToInt16(audio);
+    await writable.write(pcm.buffer as ArrayBuffer);
     await writable.close();
   } catch (err) {
     console.error("[OwnVoice:Cache] Failed to store audio:", err);
@@ -168,10 +210,20 @@ export async function* generateAllPhrases(
   phrases: string[],
   speakerData: unknown,
   signal?: AbortSignal,
+  opts?: { gpuOnly?: boolean },
 ): AsyncGenerator<GenerateProgress> {
   const mgr = getModelManager();
   const worker = mgr.getWorker("tts");
   const gpuAvailable = isGPUReady();
+  const gpuOnly = opts?.gpuOnly === true;
+
+  // GPU-only mode is used for the large pain-sentence matrix where WASM
+  // would take hours. If there is no GPU, skip the whole pass — don't
+  // quietly fall back to WASM.
+  if (gpuOnly && !gpuAvailable) {
+    console.warn("[OwnVoice:Cache] GPU-only pass requested but GPU not ready, skipping");
+    return;
+  }
 
   // Need at least one synthesis path ready.
   if (!gpuAvailable && (!worker || !mgr.isReady("tts"))) {
@@ -201,8 +253,12 @@ export async function* generateAllPhrases(
         phrase,
         speakerData,
         signal,
+        gpuOnly,
       );
-      await putCachedAudio(phrase, speakerData, audio);
+      // Post-process once here, at cache-write time, so playback in
+      // speak.ts skips the ~10-50ms FFT pipeline on every tap.
+      const processed = postProcessAudio(audio, SAMPLE_RATE);
+      await putCachedAudio(phrase, speakerData, processed);
     } catch (err) {
       if (signal?.aborted) return;
       failed = true;
@@ -229,8 +285,9 @@ export async function* retryFailed(
   phrases: string[],
   speakerData: unknown,
   signal?: AbortSignal,
+  opts?: { gpuOnly?: boolean },
 ): AsyncGenerator<GenerateProgress> {
-  yield* generateAllPhrases(phrases, speakerData, signal);
+  yield* generateAllPhrases(phrases, speakerData, signal, opts);
 }
 
 /**
@@ -250,6 +307,7 @@ async function synthesizeWithRetries(
   phrase: string,
   speakerData: unknown,
   signal?: AbortSignal,
+  gpuOnly: boolean = false,
 ): Promise<Float32Array> {
   let lastErr: unknown;
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
@@ -257,7 +315,7 @@ async function synthesizeWithRetries(
       throw new DOMException("Aborted", "AbortError");
     }
     try {
-      return await synthesizeBestAvailable(worker, phrase, speakerData, signal);
+      return await synthesizeBestAvailable(worker, phrase, speakerData, signal, gpuOnly);
     } catch (err) {
       if (signal?.aborted) throw err;
       lastErr = err;
@@ -281,6 +339,7 @@ async function synthesizeBestAvailable(
   phrase: string,
   speakerData: unknown,
   signal?: AbortSignal,
+  gpuOnly: boolean = false,
 ): Promise<Float32Array> {
   if (isGPUReady()) {
     try {
@@ -291,8 +350,11 @@ async function synthesizeBestAvailable(
       return data;
     } catch (err) {
       if (signal?.aborted) throw err;
+      if (gpuOnly) throw err;
       console.warn(`[OwnVoice:Cache] GPU synth failed, trying WASM worker:`, err);
     }
+  } else if (gpuOnly) {
+    throw new Error("GPU-only synthesis requested but GPU not ready");
   }
   if (!worker) {
     throw new Error("No TTS worker available for WASM fallback");
@@ -352,16 +414,59 @@ function synthesizeOne(
 
 /**
  * Count how many phrases are currently cached for a speaker.
+ *
+ * Single directory scan then in-memory Set lookup — avoids N per-phrase
+ * OPFS round-trips. On Safari each getFileHandle() is ~5ms; at 850
+ * phrases the old per-phrase version spent ~4s just counting before
+ * pre-gen could decide what to do.
  */
 export async function countCached(
   phrases: string[],
   speakerData: unknown,
 ): Promise<number> {
+  const fp = embeddingFingerprint(speakerData);
+  if (fp === "none") return 0;
+
+  let cachedKeys: Set<string>;
+  try {
+    cachedKeys = await listCachedKeys();
+  } catch {
+    return 0;
+  }
+
   let count = 0;
   for (const phrase of phrases) {
-    if (await hasCachedAudio(phrase, speakerData)) count++;
+    if (cachedKeys.has(hashKey(phrase, fp))) count++;
   }
   return count;
+}
+
+/**
+ * Enumerate the cache directory once and return the set of cached hash
+ * keys (stripped of the `.raw` extension). Used by countCached, and
+ * available to callers that need a stable snapshot of what's on disk.
+ *
+ * Uses FileSystemDirectoryHandle's async-iterator protocol (`entries()`
+ * or its default iterator) — available in Safari/Chrome for OPFS. If
+ * neither iteration method exists, this throws and callers fall back
+ * to treating the cache as empty.
+ */
+async function listCachedKeys(): Promise<Set<string>> {
+  const dir = await getCacheDir();
+  const keys = new Set<string>();
+  // Both `entries()` and the default async iterator yield [name, handle]
+  // tuples on OPFS directory handles. Cast through unknown to avoid the
+  // DOM lib's narrower typings (which don't yet ship the iterator).
+  const iter = (dir as unknown as {
+    entries?: () => AsyncIterable<[string, unknown]>;
+    [Symbol.asyncIterator]?: () => AsyncIterator<[string, unknown]>;
+  });
+  const source = iter.entries?.() ?? (iter[Symbol.asyncIterator]?.() as AsyncIterable<[string, unknown]> | undefined);
+  if (!source) throw new Error("OPFS directory iteration unavailable");
+  for await (const [name] of source) {
+    if (name.endsWith(".raw")) keys.add(name.slice(0, -".raw".length));
+  }
+  return keys;
 }
 
 /** Clear all cached audio (for patient reset) */

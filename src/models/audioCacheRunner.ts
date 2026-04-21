@@ -11,7 +11,9 @@ import {
 import {
   getPatientSpeakablePhrases,
   getProviderSpeakablePhrases,
+  getPatientPainSentences,
 } from "../data/phraseRegistry";
+import { isGPUReady } from "./ttsEngine";
 
 /**
  * Orchestrates background pre-generation of cloned-voice audio for the
@@ -34,6 +36,12 @@ interface SpeakerPlan {
   key: SpeakerKey;
   speakerData: unknown;
   phrases: string[];
+  /**
+   * When true, the generator skips entirely if WebGPU isn't ready and
+   * never falls back to WASM mid-run. Used for the 702-phrase pain
+   * matrix whose WASM cost (hours) would be worse than no cache at all.
+   */
+  gpuOnly?: boolean;
 }
 
 /** A speaker is runnable if its speakerData yields a real fingerprint. */
@@ -62,6 +70,17 @@ function buildPlan(
       });
     }
   });
+  // Pain matrix: ~700 composed sentences, runs last and only when GPU is
+  // available. On WASM-only systems it's omitted entirely (WASM would take
+  // hours) — pain taps continue to fall through to Web Speech per speak.ts.
+  if (isRunnable(patientSpeakerData) && isGPUReady()) {
+    plan.push({
+      key: "patient:pain",
+      speakerData: patientSpeakerData,
+      phrases: getPatientPainSentences(cfg.patientLang),
+      gpuOnly: true,
+    });
+  }
   return plan;
 }
 
@@ -114,6 +133,7 @@ export async function runPreGeneration(
         speaker.phrases,
         speaker.speakerData,
         controller.signal,
+        { gpuOnly: speaker.gpuOnly === true },
       )) {
         if (controller.signal.aborted) return;
         if (progress.failed) {
@@ -165,6 +185,7 @@ export async function retryFailed(
       failed,
       speaker.speakerData,
       controller.signal,
+      { gpuOnly: speaker.gpuOnly === true },
     )) {
       if (controller.signal.aborted || runId !== currentRunId) return;
       if (progress.failed) {
