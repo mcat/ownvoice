@@ -90,7 +90,25 @@ export function FallbackVoicePicker({
   // Split into curated buckets. `curateVoices` also drops novelty voices
   // (Bad News, Bells, Pipe Organ, etc.) that shouldn't be selectable as
   // an ICU patient's backup voice under any circumstances.
-  const { recommended, other } = useMemo(() => curateVoices(sorted), [sorted]);
+  //
+  // Enhanced voices (neural / premium / Siri / cloud) sort to the top
+  // within each bucket — when Samantha and Samantha (Enhanced) both
+  // exist, the enhanced one should be what the user sees first.
+  // Array.sort is stable, so the (localService, alphabetical) secondary
+  // ordering from `sorted` above is preserved.
+  const { recommended, other } = useMemo(() => {
+    const byEnhancedFirst = (a: SpeechSynthesisVoice, b: SpeechSynthesisVoice) => {
+      const aE = isEnhancedVoice(a);
+      const bE = isEnhancedVoice(b);
+      if (aE !== bE) return aE ? -1 : 1;
+      return 0;
+    };
+    const buckets = curateVoices(sorted);
+    return {
+      recommended: [...buckets.recommended].sort(byEnhancedFirst),
+      other: [...buckets.other].sort(byEnhancedFirst),
+    };
+  }, [sorted]);
 
   // When the OS reports no recommended voices (e.g. a minimal Android
   // install), we still want to show *something* — fall through and
