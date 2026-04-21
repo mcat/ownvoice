@@ -290,19 +290,19 @@ async function handleInit(modelUrl) {
 
   const t0 = performance.now();
 
-  // ORT Web's `initWasm()` is a one-time-per-worker routine. The WebGPU
-  // backend depends on the JSEP WASM shim, so every session creation —
-  // WASM EP or WebGPU EP — touches it. Calling createSession() multiple
-  // times concurrently on a cold worker throws
-  //   Error: multiple calls to 'initWasm()' detected
-  // which cascades to "removing requested execution provider 'webgpu'
-  // ... not available". Net effect: the LM silently falls back to WASM
-  // EP and synthesis runs 100-1000× slower.
+  // ORT Web's runtime setup is brittle under concurrent session creation.
+  // Three races have been observed in this worker so far:
+  //   1. Concurrent WASM-EP sessions race `initWasm()` (fixed).
+  //   2. Concurrent LM (WebGPU) + decoder (WASM) sessions leave the LM's
+  //      WebGPU init half-baked — it silently falls back to WASM EP but
+  //      keeps its `preferredOutputLocation: "gpu-buffer"` config, so
+  //      every run() fails with "Invalid session handle passed to
+  //      webgpuRegisterBuffer". Synthesis is then either broken outright
+  //      or (if ORT accepts the fallback) 100-1000× slower on pure WASM.
   //
-  // Fix: serialize ONE session creation first (to drive initWasm) while
-  // the tokenizer fetch runs in parallel (it's a plain fetch and doesn't
-  // touch ORT). Once WASM is initialized, the remaining two sessions can
-  // load safely in parallel.
+  // The only pair we can parallelize safely is tokenizer + ONE ORT
+  // session — the tokenizer is a plain fetch and doesn't touch ORT at
+  // all. All ORT session creations must run sequentially.
   //
   // Notes on EP choice:
   //  - embed_tokens on WASM: Metal GatherBlockQuantized dispatch bug
@@ -315,17 +315,18 @@ async function handleInit(modelUrl) {
   ]);
   embedTokensSession = embed;
 
-  const [lm, decoder] = await Promise.all([
-    createSession(
-      baseUrl + "language_model_q4f16_webgpu.onnx",
-      true,
-      false,
-      { preferredOutputLocation: kvCacheOnGpu() },
-    ),
-    createSession(baseUrl + "conditional_decoder_q4f16.onnx", true, true),
-  ]);
-  languageModelSession = lm;
-  conditionalDecoderSession = decoder;
+  languageModelSession = await createSession(
+    baseUrl + "language_model_q4f16_webgpu.onnx",
+    true,
+    false,
+    { preferredOutputLocation: kvCacheOnGpu() },
+  );
+
+  conditionalDecoderSession = await createSession(
+    baseUrl + "conditional_decoder_q4f16.onnx",
+    true,
+    true,
+  );
 
   console.log(`${LOG} All models loaded in ${((performance.now() - t0) / 1000).toFixed(1)}s`);
 

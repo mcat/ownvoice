@@ -112,18 +112,29 @@ describe("tts-gpu-worker source — performance-sensitive patterns", () => {
     expect(createSessionCount).toBeGreaterThanOrEqual(3);
   });
 
-  it("does not start 3+ ORT sessions concurrently on a cold worker (regression: initWasm race)", () => {
-    // ORT Web's initWasm() is a one-time routine. The WebGPU backend's
-    // JSEP shim and all WASM-EP sessions touch it, so creating 3 sessions
-    // concurrently on a cold worker throws:
-    //   Error: multiple calls to 'initWasm()' detected
-    // which cascades to "removing requested execution provider 'webgpu'"
-    // and silently downgrades synthesis to pure WASM (100-1000× slower).
+  it("does not create multiple ORT sessions concurrently (regressions: initWasm race, webgpuRegisterBuffer)", () => {
+    // Three races have bitten handleInit while trying to parallelize
+    // model loads:
+    //   1. Fully-parallel creation throws
+    //      "multiple calls to 'initWasm()' detected" because ORT Web's
+    //      WASM runtime init is one-time-per-worker.
+    //   2. Even serializing ONE session first and parallelizing the
+    //      other two (LM + decoder) silently leaves the LM's WebGPU EP
+    //      init half-baked — it falls back to WASM but keeps its
+    //      gpu-buffer preferredOutputLocation, so every subsequent
+    //      run() fails with:
+    //        "Invalid session handle passed to webgpuRegisterBuffer"
+    //   3. On pure WASM EP the LM is 100-1000× slower — effectively
+    //      unusable.
     //
-    // The safe pattern is to serialize ONE session first (to drive the
-    // one-time initWasm) then parallelize the rest. This test guards the
-    // constraint by ensuring no single Promise.all group contains 3+
-    // createSession calls.
+    // Empirically the only parallelism safe in handleInit is
+    //   [non-ORT work] + [ONE createSession]
+    // which lets us keep the tokenizer fetch overlapping one session
+    // without risking ORT's runtime setup. All session creations are
+    // otherwise sequential.
+    //
+    // This test encodes that invariant: no Promise.all block inside
+    // handleInit may contain 2+ createSession calls.
     const handleInitBody = extractHandleInitBody();
     const promiseAllBlocks = handleInitBody.matchAll(
       /Promise\.all\s*\(\s*\[([\s\S]*?)\]\s*\)/g,
@@ -132,13 +143,14 @@ describe("tts-gpu-worker source — performance-sensitive patterns", () => {
     for (const match of promiseAllBlocks) {
       const inner = match[1];
       const count = (inner.match(/createSession\s*\(/g) ?? []).length;
-      if (count >= 3) violations.push({ block: match[0], count });
+      if (count >= 2) violations.push({ block: match[0], count });
     }
     expect(
       violations,
-      "Found Promise.all block(s) containing 3+ createSession calls. " +
-      "ORT Web's initWasm() is not concurrency-safe on a cold worker — " +
-      "serialize one session first, then parallelize the rest.\n\n" +
+      "Found Promise.all block(s) containing 2+ createSession calls. " +
+      "ORT Web's runtime setup is not concurrency-safe for multiple " +
+      "session creations. Serialize session creations; parallelism is " +
+      "only safe when paired with non-ORT work (e.g. the tokenizer fetch).\n\n" +
       JSON.stringify(violations, null, 2),
     ).toEqual([]);
   });
