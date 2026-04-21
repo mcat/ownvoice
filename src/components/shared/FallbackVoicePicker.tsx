@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from "preact/hooks";
+import { useState, useEffect, useRef, useMemo } from "preact/hooks";
 import type { FallbackVoice } from "../../types";
+import { curateVoices, isEnhancedVoice } from "./voiceCuration";
 
 /**
  * Sample phrases per language — used for the 3-second voice preview.
@@ -7,17 +8,17 @@ import type { FallbackVoice } from "../../types";
 const PREVIEW_PHRASES: Record<string, string> = {
   en: "Hello, I need some help please. Can you come here?",
   es: "Hola, necesito ayuda por favor.",
-  zh: "\u4F60\u597D\uFF0C\u8BF7\u5E2E\u5E2E\u6211\u3002",
-  ar: "\u0645\u0631\u062D\u0628\u0627\u060C \u0623\u062D\u062A\u0627\u062C \u0645\u0633\u0627\u0639\u062F\u0629 \u0645\u0646 \u0641\u0636\u0644\u0643.",
-  fr: "Bonjour, j'ai besoin d'aide s'il vous pla\u00EEt.",
+  zh: "你好，请帮帮我。",
+  ar: "مرحبا، أحتاج مساعدة من فضلك.",
+  fr: "Bonjour, j'ai besoin d'aide s'il vous plaît.",
   de: "Hallo, ich brauche bitte Hilfe.",
-  hi: "\u0928\u092E\u0938\u094D\u0924\u0947, \u0915\u0943\u092A\u092F\u093E \u092E\u0947\u0930\u0940 \u092E\u0926\u0926 \u0915\u0930\u0947\u0902\u0964",
-  pt: "Ol\u00E1, preciso de ajuda por favor.",
-  ko: "\uC548\uB155\uD558\uC138\uC694, \uB3C4\uC640\uC8FC\uC138\uC694.",
-  ja: "\u3059\u307F\u307E\u305B\u3093\u3001\u52A9\u3051\u3066\u304F\u3060\u3055\u3044\u3002",
-  vi: "Xin ch\u00E0o, t\u00F4i c\u1EA7n gi\u00FAp \u0111\u1EE1.",
+  hi: "नमस्ते, कृपया मेरी मदद करें।",
+  pt: "Olá, preciso de ajuda por favor.",
+  ko: "안녕하세요, 도와주세요.",
+  ja: "すみません、助けてください。",
+  vi: "Xin chào, tôi cần giúp đỡ.",
   tl: "Kumusta, kailangan ko ng tulong.",
-  ru: "\u0417\u0434\u0440\u0430\u0432\u0441\u0442\u0432\u0443\u0439\u0442\u0435, \u043C\u043D\u0435 \u043D\u0443\u0436\u043D\u0430 \u043F\u043E\u043C\u043E\u0449\u044C.",
+  ru: "Здравствуйте, мне нужна помощь.",
 };
 
 interface ColorTokens {
@@ -54,6 +55,7 @@ export function FallbackVoicePicker({
   const [playingURI, setPlayingURI] = useState<string | null>(null);
   const cancelTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const keepalive = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [showOther, setShowOther] = useState(false);
 
   useEffect(() => {
     if (!("speechSynthesis" in window)) return;
@@ -76,10 +78,26 @@ export function FallbackVoicePicker({
   const matching = voices.filter((v) => v.lang.startsWith(langPrefix));
   const displayVoices = matching.length > 0 ? matching : voices;
 
-  const sorted = [...displayVoices].sort((a, b) => {
-    if (a.localService !== b.localService) return a.localService ? -1 : 1;
-    return a.name.localeCompare(b.name);
-  });
+  const sorted = useMemo(
+    () =>
+      [...displayVoices].sort((a, b) => {
+        if (a.localService !== b.localService) return a.localService ? -1 : 1;
+        return a.name.localeCompare(b.name);
+      }),
+    [displayVoices],
+  );
+
+  // Split into curated buckets. `curateVoices` also drops novelty voices
+  // (Bad News, Bells, Pipe Organ, etc.) that shouldn't be selectable as
+  // an ICU patient's backup voice under any circumstances.
+  const { recommended, other } = useMemo(() => curateVoices(sorted), [sorted]);
+
+  // When the OS reports no recommended voices (e.g. a minimal Android
+  // install), we still want to show *something* — fall through and
+  // render `other` as the primary list instead of an empty state.
+  const hasRecommended = recommended.length > 0;
+  const primaryList = hasRecommended ? recommended : other;
+  const disclosureList = hasRecommended ? other : [];
 
   function stopKeepalive() {
     if (keepalive.current) {
@@ -156,6 +174,98 @@ export function FallbackVoicePicker({
     );
   }
 
+  function renderVoice(v: SpeechSynthesisVoice) {
+    const isSelected = selectedVoice?.voiceURI === v.voiceURI;
+    const isPlaying = playingURI === v.voiceURI;
+    const enhanced = isEnhancedVoice(v);
+
+    return (
+      <button
+        key={v.voiceURI}
+        onClick={() => handleSelect(v)}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          padding: "12px 16px",
+          borderRadius: 12,
+          border: isSelected
+            ? "2px solid #7C3AED"
+            : `1px solid ${c.border}`,
+          background: isSelected ? "#F5F3FF" : c.cardBg,
+          minHeight: 64,
+          cursor: "pointer",
+          textAlign: "left",
+          fontFamily:
+            "'Atkinson Hyperlegible Next', system-ui, -apple-system, sans-serif",
+          transition: "border-color 0.15s, background 0.15s",
+        }}
+      >
+        <div style={{ flex: 1 }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              flexWrap: "wrap",
+              fontSize: 16,
+              fontWeight: isSelected ? 600 : 500,
+              color: isSelected ? "#7C3AED" : c.text,
+            }}
+          >
+            <span>{v.name}</span>
+            {enhanced && (
+              <span
+                aria-label="Enhanced neural voice"
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: "#065F46",
+                  background: "#D1FAE5",
+                  border: "1px solid #047857",
+                  borderRadius: 999,
+                  padding: "2px 8px",
+                  letterSpacing: "0.03em",
+                  textTransform: "uppercase",
+                }}
+              >
+                Enhanced
+              </span>
+            )}
+          </div>
+          <div style={{ fontSize: 13, color: c.muted, marginTop: 2 }}>
+            {v.lang}
+            {v.localService ? " · On-device" : ""}
+          </div>
+        </div>
+        {isPlaying && (
+          <span
+            style={{
+              fontSize: 13,
+              fontWeight: 600,
+              color: "#7C3AED",
+              whiteSpace: "nowrap",
+            }}
+          >
+            Playing...
+          </span>
+        )}
+        {isSelected && !isPlaying && (
+          <span
+            style={{
+              fontSize: 18,
+              fontWeight: 700,
+              color: "#7C3AED",
+              lineHeight: 1,
+            }}
+          >
+            {"✓"}
+          </span>
+        )}
+      </button>
+    );
+  }
+
   return (
     <div>
       <div
@@ -165,79 +275,62 @@ export function FallbackVoicePicker({
           gap: 6,
           maxHeight: 320,
           overflowY: "auto",
-          // Clearance for focus outline on edge items
           padding: 4,
         }}
       >
-        {sorted.map((v) => {
-          const isSelected = selectedVoice?.voiceURI === v.voiceURI;
-          const isPlaying = playingURI === v.voiceURI;
+        {primaryList.map(renderVoice)}
+      </div>
 
-          return (
-            <button
-              key={v.voiceURI}
-              onClick={() => handleSelect(v)}
+      {disclosureList.length > 0 && (
+        <div style={{ marginTop: 12 }}>
+          <button
+            type="button"
+            onClick={() => setShowOther((s) => !s)}
+            aria-expanded={showOther}
+            aria-controls="fallback-voice-other-list"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "10px 14px",
+              background: "none",
+              border: `1px solid ${c.border}`,
+              borderRadius: 10,
+              color: c.sub,
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: "pointer",
+              fontFamily:
+                "'Atkinson Hyperlegible Next', system-ui, -apple-system, sans-serif",
+              minHeight: 44,
+            }}
+          >
+            <span aria-hidden="true" style={{ fontSize: 11 }}>
+              {showOther ? "▼" : "▶"}
+            </span>
+            {showOther
+              ? "Hide other voices"
+              : `More voices (${disclosureList.length})`}
+          </button>
+
+          {showOther && (
+            <div
+              id="fallback-voice-other-list"
               style={{
+                marginTop: 10,
                 display: "flex",
-                alignItems: "center",
-                gap: 12,
-                padding: "12px 16px",
-                borderRadius: 12,
-                border: isSelected
-                  ? "2px solid #7C3AED"
-                  : `1px solid ${c.border}`,
-                background: isSelected ? "#F5F3FF" : c.cardBg,
-                minHeight: 64,
-                cursor: "pointer",
-                textAlign: "left",
-                fontFamily:
-                  "'Atkinson Hyperlegible Next', system-ui, -apple-system, sans-serif",
-                transition: "border-color 0.15s, background 0.15s",
+                flexDirection: "column",
+                gap: 6,
+                maxHeight: 320,
+                overflowY: "auto",
+                padding: 4,
               }}
             >
-              <div style={{ flex: 1 }}>
-                <div
-                  style={{
-                    fontSize: 16,
-                    fontWeight: isSelected ? 600 : 500,
-                    color: isSelected ? "#7C3AED" : c.text,
-                  }}
-                >
-                  {v.name}
-                </div>
-                <div style={{ fontSize: 13, color: c.muted, marginTop: 2 }}>
-                  {v.lang}
-                  {v.localService ? " \u00B7 On-device" : ""}
-                </div>
-              </div>
-              {isPlaying && (
-                <span
-                  style={{
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: "#7C3AED",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  Playing...
-                </span>
-              )}
-              {isSelected && !isPlaying && (
-                <span
-                  style={{
-                    fontSize: 18,
-                    fontWeight: 700,
-                    color: "#7C3AED",
-                    lineHeight: 1,
-                  }}
-                >
-                  {"\u2713"}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
+              {disclosureList.map(renderVoice)}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
