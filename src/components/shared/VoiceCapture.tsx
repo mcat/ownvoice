@@ -24,8 +24,6 @@ export interface VoiceCaptureProps {
   audioBlob?: Blob | null;
   /** Whether a speaker embedding exists for this voice (enables "clone active" indicator) */
   hasEmbedding?: boolean;
-  /** Called when the user taps "Preview voice" after clone is ready */
-  onPreview?: () => void;
   /**
    * BCP-47 locale for the recording script (e.g. "en-US"). Determines whether
    * the recording card shows a phonetically balanced reference passage or
@@ -196,7 +194,6 @@ export function VoiceCapture({
   compact = false,
   audioBlob: externalBlob,
   hasEmbedding = false,
-  onPreview,
   locale,
   color,
 }: VoiceCaptureProps) {
@@ -1175,24 +1172,6 @@ export function VoiceCapture({
         >
           <div style={{ display: "flex", alignItems: "center", gap: btnFloor.gap, flexWrap: "wrap" }}>
             <CloneStatusBadge />
-            {cloneStatus === "ready" && onPreview && (
-              <Btn
-                onClick={onPreview}
-                aria-label="Preview synthesized voice clone"
-                style={{
-                  background: "none",
-                  // emerald-700 gives 5.48:1 on white (passes AA for non-text);
-                  // the old emerald-200 #BBF7D0 was 1.21:1 and invisible.
-                  border: "1px solid #047857",
-                  minHeight: btnFloor.minHeight, minWidth: btnFloor.minWidth,
-                  borderRadius: btnFloor.borderRadius,
-                  padding: btnFloor.padding,
-                  fontSize: btnFloor.fontSize, fontWeight: 600, color: "#065F46", fontFamily: "inherit",
-                }}
-              >
-                <span aria-hidden="true">{"\u25B6"}</span> Preview voice
-              </Btn>
-            )}
             {cloneStatus === "failed" && (
               <Btn
                 onClick={retryEmbedding}

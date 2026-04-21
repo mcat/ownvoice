@@ -6,8 +6,6 @@ import { Btn } from "../shared/Btn";
 import { VoiceCapture } from "../shared/VoiceCapture";
 import { FallbackVoicePicker } from "../shared/FallbackVoicePicker";
 import { useSettingsStore } from "../../stores/settingsStore";
-import { speak } from "../../speak";
-import type { Speaker } from "../../types";
 
 const EMOJIS = [
   "\uD83D\uDC69\u200D\u2695\uFE0F", // woman health worker
@@ -428,13 +426,6 @@ function StepVoice({
   setFallbackVoice: (v: FallbackVoice | null) => void;
   lang: string;
 }) {
-  function previewClonedVoice() {
-    const embedding = useSettingsStore.getState().speakerData;
-    if (!embedding) return;
-    const text = patientName ? `Hi, I'm ${patientName}` : "Hello, this is my voice";
-    const speaker: Speaker = { name: patientName || "Patient", type: "patient", embedding, lang };
-    speak(text, speaker);
-  }
   return (
     <div>
       <h2 style={{ fontSize: 26, fontWeight: 700, color: "#1A1A1A", margin: "0 0 8px" }}>
@@ -456,7 +447,6 @@ function StepVoice({
           if (embedding) useSettingsStore.getState().setSpeakerData(embedding);
         }}
         onRemove={() => setPatientVoice(false)}
-        onPreview={previewClonedVoice}
         locale={lang}
       />
 
