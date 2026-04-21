@@ -371,8 +371,11 @@ export function App() {
         <SettingsPanel
           cfg={cfg}
           onUpdate={(c) => {
+            // Auto-save: persist only. Dismissal is user-initiated via the
+            // "Done" button or backdrop tap, which fire onClose — closing
+            // the sheet on every edit would make any text-field keystroke
+            // instantly dismiss the panel.
             useSettingsStore.getState().setCfg(c);
-            closeOverlay("settings");
           }}
           onReset={resetAll}
           onClose={() => closeOverlay("settings")}
