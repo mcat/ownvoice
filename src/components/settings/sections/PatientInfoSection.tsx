@@ -1,12 +1,11 @@
 import type { JSX, ComponentChildren } from "preact";
-import type { AppSettings, Speaker } from "../../../types";
+import type { AppSettings } from "../../../types";
 import type { ThemeTokens, ThemeName } from "../../../theme/tokens";
 import { LANGS } from "../../../data/phrases";
 import { VoiceCapture } from "../../shared/VoiceCapture";
 import { FallbackVoicePicker } from "../../shared/FallbackVoicePicker";
 import { VoiceCacheProgress } from "../VoiceCacheProgress";
 import { useSettingsStore } from "../../../stores/settingsStore";
-import { speak } from "../../../speak";
 
 interface Props {
   cfg: AppSettings;
@@ -27,19 +26,6 @@ export function PatientInfoSection({
 }: Props) {
   const isDark = theme === "dark";
   const selectedLang = LANGS.find((l) => l.code === cfg.patientLang);
-
-  function previewClonedVoice() {
-    const embedding = useSettingsStore.getState().speakerData;
-    if (!embedding) return;
-    const text = cfg.patientName ? `Hi, I'm ${cfg.patientName}` : "Hello, this is my voice";
-    const speaker: Speaker = {
-      name: cfg.patientName || "Patient",
-      type: "patient",
-      embedding,
-      lang: cfg.patientLang,
-    };
-    speak(text, speaker);
-  }
 
   return (
     <Section label="Patient Information" t={t}>
@@ -82,7 +68,6 @@ export function PatientInfoSection({
             updateCfg({ patientVoice: false });
             useSettingsStore.getState().setSpeakerData(null);
           }}
-          onPreview={previewClonedVoice}
           locale={cfg.patientLang}
           compact
           color={{
