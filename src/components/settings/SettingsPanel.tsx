@@ -1,5 +1,4 @@
-import { useState } from "preact/hooks";
-import type { AppSettings, FallbackVoice } from "../../types";
+import type { AppSettings } from "../../types";
 import type { ThemeTokens, ThemeName } from "../../theme/tokens";
 import { z } from "../../theme/z";
 import { BottomSheet } from "../shared/BottomSheet";
@@ -18,6 +17,17 @@ interface SettingsPanelProps {
   theme: ThemeName;
 }
 
+/**
+ * Settings are auto-persisted on every change — no Save button.
+ * Matches Apple HIG ("Make saving automatic when possible"). Child
+ * sections receive `updateCfg(partial)` and fire it from each field's
+ * change handler; the merge + persist round-trip is synchronous via
+ * Zustand, so controlled inputs stay in sync with what the user types
+ * without input lag.
+ *
+ * Provider changes (add/remove/voice capture) already commit directly
+ * to the settings store from inside CareTeamSection.
+ */
 export function SettingsPanel({
   cfg,
   onUpdate,
@@ -26,25 +36,8 @@ export function SettingsPanel({
   t,
   theme,
 }: SettingsPanelProps) {
-  const [name, setName] = useState(cfg.patientName);
-  const [bed, setBed] = useState(cfg.bed);
-  const [patientVoice, setPatientVoice] = useState(cfg.patientVoice);
-  const [fallbackVoice, setFallbackVoice] = useState<FallbackVoice | null>(
-    cfg.fallbackVoice ?? null,
-  );
-
-  // Provider changes (add / remove / voice capture) commit directly to the
-  // settings store from inside CareTeamSection, mirroring the patient's
-  // immediate setSpeakerData path — so they don't participate in the
-  // draft/save loop here.
-  const hasChanges =
-    name !== cfg.patientName ||
-    bed !== cfg.bed ||
-    patientVoice !== cfg.patientVoice ||
-    (fallbackVoice?.voiceURI ?? null) !== (cfg.fallbackVoice?.voiceURI ?? null);
-
-  function save() {
-    onUpdate({ ...cfg, patientName: name, bed, patientVoice, fallbackVoice });
+  function updateCfg(partial: Partial<AppSettings>): void {
+    onUpdate({ ...cfg, ...partial });
   }
 
   return (
@@ -72,16 +65,7 @@ export function SettingsPanel({
         <div style={{ padding: "0 4px" }}>
           <PatientInfoSection
             cfg={cfg}
-            name={name}
-            bed={bed}
-            patientVoice={patientVoice}
-            fallbackVoice={fallbackVoice}
-            hasChanges={hasChanges}
-            onNameChange={setName}
-            onBedChange={setBed}
-            onPatientVoiceChange={setPatientVoice}
-            onFallbackVoiceChange={setFallbackVoice}
-            onSave={save}
+            updateCfg={updateCfg}
             t={t}
             theme={theme}
           />

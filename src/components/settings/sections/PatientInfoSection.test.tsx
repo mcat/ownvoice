@@ -1,7 +1,7 @@
 import { render, screen, fireEvent } from "@testing-library/preact";
 import { PatientInfoSection } from "./PatientInfoSection";
 import { light } from "../../../theme/tokens";
-import type { AppSettings, FallbackVoice } from "../../../types";
+import type { AppSettings } from "../../../types";
 
 const cfg: AppSettings = {
   patientName: "Maria",
@@ -14,16 +14,7 @@ const cfg: AppSettings = {
 
 const baseProps = {
   cfg,
-  name: "Maria",
-  bed: "4A",
-  patientVoice: true,
-  fallbackVoice: null as FallbackVoice | null,
-  hasChanges: false,
-  onNameChange: vi.fn(),
-  onBedChange: vi.fn(),
-  onPatientVoiceChange: vi.fn(),
-  onFallbackVoiceChange: vi.fn(),
-  onSave: vi.fn(),
+  updateCfg: vi.fn(),
   t: light,
   theme: "light" as const,
 };
@@ -41,17 +32,22 @@ describe("PatientInfoSection", () => {
     expect(screen.getByLabelText("Bed / Room")).toHaveValue("4A");
   });
 
-  it("fires onNameChange when name is edited", () => {
-    const onNameChange = vi.fn();
-    render(<PatientInfoSection {...baseProps} onNameChange={onNameChange} />);
+  it("calls updateCfg with the new patientName on name edit (auto-save)", () => {
+    const updateCfg = vi.fn();
+    render(<PatientInfoSection {...baseProps} updateCfg={updateCfg} />);
     fireEvent.input(screen.getByLabelText("Name"), { target: { value: "Alex" } });
-    expect(onNameChange).toHaveBeenCalledWith("Alex");
+    expect(updateCfg).toHaveBeenCalledWith({ patientName: "Alex" });
   });
 
-  it("shows the Save button only when hasChanges is true", () => {
-    const { rerender } = render(<PatientInfoSection {...baseProps} />);
+  it("calls updateCfg with the new bed on bed edit (auto-save)", () => {
+    const updateCfg = vi.fn();
+    render(<PatientInfoSection {...baseProps} updateCfg={updateCfg} />);
+    fireEvent.input(screen.getByLabelText("Bed / Room"), { target: { value: "5B" } });
+    expect(updateCfg).toHaveBeenCalledWith({ bed: "5B" });
+  });
+
+  it("does not render a Save button — persistence is automatic", () => {
+    render(<PatientInfoSection {...baseProps} />);
     expect(screen.queryByRole("button", { name: /save/i })).toBeNull();
-    rerender(<PatientInfoSection {...baseProps} hasChanges />);
-    expect(screen.getByRole("button", { name: /save/i })).toBeInTheDocument();
   });
 });

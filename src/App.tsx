@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "preact/hooks";
+import { useEffect, useMemo, useRef } from "preact/hooks";
 import { useTheme } from "./hooks/useTheme";
 import { useSpeakActions } from "./hooks/useSpeakActions";
 import { useConversationStore } from "./stores/conversationStore";
@@ -123,19 +123,36 @@ export function App() {
     return `${cfg.patientLang}|${patientFp}|${providerFps}`;
   }, [cfg, speakerData]);
 
+  // Hold the latest cfg/speakerData in refs so the pre-gen effect can read
+  // them without depending on them. Writing refs inline during render keeps
+  // them in lockstep with the committed cfg — by the time any effect fires,
+  // the ref reflects the same cfg that produced the current render.
+  //
+  // Why: with cfg/speakerData in the effect deps, every `cfg` change (e.g.
+  // auto-save of the Settings panel's patientName field as the user types)
+  // would abort the in-flight pre-gen run and restart from scratch. The
+  // memoised embeddingKey already captures the only things pre-gen cares
+  // about — locale and embedding fingerprints — so that's all the effect
+  // should depend on.
+  const cfgRef = useRef(cfg);
+  const speakerDataRef = useRef(speakerData);
+  cfgRef.current = cfg;
+  speakerDataRef.current = speakerData;
+
   useEffect(() => {
-    if (!cfg) return;
+    const initialCfg = cfgRef.current;
+    if (!initialCfg) return;
     let cancelled = false;
     const mgr = getModelManager();
 
     function tryRun() {
-      if (cancelled || !cfg) return false;
+      if (cancelled || !cfgRef.current) return false;
       // Start as soon as EITHER TTS path is ready. The audio cache's
       // synthesizeBestAvailable prefers GPU and falls back to WASM —
       // the GPU path is typically ready minutes before the WASM worker
       // finishes downloading its ~1 GB of weights.
       if (!isGPUReady() && !mgr.isReady("tts")) return false;
-      audioCacheRunner.runPreGeneration(cfg, speakerData);
+      audioCacheRunner.runPreGeneration(cfgRef.current, speakerDataRef.current);
       return true;
     }
 
@@ -149,7 +166,7 @@ export function App() {
       unsubWasm();
       unsubGpu();
     };
-  }, [embeddingKey, cfg, speakerData]);
+  }, [embeddingKey]);
 
   // Wait for IndexedDB hydration before deciding setup vs main app
   if (!hasHydrated) return null;

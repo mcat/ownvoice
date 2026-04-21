@@ -1,8 +1,7 @@
 import type { JSX, ComponentChildren } from "preact";
-import type { AppSettings, FallbackVoice, Speaker } from "../../../types";
+import type { AppSettings, Speaker } from "../../../types";
 import type { ThemeTokens, ThemeName } from "../../../theme/tokens";
 import { LANGS } from "../../../data/phrases";
-import { Btn } from "../../shared/Btn";
 import { VoiceCapture } from "../../shared/VoiceCapture";
 import { FallbackVoicePicker } from "../../shared/FallbackVoicePicker";
 import { VoiceCacheProgress } from "../VoiceCacheProgress";
@@ -11,32 +10,18 @@ import { speak } from "../../../speak";
 
 interface Props {
   cfg: AppSettings;
-  name: string;
-  bed: string;
-  patientVoice: boolean;
-  fallbackVoice: FallbackVoice | null;
-  hasChanges: boolean;
-  onNameChange: (v: string) => void;
-  onBedChange: (v: string) => void;
-  onPatientVoiceChange: (v: boolean) => void;
-  onFallbackVoiceChange: (v: FallbackVoice | null) => void;
-  onSave: () => void;
+  /**
+   * Persist a partial cfg update immediately. Every field in this section
+   * calls this from its own change handler — there is no "Save" button.
+   */
+  updateCfg: (partial: Partial<AppSettings>) => void;
   t: ThemeTokens;
   theme: ThemeName;
 }
 
 export function PatientInfoSection({
   cfg,
-  name,
-  bed,
-  patientVoice,
-  fallbackVoice,
-  hasChanges,
-  onNameChange,
-  onBedChange,
-  onPatientVoiceChange,
-  onFallbackVoiceChange,
-  onSave,
+  updateCfg,
   t,
   theme,
 }: Props) {
@@ -62,8 +47,8 @@ export function PatientInfoSection({
       <input
         id="settings-name"
         type="text"
-        value={name}
-        onInput={(e) => onNameChange((e.target as HTMLInputElement).value)}
+        value={cfg.patientName}
+        onInput={(e) => updateCfg({ patientName: (e.target as HTMLInputElement).value })}
         style={inputStyle(t, isDark)}
       />
 
@@ -71,8 +56,8 @@ export function PatientInfoSection({
       <input
         id="settings-bed"
         type="text"
-        value={bed}
-        onInput={(e) => onBedChange((e.target as HTMLInputElement).value)}
+        value={cfg.bed}
+        onInput={(e) => updateCfg({ bed: (e.target as HTMLInputElement).value })}
         style={inputStyle(t, isDark)}
       />
 
@@ -87,14 +72,14 @@ export function PatientInfoSection({
         <div style={labelStyle(t)}>Voice</div>
         <VoiceCapture
           label="Patient"
-          hasVoice={patientVoice}
+          hasVoice={cfg.patientVoice}
           hasEmbedding={!!useSettingsStore.getState().speakerData}
           onCapture={(_blob, embedding) => {
-            onPatientVoiceChange(true);
+            updateCfg({ patientVoice: true });
             if (embedding) useSettingsStore.getState().setSpeakerData(embedding);
           }}
           onRemove={() => {
-            onPatientVoiceChange(false);
+            updateCfg({ patientVoice: false });
             useSettingsStore.getState().setSpeakerData(null);
           }}
           onPreview={previewClonedVoice}
@@ -129,8 +114,8 @@ export function PatientInfoSection({
           System voice used while the voice clone loads. Tap to preview.
         </p>
         <FallbackVoicePicker
-          selectedVoice={fallbackVoice}
-          onSelect={onFallbackVoiceChange}
+          selectedVoice={cfg.fallbackVoice ?? null}
+          onSelect={(v) => updateCfg({ fallbackVoice: v })}
           lang={cfg.patientLang}
           color={{
             text: t.text, sub: t.sub, muted: t.muted,
@@ -139,18 +124,6 @@ export function PatientInfoSection({
           }}
         />
       </div>
-
-      {hasChanges && (
-        <Btn
-          onClick={onSave}
-          style={{
-            marginTop: 20, width: "100%", padding: "14px 20px", borderRadius: 12, border: "none",
-            background: "#2563EB", color: "#FFFFFF", fontSize: 16, fontWeight: 600, fontFamily: "inherit",
-          }}
-        >
-          Save changes
-        </Btn>
-      )}
     </Section>
   );
 }

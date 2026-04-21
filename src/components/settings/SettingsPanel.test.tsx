@@ -60,23 +60,14 @@ describe("SettingsPanel", () => {
     expect(bedInput).toBeInTheDocument();
   });
 
-  it("editing name shows 'Save changes' and calls onUpdate on save", () => {
+  it("editing name calls onUpdate immediately — no Save button", () => {
     renderPanel();
 
-    // Save button should not be visible initially
+    // No save button — persistence is automatic.
     expect(screen.queryByText("Save changes")).not.toBeInTheDocument();
 
-    // Edit the name
     const nameInput = screen.getByDisplayValue("Maria");
     fireEvent.input(nameInput, { target: { value: "Ana" } });
-
-    // Save button should appear
-    const saveBtn = screen.getByText("Save changes");
-    expect(saveBtn).toBeInTheDocument();
-
-    // Click save
-    fireEvent.click(saveBtn);
-    vi.advanceTimersByTime(300); // Btn debounce
 
     expect(onUpdate).toHaveBeenCalledOnce();
     expect(onUpdate).toHaveBeenCalledWith(
@@ -85,24 +76,24 @@ describe("SettingsPanel", () => {
         bed: "4A",
       }),
     );
+    // Still no Save button after the edit.
+    expect(screen.queryByText("Save changes")).not.toBeInTheDocument();
   });
 
-  it("editing bed shows 'Save changes' and calls onUpdate on save", () => {
+  it("editing bed calls onUpdate immediately — no Save button", () => {
     renderPanel();
 
     const bedInput = screen.getByDisplayValue("4A");
     fireEvent.input(bedInput, { target: { value: "6B" } });
 
-    const saveBtn = screen.getByText("Save changes");
-    fireEvent.click(saveBtn);
-    vi.advanceTimersByTime(300);
-
+    expect(onUpdate).toHaveBeenCalledOnce();
     expect(onUpdate).toHaveBeenCalledWith(
       expect.objectContaining({
         patientName: "Maria",
         bed: "6B",
       }),
     );
+    expect(screen.queryByText("Save changes")).not.toBeInTheDocument();
   });
 
   it("'Reset app' shows confirmation, and confirm calls onReset", () => {
@@ -209,19 +200,14 @@ describe("SettingsPanel", () => {
       expect(screen.getByText("Remove")).toBeInTheDocument();
     });
 
-    it("clicking Remove and saving updates patientVoice to false", () => {
+    it("clicking Remove updates patientVoice to false immediately (auto-save)", () => {
       renderPanel({ patientVoice: true });
 
       // Click Remove on the voice capture widget
       fireEvent.click(screen.getByText("Remove"));
 
-      // Save button should appear (patientVoice changed from true to false)
-      const saveBtn = screen.getByText("Save changes");
-      expect(saveBtn).toBeInTheDocument();
-
-      // Click save
-      fireEvent.click(saveBtn);
-      vi.advanceTimersByTime(300); // Btn debounce
+      // No Save button — update is immediate.
+      expect(screen.queryByText("Save changes")).not.toBeInTheDocument();
 
       expect(onUpdate).toHaveBeenCalledOnce();
       expect(onUpdate).toHaveBeenCalledWith(
