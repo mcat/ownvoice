@@ -1,8 +1,23 @@
 import { render, screen, fireEvent } from "@testing-library/preact";
 import { SubcategoryChips } from "./SubcategoryChips";
 import { light } from "../../theme/tokens";
+import { useSettingsStore } from "../../stores/settingsStore";
+import type { AppSettings } from "../../types";
 
 const labels = ["All", "Comfort", "Medical", "Emotional"];
+
+const baseCfg: AppSettings = {
+  patientName: "",
+  bed: "",
+  patientLang: "en",
+  patientVoice: false,
+  pin: "",
+  providers: [],
+};
+
+beforeEach(() => {
+  useSettingsStore.setState({ cfg: baseCfg });
+});
 
 describe("SubcategoryChips", () => {
   it("renders all chip labels", () => {
@@ -75,5 +90,68 @@ describe("SubcategoryChips", () => {
     );
     fireEvent.click(screen.getByText("All"));
     expect(onSelect).toHaveBeenCalledWith(0);
+  });
+
+  it("mouse hover changes inactive chip background", () => {
+    render(
+      <SubcategoryChips
+        labels={labels}
+        activeIndex={0}
+        onSelect={vi.fn()}
+        t={light}
+      />,
+    );
+    const chip = screen.getByText("Medical").closest("button")!;
+    const baseBg = chip.style.background;
+
+    fireEvent.pointerEnter(chip, { pointerType: "mouse" });
+    expect(chip.style.background).not.toBe(baseBg);
+
+    fireEvent.pointerLeave(chip, { pointerType: "mouse" });
+    expect(chip.style.background).toBe(baseBg);
+  });
+
+  it("touch pointer does not trigger chip hover", () => {
+    render(
+      <SubcategoryChips
+        labels={labels}
+        activeIndex={0}
+        onSelect={vi.fn()}
+        t={light}
+      />,
+    );
+    const chip = screen.getByText("Medical").closest("button")!;
+    const baseBg = chip.style.background;
+
+    fireEvent.pointerEnter(chip, { pointerType: "touch" });
+    expect(chip.style.background).toBe(baseBg);
+  });
+
+  it("assistive mode strengthens inactive-chip hover background", () => {
+    const { unmount } = render(
+      <SubcategoryChips
+        labels={labels}
+        activeIndex={0}
+        onSelect={vi.fn()}
+        t={light}
+      />,
+    );
+    const defaultChip = screen.getByText("Medical").closest("button")!;
+    fireEvent.pointerEnter(defaultChip, { pointerType: "mouse" });
+    const defaultHoverBg = defaultChip.style.background;
+    unmount();
+
+    useSettingsStore.setState({ cfg: { ...baseCfg, assistiveInput: true } });
+    render(
+      <SubcategoryChips
+        labels={labels}
+        activeIndex={0}
+        onSelect={vi.fn()}
+        t={light}
+      />,
+    );
+    const assistiveChip = screen.getByText("Medical").closest("button")!;
+    fireEvent.pointerEnter(assistiveChip, { pointerType: "mouse" });
+    expect(assistiveChip.style.background).not.toBe(defaultHoverBg);
   });
 });

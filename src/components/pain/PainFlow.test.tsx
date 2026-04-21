@@ -2,6 +2,17 @@ import { render, screen, fireEvent } from "@testing-library/preact";
 import { PainFlow } from "./PainFlow";
 import { light } from "../../theme/tokens";
 import { getEmojiFPS, getBodyRegions, getPainDescriptors } from "../../data/phraseRegistry";
+import { useSettingsStore } from "../../stores/settingsStore";
+import type { AppSettings } from "../../types";
+
+const baseCfg: AppSettings = {
+  patientName: "",
+  bed: "",
+  patientLang: "en",
+  patientVoice: false,
+  pin: "",
+  providers: [],
+};
 
 const EMOJI_FPS = getEmojiFPS("en");
 const BODY_REGIONS = getBodyRegions("en");
@@ -16,6 +27,38 @@ const baseProps = {
 describe("PainFlow", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    useSettingsStore.setState({ cfg: baseCfg });
+  });
+
+  describe("hover feedback", () => {
+    it("severity tile: mouse hover changes background; touch does not", () => {
+      render(<PainFlow {...baseProps} />);
+      const tile = screen.getByText(EMOJI_FPS[0].face).closest("button")!;
+      const baseBg = tile.style.background;
+
+      fireEvent.pointerEnter(tile, { pointerType: "touch" });
+      expect(tile.style.background).toBe(baseBg);
+
+      fireEvent.pointerEnter(tile, { pointerType: "mouse" });
+      expect(tile.style.background).not.toBe(baseBg);
+
+      fireEvent.pointerLeave(tile, { pointerType: "mouse" });
+      expect(tile.style.background).toBe(baseBg);
+    });
+
+    it("severity tile: assistive mode renders stronger hover than default", () => {
+      const { unmount } = render(<PainFlow {...baseProps} />);
+      const defaultTile = screen.getByText(EMOJI_FPS[0].face).closest("button")!;
+      fireEvent.pointerEnter(defaultTile, { pointerType: "mouse" });
+      const defaultHoverBg = defaultTile.style.background;
+      unmount();
+
+      useSettingsStore.setState({ cfg: { ...baseCfg, assistiveInput: true } });
+      render(<PainFlow {...baseProps} />);
+      const assistiveTile = screen.getByText(EMOJI_FPS[0].face).closest("button")!;
+      fireEvent.pointerEnter(assistiveTile, { pointerType: "mouse" });
+      expect(assistiveTile.style.background).not.toBe(defaultHoverBg);
+    });
   });
 
   describe("severity step", () => {

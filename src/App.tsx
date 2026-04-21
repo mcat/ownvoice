@@ -13,6 +13,7 @@ import { TabBar } from "./components/layout/TabBar";
 import { Speaking } from "./components/shared/Speaking";
 import { PhraseGrid } from "./components/phrases/PhraseGrid";
 import { SubcategoryChips } from "./components/phrases/SubcategoryChips";
+import { SuggestionChip } from "./components/phrases/SuggestionChip";
 import { PainFlow } from "./components/pain/PainFlow";
 import { Thread } from "./components/conversation/Thread";
 import { MyWishes } from "./components/wishes/MyWishes";
@@ -292,25 +293,13 @@ export function App() {
                 }}
               >
                 {sug.map((s) => (
-                  <button
+                  <SuggestionChip
                     key={s}
-                    onClick={() => speakAsPatient(s)}
-                    class="font-sans"
-                    style={{
-                      background: t.card,
-                      border: `1.5px solid ${theme === "dark" ? "#60A5FA30" : "#2563EB30"}`,
-                      borderRadius: 10,
-                      padding: "10px 16px",
-                      fontSize: 16,
-                      // Patient blue text: darker shade for AAA 7:1 on card bg
-                      color: theme === "dark" ? "#60A5FA" : "#1E40AF",
-                      fontWeight: 600,
-                      whiteSpace: "nowrap",
-                      cursor: "pointer",
-                    }}
-                  >
-                    {s}
-                  </button>
+                    text={s}
+                    onTap={speakAsPatient}
+                    t={t}
+                    theme={theme}
+                  />
                 ))}
               </div>
             </div>
