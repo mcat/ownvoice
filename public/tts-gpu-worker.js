@@ -487,20 +487,25 @@ async function handleSynthesize(text, speakerData) {
   // it directly without an intermediate copy.
   combinedEmbeds.set(textEmbeds.data, condLen * embedDim);
 
-  // Pre-size reusable buffers for the attention_mask and position_ids we
-  // regenerate on every decode step. Without this, each step allocates
-  // Array(newLen).fill(1) + Int32Array.from(...) → double-allocation of
-  // a growing array, ~768 times, for a total that runs into millions of
-  // ints. Now: one allocation sized to the worst case, mutated in place.
-  const maxSeqLen = totalLen + MAX_NEW_TOKENS;
-  const maskBuf = new Int32Array(maxSeqLen).fill(1); // always all-1s; never needs rewriting
-  const posIdsBuf = new Int32Array(maxSeqLen);
-  for (let i = 0; i < maxSeqLen; i++) posIdsBuf[i] = i;
+  // attention_mask and position_ids get fresh typed arrays per decode step.
+  //
+  // An earlier optimization pre-allocated one Int32Array and handed out
+  // .subarray() views across steps. That produced GatherBlockQuantized
+  // bounds errors (`idx=<garbage> must be within [-8196,8195]`) on the
+  // LM's position-embedding gather: ORT Web's WebGPU backend does not
+  // reliably handle multiple input Tensors that share a backing
+  // ArrayBuffer across successive run() calls — whether by aliased
+  // subarray views or by in-place mutation of a reused single-slot
+  // buffer. The safe idiom is "one typed array per Tensor per run."
+  //
+  // We keep the modest improvement over the very first version by using
+  // `new Int32Array(N).fill(1)` instead of `Int32Array.from(Array(N).fill(1))`
+  // — single allocation, no intermediate Array object.
 
   let lmInputs = {
     inputs_embeds: new ort.Tensor("float32", combinedEmbeds, [1, totalLen, embedDim]),
-    attention_mask_int32: new ort.Tensor("int32", maskBuf.subarray(0, totalLen), [1, totalLen]),
-    position_ids_int32: new ort.Tensor("int32", posIdsBuf.subarray(0, totalLen), [1, totalLen]),
+    attention_mask_int32: new ort.Tensor("int32", new Int32Array(totalLen).fill(1), [1, totalLen]),
+    position_ids_int32: new ort.Tensor("int32", Int32Array.from({ length: totalLen }, (_, i) => i), [1, totalLen]),
   };
 
   for (let i = 0; i < NUM_LAYERS; i++) {
@@ -509,10 +514,6 @@ async function handleSynthesize(text, speakerData) {
   }
 
   const generatedTokens = [START_SPEECH_TOKEN];
-
-  // Single-element position_ids buffer for the step-N path ([1,1] shape).
-  // Reused across steps; we just overwrite index 0 with the current pos.
-  const stepPosIds = new Int32Array(1);
 
   // Tracks the GPU-backed tensors from the prior step so we can dispose
   // them once the next run() has consumed them as its past_key_values.*
@@ -568,16 +569,13 @@ async function handleSynthesize(text, speakerData) {
     const nextTok = new ort.Tensor("int64", BigInt64Array.from([BigInt(embedIdx)]), [1, 1]);
     const nextEmb = await embedTokensSession.run({ input_ids: nextTok });
     const newLen = totalLen + step + 1;
-    stepPosIds[0] = newLen - 1;
 
     lmInputs = {
       inputs_embeds: nextEmb["inputs_embeds"],
-      // maskBuf is pre-filled with 1s — we just widen the view each step.
-      // posIdsBuf is also pre-filled with 0..maxSeqLen-1, but the step-N
-      // LM only reads the current position, so we pass the dedicated
-      // single-slot buffer and overwrite index 0.
-      attention_mask_int32: new ort.Tensor("int32", maskBuf.subarray(0, newLen), [1, newLen]),
-      position_ids_int32: new ort.Tensor("int32", stepPosIds, [1, 1]),
+      // Fresh typed arrays per step — see note above the initial
+      // lmInputs construction for why we can't share backing memory.
+      attention_mask_int32: new ort.Tensor("int32", new Int32Array(newLen).fill(1), [1, newLen]),
+      position_ids_int32: new ort.Tensor("int32", new Int32Array([newLen - 1]), [1, 1]),
     };
 
     for (const [key, value] of Object.entries(lmResult)) {
