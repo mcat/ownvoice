@@ -290,20 +290,32 @@ async function handleInit(modelUrl) {
 
   const t0 = performance.now();
 
-  // Parallelize the four load operations. They're independent — tokenizer
-  // is a JSON fetch, the three ORT sessions don't share device state that
-  // one must initialize for the others. The WebGPU backend's adapter init
-  // is idempotent under concurrent requests. Saves 1-4s of cold boot on
-  // iPad vs sequential awaits.
+  // ORT Web's `initWasm()` is a one-time-per-worker routine. The WebGPU
+  // backend depends on the JSEP WASM shim, so every session creation —
+  // WASM EP or WebGPU EP — touches it. Calling createSession() multiple
+  // times concurrently on a cold worker throws
+  //   Error: multiple calls to 'initWasm()' detected
+  // which cascades to "removing requested execution provider 'webgpu'
+  // ... not available". Net effect: the LM silently falls back to WASM
+  // EP and synthesis runs 100-1000× slower.
   //
-  // Notes on EP choice (see per-session comments below):
+  // Fix: serialize ONE session creation first (to drive initWasm) while
+  // the tokenizer fetch runs in parallel (it's a plain fetch and doesn't
+  // touch ORT). Once WASM is initialized, the remaining two sessions can
+  // load safely in parallel.
+  //
+  // Notes on EP choice:
   //  - embed_tokens on WASM: Metal GatherBlockQuantized dispatch bug
   //  - language_model on WebGPU: the hot autoregressive loop
   //  - conditional_decoder on WASM: WebGPU variant has ConvTranspose
   //    quantization artifacts that trash audio quality
-  const [, embed, lm, decoder] = await Promise.all([
+  const [, embed] = await Promise.all([
     loadTokenizer(baseUrl + "tokenizer.json"),
     createSession(baseUrl + "embed_tokens_q4f16.onnx", true, true),
+  ]);
+  embedTokensSession = embed;
+
+  const [lm, decoder] = await Promise.all([
     createSession(
       baseUrl + "language_model_q4f16_webgpu.onnx",
       true,
@@ -312,7 +324,6 @@ async function handleInit(modelUrl) {
     ),
     createSession(baseUrl + "conditional_decoder_q4f16.onnx", true, true),
   ]);
-  embedTokensSession = embed;
   languageModelSession = lm;
   conditionalDecoderSession = decoder;
 

@@ -30,6 +30,21 @@ import path from "node:path";
 const WORKER_PATH = path.resolve(process.cwd(), "public/tts-gpu-worker.js");
 const WORKER_SRC = fs.readFileSync(WORKER_PATH, "utf-8");
 
+/**
+ * Pull the text of `async function handleInit(…) { … }` out of the
+ * worker source so tests can check patterns within it without false
+ * positives from other functions.
+ */
+function extractHandleInitBody(): string {
+  const match = WORKER_SRC.match(
+    /async\s+function\s+handleInit[\s\S]*?\n}\s*(?=\n(?:async\s+)?function\s|\n\/\*\*|$)/,
+  );
+  if (!match) {
+    throw new Error("handleInit function not found in worker source");
+  }
+  return match[0];
+}
+
 describe("tts-gpu-worker source — known-regression anti-patterns", () => {
   it("does not pass .subarray() views to ort.Tensor (regression: commit 63f30a5)", () => {
     // Background: commit a819118 "optimized" the decode loop by
@@ -79,31 +94,53 @@ describe("tts-gpu-worker source — known-regression anti-patterns", () => {
 
 describe("tts-gpu-worker source — performance-sensitive patterns", () => {
   it("parallelizes model loads in handleInit via Promise.all", () => {
-    // Regression guard: commit a819118 replaced three sequential
-    // `await createSession(...)` calls with a single `Promise.all([...])`
-    // that loads the tokenizer and all three ORT sessions concurrently.
-    // On iPad this saves 1-4s of cold boot. A future refactor that
-    // accidentally serializes these would regress that win silently.
-    //
-    // Match against the whole handleInit body (non-greedy up to the next
-    // top-level function) to ensure the Promise.all is inside it.
-    const handleInitMatch = WORKER_SRC.match(
-      /async\s+function\s+handleInit[\s\S]*?\n}\s*(?=\n(?:async\s+)?function\s|\n\/\*\*|$)/,
-    );
-    expect(handleInitMatch, "handleInit function not found in worker source")
-      .not.toBeNull();
-    const handleInitBody = handleInitMatch![0];
-
+    // Regression guard: commit a819118 replaced sequential
+    // `await createSession(...)` calls with `Promise.all([...])` that
+    // loads the tokenizer alongside ORT sessions. On iPad this saves
+    // 1-3s of cold boot. A future refactor that accidentally fully
+    // serializes these would regress that win silently.
+    const handleInitBody = extractHandleInitBody();
     expect(
       handleInitBody,
-      "handleInit must load models via Promise.all — sequential awaits " +
-      "add 1-4s of cold-boot latency on iPad.",
+      "handleInit must load models via Promise.all — fully sequential " +
+      "awaits add 1-3s of cold-boot latency on iPad.",
     ).toMatch(/Promise\.all\s*\(/);
-    // Spot-check: the Promise.all should encompass at least three
+    // Spot-check: the full handleInit should orchestrate at least three
     // createSession calls (embed_tokens, language_model, decoder).
     const createSessionCount = (handleInitBody.match(/createSession\s*\(/g) ?? [])
       .length;
     expect(createSessionCount).toBeGreaterThanOrEqual(3);
+  });
+
+  it("does not start 3+ ORT sessions concurrently on a cold worker (regression: initWasm race)", () => {
+    // ORT Web's initWasm() is a one-time routine. The WebGPU backend's
+    // JSEP shim and all WASM-EP sessions touch it, so creating 3 sessions
+    // concurrently on a cold worker throws:
+    //   Error: multiple calls to 'initWasm()' detected
+    // which cascades to "removing requested execution provider 'webgpu'"
+    // and silently downgrades synthesis to pure WASM (100-1000× slower).
+    //
+    // The safe pattern is to serialize ONE session first (to drive the
+    // one-time initWasm) then parallelize the rest. This test guards the
+    // constraint by ensuring no single Promise.all group contains 3+
+    // createSession calls.
+    const handleInitBody = extractHandleInitBody();
+    const promiseAllBlocks = handleInitBody.matchAll(
+      /Promise\.all\s*\(\s*\[([\s\S]*?)\]\s*\)/g,
+    );
+    const violations: Array<{ block: string; count: number }> = [];
+    for (const match of promiseAllBlocks) {
+      const inner = match[1];
+      const count = (inner.match(/createSession\s*\(/g) ?? []).length;
+      if (count >= 3) violations.push({ block: match[0], count });
+    }
+    expect(
+      violations,
+      "Found Promise.all block(s) containing 3+ createSession calls. " +
+      "ORT Web's initWasm() is not concurrency-safe on a cold worker — " +
+      "serialize one session first, then parallelize the rest.\n\n" +
+      JSON.stringify(violations, null, 2),
+    ).toEqual([]);
   });
 
   it("disposes prior-step GPU-backed KV cache tensors inside the decode loop", () => {
