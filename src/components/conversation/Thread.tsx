@@ -3,6 +3,7 @@ import type { JSX } from "preact";
 import type { Message } from "../../types";
 import type { ThemeTokens } from "../../theme/tokens";
 import { Btn } from "../shared/Btn";
+import { useReducedMotion } from "../../hooks/useReducedMotion";
 
 interface ThreadProps {
   messages: Message[];
@@ -20,11 +21,17 @@ interface ThreadProps {
 export function Thread({ messages, t, onRepeat }: ThreadProps) {
   const endRef = useRef<HTMLDivElement>(null);
   const [repeatingIdx, setRepeatingIdx] = useState<number | null>(null);
+  const reducedMotion = useReducedMotion();
 
-  // Auto-scroll to bottom whenever messages change
+  // Auto-scroll to bottom whenever messages change.
+  // The `behavior` JS option overrides CSS `scroll-behavior`, so the
+  // `prefers-reduced-motion` media rule in app.css does NOT silence this
+  // call — we must branch explicitly (WCAG 2.3.3 AAA).
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages.length]);
+    endRef.current?.scrollIntoView({
+      behavior: reducedMotion ? "auto" : "smooth",
+    });
+  }, [messages.length, reducedMotion]);
 
   if (!messages || messages.length === 0) return null;
 

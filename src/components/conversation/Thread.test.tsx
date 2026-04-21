@@ -8,9 +8,27 @@ const messages: Message[] = [
   { from: "provider", text: "I will get that for you.", time: "2:31 PM", label: "Dr. Smith" },
 ];
 
+/** Install a matchMedia stub for the reduced-motion query only. */
+function mockReducedMotion(reduced: boolean): void {
+  Object.defineProperty(window, "matchMedia", {
+    value: (query: string) => ({
+      matches: reduced && query === "(prefers-reduced-motion: reduce)",
+      media: query,
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }),
+    writable: true,
+  });
+}
+
 // jsdom doesn't implement scrollIntoView
 beforeEach(() => {
   Element.prototype.scrollIntoView = vi.fn();
+  mockReducedMotion(false);
 });
 
 describe("Thread", () => {
@@ -53,5 +71,23 @@ describe("Thread", () => {
     );
     expect(screen.getAllByRole("button")).toHaveLength(1);
     expect(screen.getByText("I need water")).toBeInTheDocument();
+  });
+
+  describe("auto-scroll respects reduced-motion preference", () => {
+    it("scrolls smoothly when motion is unrestricted", () => {
+      mockReducedMotion(false);
+      const spy = vi.fn();
+      Element.prototype.scrollIntoView = spy;
+      render(<Thread messages={messages} t={light} onRepeat={vi.fn()} />);
+      expect(spy).toHaveBeenCalledWith({ behavior: "smooth" });
+    });
+
+    it("scrolls without animation when prefers-reduced-motion is set", () => {
+      mockReducedMotion(true);
+      const spy = vi.fn();
+      Element.prototype.scrollIntoView = spy;
+      render(<Thread messages={messages} t={light} onRepeat={vi.fn()} />);
+      expect(spy).toHaveBeenCalledWith({ behavior: "auto" });
+    });
   });
 });
