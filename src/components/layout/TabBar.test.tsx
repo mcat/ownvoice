@@ -71,6 +71,42 @@ describe("TabBar", () => {
     expect(useUIStore.getState().tab).toBe("needs");
   });
 
+  it("mouse hover tints inactive tab icon tile", () => {
+    useUIStore.setState({ tab: "quick" });
+    render(<TabBar />);
+    const needsTab = screen.getByLabelText("I Need");
+    const tile = needsTab.querySelector("div") as HTMLDivElement;
+    const baseBg = tile.style.background;
+    expect(baseBg).toBe("transparent");
+
+    fireEvent.pointerEnter(needsTab, { pointerType: "mouse" });
+    expect(tile.style.background).not.toBe("transparent");
+
+    fireEvent.pointerLeave(needsTab, { pointerType: "mouse" });
+    expect(tile.style.background).toBe("transparent");
+  });
+
+  it("touch pointer does not trigger tab hover", () => {
+    useUIStore.setState({ tab: "quick" });
+    render(<TabBar />);
+    const needsTab = screen.getByLabelText("I Need");
+    const tile = needsTab.querySelector("div") as HTMLDivElement;
+
+    fireEvent.pointerEnter(needsTab, { pointerType: "touch" });
+    expect(tile.style.background).toBe("transparent");
+  });
+
+  it("active tab ignores hover (keeps active background)", () => {
+    useUIStore.setState({ tab: "quick" });
+    render(<TabBar />);
+    const quickTab = screen.getByLabelText("Quick");
+    const tile = quickTab.querySelector("div") as HTMLDivElement;
+    const activeBg = tile.style.background;
+
+    fireEvent.pointerEnter(quickTab, { pointerType: "mouse" });
+    expect(tile.style.background).toBe(activeBg);
+  });
+
   it("clicking tab resets sub to 0 and closes builder", () => {
     useUIStore.setState({ sub: 2, builderOpen: true, tab: "quick" });
     render(<TabBar />);

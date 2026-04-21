@@ -1,3 +1,5 @@
+import { useState } from "preact/hooks";
+import type { JSX } from "preact";
 import { Btn } from "../shared/Btn";
 import { getCategories } from "../../data/phraseRegistry";
 import { useUIStore } from "../../stores/uiStore";
@@ -33,6 +35,14 @@ export function TabBar() {
   const setTab = useUIStore((s) => s.setTab);
   const openBuilder = useUIStore((s) => s.openBuilder);
 
+  // Which tab, if any, is currently hovered by a mouse-like pointer
+  // (trackball, joystick, AssistiveTouch cursor). Touch events never set this.
+  const [hovered, setHovered] = useState<string | null>(null);
+  const onEnter = (id: string) => (e: JSX.TargetedPointerEvent<HTMLButtonElement>) => {
+    if (e.pointerType === "mouse") setHovered(id);
+  };
+  const onLeave = () => setHovered(null);
+
   // Say More active label: cyan-900 in light gives 8.5:1 on card bg for AAA
   const smLabelColor = builderOpen
     ? (theme === "dark" ? "#22D3EE" : "#164E63")
@@ -56,6 +66,7 @@ export function TabBar() {
     >
       {CATS.map((c) => {
         const isActive = tab === c.id && !builderOpen;
+        const isHovered = hovered === c.id && !isActive;
         const colorMap = theme === "dark" ? ACTIVE_COLORS_DARK : ACTIVE_COLORS_LIGHT;
         const labelColor = isActive ? (colorMap[c.color] ?? c.color) : t.muted;
 
@@ -63,6 +74,8 @@ export function TabBar() {
           <Btn
             key={c.id}
             onClick={() => setTab(c.id)}
+            onPointerEnter={onEnter(c.id)}
+            onPointerLeave={onLeave}
             aria-current={isActive ? "page" : undefined}
             aria-label={c.label}
             style={{
@@ -82,10 +95,16 @@ export function TabBar() {
                 width: 48,
                 height: 48,
                 borderRadius: 14,
-                background: isActive ? c.color + "20" : "transparent",
+                background: isActive
+                  ? c.color + "20"
+                  : isHovered
+                    ? c.color + "10"
+                    : "transparent",
                 border: isActive
                   ? `2px solid ${c.color}40`
-                  : "2px solid transparent",
+                  : isHovered
+                    ? `2px solid ${c.color}20`
+                    : "2px solid transparent",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -103,8 +122,13 @@ export function TabBar() {
       })}
 
       {/* Say More — Sentence Builder, visually distinct from phrase categories */}
+      {(() => {
+        const smHovered = hovered === "__saymore__" && !builderOpen;
+        return (
       <Btn
         onClick={openBuilder}
+        onPointerEnter={onEnter("__saymore__")}
+        onPointerLeave={onLeave}
         aria-current={builderOpen ? "page" : undefined}
         aria-label="Say More"
         style={{
@@ -124,10 +148,16 @@ export function TabBar() {
             width: 48,
             height: 48,
             borderRadius: 14,
-            background: builderOpen ? SAY_MORE_COLOR + "20" : "transparent",
+            background: builderOpen
+              ? SAY_MORE_COLOR + "20"
+              : smHovered
+                ? SAY_MORE_COLOR + "10"
+                : "transparent",
             border: builderOpen
               ? `2px solid ${SAY_MORE_COLOR}40`
-              : "2px solid transparent",
+              : smHovered
+                ? `2px solid ${SAY_MORE_COLOR}20`
+                : "2px solid transparent",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -141,6 +171,8 @@ export function TabBar() {
           Say More
         </span>
       </Btn>
+        );
+      })()}
     </nav>
   );
 }

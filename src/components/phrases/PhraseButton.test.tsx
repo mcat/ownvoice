@@ -24,6 +24,27 @@ describe("PhraseButton", () => {
     expect(onTap).toHaveBeenCalledWith("I need water");
   });
 
+  it("mouse hover tints border; leaving clears it", () => {
+    render(<PhraseButton phrase={phrase} onTap={vi.fn()} t={light} />);
+    const btn = screen.getByRole("button");
+    const baseBorder = btn.style.border;
+
+    fireEvent.pointerEnter(btn, { pointerType: "mouse" });
+    expect(btn.style.border).not.toBe(baseBorder);
+
+    fireEvent.pointerLeave(btn, { pointerType: "mouse" });
+    expect(btn.style.border).toBe(baseBorder);
+  });
+
+  it("touch pointer does not trigger hover styling", () => {
+    render(<PhraseButton phrase={phrase} onTap={vi.fn()} t={light} />);
+    const btn = screen.getByRole("button");
+    const baseBorder = btn.style.border;
+
+    fireEvent.pointerEnter(btn, { pointerType: "touch" });
+    expect(btn.style.border).toBe(baseBorder);
+  });
+
   it("applies lit highlight after click, then reverts", async () => {
     vi.useFakeTimers();
     render(<PhraseButton phrase={phrase} onTap={vi.fn()} t={light} />);
