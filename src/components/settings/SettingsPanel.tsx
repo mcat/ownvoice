@@ -3,6 +3,7 @@ import type { ThemeTokens, ThemeName } from "../../theme/tokens";
 import { z } from "../../theme/z";
 import { BottomSheet } from "../shared/BottomSheet";
 import { PatientInfoSection } from "./sections/PatientInfoSection";
+import { AccessibilitySection } from "./sections/AccessibilitySection";
 import { CareTeamSection } from "./sections/CareTeamSection";
 import { AboutSection } from "./sections/AboutSection";
 import { OfflineReadinessSection } from "./sections/OfflineReadinessSection";
@@ -69,6 +70,7 @@ export function SettingsPanel({
             t={t}
             theme={theme}
           />
+          <AccessibilitySection cfg={cfg} updateCfg={updateCfg} t={t} />
           <CareTeamSection
             cfg={cfg}
             t={t}

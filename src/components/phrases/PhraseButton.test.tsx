@@ -1,9 +1,23 @@
 import { render, screen, fireEvent } from "@testing-library/preact";
 import { PhraseButton } from "./PhraseButton";
 import { light } from "../../theme/tokens";
-import type { Phrase } from "../../types";
+import { useSettingsStore } from "../../stores/settingsStore";
+import type { Phrase, AppSettings } from "../../types";
 
 const phrase: Phrase = { text: "I need water", icon: "💧" };
+
+const baseCfg: AppSettings = {
+  patientName: "",
+  bed: "",
+  patientLang: "en",
+  patientVoice: false,
+  pin: "",
+  providers: [],
+};
+
+beforeEach(() => {
+  useSettingsStore.setState({ cfg: baseCfg });
+});
 
 describe("PhraseButton", () => {
   it("renders icon and label", () => {
@@ -43,6 +57,42 @@ describe("PhraseButton", () => {
 
     fireEvent.pointerEnter(btn, { pointerType: "touch" });
     expect(btn.style.border).toBe(baseBorder);
+  });
+
+  it("assistive mode renders stronger hover border than default", () => {
+    // Default mode hover border
+    const { unmount } = render(<PhraseButton phrase={phrase} onTap={vi.fn()} t={light} />);
+    const defaultBtn = screen.getByRole("button");
+    fireEvent.pointerEnter(defaultBtn, { pointerType: "mouse" });
+    const defaultHoverBorder = defaultBtn.style.border;
+    unmount();
+
+    // Assistive mode hover border
+    useSettingsStore.setState({ cfg: { ...baseCfg, assistiveInput: true } });
+    render(<PhraseButton phrase={phrase} onTap={vi.fn()} t={light} />);
+    const assistiveBtn = screen.getByRole("button");
+    fireEvent.pointerEnter(assistiveBtn, { pointerType: "mouse" });
+    expect(assistiveBtn.style.border).not.toBe(defaultHoverBorder);
+  });
+
+  it("assistive mode extends lit highlight to 1000ms", async () => {
+    useSettingsStore.setState({ cfg: { ...baseCfg, assistiveInput: true } });
+    vi.useFakeTimers();
+    render(<PhraseButton phrase={phrase} onTap={vi.fn()} t={light} />);
+    const btn = screen.getByRole("button");
+
+    fireEvent.click(btn);
+    expect(btn.style.color).toBe("rgb(255, 255, 255)");
+
+    // Default 500ms lit-timeout — still lit in assistive mode
+    await vi.advanceTimersByTimeAsync(600);
+    expect(btn.style.color).toBe("rgb(255, 255, 255)");
+
+    // Past assistive 1000ms — now reverted
+    await vi.advanceTimersByTimeAsync(500);
+    expect(btn.style.color).not.toBe("rgb(255, 255, 255)");
+
+    vi.useRealTimers();
   });
 
   it("applies lit highlight after click, then reverts", async () => {

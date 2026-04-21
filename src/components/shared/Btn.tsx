@@ -1,5 +1,6 @@
 import { useRef } from "preact/hooks";
 import type { JSX } from "preact";
+import { useSettingsStore } from "../../stores/settingsStore";
 
 type BtnProps = {
   onClick?: () => void;
@@ -9,7 +10,9 @@ type BtnProps = {
   children: preact.ComponentChildren;
 } & Omit<JSX.HTMLAttributes<HTMLButtonElement>, "onClick" | "class" | "style" | "disabled">;
 
-/** Base debounced button — 300ms lockout for tremor protection */
+/** Base debounced button — 300ms tremor-protection lockout, or 500ms when
+ *  Assistive Input Mode is on (longer cursor-overshoot tolerance for
+ *  patients using trackballs, joysticks, AssistiveTouch, or switches). */
 export function Btn({
   children,
   onClick,
@@ -19,6 +22,8 @@ export function Btn({
   ...props
 }: BtnProps) {
   const lock = useRef(false);
+  const assistiveInput = useSettingsStore((s) => s.cfg?.assistiveInput === true);
+  const lockoutMs = assistiveInput ? 500 : 300;
 
   const handle = () => {
     if (lock.current || disabled) return;
@@ -26,7 +31,7 @@ export function Btn({
     onClick?.();
     setTimeout(() => {
       lock.current = false;
-    }, 300);
+    }, lockoutMs);
   };
 
   return (

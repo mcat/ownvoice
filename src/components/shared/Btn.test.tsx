@@ -1,5 +1,20 @@
 import { render, screen, fireEvent } from "@testing-library/preact";
 import { Btn } from "./Btn";
+import { useSettingsStore } from "../../stores/settingsStore";
+import type { AppSettings } from "../../types";
+
+const baseCfg: AppSettings = {
+  patientName: "",
+  bed: "",
+  patientLang: "en",
+  patientVoice: false,
+  pin: "",
+  providers: [],
+};
+
+beforeEach(() => {
+  useSettingsStore.setState({ cfg: baseCfg });
+});
 
 describe("Btn", () => {
   it("renders children", () => {
@@ -50,6 +65,28 @@ describe("Btn", () => {
 
       vi.advanceTimersByTime(300);
 
+      fireEvent.click(btn);
+      expect(onClick).toHaveBeenCalledTimes(2);
+    });
+
+    it("assistive mode extends lockout to 500ms", () => {
+      useSettingsStore.setState({
+        cfg: { ...baseCfg, assistiveInput: true },
+      });
+      const onClick = vi.fn();
+      render(<Btn onClick={onClick}>Tap</Btn>);
+      const btn = screen.getByRole("button");
+
+      fireEvent.click(btn);
+      expect(onClick).toHaveBeenCalledTimes(1);
+
+      // After 300ms — still locked because assistive mode uses 500ms
+      vi.advanceTimersByTime(300);
+      fireEvent.click(btn);
+      expect(onClick).toHaveBeenCalledTimes(1);
+
+      // After another 200ms (total 500ms) — lockout released
+      vi.advanceTimersByTime(200);
       fireEvent.click(btn);
       expect(onClick).toHaveBeenCalledTimes(2);
     });

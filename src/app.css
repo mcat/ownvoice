@@ -114,6 +114,42 @@ select:focus-visible {
   outline-color: #60A5FA !important;
 }
 
+/* ── Assistive Input Mode focus ring ──
+   Patients using a trackball, joystick, AssistiveTouch, or switch need a
+   focus ring more visible than the 3px default. Bump width to 4px (33%
+   larger) AND switch to an AAA-contrast color (#1E40AF / #93C5FD), which
+   together read much more conspicuously than 3px alone. Offset stays at
+   0 so total ring extension is 4px — fits inside the 4px padding that
+   every scroll container in the app already provides (App.tsx:270,
+   SubcategoryChips.tsx:29, etc.), preventing clip on edge buttons in
+   PhraseGrid and chip rows. Toggled via useAssistiveInput hook. */
+[data-assistive="on"] *:focus-visible {
+  outline-width: 4px;
+  outline-offset: 0;
+  outline-color: #1E40AF; /* 8.59:1 on white — WCAG AAA */
+}
+
+.dark [data-assistive="on"] *:focus-visible,
+[data-assistive="on"].dark *:focus-visible,
+[data-theme="dark"] [data-assistive="on"] *:focus-visible,
+[data-assistive="on"][data-theme="dark"] *:focus-visible {
+  outline-color: #93C5FD; /* AAA on dark app bg */
+}
+
+[data-assistive="on"] input:focus-visible,
+[data-assistive="on"] textarea:focus-visible,
+[data-assistive="on"] select:focus-visible {
+  outline-width: 4px !important;
+  outline-offset: 0 !important;
+  outline-color: #1E40AF !important;
+}
+
+.dark [data-assistive="on"] input:focus-visible,
+.dark [data-assistive="on"] textarea:focus-visible,
+.dark [data-assistive="on"] select:focus-visible {
+  outline-color: #93C5FD !important;
+}
+
 /* ── Reduced motion (WCAG 2.3.3 AAA) ──
    Honor the user's OS-level preference by collapsing all animations and
    smooth-scrolls to near-instant. Critical for vestibular disorders. */

@@ -76,6 +76,9 @@ export interface AppSettings {
   providers: Provider[];
   /** User-selected Web Speech API voice for the fallback TTS path */
   fallbackVoice?: FallbackVoice | null;
+  /** Accessibility: amplifies feedback + lengthens debounce for patients using
+   *  assistive input devices (trackball, joystick, AssistiveTouch, switch). */
+  assistiveInput?: boolean;
 }
 
 export interface SpeakingState {

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef } from "preact/hooks";
 import { useTheme } from "./hooks/useTheme";
+import { useAssistiveInput } from "./hooks/useAssistiveInput";
 import { useSpeakActions } from "./hooks/useSpeakActions";
 import { useConversationStore } from "./stores/conversationStore";
 import { useUIStore } from "./stores/uiStore";
@@ -36,6 +37,11 @@ export function App() {
   // Theme state — useTheme attaches the system listener and syncs side effects.
   // The main.tsx subscribe callback handles DOM updates for the root div.
   const { theme, t } = useTheme();
+
+  // Assistive Input Mode — bridges cfg.assistiveInput to <html data-assistive>
+  // so CSS rules in app.css can amplify focus rings etc. JS-driven values
+  // (debounce, hover intensity) read the setting directly from the store.
+  useAssistiveInput();
 
   const messages = useConversationStore((s) => s.messages);
   const { speakAsPatient, speakAsProvider, addToThread, repeatSpeak, activeProv } =

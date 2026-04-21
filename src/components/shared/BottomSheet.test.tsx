@@ -1,6 +1,21 @@
 import { render, screen, fireEvent } from "@testing-library/preact";
 import { BottomSheet } from "./BottomSheet";
 import { light } from "../../theme/tokens";
+import { useSettingsStore } from "../../stores/settingsStore";
+import type { AppSettings } from "../../types";
+
+const baseCfg: AppSettings = {
+  patientName: "",
+  bed: "",
+  patientLang: "en",
+  patientVoice: false,
+  pin: "",
+  providers: [],
+};
+
+beforeEach(() => {
+  useSettingsStore.setState({ cfg: baseCfg });
+});
 
 /**
  * jsdom + testing-library's `fireEvent.transitionEnd` doesn't reliably bubble
@@ -70,6 +85,33 @@ describe("BottomSheet root", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "inside" }));
     expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("assistive mode: backdrop click does NOT fire onClose", () => {
+    useSettingsStore.setState({ cfg: { ...baseCfg, assistiveInput: true } });
+    const onClose = vi.fn();
+    const { container } = render(
+      <BottomSheet onClose={onClose} t={light}>
+        content
+      </BottomSheet>,
+    );
+    const backdrop = container.querySelector("[data-testid='bottom-sheet-backdrop']");
+    fireEvent.click(backdrop as Element);
+    fireTransitionEnd(screen.getByRole("dialog"));
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("assistive mode: Escape still closes (CloseButton / Escape are still reachable)", () => {
+    useSettingsStore.setState({ cfg: { ...baseCfg, assistiveInput: true } });
+    const onClose = vi.fn();
+    render(
+      <BottomSheet onClose={onClose} t={light}>
+        content
+      </BottomSheet>,
+    );
+    fireEvent.keyDown(document, { key: "Escape" });
+    fireTransitionEnd(screen.getByRole("dialog"));
+    expect(onClose).toHaveBeenCalledOnce();
   });
 });
 
