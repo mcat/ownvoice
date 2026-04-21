@@ -5,6 +5,7 @@ import type { ThemeTokens } from "../../theme/tokens";
 import { z as zScale } from "../../theme/z";
 import { useDialog } from "../../hooks/useDialog";
 import { useReducedMotion } from "../../hooks/useReducedMotion";
+import { useSettingsStore } from "../../stores/settingsStore";
 
 interface BottomSheetContext {
   titleId: string;
@@ -45,6 +46,10 @@ export function BottomSheet({
 }: BottomSheetProps) {
   const titleId = useId();
   const reducedMotion = useReducedMotion();
+  // When Assistive Input Mode is on, backdrop-click dismissal is suppressed
+  // so a dwell-click cursor drifting across the backdrop doesn't
+  // accidentally close the sheet. Escape and CloseButton remain.
+  const assistiveInput = useSettingsStore((s) => s.cfg?.assistiveInput === true);
   const [closing, setClosing] = useState(false);
   // Start at final state if reduced motion; otherwise animate in on mount.
   const [entered, setEntered] = useState(reducedMotion);
@@ -127,11 +132,14 @@ export function BottomSheet({
   return (
     <div style={overlay}>
       {/* Backdrop — passive close surface. Escape and CloseButton are the
-          keyboard/AT paths; no role or tabindex here. */}
+          keyboard/AT paths; no role or tabindex here.
+          In Assistive Input Mode the backdrop does not dismiss, because a
+          dwell-click cursor drifting across it would otherwise close the
+          sheet by accident. */}
       {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
       <div
         data-testid="bottom-sheet-backdrop"
-        onClick={handleClose}
+        onClick={assistiveInput ? undefined : handleClose}
         style={backdrop}
       />
       <div

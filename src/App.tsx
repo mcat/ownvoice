@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef } from "preact/hooks";
 import { useTheme } from "./hooks/useTheme";
+import { useAssistiveInput } from "./hooks/useAssistiveInput";
 import { useSpeakActions } from "./hooks/useSpeakActions";
 import { useConversationStore } from "./stores/conversationStore";
 import { useUIStore } from "./stores/uiStore";
@@ -12,6 +13,7 @@ import { TabBar } from "./components/layout/TabBar";
 import { Speaking } from "./components/shared/Speaking";
 import { PhraseGrid } from "./components/phrases/PhraseGrid";
 import { SubcategoryChips } from "./components/phrases/SubcategoryChips";
+import { SuggestionChip } from "./components/phrases/SuggestionChip";
 import { PainFlow } from "./components/pain/PainFlow";
 import { Thread } from "./components/conversation/Thread";
 import { MyWishes } from "./components/wishes/MyWishes";
@@ -36,6 +38,11 @@ export function App() {
   // Theme state — useTheme attaches the system listener and syncs side effects.
   // The main.tsx subscribe callback handles DOM updates for the root div.
   const { theme, t } = useTheme();
+
+  // Assistive Input Mode — bridges cfg.assistiveInput to <html data-assistive>
+  // so CSS rules in app.css can amplify focus rings etc. JS-driven values
+  // (debounce, hover intensity) read the setting directly from the store.
+  useAssistiveInput();
 
   const messages = useConversationStore((s) => s.messages);
   const { speakAsPatient, speakAsProvider, addToThread, repeatSpeak, activeProv } =
@@ -286,25 +293,13 @@ export function App() {
                 }}
               >
                 {sug.map((s) => (
-                  <button
+                  <SuggestionChip
                     key={s}
-                    onClick={() => speakAsPatient(s)}
-                    class="font-sans"
-                    style={{
-                      background: t.card,
-                      border: `1.5px solid ${theme === "dark" ? "#60A5FA30" : "#2563EB30"}`,
-                      borderRadius: 10,
-                      padding: "10px 16px",
-                      fontSize: 16,
-                      // Patient blue text: darker shade for AAA 7:1 on card bg
-                      color: theme === "dark" ? "#60A5FA" : "#1E40AF",
-                      fontWeight: 600,
-                      whiteSpace: "nowrap",
-                      cursor: "pointer",
-                    }}
-                  >
-                    {s}
-                  </button>
+                    text={s}
+                    onTap={speakAsPatient}
+                    t={t}
+                    theme={theme}
+                  />
                 ))}
               </div>
             </div>

@@ -1,5 +1,8 @@
+import { useState } from "preact/hooks";
+import type { JSX } from "preact";
 import { Btn } from "../shared/Btn";
 import { useTheme } from "../../hooks/useTheme";
+import { useSettingsStore } from "../../stores/settingsStore";
 import type { ThemeTokens } from "../../theme/tokens";
 
 interface SubcategoryChipsProps {
@@ -16,6 +19,19 @@ export function SubcategoryChips({
   t,
 }: SubcategoryChipsProps) {
   const { theme } = useTheme();
+  const assistive = useSettingsStore((s) => s.cfg?.assistiveInput === true);
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+
+  const onEnter = (i: number) => (e: JSX.TargetedPointerEvent<HTMLButtonElement>) => {
+    if (e.pointerType === "mouse") setHoveredIdx(i);
+  };
+  const onLeave = () => setHoveredIdx(null);
+
+  // Hover tint — stronger in assistive mode.
+  const hoverBg = assistive
+    ? (theme === "dark" ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.06)")
+    : (theme === "dark" ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.03)");
+
   return (
     <div
       style={{
@@ -31,12 +47,15 @@ export function SubcategoryChips({
     >
       {labels.map((label, i) => {
         const active = i === activeIndex;
+        const hovered = hoveredIdx === i && !active;
         return (
           <Btn
             key={label}
             onClick={() => onSelect(i)}
+            onPointerEnter={onEnter(i)}
+            onPointerLeave={onLeave}
             style={{
-              background: active ? t.card : "transparent",
+              background: active ? t.card : hovered ? hoverBg : "transparent",
               color: active ? t.text : t.sub,
               border: active
                 ? `1px solid ${t.border}`
@@ -49,6 +68,7 @@ export function SubcategoryChips({
               boxShadow: active
                 ? (theme === "dark" ? "none" : "0 1px 3px rgba(0,0,0,0.06)")
                 : "none",
+              transition: "background 0.12s ease",
             }}
           >
             {label}

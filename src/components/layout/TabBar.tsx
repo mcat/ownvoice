@@ -6,6 +6,14 @@ import { useUIStore } from "../../stores/uiStore";
 import { useSettingsStore } from "../../stores/settingsStore";
 import { useTheme } from "../../hooks/useTheme";
 
+/** Hover-tint alpha suffix: "10" (~6%) base, "26" (~15%) in assistive mode. */
+function hoverBgAlpha(assistive: boolean): string {
+  return assistive ? "26" : "10";
+}
+function hoverBorderAlpha(assistive: boolean): string {
+  return assistive ? "40" : "20";
+}
+
 /** Contrast-safe active label colors — verified >= 7:1 on #FFFFFF for AAA */
 const ACTIVE_COLORS_LIGHT: Record<string, string> = {
   "#2563EB": "#1E40AF", // 8.59:1
@@ -34,6 +42,7 @@ export function TabBar() {
   const builderOpen = useUIStore((s) => s.builderOpen);
   const setTab = useUIStore((s) => s.setTab);
   const openBuilder = useUIStore((s) => s.openBuilder);
+  const assistive = useSettingsStore((s) => s.cfg?.assistiveInput === true);
 
   // Which tab, if any, is currently hovered by a mouse-like pointer
   // (trackball, joystick, AssistiveTouch cursor). Touch events never set this.
@@ -98,12 +107,12 @@ export function TabBar() {
                 background: isActive
                   ? c.color + "20"
                   : isHovered
-                    ? c.color + "10"
+                    ? c.color + hoverBgAlpha(assistive)
                     : "transparent",
                 border: isActive
                   ? `2px solid ${c.color}40`
                   : isHovered
-                    ? `2px solid ${c.color}20`
+                    ? `2px solid ${c.color}${hoverBorderAlpha(assistive)}`
                     : "2px solid transparent",
                 display: "flex",
                 alignItems: "center",
@@ -151,12 +160,12 @@ export function TabBar() {
             background: builderOpen
               ? SAY_MORE_COLOR + "20"
               : smHovered
-                ? SAY_MORE_COLOR + "10"
+                ? SAY_MORE_COLOR + hoverBgAlpha(assistive)
                 : "transparent",
             border: builderOpen
               ? `2px solid ${SAY_MORE_COLOR}40`
               : smHovered
-                ? `2px solid ${SAY_MORE_COLOR}20`
+                ? `2px solid ${SAY_MORE_COLOR}${hoverBorderAlpha(assistive)}`
                 : "2px solid transparent",
             display: "flex",
             alignItems: "center",

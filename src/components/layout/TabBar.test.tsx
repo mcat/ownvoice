@@ -1,7 +1,18 @@
 import { render, screen, fireEvent } from "@testing-library/preact";
 import { TabBar } from "./TabBar";
 import { useUIStore } from "../../stores/uiStore";
+import { useSettingsStore } from "../../stores/settingsStore";
 import { getCategories } from "../../data/phraseRegistry";
+import type { AppSettings } from "../../types";
+
+const baseCfg: AppSettings = {
+  patientName: "",
+  bed: "",
+  patientLang: "en",
+  patientVoice: false,
+  pin: "",
+  providers: [],
+};
 
 const CATS = getCategories("en");
 
@@ -31,6 +42,7 @@ vi.mock("../../hooks/useTheme", () => ({
 describe("TabBar", () => {
   beforeEach(() => {
     useUIStore.setState({ tab: "quick", sub: 0 });
+    useSettingsStore.setState({ cfg: baseCfg });
   });
 
   it("renders all category tabs", () => {
@@ -105,6 +117,26 @@ describe("TabBar", () => {
 
     fireEvent.pointerEnter(quickTab, { pointerType: "mouse" });
     expect(tile.style.background).toBe(activeBg);
+  });
+
+  it("assistive mode strengthens inactive-tab hover tint", () => {
+    useUIStore.setState({ tab: "quick" });
+
+    // Default mode hover
+    const { unmount } = render(<TabBar />);
+    const defaultTab = screen.getByLabelText("I Need");
+    const defaultTile = defaultTab.querySelector("div") as HTMLDivElement;
+    fireEvent.pointerEnter(defaultTab, { pointerType: "mouse" });
+    const defaultHoverBg = defaultTile.style.background;
+    unmount();
+
+    // Assistive mode hover
+    useSettingsStore.setState({ cfg: { ...baseCfg, assistiveInput: true } });
+    render(<TabBar />);
+    const assistiveTab = screen.getByLabelText("I Need");
+    const assistiveTile = assistiveTab.querySelector("div") as HTMLDivElement;
+    fireEvent.pointerEnter(assistiveTab, { pointerType: "mouse" });
+    expect(assistiveTile.style.background).not.toBe(defaultHoverBg);
   });
 
   it("clicking tab resets sub to 0 and closes builder", () => {

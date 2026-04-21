@@ -1,6 +1,7 @@
 import { useState } from "preact/hooks";
 import type { JSX } from "preact";
 import { Btn } from "../shared/Btn";
+import { useSettingsStore } from "../../stores/settingsStore";
 import type { Phrase } from "../../types";
 import type { ThemeTokens } from "../../theme/tokens";
 
@@ -14,15 +15,23 @@ interface PhraseButtonProps {
  *  Hover tint only fires for pointerType === "mouse" so touch users
  *  don't see a brief hover flash on tap. AssistiveTouch cursors and
  *  USB/Bluetooth pointer devices (e.g. Pretorian trackballs) all report
- *  as "mouse", so they get the aiming feedback. */
+ *  as "mouse", so they get the aiming feedback.
+ *
+ *  Assistive Input Mode amplifies the hover tint (more saturated border
+ *  + stronger shadow) and stretches the post-tap "lit" highlight from
+ *  500 ms to 1000 ms so patients with slow motor control can confirm
+ *  what they selected before the visual clears. */
 export function PhraseButton({ phrase, onTap, t }: PhraseButtonProps) {
   const [lit, setLit] = useState(false);
   const [hover, setHover] = useState(false);
+  const assistiveInput = useSettingsStore((s) => s.cfg?.assistiveInput === true);
+
+  const litMs = assistiveInput ? 1000 : 500;
 
   const handle = () => {
     setLit(true);
     onTap(phrase.text);
-    setTimeout(() => setLit(false), 500);
+    setTimeout(() => setLit(false), litMs);
   };
 
   const onPointerEnter = (e: JSX.TargetedPointerEvent<HTMLButtonElement>) => {
@@ -30,11 +39,17 @@ export function PhraseButton({ phrase, onTap, t }: PhraseButtonProps) {
   };
   const onPointerLeave = () => setHover(false);
 
-  const borderColor = lit ? "#2563EB" : hover ? "#2563EB66" : t.border;
+  // Hover intensity — stronger alpha on border, stronger shadow in assistive mode.
+  const hoverBorder = assistiveInput ? "#2563EBCC" : "#2563EB66";
+  const hoverShadow = assistiveInput
+    ? "0 4px 14px rgba(37,99,235,0.22)"
+    : "0 2px 8px rgba(37,99,235,0.12)";
+
+  const borderColor = lit ? "#2563EB" : hover ? hoverBorder : t.border;
   const shadow = lit
     ? "0 4px 16px rgba(37,99,235,0.25)"
     : hover
-      ? "0 2px 8px rgba(37,99,235,0.12)"
+      ? hoverShadow
       : "0 1px 3px rgba(0,0,0,0.04)";
 
   return (

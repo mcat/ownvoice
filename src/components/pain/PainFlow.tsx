@@ -1,7 +1,9 @@
 import { useState } from "preact/hooks";
+import type { JSX } from "preact";
 import { Btn } from "../shared/Btn";
 import { getEmojiFPS, getPainDescriptors, getBodyRegions, composePainSentence } from "../../data/phraseRegistry";
 import { painColors } from "../../theme/tokens";
+import { useSettingsStore } from "../../stores/settingsStore";
 import type { ThemeTokens, ThemeName } from "../../theme/tokens";
 
 type Step = "severity" | "location" | "descriptor";
@@ -25,6 +27,19 @@ export function PainFlow({ onSelect, t, theme, locale = "en" }: PainFlowProps) {
   const [step, setStep] = useState<Step>("severity");
   const [severity, setSeverity] = useState<number | null>(null);
   const [location, setLocation] = useState<string | null>(null);
+  // Single-slot hover key — only one tile is under the cursor at a time.
+  const [hoveredKey, setHoveredKey] = useState<string | null>(null);
+  const assistive = useSettingsStore((s) => s.cfg?.assistiveInput === true);
+
+  const onTileEnter = (key: string) => (e: JSX.TargetedPointerEvent<HTMLButtonElement>) => {
+    if (e.pointerType === "mouse") setHoveredKey(key);
+  };
+  const onTileLeave = () => setHoveredKey(null);
+
+  // Hover wash on pain tiles — a translucent overlay tint, stronger in assistive mode.
+  const hoverBg = assistive
+    ? (theme === "dark" ? "rgba(255,255,255,0.08)" : "rgba(220,38,38,0.06)")
+    : (theme === "dark" ? "rgba(255,255,255,0.04)" : "rgba(220,38,38,0.03)");
 
   const EMOJI_FPS = getEmojiFPS(locale);
   const PAIN_DESCRIPTORS = getPainDescriptors(locale);
@@ -186,10 +201,15 @@ export function PainFlow({ onSelect, t, theme, locale = "en" }: PainFlowProps) {
             padding: 4,
           }}
         >
-          {EMOJI_FPS.map((face) => (
+          {EMOJI_FPS.map((face) => {
+            const key = `sev-${face.n}`;
+            const isHovered = hoveredKey === key;
+            return (
             <Btn
               key={face.n}
               onClick={() => handleSeverity(face.n)}
+              onPointerEnter={onTileEnter(key)}
+              onPointerLeave={onTileLeave}
               aria-label={`Pain level ${face.n}, ${face.label}`}
               style={{
                 display: "flex",
@@ -198,11 +218,12 @@ export function PainFlow({ onSelect, t, theme, locale = "en" }: PainFlowProps) {
                 justifyContent: "center",
                 minWidth: 80,
                 minHeight: 80,
-                background: t.card,
+                background: isHovered ? hoverBg : t.card,
                 border: `3px solid ${painColors[face.n]}`,
                 borderRadius: 16,
                 padding: 8,
                 cursor: "pointer",
+                transition: "background 0.12s ease",
               }}
             >
               <span style={{ fontSize: 36, lineHeight: 1 }}>{face.face}</span>
@@ -229,7 +250,8 @@ export function PainFlow({ onSelect, t, theme, locale = "en" }: PainFlowProps) {
                 {face.label}
               </span>
             </Btn>
-          ))}
+            );
+          })}
         </div>
       </div>
     );
@@ -266,21 +288,27 @@ export function PainFlow({ onSelect, t, theme, locale = "en" }: PainFlowProps) {
             padding: 4,
           }}
         >
-          {BODY_REGIONS.map((region) => (
+          {BODY_REGIONS.map((region) => {
+            const key = `loc-${region}`;
+            const isHovered = hoveredKey === key;
+            return (
             <Btn
               key={region}
               onClick={() => handleLocation(region)}
+              onPointerEnter={onTileEnter(key)}
+              onPointerLeave={onTileLeave}
               style={{
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 minWidth: 64,
                 minHeight: 64,
-                background: t.card,
+                background: isHovered ? hoverBg : t.card,
                 border: `2px solid ${t.border}`,
                 borderRadius: 12,
                 padding: "12px 8px",
                 cursor: "pointer",
+                transition: "background 0.12s ease",
               }}
             >
               <span
@@ -295,7 +323,8 @@ export function PainFlow({ onSelect, t, theme, locale = "en" }: PainFlowProps) {
                 {region}
               </span>
             </Btn>
-          ))}
+            );
+          })}
         </div>
       </div>
     );
@@ -329,10 +358,15 @@ export function PainFlow({ onSelect, t, theme, locale = "en" }: PainFlowProps) {
           padding: 4,
         }}
       >
-        {PAIN_DESCRIPTORS.map((desc) => (
+        {PAIN_DESCRIPTORS.map((desc) => {
+          const key = `desc-${desc.text}`;
+          const isHovered = hoveredKey === key;
+          return (
           <Btn
             key={desc.text}
             onClick={() => handleDescriptor(desc.text)}
+            onPointerEnter={onTileEnter(key)}
+            onPointerLeave={onTileLeave}
             style={{
               display: "flex",
               flexDirection: "column",
@@ -340,11 +374,12 @@ export function PainFlow({ onSelect, t, theme, locale = "en" }: PainFlowProps) {
               justifyContent: "center",
               minWidth: 64,
               minHeight: 64,
-              background: t.card,
+              background: isHovered ? hoverBg : t.card,
               border: `2px solid ${t.border}`,
               borderRadius: 12,
               padding: "12px 8px",
               cursor: "pointer",
+              transition: "background 0.12s ease",
             }}
           >
             <span style={{ fontSize: 24, lineHeight: 1 }}>{desc.icon}</span>
@@ -361,7 +396,8 @@ export function PainFlow({ onSelect, t, theme, locale = "en" }: PainFlowProps) {
               {desc.text}
             </span>
           </Btn>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
