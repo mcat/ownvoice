@@ -1,7 +1,13 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { createIDBStorage } from "./idbStorage";
+import { createDebouncedIDBStorage } from "./idbStorage";
 import type { AppSettings } from "../types";
+
+// 300 ms debounce on IDB persistence — avoids a round-trip per keystroke
+// when the Settings panel auto-saves text fields as the user types.
+// In-memory Zustand updates stay synchronous so controlled inputs don't
+// lag; only the disk write is batched.
+const PERSIST_DEBOUNCE_MS = 300;
 
 interface SettingsPersistedState {
   cfg: AppSettings | null;
@@ -34,7 +40,7 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: "ov-settings",
-      storage: createJSONStorage(() => createIDBStorage()),
+      storage: createJSONStorage(() => createDebouncedIDBStorage(PERSIST_DEBOUNCE_MS)),
       partialize: (s): SettingsPersistedState => ({
         cfg: s.cfg,
         speakerData: s.speakerData,
