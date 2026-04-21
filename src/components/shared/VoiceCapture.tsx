@@ -232,29 +232,46 @@ export function VoiceCapture({
     hasEmbedding ? "ready" : hasVoice ? "model-loading" : "idle",
   );
 
-  // When the TTS model becomes ready, retry embedding extraction if we have audio but no embedding
+  // When the TTS model becomes ready, retry embedding extraction if we have
+  // audio but no embedding.
+  //
+  // This used to be "check isReady → if not, subscribe" but that had a
+  // check-then-subscribe race: the model could transition to ready between
+  // the isReady check and the subscription, and the notification would fire
+  // with no listener registered. The UI would then wait forever on a "ready"
+  // event that had already passed. We now subscribe FIRST, then synchronously
+  // check the current state — any transition that happens during the race
+  // window is caught by one or the other. A `handled` flag dedupes.
   useEffect(() => {
     if (cloneStatus !== "model-loading" || !hasVoice) return;
 
     const mgr = getModelManager();
-    if (mgr.isReady("tts")) {
-      // Model is already ready — try extracting now
-      retryEmbedding();
-      return;
+    let handled = false;
+
+    function handleStatus(status: string | undefined, err: string | undefined) {
+      if (handled) return;
+      if (status === "ready") {
+        handled = true;
+        retryEmbedding();
+      } else if (status === "error") {
+        handled = true;
+        setCloneStatus("failed");
+        setError(err || "Voice model failed to load. The app will use a standard voice.");
+      }
     }
 
-    // Listen for model progress to detect when TTS becomes ready or fails
     const unsub = mgr.onProgress((progress) => {
       const tts = progress.find((p) => p.model === "tts");
-      if (tts?.status === "ready") {
-        unsub();
-        retryEmbedding();
-      } else if (tts?.status === "error") {
-        unsub();
-        setCloneStatus("failed");
-        setError(tts.error || "Voice model failed to load. The app will use a standard voice.");
-      }
+      handleStatus(tts?.status, tts?.error);
     });
+
+    // Check the current state immediately. If already ready/error, the
+    // subscription won't fire a notification for that past transition —
+    // but this sync check catches it. If pending, the subscription is
+    // armed for the future transition.
+    const initial = mgr.getProgress().find((p) => p.model === "tts");
+    handleStatus(initial?.status, initial?.error);
+
     return unsub;
   }, [cloneStatus, hasVoice]);
 

@@ -9,6 +9,9 @@ vi.mock("../../models/modelManager", () => ({
     clearAll: vi.fn(),
     isReady: vi.fn(() => false),
     onProgress: vi.fn(() => () => {}),
+    getProgress: vi.fn(() => [
+      { model: "tts", status: "idle", loaded: 0, total: 0 },
+    ]),
   }),
 }));
 
