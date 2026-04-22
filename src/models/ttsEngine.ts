@@ -25,6 +25,11 @@
  * Each synthesizeGPU call uses a monotonic `id` echoed through both
  * workers so late responses from timed-out synths can't cross-contaminate
  * the next call.
+ *
+ * Crash handling: a post-init `onerror` from either worker rejects every
+ * in-flight synth immediately (rather than making the caller wait out a
+ * 300s pre-gen timeout) and flips `ready` back to false so subsequent
+ * calls fail fast. A follow-up init would need to respawn both workers.
  */
 
 interface SpeakerData {
@@ -48,6 +53,16 @@ const readyListeners = new Set<() => void>();
 // late responses from timed-out synths are ignored instead of resolving
 // the next call's promise with stale audio.
 let nextSynthId = 0;
+
+// Every in-flight synthesizeGPU records its reject callback + listener
+// cleanup here. A post-init worker crash drains this map and rejects
+// each entry with a clear "worker crashed" error, instead of leaving
+// the caller waiting out a 300s pre-gen timeout. Entries remove
+// themselves on normal resolve/reject.
+const pendingSynths = new Map<
+  number,
+  { reject: (err: Error) => void; cleanup: () => void }
+>();
 
 // Default timeout for live taps — sub-second GPU synth on M5 iPad, so 2s
 // surfaces a failure without blocking the UI. Pre-gen overrides this with
@@ -86,6 +101,27 @@ function markReady() {
     try { cb(); } catch (err) { console.warn("[OwnVoice:TTS:GPU] listener threw:", err); }
   }
   readyListeners.clear();
+}
+
+/**
+ * A post-init crash is fatal for the GPU engine — every in-flight synth
+ * is aborted and subsequent calls are rejected until a new initGPU
+ * succeeds. Called from either worker's `onerror` once init has already
+ * settled; the init path has its own settle-false handling.
+ */
+function handlePostInitCrash(source: "LM" | "Dec", message: string) {
+  ready = false;
+  document.title = `GPU CRASH (${source}): ${(message || "unknown").slice(0, 80)}`;
+  console.error(
+    `[OwnVoice:TTS:GPU] ${source} worker crashed post-init: ${message}. ` +
+      `Rejecting ${pendingSynths.size} in-flight synth(s).`,
+  );
+  const snapshot = Array.from(pendingSynths.values());
+  pendingSynths.clear();
+  for (const { reject, cleanup } of snapshot) {
+    cleanup();
+    reject(new Error(`GPU ${source} worker crashed: ${message || "unknown"}`));
+  }
 }
 
 /**
@@ -154,15 +190,32 @@ export function initGPU(modelUrl: string): Promise<boolean> {
         }
       };
 
+      // onerror branches on init lifecycle stage:
+      //   not yet settled (init in progress) → fall back to WASM by
+      //                                         resolving initGPU with false
+      //   already settled (post-init crash) → reject every in-flight
+      //                                        synth immediately so callers
+      //                                        aren't stuck on their 300s
+      //                                        pre-gen timeout
       lmWorker.onerror = (e) => {
-        document.title = "GPU WERR (LM): " + (e.message || "unknown").slice(0, 80);
-        console.warn("[OwnVoice:TTS:GPU] LM worker error:", e.message);
-        settle(false);
+        const message = e.message || "unknown";
+        if (!settled) {
+          document.title = "GPU WERR (LM): " + message.slice(0, 80);
+          console.warn("[OwnVoice:TTS:GPU] LM worker error:", message);
+          settle(false);
+        } else {
+          handlePostInitCrash("LM", message);
+        }
       };
       decoderWorker.onerror = (e) => {
-        document.title = "GPU WERR (Dec): " + (e.message || "unknown").slice(0, 80);
-        console.warn("[OwnVoice:TTS:GPU] Decoder worker error:", e.message);
-        settle(false);
+        const message = e.message || "unknown";
+        if (!settled) {
+          document.title = "GPU WERR (Dec): " + message.slice(0, 80);
+          console.warn("[OwnVoice:TTS:GPU] Decoder worker error:", message);
+          settle(false);
+        } else {
+          handlePostInitCrash("Dec", message);
+        }
       };
 
       lmWorker.postMessage({ type: "init", modelUrl });
@@ -210,8 +263,17 @@ export function synthesizeGPU(
       if (decHandler) decoderWorker!.removeEventListener("message", decHandler);
     };
 
-    const timeout = setTimeout(() => {
+    // Register for worker-crash fan-out. Removed when the synth
+    // finishes normally (resolve/reject below) or when a crash rejects
+    // this entry via handlePostInitCrash.
+    pendingSynths.set(id, { reject, cleanup });
+    const finalize = () => {
+      pendingSynths.delete(id);
       cleanup();
+    };
+
+    const timeout = setTimeout(() => {
+      finalize();
       reject(new Error(`GPU synthesis timeout (${timeoutMs}ms)`));
     }, timeoutMs);
 
@@ -222,11 +284,11 @@ export function synthesizeGPU(
         if (e.data?.id !== id) return;
         if (e.data.type === "audio") {
           clearTimeout(timeout);
-          cleanup();
+          finalize();
           resolve({ data: e.data.data, sampleRate: e.data.sampleRate });
         } else if (e.data.type === "error") {
           clearTimeout(timeout);
-          cleanup();
+          finalize();
           reject(new Error(e.data.message));
         }
       };
@@ -253,7 +315,7 @@ export function synthesizeGPU(
         onLmResult(e.data.decoderTokens);
       } else if (e.data.type === "error") {
         clearTimeout(timeout);
-        cleanup();
+        finalize();
         reject(new Error(e.data.message));
       }
     };
