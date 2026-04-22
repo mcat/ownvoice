@@ -830,22 +830,15 @@ describe("audioCache — generateAllPhrases gpuOnly", () => {
     expect(results.filter((r) => !r.failed)).toHaveLength(1);
   });
 
-  it("launches phrase N+1 synth before awaiting phrase N (pipeline engages)", async () => {
-    // #56 regression guard — the load-bearing assertion for the
-    // whole pipelining change. Issue: the GPU worker's dual-chain
-    // (lmChain/decoderChain) only overlaps across phrases if the
-    // worker's message queue holds ≥2 synthesize requests at once.
-    // Without caller-side prefetch in generateAllPhrases, each
-    // synthesizeGPU resolves and round-trips to the main thread
-    // before the next is posted — the worker queue never has a
-    // second item, lmChain and decoderChain resolve back to
-    // Promise.resolve() between phrases, and the #56 throughput
-    // gain silently disappears.
-    //
-    // A source-pattern test on the worker can't see this runtime
-    // behavior. We instead stub synthesizeGPU with a per-phrase
-    // deferred promise and assert that by the time we release
-    // phrase 0, phrase 1's synthesizeGPU has already been called.
+  it("runs synth requests strictly sequentially (no caller-side prefetch)", async () => {
+    // Regression guard for the post-#82 lesson: an earlier version of
+    // generateAllPhrases prefetched synth N+1 while awaiting synth N,
+    // which caused LM session state to not settle between consecutive
+    // runs — phrase 1+ audio came back stuttered with up to 10-20×
+    // normal token counts. We cannot pipeline across phrases with this
+    // stack. This test fails loudly if a future refactor re-introduces
+    // the prefetch: at the moment phrase 0 is still pending, phrase 1's
+    // synthesizeGPU must NOT have been called yet.
     isGPUReadyMock.mockReturnValue(true);
 
     const callLog: string[] = [];
@@ -862,54 +855,47 @@ describe("audioCache — generateAllPhrases gpuOnly", () => {
       gpuOnly: true,
     });
 
-    // Start iteration. The generator body runs synchronously up
-    // through `startSynth(0)`, the for-loop's `startSynth(1)`
-    // prefetch, and the `await current` — then yields control.
+    // Start iteration — the generator enters its for-loop and awaits
+    // the first synthesizeGPU call.
     const firstYield = gen.next();
 
-    // Let microtasks settle so both IIFEs can traverse
-    // hasCachedAudio (resolves false — nothing is cached in the
-    // OPFS mock) and reach their synthesizeGPU call.
+    // Flush microtasks so hasCachedAudio resolves and phrase 0's synth
+    // starts.
     for (let i = 0; i < 20; i++) await Promise.resolve();
 
-    // The load-bearing assertion: at this point, phrase 0's synth
-    // is still pending (we haven't released resolvers[0]), yet
-    // phrase 1's synth has already been launched. If a future
-    // refactor reverts to one-at-a-time caller dispatch, this
-    // fails with callLog === ["phrase 0"] and the pipeline gain
-    // is silently gone.
-    expect(callLog).toEqual(["phrase 0", "phrase 1"]);
-    expect(resolvers).toHaveLength(2);
+    // Invariant: only phrase 0 is in flight. If this is ever ["phrase
+    // 0", "phrase 1"], the caller is prefetching again and the LM
+    // corruption will come back with it.
+    expect(callLog).toEqual(["phrase 0"]);
+    expect(resolvers).toHaveLength(1);
 
-    // Release phrase 0 so iteration can complete. Phrase 2's
-    // synth should then launch while phrase 1 is still pending.
+    // Release phrase 0. Only now should phrase 1 be posted.
     resolvers[0]({ data: new Float32Array([0.1]), sampleRate: 24000 });
     const r0 = await firstYield;
-    expect(r0.done).toBe(false);
     expect(r0.value?.phrase).toBe("phrase 0");
 
     const secondYield = gen.next();
     for (let i = 0; i < 20; i++) await Promise.resolve();
-    expect(callLog).toEqual(["phrase 0", "phrase 1", "phrase 2"]);
+    expect(callLog).toEqual(["phrase 0", "phrase 1"]);
 
-    // Drain remaining phrases to leave the generator in a clean
-    // terminal state (no orphan pending promises for the next test).
+    // Drain the remaining phrases so the generator reaches a clean
+    // terminal state and subsequent tests start with empty mocks.
     resolvers[1]({ data: new Float32Array([0.2]), sampleRate: 24000 });
-    resolvers[2]({ data: new Float32Array([0.3]), sampleRate: 24000 });
     const r1 = await secondYield;
     expect(r1.value?.phrase).toBe("phrase 1");
-    const r2 = await gen.next();
+    const thirdYield = gen.next();
+    for (let i = 0; i < 20; i++) await Promise.resolve();
+    expect(callLog).toEqual(["phrase 0", "phrase 1", "phrase 2"]);
+    resolvers[2]({ data: new Float32Array([0.3]), sampleRate: 24000 });
+    const r2 = await thirdYield;
     expect(r2.value?.phrase).toBe("phrase 2");
     const done = await gen.next();
     expect(done.done).toBe(true);
 
-    // Defensive cleanup — this test installs a synthesizeGPU mock
-    // that returns a perpetually-pending promise until explicitly
-    // released. Subsequent describes (e.g. retryFailed) don't own
-    // the ttsEngine mocks in their beforeEach, and any test that
-    // ends up calling synthesizeGPU transitively (through the
-    // GPU→WASM fallback) would hang on a leftover pending promise.
-    // Reset here rather than leaking the hazard.
+    // Defensive cleanup: subsequent describes don't own the ttsEngine
+    // mocks in their beforeEach, and a leftover mock that returns a
+    // perpetually-pending promise would hang any test that falls
+    // through to synthesizeGPU via the GPU→WASM fallback.
     isGPUReadyMock.mockReturnValue(false);
     synthesizeGPUMock.mockReset();
   });

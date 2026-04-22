@@ -2,21 +2,25 @@ import { getModelManager } from "./modelManager";
 import { isGPUReady, synthesizeGPU } from "./ttsEngine";
 import { postProcessAudio } from "../speak";
 
-// Bumped from "audio-cache-v2" after the #56 pipelining misadventure:
-// the first PR #82 commit tried to overlap LM and decoder inside a single
-// worker, which corrupted LM output (concurrent WASM sessions sharing an
-// ORT Module — see public/tts-decoder-worker.js top-of-file docstring).
-// Any audio synthesized under that commit is stuttered and stored on
-// disk under a stable hashKey(phrase, fingerprint). Without a directory
-// bump, the fixed code would read those corrupted bytes from cache
-// instead of regenerating. Bump orphans the old files cleanly.
+// Bumped twice through the #56 pipelining misadventure:
+//   v2→v3: first PR #82 commit tried to overlap LM and decoder inside
+//          one worker, corrupted LM output via concurrent WASM sessions
+//          sharing an ORT Module.
+//   v3→v4: Path C split decoder into a separate worker; the stutter
+//          persisted under caller-side prefetch in generateAllPhrases.
+//          Root cause turned out to be LM session state not settling
+//          when phrase N+1's `languageModelSession.run()` starts ~0s
+//          after phrase N's last run — pre-pipelining, the in-worker
+//          decoder's ~20s pause masked it. Fix: run pre-gen strictly
+//          sequential. Any v3 audio from the pipelined code is
+//          stuttered and orphaned by this bump.
 //
 // Previous v1→v2 reasons (kept for trail):
 //   1. Stored bytes went post-processed (denoise/EQ/gate/limiter) instead
 //      of raw decoder output — playback skips the FFT pipeline.
 //   2. Stored bytes went Int16 PCM (scale 32767) instead of Float32,
 //      halving on-disk footprint.
-const CACHE_DIR = "audio-cache-v3";
+const CACHE_DIR = "audio-cache-v4";
 const SAMPLE_RATE = 24000; // Chatterbox Turbo output rate
 const INT16_SCALE = 32767;
 
@@ -255,74 +259,49 @@ export async function* generateAllPhrases(
   const total = phrases.length;
   let consecutiveFailures = 0;
 
-  // `null` means phrase i is already cached (skip the worker entirely).
-  // Any synthesis failure is wrapped into `{ error }` so the awaiter can
-  // handle it without a try/catch racing the next iteration's setup.
-  type SynthOutcome = { audio: Float32Array } | { error: unknown } | null;
-
-  // Launch (or skip) phrase i's synth work. Kicking off phrase N+1 here
-  // while the caller awaits phrase N is what feeds the GPU worker's
-  // dual-chain pipeline — without caller-side prefetch the worker queue
-  // only ever holds one message, lmChain and decoderChain resolve
-  // before the next message arrives, and the overlap win from #56 is
-  // absent. Returns null synchronously for out-of-range or aborted
-  // starts so we don't spin up orphan promises unnecessarily.
-  const startSynth = (i: number): Promise<SynthOutcome> | null => {
-    if (i >= phrases.length || signal?.aborted) return null;
-    const phrase = phrases[i];
-    return (async () => {
-      if (await hasCachedAudio(phrase, speakerData)) return null;
-      try {
-        const audio = await synthesizeWithRetries(
-          worker,
-          phrase,
-          speakerData,
-          signal,
-          gpuOnly,
-        );
-        return { audio };
-      } catch (error) {
-        return { error };
-      }
-    })();
-  };
-
-  // Prefetch phrase 0 so the first iteration's await immediately has
-  // something in flight; from then on each iteration swaps in the next
-  // prefetch before awaiting the current one.
-  let pending: Promise<SynthOutcome> | null = startSynth(0);
-
+  // NOTE: an earlier version of this loop pipelined synth N+1 while
+  // awaiting synth N (see PR #82 history). That caller-side prefetch
+  // fed two messages into the GPU workers back-to-back, which exposed
+  // a separate corruption in the LM session: with ~0 idle time between
+  // consecutive `languageModelSession.run()` calls, phrase N+1's LM
+  // generated massively too many speech tokens (up to the 768-token
+  // cap without emitting STOP), producing stuttered, elongated audio.
+  // The bug correlated with the collapsed idle gap — pre-pipelining,
+  // the in-worker decoder run between LMs (~20s) let GPU state fully
+  // settle. We cannot pipeline across phrases with this stack, so the
+  // loop stays strictly sequential.
   for (let i = 0; i < phrases.length; i++) {
     if (signal?.aborted) return;
     const phrase = phrases[i];
 
-    // Swap: hold onto phrase i's pending work, and kick off phrase i+1
-    // now so the worker has a second message in its queue while we're
-    // finishing i. This is the load-bearing line for the pipeline win.
-    const current = pending;
-    pending = startSynth(i + 1);
+    if (await hasCachedAudio(phrase, speakerData)) {
+      consecutiveFailures = 0;
+      yield { phrase, current: i + 1, total };
+      continue;
+    }
 
     let failed = false;
-    const outcome = current === null ? null : await current;
-
-    if (outcome === null) {
-      // Either out-of-range start (can't happen within the loop bounds)
-      // or cache hit — both reset the failure counter and skip synth.
+    try {
+      const audio = await synthesizeWithRetries(
+        worker,
+        phrase,
+        speakerData,
+        signal,
+        gpuOnly,
+      );
+      // Post-process once here, at cache-write time, so playback in
+      // speak.ts skips the ~10-50ms FFT pipeline on every tap.
+      const processed = postProcessAudio(audio, SAMPLE_RATE);
+      await putCachedAudio(phrase, speakerData, processed);
       consecutiveFailures = 0;
-    } else if ("error" in outcome) {
+    } catch (err) {
       if (signal?.aborted) return;
       failed = true;
       consecutiveFailures++;
       console.warn(
         `[OwnVoice:Cache] Gave up on "${phrase}" after retries:`,
-        outcome.error,
+        err,
       );
-    } else {
-      // Post-process once here, at cache-write time, so playback in
-      // speak.ts skips the ~10-50ms FFT pipeline on every tap.
-      const processed = postProcessAudio(outcome.audio, SAMPLE_RATE);
-      await putCachedAudio(phrase, speakerData, processed);
-      consecutiveFailures = 0;
     }
 
     yield failed
@@ -333,12 +312,6 @@ export async function* generateAllPhrases(
     // For mixed GPU+WASM passes, a GPU timeout falls through to WASM, so
     // a fail signals a real problem worth retrying individually per
     // phrase rather than stopping the whole pass.
-    //
-    // Note: after tripping, `pending` holds an in-flight synth for
-    // phrase i+1 that we're abandoning. Its result is discarded; the
-    // worker finishes the request on its own and the promise resolves
-    // without a listener. One wasted synth is the cost of simpler
-    // cancel semantics (no cancel message protocol to the worker).
     if (gpuOnly && consecutiveFailures >= GPU_CONSECUTIVE_FAIL_LIMIT) {
       console.warn(
         `[OwnVoice:Cache] Circuit breaker tripped: ${consecutiveFailures} ` +
