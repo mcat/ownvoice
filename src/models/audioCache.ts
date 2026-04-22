@@ -328,11 +328,14 @@ export async function* retryFailed(
  * the WASM worker if GPU isn't ready or fails on this attempt.
  */
 const MAX_ATTEMPTS = 3;
-// Pre-gen gets a longer GPU timeout than live taps because pain-matrix
-// phrases ("I have aching pain in my Head, level 4 out of 10") are
-// 5–20× longer than quick phrases and take proportionally longer to
-// autoregressively decode.
-const PREGEN_GPU_TIMEOUT_MS = 60_000;
+// Pre-gen gets a longer GPU timeout than live taps. The LM loop itself
+// is fast on M5 iPad (~33ms/step), but the conditional_decoder runs on
+// single-threaded WASM and is ~24× real-time — a short "Yes" takes
+// ~22s end-to-end, and pain-matrix sentences can stretch past 45s. 300s
+// is a generous ceiling that lets the slowest phrases complete while
+// still bounding the worst case. Revisit if/when the decoder moves to
+// multi-threaded WASM or WebGPU.
+const PREGEN_GPU_TIMEOUT_MS = 300_000;
 async function synthesizeWithRetries(
   worker: Worker | null,
   phrase: string,
