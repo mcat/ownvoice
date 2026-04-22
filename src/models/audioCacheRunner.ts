@@ -9,9 +9,9 @@ import {
   type SpeakerKey,
 } from "../stores/audioCacheStore";
 import {
-  getPatientSpeakablePhrases,
-  getProviderSpeakablePhrases,
-  getPatientPainSentences,
+  getPatientSpokenPhrases,
+  getProviderSpokenPhrases,
+  getPatientPainSentencesForSpeech,
 } from "../data/phraseRegistry";
 import { isGPUReady } from "./ttsEngine";
 
@@ -58,7 +58,7 @@ function buildPlan(
     plan.push({
       key: "patient",
       speakerData: patientSpeakerData,
-      phrases: getPatientSpeakablePhrases(cfg.patientLang),
+      phrases: getPatientSpokenPhrases(cfg.caregiverLang),
     });
   }
   cfg.providers.forEach((p, i) => {
@@ -66,7 +66,7 @@ function buildPlan(
       plan.push({
         key: `provider:${i}`,
         speakerData: p.embedding,
-        phrases: getProviderSpeakablePhrases(cfg.patientLang),
+        phrases: getProviderSpokenPhrases(cfg.patientLang),
       });
     }
   });
@@ -77,7 +77,7 @@ function buildPlan(
     plan.push({
       key: "patient:pain",
       speakerData: patientSpeakerData,
-      phrases: getPatientPainSentences(cfg.patientLang),
+      phrases: getPatientPainSentencesForSpeech(cfg.caregiverLang),
       gpuOnly: true,
     });
   }

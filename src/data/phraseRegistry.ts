@@ -14,8 +14,8 @@
  *   getWishTopics(locale)       — SICG wish topics
  *   getTimeSuggestions(locale)  — time-of-day suggestions
  *   getSuggestionTree(locale)   — sentence builder suggestion tree
- *   getPatientSpeakablePhrases(locale) — flat string[] for patient audio cache
- *   getProviderSpeakablePhrases(locale) — flat string[] for provider audio cache
+ *   getPatientSpokenPhrases(caregiverLocale) — flat string[] for patient audio cache
+ *   getProviderSpokenPhrases(patientLocale) — flat string[] for provider audio cache
  *   composePainSentence(locale, ...) — fill pain template
  *   composeWishSentence(locale, ...) — fill wish template
  */
@@ -486,39 +486,36 @@ export function getSuggestionTree(locale: string = "en"): Record<string, string[
 // ── Flat phrase lists for audio cache ────────────────────────────
 
 /**
- * Every phrase the patient speaks through their cloned voice.
- *
- * Order follows the registry for predictable pre-generation — Quick tab
- * phrases come first so the most-tapped phrases are cached earliest.
- * Excludes composed sentences (pain, wishes, sentence-builder) — those
- * are assembled at runtime from variable parts.
+ * 702 composed pain sentences for the patient-voice cache runner (GPU-only
+ * pass). Speaks in the caregiver's language. Deliberately separated from
+ * getPatientSpokenPhrases because this set is only viable on WebGPU — WASM
+ * would take hours.
  */
-/**
- * Every composed pain-report sentence for a locale — the full cross-product of
- * descriptor × body region × severity. With en defaults that's 9 × 13 × 6 = 702
- * sentences. Deliberately kept OUT of `getPatientSpeakablePhrases` because this
- * list is only viable to pre-generate on WebGPU; WASM would take 3–6 hours.
- * The cache runner enumerates this separately and runs it in a GPU-only pass.
- */
-export function getPatientPainSentences(locale: string = "en"): string[] {
+export function getPatientPainSentencesForSpeech(caregiverLocale: string = "en"): string[] {
   const phrases = new Set<string>();
-  const descriptors = getPainDescriptors(locale);
-  const regions = getBodyRegions(locale);
-  const severities = getEmojiFPS(locale);
+  const descriptors = getPainDescriptors(caregiverLocale);
+  const regions = getBodyRegions(caregiverLocale);
+  const severities = getEmojiFPS(caregiverLocale);
   for (const d of descriptors) {
     for (const r of regions) {
       for (const s of severities) {
-        phrases.add(composePainSentence(locale, d.text, r, s.n));
+        phrases.add(composePainSentence(caregiverLocale, d.text, r, s.n));
       }
     }
   }
   return Array.from(phrases);
 }
 
-export function getPatientSpeakablePhrases(locale: string = "en"): string[] {
+/**
+ * Flat phrase list for the patient-voice audio cache runner. The patient
+ * voice speaks the caregiver's language, so callers pass cfg.caregiverLang.
+ * Excludes composed sentences (pain, wishes) — those assemble at runtime
+ * from keys via composePainSentence / composeWishSentence.
+ */
+export function getPatientSpokenPhrases(caregiverLocale: string = "en"): string[] {
   const phrases = new Set<string>();
 
-  for (const cat of getCategories(locale)) {
+  for (const cat of getCategories(caregiverLocale)) {
     if (cat.phrases) {
       for (const p of cat.phrases) phrases.add(p.text);
     }
@@ -529,33 +526,30 @@ export function getPatientSpeakablePhrases(locale: string = "en"): string[] {
     }
   }
 
-  for (const f of getEmojiFPS(locale)) phrases.add(f.label);
-  for (const d of getPainDescriptors(locale)) phrases.add(d.text);
-  for (const r of getBodyRegions(locale)) phrases.add(r);
+  for (const f of getEmojiFPS(caregiverLocale)) phrases.add(f.label);
+  for (const d of getPainDescriptors(caregiverLocale)) phrases.add(d.text);
+  for (const r of getBodyRegions(caregiverLocale)) phrases.add(r);
 
-  for (const topic of getWishTopics(locale)) {
+  for (const topic of getWishTopics(caregiverLocale)) {
     phrases.add(topic.question);
     for (const r of topic.responses) phrases.add(r);
   }
 
-  const time = getTimeSuggestionsForPeriod(locale);
+  const time = getTimeSuggestionsForPeriod(caregiverLocale);
   for (const arr of Object.values(time)) {
     for (const s of arr) phrases.add(s);
   }
-
-  phrases.add(t("emergency.help", locale));
 
   return Array.from(phrases);
 }
 
 /**
- * Every phrase a provider speaks through their cloned voice. Provider
- * audio is generated in the patient's locale so the patient hears every
- * voice in their own language.
+ * Flat phrase list for each provider-voice audio cache runner. Provider
+ * voices speak the patient's language, so callers pass cfg.patientLang.
  */
-export function getProviderSpeakablePhrases(locale: string = "en"): string[] {
+export function getProviderSpokenPhrases(patientLocale: string = "en"): string[] {
   const phrases = new Set<string>();
-  for (const arr of Object.values(getProviderCategories(locale))) {
+  for (const arr of Object.values(getProviderCategories(patientLocale))) {
     for (const p of arr) phrases.add(p);
   }
   return Array.from(phrases);
