@@ -512,6 +512,17 @@ const en = {
   "ui.patient.wishes.close": "Close",
   "ui.patient.wishes.share": "Share",
   "ui.patient.wishes.skip": "Skip",
+
+  // ── UI chrome: SentenceBuilder ─────────────────────────────────
+  "ui.patient.builder.placeholder": "Tap words below or type...",
+  "ui.patient.builder.message_aria": "Your message",
+  "ui.patient.builder.undo": "Undo last word",
+  "ui.patient.builder.clear": "Clear message",
+  "ui.patient.builder.refresh_ai": "Refresh AI suggestions",
+  "ui.patient.builder.ai_thinking": "AI is thinking...",
+  "ui.patient.builder.no_ai_suggestions": "No AI suggestions. Tap refresh to try again.",
+  "ui.patient.builder.ready": "Your message is ready. Tap Speak to send.",
+  "ui.patient.builder.speak": "Speak",
 } as const;
 
 export type PhraseKey = keyof typeof en;
