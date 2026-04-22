@@ -369,16 +369,14 @@ async function handleInit(modelUrl) {
 
   postMessage({ type: "ready" });
 
-  // Decoder warmup runs AFTER we post ready — it's WASM (one-off JIT cost
-  // rather than multi-second shader compilation) and the first real
-  // synthesize can't dispatch the decoder until ~20s of LM generation
-  // completes anyway, so backgrounding this almost always pays for itself
-  // before anyone notices. We don't know speaker-encoder output shapes at
-  // init time (no speakerData yet), so this is a best-effort pass; if the
-  // fake shapes don't match what the graph expects, we swallow and move on.
-  warmupConditionalDecoder().catch((err) => {
-    console.warn(`${LOG} Decoder warmup skipped:`, err?.message ?? err);
-  });
+  // No conditional-decoder warmup. An earlier version ran a synthetic
+  // pass through the decoder at init time to amortize JIT cost, but the
+  // graph has hard shape/content dependencies (F0 predictor, ECAPA
+  // feature layout) that can't be satisfied without a real speakerData
+  // — the warmup failed on every boot and the first-real-synth paid
+  // the cold-start cost anyway, plus a confusing console error. The
+  // decoder runs on WASM where per-op JIT is cheap relative to
+  // shader compilation, so the saving was marginal to begin with.
 }
 
 /**
@@ -457,36 +455,6 @@ async function warmupLanguageModel() {
   }
 
   console.log(`${LOG} Warmup complete in ${((performance.now() - w0) / 1000).toFixed(1)}s`);
-}
-
-/**
- * Best-effort decoder warmup. We don't have a real speakerData at init
- * time, so we fabricate shape-plausible inputs based on common voice-
- * encoder output dims. If the graph's expected shapes differ, ORT throws
- * and we return a logged skip — the first real synthesize just pays the
- * cold-start cost instead. Runs in the background after "ready" so it
- * never extends the blocking init path.
- */
-async function warmupConditionalDecoder() {
-  if (!conditionalDecoderSession) return;
-  const w0 = performance.now();
-
-  // Minimal speech-token sequence so the decoder doesn't churn on long
-  // audio generation during warmup — just enough to compile the ops.
-  const tokens = new BigInt64Array(16);
-  for (let i = 0; i < tokens.length; i++) tokens[i] = BigInt(SILENCE_TOKEN);
-
-  // Plausible ECAPA-ish sizes. If they're wrong the run() rejects and the
-  // caller's catch logs it — no user-visible impact either way.
-  const spkEmb = new Float32Array(1 * 192);
-  const spkFeat = new Float32Array(1 * 80 * 32);
-
-  await conditionalDecoderSession.run({
-    speech_tokens: new ort.Tensor("int64", tokens, [1, tokens.length]),
-    speaker_embeddings: new ort.Tensor("float32", spkEmb, [1, 192]),
-    speaker_features: new ort.Tensor("float32", spkFeat, [1, 80, 32]),
-  });
-  console.log(`${LOG} Decoder warmup complete in ${((performance.now() - w0) / 1000).toFixed(1)}s`);
 }
 
 async function handleSynthesize(text, speakerData, id) {
