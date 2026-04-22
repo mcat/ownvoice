@@ -8,7 +8,12 @@
  * This module provides the same interface that speak.ts expects:
  *   - initGPU(modelUrl) → boots the worker, loads models
  *   - isGPUReady() → true once models are loaded
- *   - synthesizeGPU(text, speakerData) → Promise<{data, sampleRate}>
+ *   - synthesizeGPU(text, speakerData, opts?) → Promise<{data, sampleRate}>
+ *
+ * Each synthesizeGPU call gets a monotonically-increasing `id`. The worker
+ * echoes the id in its response, and the main-thread listener ignores
+ * responses whose id doesn't match — so a timed-out synth that completes
+ * late can't cross-contaminate the next call's resolution.
  */
 
 interface SpeakerData {
@@ -25,6 +30,17 @@ interface SpeakerData {
 let worker: Worker | null = null;
 let ready = false;
 const readyListeners = new Set<() => void>();
+
+// Monotonic synth request ID. Each synthesizeGPU call increments this and
+// attaches a listener that only resolves/rejects on a matching echoed id —
+// late responses from timed-out synths are ignored instead of resolving
+// the next call's promise with stale audio.
+let nextSynthId = 0;
+
+// Default timeout for live taps — sub-second GPU synth on M5 iPad, so 2s
+// surfaces a failure without blocking the UI. Pre-gen overrides this with
+// a much longer budget (see audioCache.ts).
+const DEFAULT_SYNTH_TIMEOUT_MS = 2000;
 
 export function isGPUReady(): boolean {
   return ready;
@@ -112,21 +128,31 @@ export function initGPU(modelUrl: string): Promise<boolean> {
 
 /**
  * Synthesize speech on the GPU worker.
+ *
+ * Pass `opts.timeoutMs` to override the default. Live taps use the
+ * short default (fail fast so the UI doesn't stall); pre-gen passes a
+ * longer budget since pain-matrix sentences are 5–20× longer than
+ * quick phrases and take proportionally longer to decode.
  */
 export function synthesizeGPU(
   text: string,
   speakerData: SpeakerData,
+  opts?: { timeoutMs?: number },
 ): Promise<{ data: Float32Array; sampleRate: number }> {
   if (!worker || !ready) {
     return Promise.reject(new Error("GPU TTS not ready"));
   }
 
-  return new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => {
-      reject(new Error("GPU synthesis timeout (120s)"));
-    }, 120000);
+  const timeoutMs = opts?.timeoutMs ?? DEFAULT_SYNTH_TIMEOUT_MS;
+  const id = ++nextSynthId;
 
+  return new Promise((resolve, reject) => {
     const handler = (e: MessageEvent) => {
+      // Ignore responses for other (possibly timed-out) synths. Without
+      // this id check, a slow synth that eventually completes after its
+      // main-thread timeout would resolve whichever listener is currently
+      // attached — caching wrong audio for whatever phrase that is.
+      if (e.data?.id !== id) return;
       if (e.data.type === "audio") {
         clearTimeout(timeout);
         worker!.removeEventListener("message", handler);
@@ -138,7 +164,15 @@ export function synthesizeGPU(
       }
     };
 
+    const timeout = setTimeout(() => {
+      // Remove the listener so a late response doesn't leak across into
+      // the next synth — the worker may still be processing this phrase
+      // serialized behind our request.
+      worker!.removeEventListener("message", handler);
+      reject(new Error(`GPU synthesis timeout (${timeoutMs}ms)`));
+    }, timeoutMs);
+
     worker!.addEventListener("message", handler);
-    worker!.postMessage({ type: "synthesize", text, speakerData });
+    worker!.postMessage({ type: "synthesize", text, speakerData, id });
   });
 }
