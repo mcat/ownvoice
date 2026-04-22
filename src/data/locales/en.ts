@@ -463,9 +463,6 @@ const en = {
   "suggest.ctx.morning.please": "Please",
   "suggest.ctx.morning.tell_me": "Tell me",
 
-  // ── Emergency phrase ───────────────────────────────────────────
-  "emergency.help": "I need help",
-
   // ── Category labels (UI, not spoken but needed for i18n) ───────
   "cat.quick": "Quick",
   "cat.needs": "I Need",

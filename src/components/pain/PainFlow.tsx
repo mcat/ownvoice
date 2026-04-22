@@ -18,10 +18,10 @@ interface PainFlowProps {
 
 const STEPS: Step[] = ["severity", "location", "descriptor"];
 
-const STEP_LABELS: Record<Step, string> = {
-  severity: "Severity",
-  location: "Location",
-  descriptor: "Describe",
+const STEP_LABEL_KEYS: Record<Step, PhraseKey> = {
+  severity: "pain.step.severity",
+  location: "pain.step.location",
+  descriptor: "pain.step.descriptor",
 };
 
 export function PainFlow({ onSelect, t, theme, locale = "en" }: PainFlowProps) {
@@ -132,7 +132,7 @@ export function PainFlow({ onSelect, t, theme, locale = "en" }: PainFlowProps) {
                   textAlign: "center",
                 }}
               >
-                {STEP_LABELS[s]}
+                {resolvePhrase(STEP_LABEL_KEYS[s], locale)}
               </div>
             </>
           );
@@ -151,7 +151,7 @@ export function PainFlow({ onSelect, t, theme, locale = "en" }: PainFlowProps) {
                   cursor: "pointer",
                   fontFamily: "inherit",
                 }}
-                aria-label={`Go back to ${STEP_LABELS[s]}`}
+                aria-label={`Go back to ${resolvePhrase(STEP_LABEL_KEYS[s], locale)}`}
               >
                 {content}
               </button>
