@@ -1,4 +1,5 @@
 import type { ComponentChildren } from "preact";
+import { useEffect, useState } from "preact/hooks";
 import type { ThemeTokens } from "../../../theme/tokens";
 
 interface Props {
@@ -6,6 +7,30 @@ interface Props {
 }
 
 export function AboutSection({ t }: Props) {
+  // SW cache names read live via `caches.keys()`. Lets a clinician (or
+  // us during debugging) confirm which service-worker cache is actually
+  // persisted on this device — catches the "pulled new build but old
+  // SW still serving" class of surprise where app behavior lags behind
+  // the deployed code. `caches.keys()` returns everything under this
+  // origin, so we filter to our own `ownvoice-*` prefix.
+  const [swCaches, setSwCaches] = useState<string[]>([]);
+  useEffect(() => {
+    if (!("caches" in self)) return;
+    let cancelled = false;
+    caches
+      .keys()
+      .then((keys) => {
+        if (cancelled) return;
+        setSwCaches(keys.filter((k) => k.startsWith("ownvoice-")).sort());
+      })
+      .catch(() => {
+        /* non-fatal — just don't display the row */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <Section label="About" t={t}>
       <p style={{ fontSize: 15, fontWeight: 600, color: t.text, margin: "0 0 8px" }}>
@@ -17,9 +42,22 @@ export function AboutSection({ t }: Props) {
       <p style={{ fontSize: 13, color: t.muted, margin: "0 0 4px" }}>
         Pain scale: Emoji-FPS (Li et al., JMIR 2023) — CC-BY 4.0
       </p>
-      <p style={{ fontSize: 13, color: t.muted, margin: 0 }}>
+      <p style={{ fontSize: 13, color: t.muted, margin: "0 0 8px" }}>
         Goals of care: SICG (Ariadne Labs) — CC-BY-NC-SA 4.0
       </p>
+      {swCaches.length > 0 && (
+        <p
+          data-testid="about-sw-caches"
+          style={{
+            fontSize: 12,
+            color: t.muted,
+            margin: 0,
+            fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+          }}
+        >
+          SW cache: {swCaches.join(", ")}
+        </p>
+      )}
     </Section>
   );
 }
