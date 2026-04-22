@@ -29,6 +29,15 @@ for model in embed_tokens_q4f16 speech_encoder_q4f16 language_model_q4f16 condit
     [ -f "$DIR/$f" ] && echo "  $f (cached)" || { echo "  $f ..."; curl -L -o "$DIR/$f" "$REPO/onnx/$f" 2>/dev/null; }
   done
 done
+# fp16 decoder — A/B candidate for higher quality on WebGPU (issue #74).
+# Larger (384 MB vs q4f16's 163 MB) but half-precision weights should
+# avoid the ConvTranspose distortion the q4f16 WebGPU variant produces.
+# Loaded only when the `ownvoice:tts:decoder=webgpu-fp16` localStorage
+# flag is set. Kept in the download list so dev environments can A/B it.
+for ext in onnx onnx_data; do
+  f="conditional_decoder_fp16.${ext}"
+  [ -f "$DIR/$f" ] && echo "  $f (cached)" || { echo "  $f ..."; curl -L -o "$DIR/$f" "$REPO/onnx/$f" 2>/dev/null; }
+done
 echo "  Done: $(du -sh "$DIR" | cut -f1)"
 echo ""
 

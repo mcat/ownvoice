@@ -314,25 +314,39 @@ function sampleToken(logits, generatedTokens) {
 }
 
 /**
+/**
  * Load the conditional decoder session, honoring the investigation flag
- * from issue #74. "webgpu" first tries the _webgpu.onnx graph on the
- * WebGPU EP; any failure — session creation error, WebGPU not
- * available, missing file — falls back to the WASM variant. Logs loudly
- * so the user doing the A/B test knows which EP actually loaded.
+ * from issue #74. Three variants to A/B on iPad:
+ *   - "wasm" (default)  → conditional_decoder_q4f16.onnx on WASM.
+ *                         Known-good audio, slow (~24× real-time before
+ *                         threading, ~5-8× after #76).
+ *   - "webgpu"          → conditional_decoder_q4f16_webgpu.onnx on
+ *                         WebGPU. Fast but audio is distorted — q4
+ *                         weight quantization interacts poorly with
+ *                         WebGPU's ConvTranspose shader.
+ *   - "webgpu-fp16"     → conditional_decoder_fp16.onnx on WebGPU.
+ *                         Half-precision weights (384 MB vs 163 MB)
+ *                         should keep speed while restoring quality.
+ * Any WebGPU variant silently falls back to the WASM default on
+ * session-creation failure. Logs loudly which path actually loaded.
  */
 async function loadConditionalDecoder(baseUrl, decoderVariant) {
-  if (decoderVariant === "webgpu") {
+  if (decoderVariant === "webgpu" || decoderVariant === "webgpu-fp16") {
+    const filename =
+      decoderVariant === "webgpu-fp16"
+        ? "conditional_decoder_fp16.onnx"
+        : "conditional_decoder_q4f16_webgpu.onnx";
     try {
       const session = await createSession(
-        baseUrl + "conditional_decoder_q4f16_webgpu.onnx",
+        baseUrl + filename,
         true,
         false, // wasmOnly=false → WebGPU EP preferred
       );
-      console.log(`${LOG} Conditional decoder: WEBGPU variant loaded (experimental, issue #74)`);
+      console.log(`${LOG} Conditional decoder: ${filename} on WebGPU (experimental, issue #74)`);
       return session;
     } catch (err) {
       console.warn(
-        `${LOG} WebGPU decoder init failed, falling back to WASM:`,
+        `${LOG} WebGPU decoder init failed for ${filename}, falling back to WASM:`,
         err,
       );
     }

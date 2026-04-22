@@ -65,6 +65,16 @@
           "magic": null
         },
         {
+          "name": "conditional_decoder_fp16.onnx",
+          "size": 2104016,
+          "magic": "onnx"
+        },
+        {
+          "name": "conditional_decoder_fp16.onnx_data",
+          "size": 384019328,
+          "magic": null
+        },
+        {
           "name": "speech_encoder_q4f16.onnx",
           "size": 178452361,
           "magic": "onnx"

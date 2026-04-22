@@ -86,7 +86,7 @@ function markReady() {
  */
 export function initGPU(
   modelUrl: string,
-  opts?: { decoderVariant?: "wasm" | "webgpu" },
+  opts?: { decoderVariant?: "wasm" | "webgpu" | "webgpu-fp16" },
 ): Promise<boolean> {
   if (!("gpu" in navigator)) {
     console.log("[OwnVoice:TTS:GPU] WebGPU not available");

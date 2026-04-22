@@ -77,13 +77,19 @@ export function App() {
     // the WASM worker acts as fallback. Don't run both simultaneously —
     // concurrent ORT WASM init causes contention.
     //
-    // Investigation flag (issue #74): set
-    //   localStorage.setItem("ownvoice:tts:decoder", "webgpu")
-    // and reload to swap the conditional decoder to the WebGPU variant.
-    // Unset or set to "wasm" for current behavior. Worker logs loudly
-    // which variant actually loaded (fallback on WebGPU init failure).
+    // Investigation flag (issue #74). Valid values:
+    //   "wasm"        → conditional_decoder_q4f16.onnx on WASM (default)
+    //   "webgpu"      → conditional_decoder_q4f16_webgpu.onnx on WebGPU
+    //                   (fast but audio distorted — kept for archaeology)
+    //   "webgpu-fp16" → conditional_decoder_fp16.onnx on WebGPU
+    //                   (larger weights, hoping to preserve quality)
+    // Set via:
+    //   localStorage.setItem("ownvoice:tts:decoder", "<value>"); location.reload()
+    // Unknown values fall back to "wasm". Worker logs loudly which
+    // variant actually loaded (with fallback on WebGPU init failure).
+    const rawVariant = localStorage.getItem("ownvoice:tts:decoder");
     const decoderVariant =
-      localStorage.getItem("ownvoice:tts:decoder") === "webgpu" ? "webgpu" : "wasm";
+      rawVariant === "webgpu" || rawVariant === "webgpu-fp16" ? rawVariant : "wasm";
     initGPU(MODEL_URLS.tts, { decoderVariant }).then(ok => {
       console.log("[OwnVoice] GPU TTS:", ok ? "ready" : "unavailable");
       // Boot workers (LLM, STT, and TTS WASM fallback if GPU unavailable)
