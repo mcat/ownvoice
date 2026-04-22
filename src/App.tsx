@@ -6,7 +6,7 @@ import { useConversationStore } from "./stores/conversationStore";
 import { useUIStore } from "./stores/uiStore";
 import { useSettingsStore } from "./stores/settingsStore";
 import { resetAll } from "./stores/resetAll";
-import { getCategories, getTimeSuggestionsForPeriod } from "./data/phraseRegistry";
+import { t as resolvePhrase, getCategories, getTimeSuggestionsForPeriod } from "./data/phraseRegistry";
 import { Header } from "./components/layout/Header";
 import { TabBar } from "./components/layout/TabBar";
 
@@ -268,7 +268,7 @@ export function App() {
             border: 0,
           }}
         >
-          OwnVoice — {cfg.patientName || "Patient"} conversation
+          {resolvePhrase("ui.patient.app.aria_label", cfg.patientLang).replace("{name}", cfg.patientName || resolvePhrase("ui.patient.app.name_fallback", cfg.patientLang))}
         </h1>
 
         <Thread messages={messages} t={t} onRepeat={repeatSpeak} />

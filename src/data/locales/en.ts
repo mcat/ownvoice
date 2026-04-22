@@ -480,6 +480,20 @@ const en = {
   "provider.cat.questions": "Questions",
   "provider.cat.directions": "Directions",
   "provider.cat.goals_of_care": "Goals of Care",
+
+  // ── UI chrome: App + Layout ────────────────────────────────────
+  "ui.patient.app.aria_label": "OwnVoice — {name} conversation",
+  "ui.patient.app.name_fallback": "Patient",
+  "ui.patient.header.name_fallback": "Patient",
+  "ui.patient.header.bed_prefix": "Bed ",
+  "ui.dual.nav.wishes": "Wishes",
+  "ui.provider.nav.listen": "Listen",
+  "ui.provider.nav.staff": "Staff",
+  "ui.provider.nav.settings": "Settings",
+  "ui.provider.nav.theme.auto": "Auto",
+  "ui.provider.nav.theme.light": "Light",
+  "ui.provider.nav.theme.dark": "Dark",
+  "ui.patient.tabbar.say_more": "Say More",
 } as const;
 
 export type PhraseKey = keyof typeof en;
