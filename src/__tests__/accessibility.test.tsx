@@ -78,6 +78,7 @@ const sampleCfg: AppSettings = {
   patientName: "Eleanor",
   bed: "4B",
   patientLang: "en",
+  caregiverLang: "en",
   patientVoice: false,
   pin: "",
   providers: [{ name: "Nurse Davis", hasVoice: false }],

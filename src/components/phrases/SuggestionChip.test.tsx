@@ -8,6 +8,7 @@ const baseCfg: AppSettings = {
   patientName: "",
   bed: "",
   patientLang: "en",
+  caregiverLang: "en",
   patientVoice: false,
   pin: "",
   providers: [],

@@ -71,6 +71,10 @@ export interface AppSettings {
   patientName: string;
   bed: string;
   patientLang: string;
+  /** The caregiver/listener's language. Controls the language the patient
+   *  voice speaks and the language provider-facing UI renders. Defaults
+   *  to "en"; adjustable from Setup and Settings. */
+  caregiverLang: string;
   patientVoice: boolean;
   pin: string;
   providers: Provider[];

@@ -39,6 +39,7 @@ const BASE_CFG: AppSettings = {
   patientName: "Alice",
   bed: "1",
   patientLang: "en",
+  caregiverLang: "en",
   patientVoice: true,
   pin: "0000",
   providers: [],

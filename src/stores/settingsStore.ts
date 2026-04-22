@@ -40,7 +40,22 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: "ov-settings",
+      version: 1,
       storage: createJSONStorage(() => createDebouncedIDBStorage(PERSIST_DEBOUNCE_MS)),
+      migrate: (persisted, fromVersion) => {
+        const typed = persisted as SettingsPersistedState | null;
+        if (typed && fromVersion < 1 && typed.cfg) {
+          // v0 data may lack caregiverLang even though AppSettings requires it
+          const cfg = typed.cfg as unknown as Record<string, unknown>;
+          if (!("caregiverLang" in cfg)) {
+            return {
+              speakerData: typed.speakerData,
+              cfg: { ...typed.cfg, caregiverLang: "en" },
+            };
+          }
+        }
+        return typed as SettingsPersistedState;
+      },
       partialize: (s): SettingsPersistedState => ({
         cfg: s.cfg,
         speakerData: s.speakerData,

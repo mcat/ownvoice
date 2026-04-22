@@ -29,6 +29,7 @@ const makeCfg = (overrides?: Partial<AppSettings>): AppSettings => ({
   patientName: "Maria",
   bed: "4A",
   patientLang: "en",
+  caregiverLang: "en",
   patientVoice: false,
   pin: "",
   providers: [],
