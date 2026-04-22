@@ -502,6 +502,16 @@ const en = {
   "ui.patient.pain.step_of": "Step {n} of {total}",
   "ui.patient.pain.back_to": "Go back to {label}",
   "ui.patient.pain.level_aria": "Pain level {n}, {label}",
+
+  // ── UI chrome: MyWishes ────────────────────────────────────────
+  "ui.patient.wishes.completion_title": "{name}'s Wishes",
+  "ui.patient.wishes.my_wishes": "My Wishes",
+  "ui.patient.wishes.step_of": "Step {n} of {total}",
+  "ui.patient.wishes.none_shared": "No wishes were shared.",
+  "ui.patient.wishes.share_all_again": "Share all wishes again",
+  "ui.patient.wishes.close": "Close",
+  "ui.patient.wishes.share": "Share",
+  "ui.patient.wishes.skip": "Skip",
 } as const;
 
 export type PhraseKey = keyof typeof en;
