@@ -58,9 +58,24 @@ const MIN_NEW_TOKENS = 10; // Don't allow STOP before this many speech tokens
 const USE_GREEDY = true;
 
 // WASM paths for fallback ops. Points to /ort/ where the JSEP WASM lives.
+//
+// numThreads is gated on `crossOriginIsolated` — set only when the page
+// serves COOP+COEP (handled by the dev server and sw.js in prod), which
+// is the prerequisite for SharedArrayBuffer and therefore multi-threaded
+// WASM. On first load before the SW installs, or on a host that strips
+// the headers, we silently fall back to single-threaded WASM. The
+// conditional decoder is WASM-bound, so this is the primary lever for
+// pain-matrix pre-gen throughput.
+// Capped at 4: M5 iPad reports ~10 logical cores, but this worker runs
+// concurrent with the main thread, the GPU EP's internal worker, and any
+// other TTS/STT/LLM workers that happen to be mid-inference. Past ~4
+// threads the contention overhead outpaces the parallelism win on WASM
+// convolution workloads (ORT/Emscripten guidance).
 if (ort.env?.wasm) {
   ort.env.wasm.wasmPaths = "/ort/";
-  ort.env.wasm.numThreads = 1;
+  ort.env.wasm.numThreads = self.crossOriginIsolated
+    ? Math.min(navigator.hardwareConcurrency ?? 4, 4)
+    : 1;
 }
 ort.env.logLevel = "error";
 

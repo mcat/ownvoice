@@ -6,6 +6,14 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="theme-color" content="#FAFAF8" />
+    <!--
+      Defense-in-depth for crossOriginIsolated. COOP cannot be set via meta
+      (HTTP header only — dev server + sw.js handle that), but COEP can, and
+      a missing COEP header is the more common failure mode on static hosts.
+      This tag ensures the document is COEP-gated even if the serving layer
+      forgets the header.
+    -->
+    <meta http-equiv="Cross-Origin-Embedder-Policy" content="credentialless" />
     <link rel="manifest" href="/manifest.json" />
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%232563EB'/><text x='16' y='23' font-size='20' text-anchor='middle' fill='white'>V</text></svg>" />
     <title>OwnVoice</title>

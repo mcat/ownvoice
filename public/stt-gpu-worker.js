@@ -25,9 +25,14 @@ import * as ort from "/ort/ort.webgpu.min.mjs";
 
 const LOG = "[OwnVoice:STT:GPU]";
 
+// Multi-threaded WASM is only available when `crossOriginIsolated` is true
+// (page + SW serve COOP+COEP). Silently fall back to single-thread otherwise.
+// See tts-gpu-worker.js for why this is capped at 4.
 if (ort.env?.wasm) {
   ort.env.wasm.wasmPaths = "/ort/";
-  ort.env.wasm.numThreads = 1;
+  ort.env.wasm.numThreads = self.crossOriginIsolated
+    ? Math.min(navigator.hardwareConcurrency ?? 4, 4)
+    : 1;
 }
 ort.env.logLevel = "error";
 

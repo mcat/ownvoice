@@ -11,8 +11,37 @@
 //
 // Cache name bumps on every shipped SW change. Old caches are cleaned on activate.
 
-const CACHE_NAME = "ownvoice-v4";
+const CACHE_NAME = "ownvoice-v5";
 const SHELL_ASSETS = ["/", "/index.html"];
+
+/**
+ * Headers required to make `crossOriginIsolated === true`, which is the
+ * prerequisite for SharedArrayBuffer and therefore for multi-threaded
+ * WASM in ORT. Static hosts (e.g. GitHub Pages) can't set these, so the
+ * SW injects them on every cached response. COEP credentialless is the
+ * lighter variant — doesn't require CORP on every same-origin subresource.
+ */
+const CROSS_ORIGIN_ISOLATION_HEADERS = {
+  "Cross-Origin-Opener-Policy": "same-origin",
+  "Cross-Origin-Embedder-Policy": "credentialless",
+};
+
+/**
+ * Return a new Response with the given body/init but with COOP+COEP
+ * appended to the headers. Preserves status, statusText, and any
+ * existing headers the origin set.
+ */
+function withIsolationHeaders(response) {
+  const headers = new Headers(response.headers);
+  for (const [k, v] of Object.entries(CROSS_ORIGIN_ISOLATION_HEADERS)) {
+    headers.set(k, v);
+  }
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -64,16 +93,18 @@ async function staleWhileRevalidate(request) {
       return response;
     })
     .catch(() => null);
-  return cached || (await networkPromise) || new Response("offline", { status: 503 });
+  const served =
+    cached || (await networkPromise) || new Response("offline", { status: 503 });
+  return withIsolationHeaders(served);
 }
 
 async function cacheFirstImmutable(request) {
   const cache = await caches.open(CACHE_NAME);
   const cached = await cache.match(request);
-  if (cached) return cached;
+  if (cached) return withIsolationHeaders(cached);
   const response = await fetch(request);
   if (response.ok) cache.put(request, response.clone());
-  return response;
+  return withIsolationHeaders(response);
 }
 
 self.addEventListener("fetch", (event) => {
@@ -96,11 +127,14 @@ self.addEventListener("fetch", (event) => {
               "content-type": "application/octet-stream",
               "content-length": String(file.size),
               "cache-control": "no-store",
+              ...CROSS_ORIGIN_ISOLATION_HEADERS,
             },
           });
         }
-        // Not primed yet — fall through to network. SW does NOT cache this.
-        return fetch(event.request);
+        // Not primed yet — fall through to network. SW does NOT cache this,
+        // but we still attach isolation headers so the model fetch doesn't
+        // break crossOriginIsolated for sibling responses.
+        return withIsolationHeaders(await fetch(event.request));
       })(),
     );
     return;
