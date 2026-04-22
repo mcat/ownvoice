@@ -38,22 +38,30 @@ vi.mock("./hooks/useSpeakActions", () => ({
   }),
 }));
 
-// Mock getModelManager to avoid model init
-vi.mock("./models/modelManager", () => ({
-  getModelManager: () => ({
+// Shared mocks so individual tests can drive isGPUReady / onProgress /
+// onGPUReady through state transitions — the pre-gen trigger depends on
+// the interplay between these three signals, and the default-returning
+// inline mock made that interplay uninspectable.
+const { mgrMock, isGPUReadyMock, onGPUReadyMock } = vi.hoisted(() => ({
+  mgrMock: {
     init: vi.fn(),
     getWorker: vi.fn(() => null),
     clearAll: vi.fn(),
     isReady: vi.fn(() => false),
     onProgress: vi.fn(() => () => {}),
-  }),
+  },
+  isGPUReadyMock: vi.fn(() => false),
+  onGPUReadyMock: vi.fn(() => () => {}),
 }));
 
-// Mock the GPU TTS engine so App.tsx's init side effects are inert in tests
+vi.mock("./models/modelManager", () => ({
+  getModelManager: () => mgrMock,
+}));
+
 vi.mock("./models/ttsEngine", () => ({
   initGPU: vi.fn(() => Promise.resolve(false)),
-  isGPUReady: vi.fn(() => false),
-  onGPUReady: vi.fn(() => () => {}),
+  isGPUReady: isGPUReadyMock,
+  onGPUReady: onGPUReadyMock,
 }));
 
 // Mock resetAll
@@ -80,6 +88,7 @@ const makeCfg = (overrides?: Partial<AppSettings>): AppSettings => ({
 
 // Import App after mocks are set up
 import { App } from "./App";
+import * as audioCacheRunner from "./models/audioCacheRunner";
 
 describe("App", () => {
   beforeEach(() => {
@@ -102,6 +111,17 @@ describe("App", () => {
       speaking: null,
     });
     useConversationStore.setState({ messages: [] });
+    // Reset the shared signal mocks so each test starts "neither path
+    // ready" unless it opts into a specific state.
+    isGPUReadyMock.mockReset();
+    isGPUReadyMock.mockReturnValue(false);
+    onGPUReadyMock.mockReset();
+    onGPUReadyMock.mockReturnValue(() => {});
+    mgrMock.isReady.mockReset();
+    mgrMock.isReady.mockReturnValue(false);
+    mgrMock.onProgress.mockReset();
+    mgrMock.onProgress.mockReturnValue(() => {});
+    vi.mocked(audioCacheRunner.runPreGeneration).mockClear();
   });
 
   it("renders nothing before hydration (_hasHydrated=false)", () => {
@@ -330,5 +350,48 @@ describe("App", () => {
     // PinGate has a "Cancel" button
     fireEvent.click(screen.getByText("Cancel"));
     expect(useUIStore.getState().pinEntryOpen).toBe(false);
+  });
+
+  describe("pre-gen trigger", () => {
+    it("starts pre-gen exactly once even if progress events keep firing after a path becomes ready", () => {
+      // Regression for the boot-time thrashing reported in issue #79:
+      // App.tsx subscribes to mgr.onProgress as a ready signal, but WASM
+      // model download fires many progress events. Every post-ready
+      // event was re-calling runPreGeneration, which aborts the in-flight
+      // run and restarts from phrase 0 — wasting ~20–40s of synth on
+      // boot and showing up as the same phrase synthesized 2–3× in the
+      // worker's "Synthesizing:" log.
+      let capturedGpuCb: (() => void) | null = null;
+      let capturedProgressCb: (() => void) | null = null;
+      onGPUReadyMock.mockImplementation((cb) => {
+        capturedGpuCb = cb;
+        return () => {};
+      });
+      mgrMock.onProgress.mockImplementation((cb) => {
+        capturedProgressCb = cb;
+        return () => {};
+      });
+
+      // Initial state: neither path ready. Rendering triggers the pre-gen
+      // effect, which subscribes but doesn't start.
+      useSettingsStore.setState({ _hasHydrated: true, cfg: makeCfg() });
+      render(<App />);
+
+      expect(audioCacheRunner.runPreGeneration).not.toHaveBeenCalled();
+      expect(capturedGpuCb).not.toBeNull();
+      expect(capturedProgressCb).not.toBeNull();
+
+      // GPU becomes ready — single correct kickoff.
+      isGPUReadyMock.mockReturnValue(true);
+      capturedGpuCb!();
+      expect(audioCacheRunner.runPreGeneration).toHaveBeenCalledTimes(1);
+
+      // WASM download progress keeps firing after GPU is already running
+      // pre-gen. These must NOT restart the run.
+      capturedProgressCb!();
+      capturedProgressCb!();
+      capturedProgressCb!();
+      expect(audioCacheRunner.runPreGeneration).toHaveBeenCalledTimes(1);
+    });
   });
 });
