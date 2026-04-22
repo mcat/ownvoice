@@ -194,6 +194,16 @@ export interface GenerateProgress {
 }
 
 /**
+ * Trip the circuit breaker when this many phrases fail back-to-back on a
+ * GPU-only pass. The pain matrix is 702 phrases; if five consecutive
+ * phrases time out, something is systemically wrong (zombie worker,
+ * VRAM exhaustion) and grinding through the rest wastes the clinician's
+ * time. The UI then surfaces a Retry button so they can try again
+ * without reloading.
+ */
+const GPU_CONSECUTIVE_FAIL_LIMIT = 5;
+
+/**
  * Background-generate fixed phrases for a given embedding.
  *
  * Yields after each phrase (cached or generated, success or failure) so
@@ -236,12 +246,14 @@ export async function* generateAllPhrases(
   }
 
   const total = phrases.length;
+  let consecutiveFailures = 0;
 
   for (let i = 0; i < phrases.length; i++) {
     if (signal?.aborted) return;
     const phrase = phrases[i];
 
     if (await hasCachedAudio(phrase, speakerData)) {
+      consecutiveFailures = 0;
       yield { phrase, current: i + 1, total };
       continue;
     }
@@ -259,9 +271,11 @@ export async function* generateAllPhrases(
       // speak.ts skips the ~10-50ms FFT pipeline on every tap.
       const processed = postProcessAudio(audio, SAMPLE_RATE);
       await putCachedAudio(phrase, speakerData, processed);
+      consecutiveFailures = 0;
     } catch (err) {
       if (signal?.aborted) return;
       failed = true;
+      consecutiveFailures++;
       console.warn(
         `[OwnVoice:Cache] Gave up on "${phrase}" after retries:`,
         err,
@@ -271,6 +285,18 @@ export async function* generateAllPhrases(
     yield failed
       ? { phrase, current: i + 1, total, failed: true }
       : { phrase, current: i + 1, total };
+
+    // Circuit breaker: only applies to GPU-only passes (the pain matrix).
+    // For mixed GPU+WASM passes, a GPU timeout falls through to WASM, so
+    // a fail signals a real problem worth retrying individually per
+    // phrase rather than stopping the whole pass.
+    if (gpuOnly && consecutiveFailures >= GPU_CONSECUTIVE_FAIL_LIMIT) {
+      console.warn(
+        `[OwnVoice:Cache] Circuit breaker tripped: ${consecutiveFailures} ` +
+          `consecutive failures on GPU-only pass. Stopping after ${i + 1}/${total}.`,
+      );
+      return;
+    }
   }
 
   console.log(`[OwnVoice:Cache] Pre-generation complete (${total} phrases)`);
@@ -302,6 +328,14 @@ export async function* retryFailed(
  * the WASM worker if GPU isn't ready or fails on this attempt.
  */
 const MAX_ATTEMPTS = 3;
+// Pre-gen gets a longer GPU timeout than live taps. The LM loop itself
+// is fast on M5 iPad (~33ms/step), but the conditional_decoder runs on
+// single-threaded WASM and is ~24× real-time — a short "Yes" takes
+// ~22s end-to-end, and pain-matrix sentences can stretch past 45s. 300s
+// is a generous ceiling that lets the slowest phrases complete while
+// still bounding the worst case. Revisit if/when the decoder moves to
+// multi-threaded WASM or WebGPU.
+const PREGEN_GPU_TIMEOUT_MS = 300_000;
 async function synthesizeWithRetries(
   worker: Worker | null,
   phrase: string,
@@ -346,6 +380,7 @@ async function synthesizeBestAvailable(
       const { data } = await synthesizeGPU(
         phrase,
         speakerData as Parameters<typeof synthesizeGPU>[1],
+        { timeoutMs: PREGEN_GPU_TIMEOUT_MS },
       );
       return data;
     } catch (err) {

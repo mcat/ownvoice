@@ -176,6 +176,67 @@ describe("tts-gpu-worker source — performance-sensitive patterns", () => {
   });
 });
 
+describe("tts-gpu-worker source — concurrency invariants", () => {
+  it("serializes synthesize calls through a promise chain", () => {
+    // Regression guard: without serialization, a main-thread timeout+retry
+    // posted a second synth while the first was still mid-decode. Two
+    // concurrent handleSynthesize calls contend for the same ORT sessions
+    // and WebGPU queue, corrupting both runs and effectively stalling the
+    // 702-phrase pain matrix (2 phrases in hours, observed pre-fix).
+    //
+    // Require the worker to chain synths onto a single promise so at
+    // most one handleSynthesize is active at a time.
+    expect(
+      WORKER_SRC,
+      "Worker must maintain a `synthChain` (or equivalent) promise chain " +
+        "to serialize synthesize calls. Concurrent ORT session.run() is " +
+        "not safe.",
+    ).toMatch(/synthChain\s*=\s*Promise\.resolve\s*\(\s*\)/);
+    expect(
+      WORKER_SRC,
+      "Worker must chain each synthesize onto synthChain via .then().",
+    ).toMatch(/synthChain\s*=\s*synthChain\.then\s*\(/);
+  });
+
+  it("echoes the request `id` on both audio and error responses", () => {
+    // Regression guard: without request IDs the main-thread listener for
+    // synth N can receive the late "audio" message from a timed-out
+    // synth M and resolve with M's audio — caching the wrong bytes for
+    // N's phrase. Every outgoing response must include the originating
+    // request's `id` so the main thread can discard mismatches.
+    //
+    // Heuristic: both postMessage shapes for "audio" and "error"
+    // emitted by the synth path must include an `id` key.
+    const audioPost = WORKER_SRC.match(
+      /postMessage\s*\(\s*\{\s*type:\s*["']audio["'][\s\S]*?\}/,
+    );
+    expect(
+      audioPost,
+      "Could not find the `audio` postMessage in the worker source.",
+    ).not.toBeNull();
+    expect(
+      audioPost?.[0] ?? "",
+      "Worker must include `id` on the `audio` response message.",
+    ).toMatch(/\bid\b/);
+
+    // Error responses in the synth path (inside the synthChain .catch)
+    // must also include id. We don't check the init-path error, which
+    // has no request id by design.
+    const synthErrorPost = WORKER_SRC.match(
+      /synthChain[\s\S]*?postMessage\s*\(\s*\{\s*type:\s*["']error["'][\s\S]*?\}\s*\)/,
+    );
+    expect(
+      synthErrorPost,
+      "Could not find the synth-path `error` postMessage.",
+    ).not.toBeNull();
+    expect(
+      synthErrorPost?.[0] ?? "",
+      "Synth-path error responses must include `id` so the main thread can " +
+        "correlate them with the originating request.",
+    ).toMatch(/\bid\b/);
+  });
+});
+
 describe("tts-gpu-worker source — token-constant invariants", () => {
   it("uses vocab-size-consistent speech control tokens", () => {
     // Chatterbox Turbo's vocab_size is 6563 (per config.json). The

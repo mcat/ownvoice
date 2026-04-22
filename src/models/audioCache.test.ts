@@ -31,6 +31,17 @@ vi.mock("../speak", () => ({
   postProcessAudio: vi.fn((audio: Float32Array) => audio),
 }));
 
+// Mock the GPU engine so gpuOnly tests can drive isGPUReady / synthesizeGPU
+// directly without a real Worker. Defaults to "GPU not ready" so tests that
+// pre-date the mock still see the original behaviour; the circuit-breaker
+// test flips it on and controls synthesizeGPU per-call.
+const isGPUReadyMock = vi.fn(() => false);
+const synthesizeGPUMock = vi.fn();
+vi.mock("./ttsEngine", () => ({
+  isGPUReady: () => isGPUReadyMock(),
+  synthesizeGPU: (...args: unknown[]) => synthesizeGPUMock(...args),
+}));
+
 // =============================================================================
 // OPFS mock
 // =============================================================================
@@ -695,12 +706,17 @@ describe("audioCache — generateAllPhrases gpuOnly", () => {
     mockModelManager.getWorker.mockReturnValue(mockWorker);
     mockWorker.postMessage.mockClear();
     mockWorker.addEventListener.mockClear();
+    // Reset the GPU-engine mocks each test rather than at the end of each
+    // test body — a failing assertion in-body would otherwise leak a
+    // `true`-returning isGPUReady into tests that assume the default.
+    isGPUReadyMock.mockReturnValue(false);
+    synthesizeGPUMock.mockReset();
   });
 
   it("yields nothing and never calls the WASM worker when GPU is not ready", async () => {
-    // isGPUReady() returns false by default in the test env — no module
-    // mock needed. This is the WASM-only desktop scenario: gpuOnly must
-    // short-circuit rather than silently take the ~3-6 hour WASM path.
+    // isGPUReady() returns false by default via the ttsEngine mock. This
+    // is the WASM-only desktop scenario: gpuOnly must short-circuit
+    // rather than silently take the ~3-6 hour WASM path.
     const gen = generateAllPhrases(["A", "B"], EMBEDDING, undefined, {
       gpuOnly: true,
     });
@@ -709,6 +725,54 @@ describe("audioCache — generateAllPhrases gpuOnly", () => {
 
     expect(results).toHaveLength(0);
     expect(mockWorker.postMessage).not.toHaveBeenCalled();
+  });
+
+  it("trips the circuit breaker after 5 consecutive GPU synth failures", async () => {
+    // Reproduces the production hang: on the pain matrix, every phrase
+    // times out at the main-thread level, so generator failure mode is
+    // "fail → move on → fail → move on → …" indefinitely. At 702 phrases
+    // × ~minutes each, that's days of wasted time. The circuit breaker
+    // gives up after 5 consecutive failures so the UI can surface a
+    // Retry button and the clinician isn't held hostage to a stuck worker.
+    isGPUReadyMock.mockReturnValue(true);
+    synthesizeGPUMock.mockRejectedValue(new Error("GPU synthesis timeout (60000ms)"));
+
+    // 10 phrases — enough to prove the breaker stops the run before the
+    // end, not just coincidentally at the last phrase.
+    const phrases = Array.from({ length: 10 }, (_, i) => `phrase ${i}`);
+    const gen = generateAllPhrases(phrases, EMBEDDING, undefined, { gpuOnly: true });
+    const results: Array<{ current: number; failed?: boolean }> = [];
+    for await (const r of gen) results.push(r);
+
+    // Exactly 5 failures yielded, then the generator stops early.
+    expect(results).toHaveLength(5);
+    expect(results.every((r) => r.failed === true)).toBe(true);
+    expect(results[results.length - 1].current).toBe(5);
+  });
+
+  it("resets the consecutive-failure counter on a successful phrase", async () => {
+    // If the breaker counted total failures rather than consecutive ones,
+    // a flaky worker that intermittently succeeds would still trip it.
+    // This test interleaves 4 failures, a success, then 4 more failures
+    // — only 4 consecutive at any point, so the breaker must not trip.
+    isGPUReadyMock.mockReturnValue(true);
+    synthesizeGPUMock.mockImplementation((text: string) => {
+      if (text === "phrase 4") {
+        return Promise.resolve({ data: new Float32Array([0.1, 0.2]), sampleRate: 24000 });
+      }
+      return Promise.reject(new Error("GPU synthesis timeout (60000ms)"));
+    });
+
+    const phrases = Array.from({ length: 9 }, (_, i) => `phrase ${i}`);
+    const gen = generateAllPhrases(phrases, EMBEDDING, undefined, { gpuOnly: true });
+    const results: Array<{ current: number; failed?: boolean }> = [];
+    for await (const r of gen) results.push(r);
+
+    // All 9 phrases yielded: 4 failed, 1 succeeded, 4 failed. Breaker
+    // never hits 5 consecutive so the run completes normally.
+    expect(results).toHaveLength(9);
+    expect(results.filter((r) => r.failed === true)).toHaveLength(8);
+    expect(results.filter((r) => !r.failed)).toHaveLength(1);
   });
 });
 

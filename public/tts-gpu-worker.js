@@ -7,12 +7,20 @@
  *
  * Messages IN:
  *   { type: "init", modelUrl: string }
- *   { type: "synthesize", text: string, speakerData: object }
+ *   { type: "synthesize", text: string, speakerData: object, id?: number }
  *
  * Messages OUT:
  *   { type: "ready" }
- *   { type: "audio", data: Float32Array, sampleRate: number }
- *   { type: "error", message: string }
+ *   { type: "audio", data: Float32Array, sampleRate: number, id?: number }
+ *   { type: "error", message: string, id?: number }
+ *
+ * Concurrency:
+ *   Synthesize requests are serialized via `synthChain` — ORT session.run()
+ *   is not safe to invoke concurrently on the same session. Without this,
+ *   a main-thread timeout+retry would post a second synth while the first
+ *   is still mid-decode, corrupting both. The `id` on each response echoes
+ *   the `id` from the incoming request so the main thread can discard
+ *   responses from timed-out synths it no longer cares about.
  */
 
 // Import ORT from /ort/ (copies of the dist files in public/).
@@ -466,7 +474,7 @@ async function warmupConditionalDecoder() {
   console.log(`${LOG} Decoder warmup complete in ${((performance.now() - w0) / 1000).toFixed(1)}s`);
 }
 
-async function handleSynthesize(text, speakerData) {
+async function handleSynthesize(text, speakerData, id) {
   if (!embedTokensSession || !languageModelSession || !conditionalDecoderSession || !tokenizer) {
     throw new Error("Models not initialized");
   }
@@ -634,21 +642,43 @@ async function handleSynthesize(text, speakerData) {
   console.log(`${LOG} Total: ${((performance.now() - t0) / 1000).toFixed(1)}s, ${(audioData.length / SAMPLE_RATE).toFixed(1)}s audio`);
 
   postMessage(
-    { type: "audio", data: audioData, sampleRate: SAMPLE_RATE },
+    { type: "audio", data: audioData, sampleRate: SAMPLE_RATE, id },
     [audioData.buffer],
   );
 }
 
-self.addEventListener("message", async (e) => {
+// Serialize synthesize calls. ORT session.run() is not safe to invoke
+// concurrently on the same session — a prior bug where main-thread
+// timeout+retry posted a second synth mid-decode corrupted both runs
+// and effectively stalled the 702-phrase pain-matrix pass. Every
+// incoming synth chains onto `synthChain` and runs strictly after the
+// previous one completes.
+let synthChain = Promise.resolve();
+
+self.addEventListener("message", (e) => {
   const msg = e.data;
   if (!msg || !msg.type) return;
 
-  try {
-    if (msg.type === "init") await handleInit(msg.modelUrl);
-    else if (msg.type === "synthesize") await handleSynthesize(msg.text, msg.speakerData);
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error(`${LOG} Error:`, message);
-    postMessage({ type: "error", message });
+  if (msg.type === "init") {
+    handleInit(msg.modelUrl).catch((err) => {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(`${LOG} Init error:`, message);
+      postMessage({ type: "error", message });
+    });
+    return;
+  }
+
+  if (msg.type === "synthesize") {
+    // Chain on, swallowing per-synth failures so one bad phrase doesn't
+    // break the chain for subsequent ones. The main thread correlates
+    // responses via `msg.id` and ignores those for synths it has
+    // already timed out on.
+    synthChain = synthChain.then(() =>
+      handleSynthesize(msg.text, msg.speakerData, msg.id).catch((err) => {
+        const message = err instanceof Error ? err.message : String(err);
+        console.error(`${LOG} Synth error:`, message);
+        postMessage({ type: "error", message, id: msg.id });
+      }),
+    );
   }
 });
