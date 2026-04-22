@@ -93,6 +93,7 @@ async function loadEngineWithMocks(): Promise<{
     opts?: { timeoutMs?: number },
   ) => Promise<{ data: Float32Array; sampleRate: number }>;
   isGPUReady: () => boolean;
+  __testPendingSynthsSize: () => number;
 }> {
   vi.resetModules();
   const workers: MockWorker[] = [];
@@ -110,6 +111,7 @@ async function loadEngineWithMocks(): Promise<{
     initGPU: mod.initGPU,
     synthesizeGPU: mod.synthesizeGPU,
     isGPUReady: mod.isGPUReady,
+    __testPendingSynthsSize: mod.__testPendingSynthsSize,
   };
 }
 
@@ -391,6 +393,108 @@ describe("ttsEngine — synthesizeGPU orchestration", () => {
     await vi.runAllTicks();
 
     await expect(synthPromise).rejects.toThrow(/timeout/);
+  });
+
+  it("uses the 2s default timeout when opts.timeoutMs is omitted", async () => {
+    // Mutation guard: every OTHER test in this file passes an explicit
+    // timeoutMs, so a mutant like `opts?.timeoutMs ?? 0` or `?? 1` would
+    // not fail any existing assertion even though it'd break every live
+    // tap in production. Exercise the default path by omitting opts and
+    // verifying both halves of the boundary: no rejection before 2s,
+    // timeout exactly at 2s.
+    vi.useFakeTimers();
+    const { workers, initGPU, synthesizeGPU } = await loadEngineWithMocks();
+    const initPromise = initGPU("/models");
+    workers[0].__post({ type: "ready" });
+    workers[1].__post({ type: "ready" });
+    await initPromise;
+
+    const synthPromise = synthesizeGPU("hello", SPEAKER);
+    const rejectSpy = vi.fn();
+    synthPromise.catch(rejectSpy);
+
+    // At 1999ms, no timeout yet. Flush any pending microtasks so the
+    // rejection — if it were happening early — would have landed.
+    vi.advanceTimersByTime(1999);
+    await vi.runAllTicks();
+    expect(rejectSpy).not.toHaveBeenCalled();
+
+    // Cross the 2000ms boundary; timeout fires.
+    vi.advanceTimersByTime(2);
+    await expect(synthPromise).rejects.toThrow(/2000ms/);
+  });
+
+  it("drains pendingSynths on normal resolve (no silent leak)", async () => {
+    // Mutation guard: `pendingSynths.delete(id)` in the finalize helper
+    // isn't catchable via external side effects — reject on a settled
+    // promise is a no-op and removeEventListener on an absent handler
+    // is idempotent, so a no-op mutant would grow memory indefinitely
+    // without failing any promise assertion. Use the __testPendingSynths
+    // accessor to assert the invariant directly.
+    const { workers, initGPU, synthesizeGPU, __testPendingSynthsSize } =
+      await loadEngineWithMocks();
+    const initPromise = initGPU("/models");
+    workers[0].__post({ type: "ready" });
+    workers[1].__post({ type: "ready" });
+    await initPromise;
+
+    expect(__testPendingSynthsSize()).toBe(0);
+
+    const [lmWorker, decoderWorker] = workers;
+    const synthPromise = synthesizeGPU("hello", SPEAKER, { timeoutMs: 5000 });
+
+    // Mid-synth: entry is registered.
+    expect(__testPendingSynthsSize()).toBe(1);
+
+    const id = lmWorker.postMessage.mock.calls.find(
+      (c: unknown[]) => (c[0] as { type: string }).type === "synthesizeLM",
+    )![0].id;
+    lmWorker.__post({ type: "lmResult", decoderTokens: [1], lmT0: 0, id });
+    decoderWorker.__post({
+      type: "audio",
+      data: new Float32Array([0.1]),
+      sampleRate: 24000,
+      id,
+    });
+    await synthPromise;
+
+    // After normal resolve: entry drained.
+    expect(__testPendingSynthsSize()).toBe(0);
+  });
+
+  it("drains pendingSynths on per-id error responses", async () => {
+    // Same mutation guard as the normal-resolve case, but through the
+    // error exit paths (both LM and decoder). Each error path calls
+    // finalize(); a selective mutant that only removed the delete from
+    // the happy path would still be caught by the check above, but
+    // mirrored coverage here prevents regressions in either error arm.
+    const { workers, initGPU, synthesizeGPU, __testPendingSynthsSize } =
+      await loadEngineWithMocks();
+    const initPromise = initGPU("/models");
+    workers[0].__post({ type: "ready" });
+    workers[1].__post({ type: "ready" });
+    await initPromise;
+
+    const [lmWorker, decoderWorker] = workers;
+
+    // LM error path
+    const p1 = synthesizeGPU("a", SPEAKER, { timeoutMs: 5000 });
+    const id1 = lmWorker.postMessage.mock.calls[
+      lmWorker.postMessage.mock.calls.length - 1
+    ][0].id;
+    lmWorker.__post({ type: "error", message: "boom", id: id1 });
+    await expect(p1).rejects.toThrow("boom");
+    expect(__testPendingSynthsSize()).toBe(0);
+
+    // Decoder error path
+    const p2 = synthesizeGPU("b", SPEAKER, { timeoutMs: 5000 });
+    const id2 = lmWorker.postMessage.mock.calls[
+      lmWorker.postMessage.mock.calls.length - 1
+    ][0].id;
+    lmWorker.__post({ type: "lmResult", decoderTokens: [1], lmT0: 0, id: id2 });
+    decoderWorker.__post({ type: "error", message: "dec boom", id: id2 });
+    await expect(p2).rejects.toThrow("dec boom");
+    expect(__testPendingSynthsSize()).toBe(0);
   });
 });
 

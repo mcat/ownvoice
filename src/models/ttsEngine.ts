@@ -73,6 +73,20 @@ export function isGPUReady(): boolean {
   return ready;
 }
 
+/**
+ * Test-only accessor for the in-flight synth registry size. The
+ * registry is drained on every exit path (normal resolve, timeout,
+ * per-id error, post-init crash); a silent leak — e.g., a mutant that
+ * removes `pendingSynths.delete(id)` — wouldn't produce an observable
+ * failure from the outside since reject on a settled promise is a
+ * no-op and removeEventListener on an absent handler is idempotent.
+ * This accessor lets ttsEngine.test.ts assert the invariant directly.
+ * Not part of the public API; do not use from app code.
+ */
+export function __testPendingSynthsSize(): number {
+  return pendingSynths.size;
+}
+
 export function hasWebGPU(): boolean {
   return "gpu" in navigator;
 }
