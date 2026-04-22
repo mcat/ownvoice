@@ -105,11 +105,14 @@ describe("tts-gpu-worker source — performance-sensitive patterns", () => {
       "handleInit must load models via Promise.all — fully sequential " +
       "awaits add 1-3s of cold-boot latency on iPad.",
     ).toMatch(/Promise\.all\s*\(/);
-    // Spot-check: the full handleInit should orchestrate at least three
-    // createSession calls (embed_tokens, language_model, decoder).
+    // Spot-check: the full handleInit orchestrates exactly two
+    // createSession calls now — embed_tokens and language_model. The
+    // conditional_decoder moved to public/tts-decoder-worker.js (see
+    // the "does not own the conditional decoder session" test) to keep
+    // concurrent WASM sessions from corrupting LM output.
     const createSessionCount = (handleInitBody.match(/createSession\s*\(/g) ?? [])
       .length;
-    expect(createSessionCount).toBeGreaterThanOrEqual(3);
+    expect(createSessionCount).toBe(2);
   });
 
   it("does not create multiple ORT sessions concurrently (regressions: initWasm race, webgpuRegisterBuffer)", () => {
@@ -177,109 +180,104 @@ describe("tts-gpu-worker source — performance-sensitive patterns", () => {
 });
 
 describe("tts-gpu-worker source — concurrency invariants", () => {
-  it("serializes per-session access with lmChain and decoderChain", () => {
+  it("serializes LM runs through a single promise chain", () => {
     // Regression guard: without per-session serialization, a main-thread
     // timeout+retry posted a second synth while the first was still
-    // mid-decode. Concurrent .run() on the same ORT session corrupts
-    // both runs and effectively stalled the 702-phrase pain matrix
-    // (2 phrases in hours, observed pre-fix).
+    // mid-loop. Concurrent .run() on the same ORT session corrupts both
+    // runs and effectively stalled the 702-phrase pain matrix (2 phrases
+    // in hours, observed pre-fix).
     //
-    // Issue #56 split the old `synthChain` into two independent chains
-    // so that phrase N+1's LM (WebGPU) can overlap phrase N's decoder
-    // (WASM). Both chains must still exist — removing either would
-    // either re-introduce the concurrent-session corruption (no chain)
-    // or collapse the pipeline back to serial (one chain).
+    // #56 originally tried to pipeline LM + decoder inside this worker
+    // via two chains, but that caused its own corruption (concurrent
+    // WASM sessions on embed_tokens + conditional_decoder sharing the
+    // worker's ORT Module produced stuttering audio on every phrase
+    // past phrase 0). The decoder now lives in tts-decoder-worker.js;
+    // this worker is back to a single `synthChain` for its own LM work.
     expect(
       WORKER_SRC,
-      "Worker must maintain an `lmChain` promise chain to serialize " +
+      "Worker must maintain a `synthChain` promise chain to serialize " +
         "LM runs on languageModelSession.",
-    ).toMatch(/let\s+lmChain\s*=\s*Promise\.resolve\s*\(\s*\)/);
+    ).toMatch(/let\s+synthChain\s*=\s*Promise\.resolve\s*\(\s*\)/);
     expect(
       WORKER_SRC,
-      "Worker must maintain a `decoderChain` promise chain to serialize " +
-        "decoder runs on conditionalDecoderSession.",
-    ).toMatch(/let\s+decoderChain\s*=\s*Promise\.resolve\s*\(\s*\)/);
-    // LM[N] must be enqueued behind LM[N-1]: the synthesize handler
-    // builds `lmPromise` from `lmChain.then(...)` and reassigns lmChain
-    // to that promise (with its error swallowed — see next test).
-    expect(
-      WORKER_SRC,
-      "Synthesize handler must extend lmChain via `lmChain.then(...)`.",
-    ).toMatch(/lmChain\.then\s*\(/);
+      "Synthesize handler must extend synthChain via `synthChain.then(...)`.",
+    ).toMatch(/synthChain\s*=\s*synthChain\.then\s*\(/);
   });
 
-  it("lets phrase N+1 LM overlap phrase N decoder via Promise.all", () => {
-    // The whole point of issue #56: the decoder chain must await BOTH
-    // (a) its own LM result and (b) the previous decoder's completion,
-    // while the LM chain for the next phrase is already free to start.
-    // That cross-phase synchronization is expressed as
-    // `Promise.all([lmPromise, decoderChain...])` in the message handler.
+  it("does not own the conditional decoder session", () => {
+    // #56's actually-shipping fix: the conditional decoder lives in a
+    // separate worker so its WASM runtime can't contend with
+    // embed_tokens (also WASM) in this worker. If a refactor
+    // re-introduces a decoder session here, concurrent-WASM corruption
+    // of the LM output returns — the symptom was stuttering audio on
+    // every phrase past phrase 0 during pipelined pre-gen.
+    expect(
+      WORKER_SRC,
+      "tts-gpu-worker.js must not declare or use conditionalDecoderSession. " +
+        "The decoder belongs in public/tts-decoder-worker.js so each " +
+        "DedicatedWorker owns a single WASM session.",
+    ).not.toMatch(/conditionalDecoderSession/);
+    expect(
+      WORKER_SRC,
+      "tts-gpu-worker.js must not load conditional_decoder_q4f16.onnx — " +
+        "that model belongs to the decoder worker.",
+    ).not.toMatch(/conditional_decoder_q4f16\.onnx/);
+  });
+
+  it("owns at most one WASM-only session (embed_tokens)", () => {
+    // Generalizes the "no decoder here" guard above: the cross-session
+    // corruption bug wasn't specific to the conditional decoder — it
+    // would hit for any two concurrent WASM `session.run()` calls on
+    // different sessions in the same worker, because ORT Web shares one
+    // WASM Module per worker. embed_tokens (WASM-only due to the Metal
+    // GatherBlockQuantized dispatch bug) is allowed; anything else that
+    // adds `wasmOnly=true` here should move to its own worker.
     //
-    // If a refactor replaces that with `decoderChain.then(() => runDecoder)`
-    // alone, we serialize end-to-end again and lose the pipeline win —
-    // hence the explicit Promise.all assertion.
+    // Counts the third positional arg of createSession(...) calls in
+    // handleInit. Exactly one occurrence of `wasmOnly=true` is expected
+    // (the embed_tokens load).
+    const handleInitBody = extractHandleInitBody();
+    const wasmOnlyCalls = handleInitBody.match(
+      /createSession\s*\([^)]*?,\s*(?:true|false)\s*,\s*true\b/g,
+    ) ?? [];
     expect(
-      WORKER_SRC,
-      "decoderChain must await both its own LM result and the previous " +
-        "decoder via Promise.all([lmPromise, ...]) — otherwise phrase N+1 " +
-        "LM cannot overlap phrase N decoder and #56's throughput gain is lost.",
-    ).toMatch(/Promise\.all\s*\(\s*\[\s*lmPromise\s*,\s*decoderChain/);
+      wasmOnlyCalls.length,
+      "Expected exactly one createSession(…, wasmOnly=true) in handleInit " +
+        "— embed_tokens. Adding a second WASM-only session to this worker " +
+        "re-creates the concurrent-WASM-sessions corruption that #56's " +
+        "split-worker architecture exists to prevent.",
+    ).toBe(1);
   });
 
-  it("resets chain rejection so one bad phrase doesn't wedge the pipeline", () => {
-    // Loose error policy (chosen when implementing #56): a single phrase
-    // failure posts an error for its own id but leaves both chains in a
-    // resolved state so subsequent phrases pipeline normally. Both
-    // chains must therefore be reassigned to a `.catch(() => {})` form
-    // after their primary work — a rejected chain would poison every
-    // later `.then()`.
-    //
-    // We expect at least two `.catch(() => {})` patterns: one for the
-    // lmChain reset, one for the decoderChain input to Promise.all
-    // (so a previous decoder's rejection doesn't cascade into this
-    // phrase's id).
-    const resetCatches = WORKER_SRC.match(/\.catch\s*\(\s*\(\s*\)\s*=>\s*\{\s*\}\s*\)/g) ?? [];
-    expect(
-      resetCatches.length,
-      "Expected at least two `.catch(() => {})` chain-resets in the " +
-        "synthesize handler — one for lmChain, one for the previous " +
-        "decoderChain passed into Promise.all. Removing either risks " +
-        "wedging the pipeline after the first failure.",
-    ).toBeGreaterThanOrEqual(2);
-  });
-
-  it("echoes the request `id` on both audio and error responses", () => {
+  it("echoes the request `id` on both lmResult and error responses", () => {
     // Regression guard: without request IDs the main-thread listener for
-    // synth N can receive the late "audio" message from a timed-out
-    // synth M and resolve with M's audio — caching the wrong bytes for
-    // N's phrase. Every outgoing response must include the originating
-    // request's `id` so the main thread can discard mismatches.
-    //
-    // Heuristic: both postMessage shapes for "audio" and "error"
-    // emitted by the synth path must include an `id` key.
-    const audioPost = WORKER_SRC.match(
-      /postMessage\s*\(\s*\{\s*type:\s*["']audio["'][\s\S]*?\}/,
+    // synth N can receive the late `lmResult` from a timed-out synth M
+    // and drive M's decoder tokens into N's subsequent decode request —
+    // caching wrong audio for N. Every outgoing response from the synth
+    // path must include the originating `id` so the main thread can
+    // discard mismatches.
+    const lmResultPost = WORKER_SRC.match(
+      /postMessage\s*\(\s*\{\s*[\s\S]*?type:\s*["']lmResult["'][\s\S]*?\}/,
     );
     expect(
-      audioPost,
-      "Could not find the `audio` postMessage in the worker source.",
+      lmResultPost,
+      "Could not find the `lmResult` postMessage in the worker source.",
     ).not.toBeNull();
     expect(
-      audioPost?.[0] ?? "",
-      "Worker must include `id` on the `audio` response message.",
+      lmResultPost?.[0] ?? "",
+      "Worker must include `id` on the `lmResult` response message.",
     ).toMatch(/\bid\b/);
 
-    // Synth-path error responses must also include id. With the dual
-    // chain, per-phrase error posts live inside `decoderChain.catch(...)`
-    // — we don't check the init-path error, which has no request id by
-    // design.
+    // Synth-path error responses (inside the synthChain .then) must
+    // also include id. We don't check the init-path error, which has
+    // no request id by design.
     const synthErrorPost = WORKER_SRC.match(
-      /decoderChain[\s\S]*?postMessage\s*\(\s*\{\s*type:\s*["']error["'][\s\S]*?\}\s*\)/,
+      /synthChain[\s\S]*?postMessage\s*\(\s*\{\s*type:\s*["']error["'][\s\S]*?\}\s*\)/,
     );
     expect(
       synthErrorPost,
       "Could not find the synth-path `error` postMessage (inside the " +
-        "decoderChain .catch).",
+        "synthChain handler).",
     ).not.toBeNull();
     expect(
       synthErrorPost?.[0] ?? "",
@@ -297,11 +295,12 @@ describe("all ORT workers — multi-threaded WASM gating", () => {
   // are absent — e.g. first-load before the SW installs — so we never
   // trip a SharedArrayBuffer-unavailable runtime error.
   //
-  // All five sources get the same gate; a refactor that removes it from
+  // All six sources get the same gate; a refactor that removes it from
   // any one of them would silently regress pre-gen throughput on that
   // path. Assert on all of them in one place.
   const sources = [
     { path: "public/tts-gpu-worker.js", label: "tts-gpu-worker" },
+    { path: "public/tts-decoder-worker.js", label: "tts-decoder-worker" },
     { path: "public/stt-gpu-worker.js", label: "stt-gpu-worker" },
     { path: "src/models/ttsWorker.ts", label: "ttsWorker" },
     { path: "src/models/llmWorker.ts", label: "llmWorker" },

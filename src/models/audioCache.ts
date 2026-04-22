@@ -2,14 +2,21 @@ import { getModelManager } from "./modelManager";
 import { isGPUReady, synthesizeGPU } from "./ttsEngine";
 import { postProcessAudio } from "../speak";
 
-// Bumped from "audio-cache" after two format changes landed together:
-//   1. Stored bytes are now post-processed (denoise/EQ/gate/limiter) rather
-//      than raw decoder output — playback skips the FFT pipeline.
-//   2. Stored bytes are now Int16 PCM (scale 32767) rather than Float32,
+// Bumped from "audio-cache-v2" after the #56 pipelining misadventure:
+// the first PR #82 commit tried to overlap LM and decoder inside a single
+// worker, which corrupted LM output (concurrent WASM sessions sharing an
+// ORT Module — see public/tts-decoder-worker.js top-of-file docstring).
+// Any audio synthesized under that commit is stuttered and stored on
+// disk under a stable hashKey(phrase, fingerprint). Without a directory
+// bump, the fixed code would read those corrupted bytes from cache
+// instead of regenerating. Bump orphans the old files cleanly.
+//
+// Previous v1→v2 reasons (kept for trail):
+//   1. Stored bytes went post-processed (denoise/EQ/gate/limiter) instead
+//      of raw decoder output — playback skips the FFT pipeline.
+//   2. Stored bytes went Int16 PCM (scale 32767) instead of Float32,
 //      halving on-disk footprint.
-// Mixing old and new files in the same directory would break playback for
-// cached pre-upgrade clips. Directory bump orphans them cleanly.
-const CACHE_DIR = "audio-cache-v2";
+const CACHE_DIR = "audio-cache-v3";
 const SAMPLE_RATE = 24000; // Chatterbox Turbo output rate
 const INT16_SCALE = 32767;
 

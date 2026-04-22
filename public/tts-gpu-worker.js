@@ -1,36 +1,36 @@
 /**
- * WebGPU TTS Worker — Chatterbox Turbo via ONNX Runtime WebGPU EP.
+ * TTS LM worker — Chatterbox Turbo language-model + embed_tokens stages.
  *
  * This is a plain JS worker (not bundled by Vite) that imports ORT directly
  * from the dist path. Vite's worker bundler can't resolve onnxruntime-web/webgpu
  * correctly, but the raw dist file works because it's served as a plain ES module.
  *
+ * The conditional decoder stage lives in a **separate** worker
+ * (`public/tts-decoder-worker.js`). Splitting it off was the fix for #56's
+ * original symptom: running phrase N+1's LM concurrently with phrase N's
+ * decoder inside a single worker corrupted LM output (stuttering speech)
+ * because both `embed_tokens` and `conditional_decoder` are WASM-backed
+ * and share a single ORT Module per worker. Each DedicatedWorker gets its
+ * own ORT runtime, so the two WASM sessions no longer contend.
+ *
  * Messages IN:
  *   { type: "init", modelUrl: string }
- *   { type: "synthesize", text: string, speakerData: object, id?: number }
+ *   { type: "synthesizeLM", text: string, speakerData: object, id: number }
  *
  * Messages OUT:
  *   { type: "ready" }
- *   { type: "audio", data: Float32Array, sampleRate: number, id?: number }
+ *   { type: "lmResult", decoderTokens: number[], lmT0: number, id: number }
  *   { type: "error", message: string, id?: number }
  *
- * Concurrency:
- *   Synthesis is split into two phases backed by independent ORT sessions
- *   — `runLM` (WebGPU) and `runDecoder` (multi-threaded WASM) — driven by
- *   two promise chains so that phrase N+1's LM work can overlap phrase N's
- *   decoder work across a pre-gen batch.
+ * The main thread receives `lmResult`, then posts a `decode` message to
+ * the decoder worker with the returned `decoderTokens` + `speakerData`.
  *
- *   Per-session serialization is still required (concurrent .run() on the
- *   same session corrupts both calls — the bug that once stalled the 702-
- *   phrase pain matrix at 2/702): `lmChain` keeps LM[N] strictly after
- *   LM[N-1], `decoderChain` keeps Dec[N] strictly after Dec[N-1] AND after
- *   its own LM completes. The two chains are otherwise decoupled, so the
- *   GPU and WASM runtimes stay busy in parallel.
- *
- *   Error policy is loose — an LM or decoder failure only fails its own
- *   request `id`; the chain `.catch(() => {})` resets so subsequent
- *   phrases keep pipelining. The main thread echoes the `id` to discard
- *   responses for synths it's already timed out on.
+ * Concurrency: `synthChain` serializes LM runs. Concurrent `.run()` on
+ * the same session is unsafe in ORT Web — this is the bug that originally
+ * stalled the pain matrix at 2/702 when a main-thread timeout+retry
+ * posted a second synth mid-LM. Each request's `id` is echoed on the
+ * outbound `lmResult` / `error` so the main thread can correlate the
+ * response with its in-flight promise.
  */
 
 // Import ORT from /ort/ (copies of the dist files in public/).
@@ -39,7 +39,6 @@
 import * as ort from "/ort/ort.webgpu.min.mjs";
 
 const LOG = "[OwnVoice:TTS:GPU]";
-const SAMPLE_RATE = 24000;
 const START_SPEECH_TOKEN = 6561;
 const STOP_SPEECH_TOKEN = 6562;
 const SILENCE_TOKEN = 4299;
@@ -73,14 +72,14 @@ const USE_GREEDY = true;
 // serves COOP+COEP (handled by the dev server and sw.js in prod), which
 // is the prerequisite for SharedArrayBuffer and therefore multi-threaded
 // WASM. On first load before the SW installs, or on a host that strips
-// the headers, we silently fall back to single-threaded WASM. The
-// conditional decoder is WASM-bound, so this is the primary lever for
-// pain-matrix pre-gen throughput.
+// the headers, we silently fall back to single-threaded WASM. `embed_tokens`
+// is WASM-bound (Metal GatherBlockQuantized bug on WebGPU) and runs once
+// per generated token; threading helps the ~300-call autoregressive loop.
 // Capped at 4: M5 iPad reports ~10 logical cores, but this worker runs
-// concurrent with the main thread, the GPU EP's internal worker, and any
-// other TTS/STT/LLM workers that happen to be mid-inference. Past ~4
-// threads the contention overhead outpaces the parallelism win on WASM
-// convolution workloads (ORT/Emscripten guidance).
+// concurrent with the main thread, the GPU EP's internal worker, the
+// decoder worker's thread pool, and any other TTS/STT/LLM workers that
+// happen to be mid-inference. Past ~4 threads the contention overhead
+// outpaces the parallelism win on WASM workloads (ORT/Emscripten guidance).
 if (ort.env?.wasm) {
   ort.env.wasm.wasmPaths = "/ort/";
   ort.env.wasm.numThreads = self.crossOriginIsolated
@@ -91,7 +90,6 @@ ort.env.logLevel = "error";
 
 let embedTokensSession = null;
 let languageModelSession = null;
-let conditionalDecoderSession = null;
 let tokenizer = null;
 
 async function createSession(url, hasExternalData = false, wasmOnly = false, extraOpts = {}) {
@@ -340,8 +338,8 @@ async function handleInit(modelUrl) {
   // Notes on EP choice:
   //  - embed_tokens on WASM: Metal GatherBlockQuantized dispatch bug
   //  - language_model on WebGPU: the hot autoregressive loop
-  //  - conditional_decoder on WASM: WebGPU variant has ConvTranspose
-  //    quantization artifacts that trash audio quality
+  //  The conditional decoder lives in a separate worker now — see the
+  //  top-of-file docstring for the concurrent-WASM rationale.
   const [, embed] = await Promise.all([
     loadTokenizer(baseUrl + "tokenizer.json"),
     createSession(baseUrl + "embed_tokens_q4f16.onnx", true, true),
@@ -355,13 +353,7 @@ async function handleInit(modelUrl) {
     { preferredOutputLocation: kvCacheOnGpu() },
   );
 
-  conditionalDecoderSession = await createSession(
-    baseUrl + "conditional_decoder_q4f16.onnx",
-    true,
-    true,
-  );
-
-  console.log(`${LOG} All models loaded in ${((performance.now() - t0) / 1000).toFixed(1)}s`);
+  console.log(`${LOG} LM models loaded in ${((performance.now() - t0) / 1000).toFixed(1)}s`);
 
   // Warm the hot path. Without this, the first real synthesis pays WebGPU
   // shader compilation, initial command-queue setup, and ORT's first-run
@@ -467,12 +459,10 @@ async function warmupLanguageModel() {
   console.log(`${LOG} Warmup complete in ${((performance.now() - w0) / 1000).toFixed(1)}s`);
 }
 
-// Phase 1 of synthesis: tokenize + autoregressive LM loop. Returns the
-// `decoderTokens` sequence ready for the WASM decoder, plus `lmT0` so
-// the decoder phase can still log an end-to-end duration matching the
-// pre-split behavior. All GPU-backed KV buffers are released before
-// this resolves, so the returned value is safe to cross the chain
-// boundary while the next phrase's LM starts on the same session.
+// Tokenize + autoregressive LM loop. Returns the `decoderTokens`
+// sequence ready for the (separate-worker) WASM decoder, plus `lmT0` so
+// the main thread can log an end-to-end duration across the two
+// workers. All GPU-backed KV buffers are released before this resolves.
 async function runLM(text, speakerData) {
   if (!embedTokensSession || !languageModelSession || !tokenizer) {
     throw new Error("Models not initialized");
@@ -625,55 +615,13 @@ async function runLM(text, speakerData) {
   return { decoderTokens, lmT0 };
 }
 
-// Phase 2 of synthesis: run the conditional decoder on WASM and post the
-// resulting audio. Takes `lmT0` so the end-to-end log reflects wall time
-// from when this phrase's LM work started — identical to the pre-split
-// meaning of "Total" even though pipelining means another phrase's LM
-// may have been running in parallel during the decoder wait.
-async function runDecoder(decoderTokens, speakerData, id, lmT0) {
-  if (!conditionalDecoderSession) {
-    throw new Error("Models not initialized");
-  }
-
-  // Decoder uses WASM variant with int64 inputs (not the WebGPU int32 variant)
-  const speechTok = new ort.Tensor("int64", BigInt64Array.from(decoderTokens.map(BigInt)), [1, decoderTokens.length]);
-  const spkEmb = new ort.Tensor("float32", new Float32Array(speakerData.speakerEmbeddings), speakerData.speakerEmbeddingsShape);
-  const spkFeat = new ort.Tensor("float32", new Float32Array(speakerData.speakerFeatures), speakerData.speakerFeaturesShape);
-
-  const decResult = await conditionalDecoderSession.run({
-    speech_tokens: speechTok,
-    speaker_embeddings: spkEmb,
-    speaker_features: spkFeat,
-  });
-
-  const wav = decResult["waveform"] ?? decResult["wav"];
-  if (!wav) throw new Error("Decoder missing output: " + Object.keys(decResult));
-
-  const audioData = new Float32Array(wav.data);
-  console.log(`${LOG} Total: ${((performance.now() - lmT0) / 1000).toFixed(1)}s, ${(audioData.length / SAMPLE_RATE).toFixed(1)}s audio`);
-
-  postMessage(
-    { type: "audio", data: audioData, sampleRate: SAMPLE_RATE, id },
-    [audioData.buffer],
-  );
-}
-
-// Two independent chains serialize per-session access while allowing
-// cross-phrase overlap. LM[N] must wait for LM[N-1] because both hit
-// `languageModelSession`; Dec[N] must wait for Dec[N-1] because both
-// hit `conditionalDecoderSession`. But LM[N+1] and Dec[N] use different
-// sessions (WebGPU vs WASM), so they can run in parallel — that's the
-// pre-gen throughput win. Without the dual-chain split, a single
-// synthChain forced LM and decoder to alternate, leaving one runtime
-// idle at all times.
-//
-// Each chain swallows its own failures with `.catch(() => {})` so that
-// one bad phrase doesn't wedge the pipeline. The `.catch` attached when
-// posting the error response is separate from the chain-reset catch —
-// the reset catch fires regardless, the error-post catch only when the
-// caller hasn't handled a specific failure shape yet.
-let lmChain = Promise.resolve();
-let decoderChain = Promise.resolve();
+// Serialize LM runs through one chain. `ORT` does not allow concurrent
+// `.run()` against the same session — the bug that once stalled the
+// 702-phrase pain matrix at 2/702 when a main-thread timeout+retry
+// posted a second synth while the first was still mid-loop. Each
+// failure is caught per-request and posted with its originating id so
+// a single bad synth can't wedge the chain for subsequent phrases.
+let synthChain = Promise.resolve();
 
 self.addEventListener("message", (e) => {
   const msg = e.data;
@@ -688,26 +636,21 @@ self.addEventListener("message", (e) => {
     return;
   }
 
-  if (msg.type === "synthesize") {
-    // Enqueue LM[N] after LM[N-1]. Reset `lmChain` to the swallowed
-    // form so an LM failure here doesn't reject the next phrase's
-    // lmChain.then(runLM) — each phrase gets a clean shot at the LM
-    // session regardless of its predecessor's outcome.
-    const lmPromise = lmChain.then(() => runLM(msg.text, msg.speakerData));
-    lmChain = lmPromise.catch(() => {});
-
-    // Enqueue Dec[N] after BOTH (a) its own LM result and (b) Dec[N-1].
-    // Promise.all waits for both; since the previous decoderChain has
-    // already handled its own errors by posting a per-id error, we
-    // swallow any rejection here with `.catch(() => {})` so it doesn't
-    // cascade into this phrase's id. If LM[N] rejected, the outer
-    // `.catch` below posts the error for THIS phrase's id.
-    decoderChain = Promise.all([lmPromise, decoderChain.catch(() => {})])
-      .then(([lmOut]) => runDecoder(lmOut.decoderTokens, msg.speakerData, msg.id, lmOut.lmT0))
-      .catch((err) => {
+  if (msg.type === "synthesizeLM") {
+    synthChain = synthChain.then(async () => {
+      try {
+        const { decoderTokens, lmT0 } = await runLM(msg.text, msg.speakerData);
+        postMessage({
+          type: "lmResult",
+          decoderTokens,
+          lmT0,
+          id: msg.id,
+        });
+      } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
-        console.error(`${LOG} Synth error:`, message);
+        console.error(`${LOG} LM error:`, message);
         postMessage({ type: "error", message, id: msg.id });
-      });
+      }
+    });
   }
 });
