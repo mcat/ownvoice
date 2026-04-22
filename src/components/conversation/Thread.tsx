@@ -2,6 +2,8 @@ import { useRef, useEffect, useState } from "preact/hooks";
 import type { JSX } from "preact";
 import type { Message } from "../../types";
 import type { ThemeTokens } from "../../theme/tokens";
+import { t as resolvePhrase } from "../../data/phraseRegistry";
+import { useSettingsStore } from "../../stores/settingsStore";
 import { Btn } from "../shared/Btn";
 import { useReducedMotion } from "../../hooks/useReducedMotion";
 
@@ -19,6 +21,7 @@ interface ThreadProps {
  * Tapping a bubble re-speaks the message without adding a duplicate.
  */
 export function Thread({ messages, t, onRepeat }: ThreadProps) {
+  const patientLang = useSettingsStore((s) => s.cfg?.patientLang ?? "en");
   const endRef = useRef<HTMLDivElement>(null);
   const [repeatingIdx, setRepeatingIdx] = useState<number | null>(null);
   const reducedMotion = useReducedMotion();
@@ -95,7 +98,7 @@ export function Thread({ messages, t, onRepeat }: ThreadProps) {
             <Btn
               onClick={() => handleTap(msg, idx)}
               style={btnStyle}
-              aria-label={`Repeat: ${msg.text}`}
+              aria-label={resolvePhrase("ui.dual.thread.repeat_aria", patientLang).replace("{text}", msg.text)}
             >
               {msg.text}
             </Btn>

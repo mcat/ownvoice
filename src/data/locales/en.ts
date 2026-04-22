@@ -523,6 +523,9 @@ const en = {
   "ui.patient.builder.no_ai_suggestions": "No AI suggestions. Tap refresh to try again.",
   "ui.patient.builder.ready": "Your message is ready. Tap Speak to send.",
   "ui.patient.builder.speak": "Speak",
+
+  // ── UI chrome: Thread ──────────────────────────────────────────
+  "ui.dual.thread.repeat_aria": "Repeat: {text}",
 } as const;
 
 export type PhraseKey = keyof typeof en;
