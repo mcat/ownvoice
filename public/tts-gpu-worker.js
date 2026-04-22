@@ -6,8 +6,14 @@
  * correctly, but the raw dist file works because it's served as a plain ES module.
  *
  * Messages IN:
- *   { type: "init", modelUrl: string }
+ *   { type: "init", modelUrl: string, decoderVariant?: "wasm" | "webgpu" }
  *   { type: "synthesize", text: string, speakerData: object, id?: number }
+ *
+ * `decoderVariant` is an investigation flag (see issue #74). "wasm" is
+ * the default and ships-today behavior. "webgpu" loads the
+ * `_webgpu.onnx` decoder variant on the WebGPU EP — historically
+ * rejected for ConvTranspose quantization artifacts, but worth
+ * re-testing. If WebGPU init fails, silently falls back to WASM.
  *
  * Messages OUT:
  *   { type: "ready" }
@@ -307,7 +313,40 @@ function sampleToken(logits, generatedTokens) {
   return nucleus[nucleus.length - 1][0];
 }
 
-async function handleInit(modelUrl) {
+/**
+ * Load the conditional decoder session, honoring the investigation flag
+ * from issue #74. "webgpu" first tries the _webgpu.onnx graph on the
+ * WebGPU EP; any failure — session creation error, WebGPU not
+ * available, missing file — falls back to the WASM variant. Logs loudly
+ * so the user doing the A/B test knows which EP actually loaded.
+ */
+async function loadConditionalDecoder(baseUrl, decoderVariant) {
+  if (decoderVariant === "webgpu") {
+    try {
+      const session = await createSession(
+        baseUrl + "conditional_decoder_q4f16_webgpu.onnx",
+        true,
+        false, // wasmOnly=false → WebGPU EP preferred
+      );
+      console.log(`${LOG} Conditional decoder: WEBGPU variant loaded (experimental, issue #74)`);
+      return session;
+    } catch (err) {
+      console.warn(
+        `${LOG} WebGPU decoder init failed, falling back to WASM:`,
+        err,
+      );
+    }
+  }
+  const session = await createSession(
+    baseUrl + "conditional_decoder_q4f16.onnx",
+    true,
+    true,
+  );
+  console.log(`${LOG} Conditional decoder: WASM variant loaded (default)`);
+  return session;
+}
+
+async function handleInit(modelUrl, decoderVariant = "wasm") {
   const baseUrl = modelUrl.endsWith("/") ? modelUrl : modelUrl + "/";
   console.log(`${LOG} Initializing WebGPU TTS in DedicatedWorker...`);
 
@@ -330,8 +369,9 @@ async function handleInit(modelUrl) {
   // Notes on EP choice:
   //  - embed_tokens on WASM: Metal GatherBlockQuantized dispatch bug
   //  - language_model on WebGPU: the hot autoregressive loop
-  //  - conditional_decoder on WASM: WebGPU variant has ConvTranspose
-  //    quantization artifacts that trash audio quality
+  //  - conditional_decoder defaults to WASM (the "webgpu" variant
+  //    historically produced ConvTranspose artifacts — see issue #74,
+  //    toggle with the decoderVariant init arg to re-test).
   const [, embed] = await Promise.all([
     loadTokenizer(baseUrl + "tokenizer.json"),
     createSession(baseUrl + "embed_tokens_q4f16.onnx", true, true),
@@ -345,11 +385,7 @@ async function handleInit(modelUrl) {
     { preferredOutputLocation: kvCacheOnGpu() },
   );
 
-  conditionalDecoderSession = await createSession(
-    baseUrl + "conditional_decoder_q4f16.onnx",
-    true,
-    true,
-  );
+  conditionalDecoderSession = await loadConditionalDecoder(baseUrl, decoderVariant);
 
   console.log(`${LOG} All models loaded in ${((performance.now() - t0) / 1000).toFixed(1)}s`);
 
@@ -643,7 +679,7 @@ self.addEventListener("message", (e) => {
   if (!msg || !msg.type) return;
 
   if (msg.type === "init") {
-    handleInit(msg.modelUrl).catch((err) => {
+    handleInit(msg.modelUrl, msg.decoderVariant).catch((err) => {
       const message = err instanceof Error ? err.message : String(err);
       console.error(`${LOG} Init error:`, message);
       postMessage({ type: "error", message });
