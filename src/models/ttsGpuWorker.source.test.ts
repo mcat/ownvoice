@@ -177,25 +177,75 @@ describe("tts-gpu-worker source — performance-sensitive patterns", () => {
 });
 
 describe("tts-gpu-worker source — concurrency invariants", () => {
-  it("serializes synthesize calls through a promise chain", () => {
-    // Regression guard: without serialization, a main-thread timeout+retry
-    // posted a second synth while the first was still mid-decode. Two
-    // concurrent handleSynthesize calls contend for the same ORT sessions
-    // and WebGPU queue, corrupting both runs and effectively stalling the
-    // 702-phrase pain matrix (2 phrases in hours, observed pre-fix).
+  it("serializes per-session access with lmChain and decoderChain", () => {
+    // Regression guard: without per-session serialization, a main-thread
+    // timeout+retry posted a second synth while the first was still
+    // mid-decode. Concurrent .run() on the same ORT session corrupts
+    // both runs and effectively stalled the 702-phrase pain matrix
+    // (2 phrases in hours, observed pre-fix).
     //
-    // Require the worker to chain synths onto a single promise so at
-    // most one handleSynthesize is active at a time.
+    // Issue #56 split the old `synthChain` into two independent chains
+    // so that phrase N+1's LM (WebGPU) can overlap phrase N's decoder
+    // (WASM). Both chains must still exist — removing either would
+    // either re-introduce the concurrent-session corruption (no chain)
+    // or collapse the pipeline back to serial (one chain).
     expect(
       WORKER_SRC,
-      "Worker must maintain a `synthChain` (or equivalent) promise chain " +
-        "to serialize synthesize calls. Concurrent ORT session.run() is " +
-        "not safe.",
-    ).toMatch(/synthChain\s*=\s*Promise\.resolve\s*\(\s*\)/);
+      "Worker must maintain an `lmChain` promise chain to serialize " +
+        "LM runs on languageModelSession.",
+    ).toMatch(/let\s+lmChain\s*=\s*Promise\.resolve\s*\(\s*\)/);
     expect(
       WORKER_SRC,
-      "Worker must chain each synthesize onto synthChain via .then().",
-    ).toMatch(/synthChain\s*=\s*synthChain\.then\s*\(/);
+      "Worker must maintain a `decoderChain` promise chain to serialize " +
+        "decoder runs on conditionalDecoderSession.",
+    ).toMatch(/let\s+decoderChain\s*=\s*Promise\.resolve\s*\(\s*\)/);
+    // LM[N] must be enqueued behind LM[N-1]: the synthesize handler
+    // builds `lmPromise` from `lmChain.then(...)` and reassigns lmChain
+    // to that promise (with its error swallowed — see next test).
+    expect(
+      WORKER_SRC,
+      "Synthesize handler must extend lmChain via `lmChain.then(...)`.",
+    ).toMatch(/lmChain\.then\s*\(/);
+  });
+
+  it("lets phrase N+1 LM overlap phrase N decoder via Promise.all", () => {
+    // The whole point of issue #56: the decoder chain must await BOTH
+    // (a) its own LM result and (b) the previous decoder's completion,
+    // while the LM chain for the next phrase is already free to start.
+    // That cross-phase synchronization is expressed as
+    // `Promise.all([lmPromise, decoderChain...])` in the message handler.
+    //
+    // If a refactor replaces that with `decoderChain.then(() => runDecoder)`
+    // alone, we serialize end-to-end again and lose the pipeline win —
+    // hence the explicit Promise.all assertion.
+    expect(
+      WORKER_SRC,
+      "decoderChain must await both its own LM result and the previous " +
+        "decoder via Promise.all([lmPromise, ...]) — otherwise phrase N+1 " +
+        "LM cannot overlap phrase N decoder and #56's throughput gain is lost.",
+    ).toMatch(/Promise\.all\s*\(\s*\[\s*lmPromise\s*,\s*decoderChain/);
+  });
+
+  it("resets chain rejection so one bad phrase doesn't wedge the pipeline", () => {
+    // Loose error policy (chosen when implementing #56): a single phrase
+    // failure posts an error for its own id but leaves both chains in a
+    // resolved state so subsequent phrases pipeline normally. Both
+    // chains must therefore be reassigned to a `.catch(() => {})` form
+    // after their primary work — a rejected chain would poison every
+    // later `.then()`.
+    //
+    // We expect at least two `.catch(() => {})` patterns: one for the
+    // lmChain reset, one for the decoderChain input to Promise.all
+    // (so a previous decoder's rejection doesn't cascade into this
+    // phrase's id).
+    const resetCatches = WORKER_SRC.match(/\.catch\s*\(\s*\(\s*\)\s*=>\s*\{\s*\}\s*\)/g) ?? [];
+    expect(
+      resetCatches.length,
+      "Expected at least two `.catch(() => {})` chain-resets in the " +
+        "synthesize handler — one for lmChain, one for the previous " +
+        "decoderChain passed into Promise.all. Removing either risks " +
+        "wedging the pipeline after the first failure.",
+    ).toBeGreaterThanOrEqual(2);
   });
 
   it("echoes the request `id` on both audio and error responses", () => {
@@ -219,15 +269,17 @@ describe("tts-gpu-worker source — concurrency invariants", () => {
       "Worker must include `id` on the `audio` response message.",
     ).toMatch(/\bid\b/);
 
-    // Error responses in the synth path (inside the synthChain .catch)
-    // must also include id. We don't check the init-path error, which
-    // has no request id by design.
+    // Synth-path error responses must also include id. With the dual
+    // chain, per-phrase error posts live inside `decoderChain.catch(...)`
+    // — we don't check the init-path error, which has no request id by
+    // design.
     const synthErrorPost = WORKER_SRC.match(
-      /synthChain[\s\S]*?postMessage\s*\(\s*\{\s*type:\s*["']error["'][\s\S]*?\}\s*\)/,
+      /decoderChain[\s\S]*?postMessage\s*\(\s*\{\s*type:\s*["']error["'][\s\S]*?\}\s*\)/,
     );
     expect(
       synthErrorPost,
-      "Could not find the synth-path `error` postMessage.",
+      "Could not find the synth-path `error` postMessage (inside the " +
+        "decoderChain .catch).",
     ).not.toBeNull();
     expect(
       synthErrorPost?.[0] ?? "",

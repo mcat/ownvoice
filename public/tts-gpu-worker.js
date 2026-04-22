@@ -15,12 +15,22 @@
  *   { type: "error", message: string, id?: number }
  *
  * Concurrency:
- *   Synthesize requests are serialized via `synthChain` — ORT session.run()
- *   is not safe to invoke concurrently on the same session. Without this,
- *   a main-thread timeout+retry would post a second synth while the first
- *   is still mid-decode, corrupting both. The `id` on each response echoes
- *   the `id` from the incoming request so the main thread can discard
- *   responses from timed-out synths it no longer cares about.
+ *   Synthesis is split into two phases backed by independent ORT sessions
+ *   — `runLM` (WebGPU) and `runDecoder` (multi-threaded WASM) — driven by
+ *   two promise chains so that phrase N+1's LM work can overlap phrase N's
+ *   decoder work across a pre-gen batch.
+ *
+ *   Per-session serialization is still required (concurrent .run() on the
+ *   same session corrupts both calls — the bug that once stalled the 702-
+ *   phrase pain matrix at 2/702): `lmChain` keeps LM[N] strictly after
+ *   LM[N-1], `decoderChain` keeps Dec[N] strictly after Dec[N-1] AND after
+ *   its own LM completes. The two chains are otherwise decoupled, so the
+ *   GPU and WASM runtimes stay busy in parallel.
+ *
+ *   Error policy is loose — an LM or decoder failure only fails its own
+ *   request `id`; the chain `.catch(() => {})` resets so subsequent
+ *   phrases keep pipelining. The main thread echoes the `id` to discard
+ *   responses for synths it's already timed out on.
  */
 
 // Import ORT from /ort/ (copies of the dist files in public/).
@@ -457,12 +467,18 @@ async function warmupLanguageModel() {
   console.log(`${LOG} Warmup complete in ${((performance.now() - w0) / 1000).toFixed(1)}s`);
 }
 
-async function handleSynthesize(text, speakerData, id) {
-  if (!embedTokensSession || !languageModelSession || !conditionalDecoderSession || !tokenizer) {
+// Phase 1 of synthesis: tokenize + autoregressive LM loop. Returns the
+// `decoderTokens` sequence ready for the WASM decoder, plus `lmT0` so
+// the decoder phase can still log an end-to-end duration matching the
+// pre-split behavior. All GPU-backed KV buffers are released before
+// this resolves, so the returned value is safe to cross the chain
+// boundary while the next phrase's LM starts on the same session.
+async function runLM(text, speakerData) {
+  if (!embedTokensSession || !languageModelSession || !tokenizer) {
     throw new Error("Models not initialized");
   }
 
-  const t0 = performance.now();
+  const lmT0 = performance.now();
   console.log(`${LOG} Synthesizing: "${text.slice(0, 50)}..."`);
 
   // Step 1: Tokenize via GPT-2 BPE.
@@ -596,17 +612,29 @@ async function handleSynthesize(text, speakerData, id) {
     priorGpuKV = [];
   }
 
-  console.log(`${LOG} Generated ${generatedTokens.length} speech tokens in ${((performance.now() - t0) / 1000).toFixed(1)}s`);
+  console.log(`${LOG} Generated ${generatedTokens.length} speech tokens in ${((performance.now() - lmT0) / 1000).toFixed(1)}s`);
 
-  // Step 4: Decode → audio
   // Post-process: strip ALL control tokens (>= 6561), prepend prompt_token, append 3× silence.
   // The reference implementation does: speech_tokens = speech_tokens[speech_tokens < 6561]
   // This removes START, STOP, and any other control tokens anywhere in the sequence.
   const speechOnly = generatedTokens.filter(t => t < START_SPEECH_TOKEN);
   const promptTokens = Array.from(speakerData.promptToken);
   const decoderTokens = [...promptTokens, ...speechOnly, SILENCE_TOKEN, SILENCE_TOKEN, SILENCE_TOKEN];
-
   console.log(`${LOG} Decoder input: ${decoderTokens.length} tokens (${promptTokens.length} prompt + ${speechOnly.length} speech + 3 silence)`);
+
+  return { decoderTokens, lmT0 };
+}
+
+// Phase 2 of synthesis: run the conditional decoder on WASM and post the
+// resulting audio. Takes `lmT0` so the end-to-end log reflects wall time
+// from when this phrase's LM work started — identical to the pre-split
+// meaning of "Total" even though pipelining means another phrase's LM
+// may have been running in parallel during the decoder wait.
+async function runDecoder(decoderTokens, speakerData, id, lmT0) {
+  if (!conditionalDecoderSession) {
+    throw new Error("Models not initialized");
+  }
+
   // Decoder uses WASM variant with int64 inputs (not the WebGPU int32 variant)
   const speechTok = new ort.Tensor("int64", BigInt64Array.from(decoderTokens.map(BigInt)), [1, decoderTokens.length]);
   const spkEmb = new ort.Tensor("float32", new Float32Array(speakerData.speakerEmbeddings), speakerData.speakerEmbeddingsShape);
@@ -622,7 +650,7 @@ async function handleSynthesize(text, speakerData, id) {
   if (!wav) throw new Error("Decoder missing output: " + Object.keys(decResult));
 
   const audioData = new Float32Array(wav.data);
-  console.log(`${LOG} Total: ${((performance.now() - t0) / 1000).toFixed(1)}s, ${(audioData.length / SAMPLE_RATE).toFixed(1)}s audio`);
+  console.log(`${LOG} Total: ${((performance.now() - lmT0) / 1000).toFixed(1)}s, ${(audioData.length / SAMPLE_RATE).toFixed(1)}s audio`);
 
   postMessage(
     { type: "audio", data: audioData, sampleRate: SAMPLE_RATE, id },
@@ -630,13 +658,22 @@ async function handleSynthesize(text, speakerData, id) {
   );
 }
 
-// Serialize synthesize calls. ORT session.run() is not safe to invoke
-// concurrently on the same session — a prior bug where main-thread
-// timeout+retry posted a second synth mid-decode corrupted both runs
-// and effectively stalled the 702-phrase pain-matrix pass. Every
-// incoming synth chains onto `synthChain` and runs strictly after the
-// previous one completes.
-let synthChain = Promise.resolve();
+// Two independent chains serialize per-session access while allowing
+// cross-phrase overlap. LM[N] must wait for LM[N-1] because both hit
+// `languageModelSession`; Dec[N] must wait for Dec[N-1] because both
+// hit `conditionalDecoderSession`. But LM[N+1] and Dec[N] use different
+// sessions (WebGPU vs WASM), so they can run in parallel — that's the
+// pre-gen throughput win. Without the dual-chain split, a single
+// synthChain forced LM and decoder to alternate, leaving one runtime
+// idle at all times.
+//
+// Each chain swallows its own failures with `.catch(() => {})` so that
+// one bad phrase doesn't wedge the pipeline. The `.catch` attached when
+// posting the error response is separate from the chain-reset catch —
+// the reset catch fires regardless, the error-post catch only when the
+// caller hasn't handled a specific failure shape yet.
+let lmChain = Promise.resolve();
+let decoderChain = Promise.resolve();
 
 self.addEventListener("message", (e) => {
   const msg = e.data;
@@ -652,16 +689,25 @@ self.addEventListener("message", (e) => {
   }
 
   if (msg.type === "synthesize") {
-    // Chain on, swallowing per-synth failures so one bad phrase doesn't
-    // break the chain for subsequent ones. The main thread correlates
-    // responses via `msg.id` and ignores those for synths it has
-    // already timed out on.
-    synthChain = synthChain.then(() =>
-      handleSynthesize(msg.text, msg.speakerData, msg.id).catch((err) => {
+    // Enqueue LM[N] after LM[N-1]. Reset `lmChain` to the swallowed
+    // form so an LM failure here doesn't reject the next phrase's
+    // lmChain.then(runLM) — each phrase gets a clean shot at the LM
+    // session regardless of its predecessor's outcome.
+    const lmPromise = lmChain.then(() => runLM(msg.text, msg.speakerData));
+    lmChain = lmPromise.catch(() => {});
+
+    // Enqueue Dec[N] after BOTH (a) its own LM result and (b) Dec[N-1].
+    // Promise.all waits for both; since the previous decoderChain has
+    // already handled its own errors by posting a per-id error, we
+    // swallow any rejection here with `.catch(() => {})` so it doesn't
+    // cascade into this phrase's id. If LM[N] rejected, the outer
+    // `.catch` below posts the error for THIS phrase's id.
+    decoderChain = Promise.all([lmPromise, decoderChain.catch(() => {})])
+      .then(([lmOut]) => runDecoder(lmOut.decoderTokens, msg.speakerData, msg.id, lmOut.lmT0))
+      .catch((err) => {
         const message = err instanceof Error ? err.message : String(err);
         console.error(`${LOG} Synth error:`, message);
         postMessage({ type: "error", message, id: msg.id });
-      }),
-    );
+      });
   }
 });

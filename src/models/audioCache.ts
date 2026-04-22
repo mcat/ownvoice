@@ -248,38 +248,74 @@ export async function* generateAllPhrases(
   const total = phrases.length;
   let consecutiveFailures = 0;
 
+  // `null` means phrase i is already cached (skip the worker entirely).
+  // Any synthesis failure is wrapped into `{ error }` so the awaiter can
+  // handle it without a try/catch racing the next iteration's setup.
+  type SynthOutcome = { audio: Float32Array } | { error: unknown } | null;
+
+  // Launch (or skip) phrase i's synth work. Kicking off phrase N+1 here
+  // while the caller awaits phrase N is what feeds the GPU worker's
+  // dual-chain pipeline — without caller-side prefetch the worker queue
+  // only ever holds one message, lmChain and decoderChain resolve
+  // before the next message arrives, and the overlap win from #56 is
+  // absent. Returns null synchronously for out-of-range or aborted
+  // starts so we don't spin up orphan promises unnecessarily.
+  const startSynth = (i: number): Promise<SynthOutcome> | null => {
+    if (i >= phrases.length || signal?.aborted) return null;
+    const phrase = phrases[i];
+    return (async () => {
+      if (await hasCachedAudio(phrase, speakerData)) return null;
+      try {
+        const audio = await synthesizeWithRetries(
+          worker,
+          phrase,
+          speakerData,
+          signal,
+          gpuOnly,
+        );
+        return { audio };
+      } catch (error) {
+        return { error };
+      }
+    })();
+  };
+
+  // Prefetch phrase 0 so the first iteration's await immediately has
+  // something in flight; from then on each iteration swaps in the next
+  // prefetch before awaiting the current one.
+  let pending: Promise<SynthOutcome> | null = startSynth(0);
+
   for (let i = 0; i < phrases.length; i++) {
     if (signal?.aborted) return;
     const phrase = phrases[i];
 
-    if (await hasCachedAudio(phrase, speakerData)) {
-      consecutiveFailures = 0;
-      yield { phrase, current: i + 1, total };
-      continue;
-    }
+    // Swap: hold onto phrase i's pending work, and kick off phrase i+1
+    // now so the worker has a second message in its queue while we're
+    // finishing i. This is the load-bearing line for the pipeline win.
+    const current = pending;
+    pending = startSynth(i + 1);
 
     let failed = false;
-    try {
-      const audio = await synthesizeWithRetries(
-        worker,
-        phrase,
-        speakerData,
-        signal,
-        gpuOnly,
-      );
-      // Post-process once here, at cache-write time, so playback in
-      // speak.ts skips the ~10-50ms FFT pipeline on every tap.
-      const processed = postProcessAudio(audio, SAMPLE_RATE);
-      await putCachedAudio(phrase, speakerData, processed);
+    const outcome = current === null ? null : await current;
+
+    if (outcome === null) {
+      // Either out-of-range start (can't happen within the loop bounds)
+      // or cache hit — both reset the failure counter and skip synth.
       consecutiveFailures = 0;
-    } catch (err) {
+    } else if ("error" in outcome) {
       if (signal?.aborted) return;
       failed = true;
       consecutiveFailures++;
       console.warn(
         `[OwnVoice:Cache] Gave up on "${phrase}" after retries:`,
-        err,
+        outcome.error,
       );
+    } else {
+      // Post-process once here, at cache-write time, so playback in
+      // speak.ts skips the ~10-50ms FFT pipeline on every tap.
+      const processed = postProcessAudio(outcome.audio, SAMPLE_RATE);
+      await putCachedAudio(phrase, speakerData, processed);
+      consecutiveFailures = 0;
     }
 
     yield failed
@@ -290,6 +326,12 @@ export async function* generateAllPhrases(
     // For mixed GPU+WASM passes, a GPU timeout falls through to WASM, so
     // a fail signals a real problem worth retrying individually per
     // phrase rather than stopping the whole pass.
+    //
+    // Note: after tripping, `pending` holds an in-flight synth for
+    // phrase i+1 that we're abandoning. Its result is discarded; the
+    // worker finishes the request on its own and the promise resolves
+    // without a listener. One wasted synth is the cost of simpler
+    // cancel semantics (no cancel message protocol to the worker).
     if (gpuOnly && consecutiveFailures >= GPU_CONSECUTIVE_FAIL_LIMIT) {
       console.warn(
         `[OwnVoice:Cache] Circuit breaker tripped: ${consecutiveFailures} ` +

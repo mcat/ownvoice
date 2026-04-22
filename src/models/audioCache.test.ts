@@ -465,20 +465,32 @@ describe("audioCache — generateAllPhrases", () => {
     mockModelManager.isReady.mockReturnValue(true);
     mockModelManager.getWorker.mockReturnValue(mockWorker);
 
-    // Retries hit synthesizeOne up to 3 times per phrase — key by text
-    // so "Fail phrase" fails on every attempt and "Success phrase"
-    // succeeds. addEventListener runs BEFORE postMessage, so capture
-    // pendingText inside the setTimeout callback (after postMessage sets it).
-    let pendingText = "";
-    mockWorker.postMessage.mockImplementation(
-      (msg: { text: string }) => {
-        pendingText = msg.text;
-      },
-    );
+    // Under the #56 pipelined generator, phrase N+1's synth starts
+    // before phrase N's resolves — so at any moment there can be two
+    // `synthesizeOne` invocations in flight on the same mock worker.
+    // An earlier version of this test used a shared `pendingText`
+    // variable that was overwritten by the second postMessage before
+    // the first setTimeout fired, causing both phrases to resolve with
+    // the second phrase's response.
+    //
+    // Pair each (addEventListener, postMessage) call by FIFO: handler
+    // pushed first pairs with the text posted first. Each
+    // synthesizeOne call does addEventListener then postMessage in
+    // sequence, so the queue stays consistent even with concurrent
+    // synths.
+    const handlerQueue: Array<(e: MessageEvent) => void> = [];
     mockWorker.addEventListener.mockImplementation(
       (_event: string, handler: (e: MessageEvent) => void) => {
+        handlerQueue.push(handler);
+      },
+    );
+    mockWorker.postMessage.mockImplementation(
+      (msg: { text: string }) => {
+        const text = msg.text;
+        const handler = handlerQueue.shift();
+        if (!handler) return;
         setTimeout(() => {
-          if (pendingText === "Fail phrase") {
+          if (text === "Fail phrase") {
             handler({
               data: { type: "error", message: "synthesis failed" },
             } as unknown as MessageEvent);
@@ -773,6 +785,90 @@ describe("audioCache — generateAllPhrases gpuOnly", () => {
     expect(results).toHaveLength(9);
     expect(results.filter((r) => r.failed === true)).toHaveLength(8);
     expect(results.filter((r) => !r.failed)).toHaveLength(1);
+  });
+
+  it("launches phrase N+1 synth before awaiting phrase N (pipeline engages)", async () => {
+    // #56 regression guard — the load-bearing assertion for the
+    // whole pipelining change. Issue: the GPU worker's dual-chain
+    // (lmChain/decoderChain) only overlaps across phrases if the
+    // worker's message queue holds ≥2 synthesize requests at once.
+    // Without caller-side prefetch in generateAllPhrases, each
+    // synthesizeGPU resolves and round-trips to the main thread
+    // before the next is posted — the worker queue never has a
+    // second item, lmChain and decoderChain resolve back to
+    // Promise.resolve() between phrases, and the #56 throughput
+    // gain silently disappears.
+    //
+    // A source-pattern test on the worker can't see this runtime
+    // behavior. We instead stub synthesizeGPU with a per-phrase
+    // deferred promise and assert that by the time we release
+    // phrase 0, phrase 1's synthesizeGPU has already been called.
+    isGPUReadyMock.mockReturnValue(true);
+
+    const callLog: string[] = [];
+    const resolvers: Array<
+      (v: { data: Float32Array; sampleRate: number }) => void
+    > = [];
+    synthesizeGPUMock.mockImplementation((text: string) => {
+      callLog.push(text);
+      return new Promise((res) => resolvers.push(res));
+    });
+
+    const phrases = ["phrase 0", "phrase 1", "phrase 2"];
+    const gen = generateAllPhrases(phrases, EMBEDDING, undefined, {
+      gpuOnly: true,
+    });
+
+    // Start iteration. The generator body runs synchronously up
+    // through `startSynth(0)`, the for-loop's `startSynth(1)`
+    // prefetch, and the `await current` — then yields control.
+    const firstYield = gen.next();
+
+    // Let microtasks settle so both IIFEs can traverse
+    // hasCachedAudio (resolves false — nothing is cached in the
+    // OPFS mock) and reach their synthesizeGPU call.
+    for (let i = 0; i < 20; i++) await Promise.resolve();
+
+    // The load-bearing assertion: at this point, phrase 0's synth
+    // is still pending (we haven't released resolvers[0]), yet
+    // phrase 1's synth has already been launched. If a future
+    // refactor reverts to one-at-a-time caller dispatch, this
+    // fails with callLog === ["phrase 0"] and the pipeline gain
+    // is silently gone.
+    expect(callLog).toEqual(["phrase 0", "phrase 1"]);
+    expect(resolvers).toHaveLength(2);
+
+    // Release phrase 0 so iteration can complete. Phrase 2's
+    // synth should then launch while phrase 1 is still pending.
+    resolvers[0]({ data: new Float32Array([0.1]), sampleRate: 24000 });
+    const r0 = await firstYield;
+    expect(r0.done).toBe(false);
+    expect(r0.value?.phrase).toBe("phrase 0");
+
+    const secondYield = gen.next();
+    for (let i = 0; i < 20; i++) await Promise.resolve();
+    expect(callLog).toEqual(["phrase 0", "phrase 1", "phrase 2"]);
+
+    // Drain remaining phrases to leave the generator in a clean
+    // terminal state (no orphan pending promises for the next test).
+    resolvers[1]({ data: new Float32Array([0.2]), sampleRate: 24000 });
+    resolvers[2]({ data: new Float32Array([0.3]), sampleRate: 24000 });
+    const r1 = await secondYield;
+    expect(r1.value?.phrase).toBe("phrase 1");
+    const r2 = await gen.next();
+    expect(r2.value?.phrase).toBe("phrase 2");
+    const done = await gen.next();
+    expect(done.done).toBe(true);
+
+    // Defensive cleanup — this test installs a synthesizeGPU mock
+    // that returns a perpetually-pending promise until explicitly
+    // released. Subsequent describes (e.g. retryFailed) don't own
+    // the ttsEngine mocks in their beforeEach, and any test that
+    // ends up calling synthesizeGPU transitively (through the
+    // GPU→WASM fallback) would hang on a leftover pending promise.
+    // Reset here rather than leaking the hazard.
+    isGPUReadyMock.mockReturnValue(false);
+    synthesizeGPUMock.mockReset();
   });
 });
 
