@@ -79,8 +79,15 @@ function markReady() {
 /**
  * Initialize the WebGPU TTS engine. Spawns a DedicatedWorker and loads models.
  * Returns true if WebGPU is available and models loaded successfully.
+ *
+ * `decoderVariant` is an investigation flag (issue #74). Omitting it or
+ * passing "wasm" yields current behavior. "webgpu" swaps the conditional
+ * decoder to the WebGPU variant, with silent WASM fallback on failure.
  */
-export function initGPU(modelUrl: string): Promise<boolean> {
+export function initGPU(
+  modelUrl: string,
+  opts?: { decoderVariant?: "wasm" | "webgpu" },
+): Promise<boolean> {
   if (!("gpu" in navigator)) {
     console.log("[OwnVoice:TTS:GPU] WebGPU not available");
     return Promise.resolve(false);
@@ -118,7 +125,11 @@ export function initGPU(modelUrl: string): Promise<boolean> {
         resolve(false);
       };
 
-      worker.postMessage({ type: "init", modelUrl });
+      worker.postMessage({
+        type: "init",
+        modelUrl,
+        decoderVariant: opts?.decoderVariant ?? "wasm",
+      });
     } catch (err) {
       console.warn("[OwnVoice:TTS:GPU] Failed to create worker:", err);
       resolve(false);

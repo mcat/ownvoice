@@ -105,9 +105,13 @@ describe("tts-gpu-worker source — performance-sensitive patterns", () => {
       "handleInit must load models via Promise.all — fully sequential " +
       "awaits add 1-3s of cold-boot latency on iPad.",
     ).toMatch(/Promise\.all\s*\(/);
-    // Spot-check: the full handleInit should orchestrate at least three
-    // createSession calls (embed_tokens, language_model, decoder).
-    const createSessionCount = (handleInitBody.match(/createSession\s*\(/g) ?? [])
+    // Spot-check: the worker as a whole should orchestrate at least
+    // three createSession calls (embed_tokens, language_model,
+    // conditional_decoder). Issue #74 moved the decoder load into a
+    // helper so we count across the full source, not just
+    // handleInit — a refactor dropping any of the three sessions would
+    // still regress the count.
+    const createSessionCount = (WORKER_SRC.match(/createSession\s*\(/g) ?? [])
       .length;
     expect(createSessionCount).toBeGreaterThanOrEqual(3);
   });
