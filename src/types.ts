@@ -56,6 +56,9 @@ export interface Speaker {
 export interface Message {
   from: "patient" | "provider";
   text: string;
+  /** Secondary-locale rendering for Thread dual-locale display. Populated
+   *  by useSpeakActions at add time in PR 4. */
+  gloss?: string;
   time: string;
   label: string;
 }
