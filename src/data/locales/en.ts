@@ -494,6 +494,14 @@ const en = {
   "ui.provider.nav.theme.light": "Light",
   "ui.provider.nav.theme.dark": "Dark",
   "ui.patient.tabbar.say_more": "Say More",
+
+  // ── UI chrome: PainFlow ────────────────────────────────────────
+  "ui.dual.pain.heading.severity": "How much pain do you have?",
+  "ui.dual.pain.heading.location": "Where is your pain?",
+  "ui.dual.pain.heading.descriptor": "What does the pain feel like?",
+  "ui.patient.pain.step_of": "Step {n} of {total}",
+  "ui.patient.pain.back_to": "Go back to {label}",
+  "ui.patient.pain.level_aria": "Pain level {n}, {label}",
 } as const;
 
 export type PhraseKey = keyof typeof en;
