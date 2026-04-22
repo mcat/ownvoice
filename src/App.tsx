@@ -150,15 +150,22 @@ export function App() {
     const initialCfg = cfgRef.current;
     if (!initialCfg) return;
     let cancelled = false;
+    // `started` makes tryRun idempotent across the many onProgress events
+    // the WASM download fires after the GPU path already became ready.
+    // Without this, each progress tick called runPreGeneration again, which
+    // aborts the in-flight run and restarts from phrase 0 — visible in
+    // production logs as the same phrase being synthesized 2–3× at boot.
+    let started = false;
     const mgr = getModelManager();
 
     function tryRun() {
-      if (cancelled || !cfgRef.current) return false;
+      if (started || cancelled || !cfgRef.current) return false;
       // Start as soon as EITHER TTS path is ready. The audio cache's
       // synthesizeBestAvailable prefers GPU and falls back to WASM —
       // the GPU path is typically ready minutes before the WASM worker
       // finishes downloading its ~1 GB of weights.
       if (!isGPUReady() && !mgr.isReady("tts")) return false;
+      started = true;
       audioCacheRunner.runPreGeneration(cfgRef.current, speakerDataRef.current);
       return true;
     }
