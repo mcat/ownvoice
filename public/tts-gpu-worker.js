@@ -643,16 +643,33 @@ async function handleSynthesize(text, speakerData, id) {
   const decoderTokens = [...promptTokens, ...speechOnly, SILENCE_TOKEN, SILENCE_TOKEN, SILENCE_TOKEN];
 
   console.log(`${LOG} Decoder input: ${decoderTokens.length} tokens (${promptTokens.length} prompt + ${speechOnly.length} speech + 3 silence)`);
-  // Decoder uses WASM variant with int64 inputs (not the WebGPU int32 variant)
-  const speechTok = new ort.Tensor("int64", BigInt64Array.from(decoderTokens.map(BigInt)), [1, decoderTokens.length]);
+  // Decoder input name + dtype depend on which ONNX variant loaded:
+  //  - WASM variant (conditional_decoder_q4f16.onnx) expects `speech_tokens`
+  //    as int64
+  //  - WebGPU variant (conditional_decoder_q4f16_webgpu.onnx) expects
+  //    `speech_tokens_int32` as int32 — WebGPU compute shaders don't have
+  //    native int64 so the export renames + retypes the entry
+  // We branch on the session's own inputNames so the worker adapts
+  // without tracking which loader succeeded (including the
+  // WebGPU-requested-but-fell-back-to-WASM path from loadConditionalDecoder).
   const spkEmb = new ort.Tensor("float32", new Float32Array(speakerData.speakerEmbeddings), speakerData.speakerEmbeddingsShape);
   const spkFeat = new ort.Tensor("float32", new Float32Array(speakerData.speakerFeatures), speakerData.speakerFeaturesShape);
 
-  const decResult = await conditionalDecoderSession.run({
-    speech_tokens: speechTok,
-    speaker_embeddings: spkEmb,
-    speaker_features: spkFeat,
-  });
+  const decoderFeeds = { speaker_embeddings: spkEmb, speaker_features: spkFeat };
+  if (conditionalDecoderSession.inputNames.includes("speech_tokens_int32")) {
+    decoderFeeds.speech_tokens_int32 = new ort.Tensor(
+      "int32",
+      Int32Array.from(decoderTokens),
+      [1, decoderTokens.length],
+    );
+  } else {
+    decoderFeeds.speech_tokens = new ort.Tensor(
+      "int64",
+      BigInt64Array.from(decoderTokens.map(BigInt)),
+      [1, decoderTokens.length],
+    );
+  }
+  const decResult = await conditionalDecoderSession.run(decoderFeeds);
 
   const wav = decResult["waveform"] ?? decResult["wav"];
   if (!wav) throw new Error("Decoder missing output: " + Object.keys(decResult));
