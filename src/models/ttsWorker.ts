@@ -32,10 +32,15 @@ import * as ort from "onnxruntime-web";
 
 const _postMessage = self.postMessage.bind(self);
 
+// Multi-threaded WASM is only available when `crossOriginIsolated` is true
+// (page + SW serve COOP+COEP). Silently fall back to single-thread otherwise.
 ort.env.logLevel = "error";
+// See tts-gpu-worker.js for why this is capped at 4.
 if (ort.env?.wasm) {
   ort.env.wasm.wasmPaths = "/node_modules/onnxruntime-web/dist/";
-  ort.env.wasm.numThreads = 1;
+  ort.env.wasm.numThreads = self.crossOriginIsolated
+    ? Math.min(navigator.hardwareConcurrency ?? 4, 4)
+    : 1;
 }
 
 const LOG = "[OwnVoice:TTS]";

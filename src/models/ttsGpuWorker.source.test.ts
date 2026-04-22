@@ -237,6 +237,38 @@ describe("tts-gpu-worker source — concurrency invariants", () => {
   });
 });
 
+describe("all ORT workers — multi-threaded WASM gating", () => {
+  // The WASM conditional decoder is ~24× real-time on single-thread;
+  // enabling threading requires COOP+COEP (which the dev server and
+  // sw.js both provide) to make `crossOriginIsolated === true`. Every
+  // worker that touches ORT must fall back cleanly when those headers
+  // are absent — e.g. first-load before the SW installs — so we never
+  // trip a SharedArrayBuffer-unavailable runtime error.
+  //
+  // All five sources get the same gate; a refactor that removes it from
+  // any one of them would silently regress pre-gen throughput on that
+  // path. Assert on all of them in one place.
+  const sources = [
+    { path: "public/tts-gpu-worker.js", label: "tts-gpu-worker" },
+    { path: "public/stt-gpu-worker.js", label: "stt-gpu-worker" },
+    { path: "src/models/ttsWorker.ts", label: "ttsWorker" },
+    { path: "src/models/llmWorker.ts", label: "llmWorker" },
+    { path: "src/models/sttWorker.ts", label: "sttWorker" },
+  ];
+
+  for (const { path: relPath, label } of sources) {
+    it(`${label}: gates numThreads on crossOriginIsolated`, () => {
+      const src = fs.readFileSync(path.resolve(process.cwd(), relPath), "utf-8");
+      expect(
+        src,
+        `${label} must gate numThreads on self.crossOriginIsolated rather ` +
+          "than setting a fixed thread count. Without the gate, " +
+          "single-thread environments would hit a SharedArrayBuffer error.",
+      ).toMatch(/numThreads\s*=\s*self\.crossOriginIsolated/);
+    });
+  }
+});
+
 describe("tts-gpu-worker source — token-constant invariants", () => {
   it("uses vocab-size-consistent speech control tokens", () => {
     // Chatterbox Turbo's vocab_size is 6563 (per config.json). The

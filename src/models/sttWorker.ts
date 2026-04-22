@@ -26,9 +26,14 @@ import * as ort from "onnxruntime-web";
 // optimizeDeps), so ORT's internal dynamic imports resolve correctly.
 // Setting wasmPaths to /ort/ breaks in Vite workers because Vite transforms
 // dynamic import() calls with ?import suffix, which the public/ files can't handle.
+// Multi-threaded WASM is only available when `crossOriginIsolated` is true
+// (page + SW serve COOP+COEP). Silently fall back to single-thread otherwise.
 ort.env.logLevel = "error";
+// See tts-gpu-worker.js for why this is capped at 4.
 if (ort.env?.wasm) {
-  ort.env.wasm.numThreads = 1;
+  ort.env.wasm.numThreads = self.crossOriginIsolated
+    ? Math.min(navigator.hardwareConcurrency ?? 4, 4)
+    : 1;
 }
 
 const LOG_PREFIX = "[OwnVoice:STT]";
