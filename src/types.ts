@@ -1,3 +1,5 @@
+import type { PhraseKey } from "./data/locales/en";
+
 export interface Phrase {
   text: string;
   icon: string;
@@ -21,21 +23,25 @@ export interface Category {
 export interface PainFace {
   n: number;
   face: string;
-  label: string;
+  labelKey: PhraseKey;
 }
 
 export interface PainDescriptor {
-  text: string;
+  key: PhraseKey;
   icon: string;
 }
 
 export interface WishTopic {
   id: string;
   icon: string;
-  label: string;
-  question: string;
-  stem: string;
-  responses: string[];
+  labelKey: PhraseKey;
+  questionKey: PhraseKey;
+  stemKey: PhraseKey;
+  responseKeys: PhraseKey[];
+}
+
+export interface BodyRegion {
+  key: PhraseKey;
 }
 
 export interface Speaker {

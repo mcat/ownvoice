@@ -1,9 +1,9 @@
 import { render, screen, fireEvent } from "@testing-library/preact";
 import { MyWishes } from "./MyWishes";
 import { light } from "../../theme/tokens";
-import { getWishTopics } from "../../data/phraseRegistry";
+import { getWishTopics, t } from "../../data/phraseRegistry";
 
-const SICG_TOPICS = getWishTopics("en");
+const SICG_TOPICS = getWishTopics();
 
 const baseProps = {
   onSpeak: vi.fn(),
@@ -22,16 +22,16 @@ describe("MyWishes", () => {
   it("renders the first topic's question and hides the label on the active step", () => {
     render(<MyWishes {...baseProps} />);
     expect(screen.getByText("My Wishes")).toBeInTheDocument();
-    expect(screen.getByText(SICG_TOPICS[0].question)).toBeInTheDocument();
+    expect(screen.getByText(t(SICG_TOPICS[0].questionKey, "en"))).toBeInTheDocument();
     // The label (e.g., "My Goals") appears only on the completion screen's
     // summary cards, not on the active-step header.
-    expect(screen.queryByText(SICG_TOPICS[0].label)).not.toBeInTheDocument();
+    expect(screen.queryByText(t(SICG_TOPICS[0].labelKey, "en"))).not.toBeInTheDocument();
   });
 
   it("renders all response options for the first topic", () => {
     render(<MyWishes {...baseProps} />);
-    for (const response of SICG_TOPICS[0].responses) {
-      expect(screen.getByText(response)).toBeInTheDocument();
+    for (const rk of SICG_TOPICS[0].responseKeys) {
+      expect(screen.getByText(t(rk, "en"))).toBeInTheDocument();
     }
   });
 
@@ -43,7 +43,7 @@ describe("MyWishes", () => {
 
   it("toggling a response marks it as selected", () => {
     render(<MyWishes {...baseProps} />);
-    const firstResponse = SICG_TOPICS[0].responses[0]; // "Being with my family"
+    const firstResponse = t(SICG_TOPICS[0].responseKeys[0], "en"); // "Being with my family"
     expect(
       screen.getByText(firstResponse).closest("button"),
     ).toHaveAttribute("aria-pressed", "false");
@@ -61,13 +61,13 @@ describe("MyWishes", () => {
     );
 
     // Select a response
-    fireEvent.click(screen.getByText(SICG_TOPICS[0].responses[0]));
+    fireEvent.click(screen.getByText(t(SICG_TOPICS[0].responseKeys[0], "en")));
 
     // Tap Share
     fireEvent.click(screen.getByText("Share"));
 
     expect(onAddToThread).toHaveBeenCalledWith(
-      SICG_TOPICS[0].question,
+      t(SICG_TOPICS[0].questionKey, "en"),
       "provider",
       "My Wishes",
     );
@@ -81,7 +81,7 @@ describe("MyWishes", () => {
     fireEvent.click(screen.getByText("Skip"));
     // Now on topic 2 — My Worries. Assert via the question (not the label,
     // which no longer renders on the active step).
-    expect(screen.getByText(SICG_TOPICS[1].question)).toBeInTheDocument();
+    expect(screen.getByText(t(SICG_TOPICS[1].questionKey, "en"))).toBeInTheDocument();
   });
 
   it("shows Close button on the overlay", () => {
@@ -117,7 +117,7 @@ describe("MyWishes", () => {
     vi.useFakeTimers();
     render(<MyWishes {...baseProps} />);
     // Answer first topic
-    fireEvent.click(screen.getByText(SICG_TOPICS[0].responses[0]));
+    fireEvent.click(screen.getByText(t(SICG_TOPICS[0].responseKeys[0], "en")));
     vi.advanceTimersByTime(300);
     fireEvent.click(screen.getByText("Share"));
     vi.advanceTimersByTime(300);
@@ -138,13 +138,13 @@ describe("MyWishes", () => {
     const onSpeak = vi.fn();
     render(<MyWishes {...baseProps} onSpeak={onSpeak} />);
     // Answer first topic
-    fireEvent.click(screen.getByText(SICG_TOPICS[0].responses[0]));
+    fireEvent.click(screen.getByText(t(SICG_TOPICS[0].responseKeys[0], "en")));
     vi.advanceTimersByTime(300);
     fireEvent.click(screen.getByText("Share"));
     vi.advanceTimersByTime(300);
 
     // Answer second topic
-    fireEvent.click(screen.getByText(SICG_TOPICS[1].responses[0]));
+    fireEvent.click(screen.getByText(t(SICG_TOPICS[1].responseKeys[0], "en")));
     vi.advanceTimersByTime(300);
     fireEvent.click(screen.getByText("Share"));
     vi.advanceTimersByTime(300);
@@ -173,7 +173,7 @@ describe("MyWishes", () => {
   it("tapping a selected response deselects it", () => {
     vi.useFakeTimers();
     render(<MyWishes {...baseProps} />);
-    const firstResponse = SICG_TOPICS[0].responses[0];
+    const firstResponse = t(SICG_TOPICS[0].responseKeys[0], "en");
     // Select
     fireEvent.click(screen.getByText(firstResponse));
     expect(
@@ -203,7 +203,7 @@ describe("MyWishes", () => {
     expect(onSpeak).not.toHaveBeenCalled();
     expect(onAddToThread).not.toHaveBeenCalled();
     // Should still be on topic 0 (not advanced)
-    expect(screen.getByText(SICG_TOPICS[0].question)).toBeInTheDocument();
+    expect(screen.getByText(t(SICG_TOPICS[0].questionKey, "en"))).toBeInTheDocument();
   });
 
   it("completion screen Close button calls onClose", () => {

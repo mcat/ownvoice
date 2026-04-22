@@ -1,7 +1,7 @@
 import { render, screen, fireEvent } from "@testing-library/preact";
 import { PainFlow } from "./PainFlow";
 import { light } from "../../theme/tokens";
-import { getEmojiFPS, getBodyRegions, getPainDescriptors } from "../../data/phraseRegistry";
+import { getEmojiFPS, getBodyRegions, getPainDescriptors, t } from "../../data/phraseRegistry";
 import { useSettingsStore } from "../../stores/settingsStore";
 import type { AppSettings } from "../../types";
 
@@ -15,9 +15,9 @@ const baseCfg: AppSettings = {
   providers: [],
 };
 
-const EMOJI_FPS = getEmojiFPS("en");
-const BODY_REGIONS = getBodyRegions("en");
-const PAIN_DESCRIPTORS = getPainDescriptors("en");
+const EMOJI_FPS = getEmojiFPS();
+const BODY_REGIONS = getBodyRegions();
+const PAIN_DESCRIPTORS = getPainDescriptors();
 
 const baseProps = {
   onSelect: vi.fn(),
@@ -99,7 +99,7 @@ describe("PainFlow", () => {
       expect(screen.queryByText("Back")).not.toBeInTheDocument();
 
       // Advance to Descriptor step
-      fireEvent.click(screen.getByText("Head"));
+      fireEvent.click(screen.getByText(t(BODY_REGIONS[0].key, "en")));
       expect(
         screen.getByText("What does the pain feel like?"),
       ).toBeInTheDocument();
@@ -119,7 +119,7 @@ describe("PainFlow", () => {
       render(<PainFlow {...baseProps} />);
       fireEvent.click(screen.getByText(EMOJI_FPS[2].face)); // severity 4
       for (const region of BODY_REGIONS) {
-        expect(screen.getByText(region)).toBeInTheDocument();
+        expect(screen.getByText(t(region.key, "en"))).toBeInTheDocument();
       }
     });
 
@@ -140,7 +140,7 @@ describe("PainFlow", () => {
       fireEvent.click(screen.getByText(EMOJI_FPS[0].face));
       fireEvent.click(screen.getByText("Chest"));
       for (const desc of PAIN_DESCRIPTORS) {
-        expect(screen.getByText(desc.text)).toBeInTheDocument();
+        expect(screen.getByText(t(desc.key, "en"))).toBeInTheDocument();
       }
     });
   });

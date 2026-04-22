@@ -1,8 +1,8 @@
-import { getEmojiFPS, getPainDescriptors, getBodyRegions } from "./phraseRegistry";
+import { getEmojiFPS, getPainDescriptors, getBodyRegions, composePainSentence, t } from "./phraseRegistry";
 
-const EMOJI_FPS = getEmojiFPS("en");
-const PAIN_DESCRIPTORS = getPainDescriptors("en");
-const BODY_REGIONS = getBodyRegions("en");
+const EMOJI_FPS = getEmojiFPS();
+const PAIN_DESCRIPTORS = getPainDescriptors();
+const BODY_REGIONS = getBodyRegions();
 
 describe("EMOJI_FPS", () => {
   it("has 6 entries", () => {
@@ -14,13 +14,14 @@ describe("EMOJI_FPS", () => {
     expect(levels).toEqual([0, 2, 4, 6, 8, 10]);
   });
 
-  it("each face has n, face, and label", () => {
+  it("each face has n, face, and labelKey that resolves", () => {
     for (const face of EMOJI_FPS) {
       expect(face.n).toEqual(expect.any(Number));
       expect(face.face).toEqual(expect.any(String));
       expect(face.face.length).toBeGreaterThan(0);
-      expect(face.label).toEqual(expect.any(String));
-      expect(face.label.length).toBeGreaterThan(0);
+      const label = t(face.labelKey, "en");
+      expect(label).toEqual(expect.any(String));
+      expect(label.length).toBeGreaterThan(0);
     }
   });
 });
@@ -30,10 +31,11 @@ describe("PAIN_DESCRIPTORS", () => {
     expect(PAIN_DESCRIPTORS).toHaveLength(9);
   });
 
-  it("each descriptor has non-empty text and icon", () => {
+  it("each descriptor has key that resolves and non-empty icon", () => {
     for (const d of PAIN_DESCRIPTORS) {
-      expect(d.text).toEqual(expect.any(String));
-      expect(d.text.length).toBeGreaterThan(0);
+      const text = t(d.key, "en");
+      expect(text).toEqual(expect.any(String));
+      expect(text.length).toBeGreaterThan(0);
       expect(d.icon).toEqual(expect.any(String));
       expect(d.icon.length).toBeGreaterThan(0);
     }
@@ -45,10 +47,36 @@ describe("BODY_REGIONS", () => {
     expect(BODY_REGIONS).toHaveLength(13);
   });
 
-  it("each region is a non-empty string", () => {
+  it("each region has key that resolves to a non-empty string", () => {
     for (const region of BODY_REGIONS) {
-      expect(region).toEqual(expect.any(String));
-      expect(region.length).toBeGreaterThan(0);
+      const text = t(region.key, "en");
+      expect(text).toEqual(expect.any(String));
+      expect(text.length).toBeGreaterThan(0);
     }
+  });
+});
+
+// =============================================================================
+// composePainSentence — key-based
+// =============================================================================
+describe("composePainSentence — key-based", () => {
+  it("composes a pain sentence in English", () => {
+    const out = composePainSentence({
+      locale: "en",
+      descriptorKey: "pain.descriptor.burning",
+      regionKey: "pain.region.chest",
+      severity: 8,
+    });
+    expect(out).toBe("I have burning pain in my Chest, level 8 out of 10");
+  });
+
+  it("lowercases the descriptor in the sentence", () => {
+    const out = composePainSentence({
+      locale: "en",
+      descriptorKey: "pain.descriptor.sharp",
+      regionKey: "pain.region.head",
+      severity: 4,
+    });
+    expect(out).toBe("I have sharp pain in my Head, level 4 out of 10");
   });
 });
