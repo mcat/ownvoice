@@ -750,6 +750,52 @@ describe("audioCache — generateAllPhrases gpuOnly", () => {
     expect(results[results.length - 1].current).toBe(5);
   });
 
+  it("cache hits reset the consecutive-failure counter (no premature breaker trip)", async () => {
+    // Mutation guard: generateAllPhrases resets consecutiveFailures in
+    // TWO places — on cache hit (branch: hasCachedAudio returns true,
+    // yield + continue) and on successful synth (branch: synth resolves,
+    // putCachedAudio, then reset). The "resets on a successful phrase"
+    // test below covers the synth path; this one covers the cache-hit
+    // path, which a targeted mutant could remove without affecting any
+    // other test.
+    //
+    // Shape a run where the test outcome discriminates: 4 failures →
+    // cache hit → 4 more failures. With the reset (correct), the
+    // counter goes 4→0→4 and the breaker never trips; all 9 phrases
+    // yield. Without the reset (mutant), the counter stays at 4 through
+    // the cache hit, then the 5th consecutive failure (total phrase 5)
+    // hits the limit and the generator returns early.
+    isGPUReadyMock.mockReturnValue(true);
+    await putCachedAudio("cached mid-run", EMBEDDING, AUDIO);
+    synthesizeGPUMock.mockImplementation((text: string) => {
+      if (text === "cached mid-run") {
+        // Shouldn't be called — the cache-hit branch short-circuits
+        // before reaching synthesizeGPU.
+        throw new Error("cache hit should not reach synthesizeGPU");
+      }
+      return Promise.reject(new Error("GPU timeout"));
+    });
+
+    const phrases = [
+      "fail 0", "fail 1", "fail 2", "fail 3",  // counter → 1,2,3,4
+      "cached mid-run",                         // reset → 0 (expected)
+      "fail 4", "fail 5", "fail 6", "fail 7",  // counter → 1,2,3,4 — no trip
+    ];
+    const gen = generateAllPhrases(phrases, EMBEDDING, undefined, {
+      gpuOnly: true,
+    });
+    const results: Array<{ phrase: string; current: number; total: number; failed?: boolean }> = [];
+    for await (const r of gen) results.push(r);
+
+    // All 9 phrases yielded = no early return from breaker trip.
+    expect(results).toHaveLength(9);
+    // Cache hit at index 4 is not a failure.
+    expect(results[4].phrase).toBe("cached mid-run");
+    expect(results[4].failed).toBeUndefined();
+    // 8 failures total, 1 cache-hit success.
+    expect(results.filter((r) => r.failed === true)).toHaveLength(8);
+  });
+
   it("resets the consecutive-failure counter on a successful phrase", async () => {
     // If the breaker counted total failures rather than consecutive ones,
     // a flaky worker that intermittently succeeds would still trip it.
