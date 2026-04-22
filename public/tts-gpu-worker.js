@@ -48,14 +48,31 @@ const TOP_P = 0.95;
 const REPETITION_PENALTY = 1.2;
 const MIN_NEW_TOKENS = 10; // Don't allow STOP before this many speech tokens
 
-// All synthesis in this codebase flows through the background audio cache —
-// a patient taps, the cached clip plays. Sampling variation is invisible
-// across taps of the same phrase (the cached bytes are what they are), so
-// we use argmax decoding here: deterministic, a hair faster per step
-// (skips softmax+sort+random), and bit-stable across cache regens. Flip
-// to false if you ever add a free-text live-synth path that benefits from
-// variety. The full sampleToken() pipeline is kept in place below for that.
-const USE_GREEDY = true;
+// Use the full Chatterbox Turbo sampling pipeline
+// (rep_penalty → temperature → top-k → top-p → nucleus sample) instead
+// of plain argmax. An earlier version of this worker set `USE_GREEDY =
+// true` on the rationale that the audio cache made sampling variance
+// invisible — but that shortcut turned out to cause a long-standing
+// stuttering regression: ~60% of pre-gen phrases generated 100-769
+// speech tokens instead of the expected 20-50, with roughly 10% of
+// phrases hitting MAX_NEW_TOKENS=768 without ever emitting STOP.
+//
+// Root cause: for certain inputs, the LM's argmax lands on a repeating
+// speech-token attractor that sits just above STOP in logit space.
+// Greedy can't escape it. The reference sampling pipeline applies
+// rep_penalty=1.2 which divides logits of already-generated tokens on
+// every step; after a handful of repeats, STOP becomes the top logit
+// and generation terminates cleanly. The model was trained to be
+// decoded this way — greedy is not a safe optimization.
+//
+// Cost: cache output is now non-deterministic across full regens (same
+// phrase on two separate pre-gen runs produces different byte-exact
+// audio, though both are valid renderings). Within a session, cached
+// bytes are stable because each phrase is generated once and stored.
+// If byte-stable regens ever become important, the follow-up is to
+// seed the sampler from hashKey(phrase, fingerprint) and use a
+// deterministic PRNG in sampleToken.
+const USE_GREEDY = false;
 
 // WASM paths for fallback ops. Points to /ort/ where the JSEP WASM lives.
 //

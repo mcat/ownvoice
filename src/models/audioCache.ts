@@ -2,14 +2,21 @@ import { getModelManager } from "./modelManager";
 import { isGPUReady, synthesizeGPU } from "./ttsEngine";
 import { postProcessAudio } from "../speak";
 
-// Bumped from "audio-cache" after two format changes landed together:
-//   1. Stored bytes are now post-processed (denoise/EQ/gate/limiter) rather
-//      than raw decoder output — playback skips the FFT pipeline.
-//   2. Stored bytes are now Int16 PCM (scale 32767) rather than Float32,
+// Bumped to v3 to orphan audio generated under the pre-sampling worker:
+// the earlier `USE_GREEDY=true` code path produced stuttered audio for
+// ~60% of phrases due to the LM looping on a repeating-token attractor
+// that greedy argmax couldn't escape (see public/tts-gpu-worker.js
+// top-of-file notes on the sampling pipeline). Without bumping the
+// cache dir, the fix is invisible to any clinician whose v2 cache is
+// already populated — reads are stable-keyed on hashKey(phrase,
+// fingerprint) and would keep serving the old stuttered bytes.
+//
+// Previous v1→v2 reasons (kept for trail):
+//   1. Stored bytes went post-processed (denoise/EQ/gate/limiter) instead
+//      of raw decoder output — playback skips the FFT pipeline.
+//   2. Stored bytes went Int16 PCM (scale 32767) instead of Float32,
 //      halving on-disk footprint.
-// Mixing old and new files in the same directory would break playback for
-// cached pre-upgrade clips. Directory bump orphans them cleanly.
-const CACHE_DIR = "audio-cache-v2";
+const CACHE_DIR = "audio-cache-v3";
 const SAMPLE_RATE = 24000; // Chatterbox Turbo output rate
 const INT16_SCALE = 32767;
 
