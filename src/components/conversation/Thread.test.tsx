@@ -128,10 +128,11 @@ describe("Thread", () => {
           label: "Maria",
         },
       ];
-      render(<Thread messages={msgs} t={light} onRepeat={vi.fn()} />);
+      const { container } = render(<Thread messages={msgs} t={light} onRepeat={vi.fn()} />);
       expect(screen.getByText("please help me breathe")).toBeInTheDocument();
-      // No gloss element
-      expect(screen.queryByText(/data-dual-gloss/)).not.toBeInTheDocument();
+      // No DualLocaleText rendered — no gloss element
+      expect(container.querySelector("[data-dual-gloss]")).toBeNull();
+      expect(container.querySelector("[data-dual-primary]")).toBeNull();
     });
 
     it("renders plain text when msg.gloss equals msg.text", () => {
