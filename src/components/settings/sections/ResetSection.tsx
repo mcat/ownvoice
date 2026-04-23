@@ -2,6 +2,8 @@ import { useState } from "preact/hooks";
 import type { ComponentChildren } from "preact";
 import type { ThemeTokens, ThemeName } from "../../../theme/tokens";
 import { Btn } from "../../shared/Btn";
+import { t as resolvePhrase } from "../../../data/phraseRegistry";
+import { useSettingsStore } from "../../../stores/settingsStore";
 
 interface Props {
   onReset: () => void | Promise<void>;
@@ -10,11 +12,12 @@ interface Props {
 }
 
 export function ResetSection({ onReset, t, theme }: Props) {
+  const caregiverLang = useSettingsStore((s) => s.cfg?.caregiverLang ?? "en");
   const [showConfirm, setShowConfirm] = useState(false);
   const isDark = theme === "dark";
 
   return (
-    <Section label="Reset" t={t}>
+    <Section label={resolvePhrase("ui.provider.settings.reset.heading", caregiverLang)} t={t}>
       {!showConfirm ? (
         <Btn
           onClick={() => setShowConfirm(true)}
@@ -30,7 +33,7 @@ export function ResetSection({ onReset, t, theme }: Props) {
             fontFamily: "inherit",
           }}
         >
-          Reset app for new patient
+          {resolvePhrase("ui.provider.settings.reset.action_label", caregiverLang)}
         </Btn>
       ) : (
         <div
@@ -41,11 +44,10 @@ export function ResetSection({ onReset, t, theme }: Props) {
           }}
         >
           <p style={{ fontSize: 15, fontWeight: 600, color: "#DC2626", margin: "0 0 8px" }}>
-            Are you sure?
+            {resolvePhrase("ui.provider.settings.reset.confirm_title", caregiverLang)}
           </p>
           <p style={{ fontSize: 14, color: t.sub, margin: "0 0 16px" }}>
-            This will erase all patient data, voice samples, conversation history, and provider
-            settings. This cannot be undone.
+            {resolvePhrase("ui.provider.settings.reset.confirm_body", caregiverLang)}
           </p>
           <div style={{ display: "flex", gap: 10 }}>
             <Btn
@@ -62,7 +64,7 @@ export function ResetSection({ onReset, t, theme }: Props) {
                 fontFamily: "inherit",
               }}
             >
-              Cancel
+              {resolvePhrase("ui.provider.pin_gate.cancel", caregiverLang)}
             </Btn>
             <Btn
               onClick={onReset}
@@ -78,7 +80,7 @@ export function ResetSection({ onReset, t, theme }: Props) {
                 fontFamily: "inherit",
               }}
             >
-              Reset everything
+              {resolvePhrase("ui.provider.settings.reset.confirm_destructive", caregiverLang)}
             </Btn>
           </div>
         </div>

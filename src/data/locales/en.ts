@@ -730,6 +730,9 @@ const en = {
 
   // ── UI chrome: Settings — Patient Information section ─────────
   "ui.provider.settings.patient_info.heading": "Patient Information",
+  "ui.provider.settings.patient_info.name_label": "Name",
+  "ui.provider.settings.patient_info.bed_label": "Bed / Room",
+  "ui.provider.settings.patient_info.language_label": "Language",
   "ui.provider.settings.patient_info.voice_label": "Voice",
   "ui.provider.settings.patient_info.backup_voice_label": "Backup voice",
   "ui.provider.settings.patient_info.backup_voice_body": "System voice used while the voice clone loads. Tap to preview.",
