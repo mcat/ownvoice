@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from "preact/hooks";
+import { t as resolvePhrase } from "../../data/phraseRegistry";
+import { useSettingsStore } from "../../stores/settingsStore";
 import { Btn } from "./Btn";
 import { getModelManager } from "../../models/modelManager";
 import { getRecordingScript } from "../../data/recordingScripts";
@@ -87,7 +89,7 @@ function playTone(freq: number, sustainSec = 0.6, volume = 0.08) {
  * animation — each message/number fades in, holds, fades out.
  */
 type CountdownStep =
-  | { kind: "message"; text: string; duration: number; tone?: number }
+  | { kind: "message"; textKey: import("../../data/locales/en").PhraseKey; duration: number; tone?: number }
   | { kind: "beat"; duration: number }
   | { kind: "inhale"; duration: number }
   | { kind: "exhale"; duration: number }
@@ -97,9 +99,9 @@ type CountdownStep =
 const BREATH_CYCLE_MS = 4000;
 
 const COUNTDOWN_TIMELINE: CountdownStep[] = [
-  { kind: "message", text: "You're about to read a sentence out loud.", duration: 3800, tone: 396 },
+  { kind: "message", textKey: "ui.provider.voice_capture.coaching_intro", duration: 3800, tone: 396 },
   { kind: "beat", duration: 1500 },
-  { kind: "message", text: "Take a few deep breaths.", duration: 3800, tone: 432 },
+  { kind: "message", textKey: "ui.provider.voice_capture.coaching_breath", duration: 3800, tone: 432 },
   // Two 8-second breath cycles, each split into a 4-second inhale +
   // 4-second exhale substep. The circle's scale is controlled directly
   // from the step kind so it stays synced with the "Breathe in…" /
@@ -109,7 +111,7 @@ const COUNTDOWN_TIMELINE: CountdownStep[] = [
   { kind: "exhale", duration: BREATH_CYCLE_MS },
   { kind: "inhale", duration: BREATH_CYCLE_MS },
   { kind: "exhale", duration: BREATH_CYCLE_MS },
-  { kind: "message", text: "Ready.", duration: 2300, tone: 528 },
+  { kind: "message", textKey: "ui.provider.voice_capture.coaching_ready", duration: 2300, tone: 528 },
   // No silent beat between "Ready." and "5" — a short beat showed a
   // spurious breath circle. Letting "Ready." fade out while "5" fades
   // in creates a natural transition.
@@ -127,18 +129,18 @@ const COUNTDOWN_TIMELINE: CountdownStep[] = [
  * console, but it should never be the user-facing copy — `Failed to fetch` and
  * similar native strings mean nothing at the bedside.
  */
-export function friendlyVoiceError(raw: string): string {
+export function friendlyVoiceError(raw: string, locale = "en"): string {
   const m = raw.toLowerCase();
   if (m.includes("failed to fetch") || m.includes("networkerror") || m.includes("network")) {
-    return "Couldn't reach the voice model. Check your connection, then tap Retry.";
+    return resolvePhrase("ui.provider.voice_capture.err_network", locale);
   }
   if (m.includes("timed out") || m.includes("timeout")) {
-    return "Voice processing took too long. Tap Retry to try again.";
+    return resolvePhrase("ui.provider.voice_capture.err_timeout", locale);
   }
   if (m.includes("denied") || m.includes("permission")) {
-    return "Microphone access is blocked. Enable it in your browser settings or upload a file instead.";
+    return resolvePhrase("ui.provider.voice_capture.err_mic_denied", locale);
   }
-  return "We couldn't finish preparing your voice. Tap Retry to try again.";
+  return resolvePhrase("ui.provider.voice_capture.err_generic", locale);
 }
 
 async function decodeAudio(blob: Blob): Promise<Float32Array> {
@@ -197,6 +199,7 @@ export function VoiceCapture({
   locale,
   color,
 }: VoiceCaptureProps) {
+  const caregiverLang = useSettingsStore((s) => s.cfg?.caregiverLang ?? "en");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -414,7 +417,7 @@ export function VoiceCapture({
       streamRef.current = stream;
       beginCountdownTimeline(stream);
     } catch {
-      setError("Microphone access denied. Try uploading a file instead.");
+      setError(resolvePhrase("ui.provider.voice_capture.err_mic_denied_raw", caregiverLang));
     }
   }
 
@@ -565,7 +568,7 @@ export function VoiceCapture({
       source.start();
       setPlaying(true);
     } catch {
-      setError("Could not play audio.");
+      setError(resolvePhrase("ui.provider.voice_capture.err_playback", caregiverLang));
     }
   }
 
@@ -617,14 +620,14 @@ export function VoiceCapture({
     if (cloneStatus === "extracting") {
       return (
         <span style={{ ...base, color: "#1E40AF", background: "#DBEAFE" }}>
-          <span aria-hidden="true">{"\u23F3"}</span> Creating voice clone...
+          <span aria-hidden="true">{"\u23F3"}</span> {resolvePhrase("ui.provider.voice_capture.creating", caregiverLang)}
         </span>
       );
     }
     if (cloneStatus === "model-loading") {
       return (
         <span style={{ ...base, color: "#92400E", background: "#FEF3C7" }}>
-          <span aria-hidden="true">{"\u23F3"}</span> Voice model loading...
+          <span aria-hidden="true">{"\u23F3"}</span> {resolvePhrase("ui.provider.voice_capture.loading_model", caregiverLang)}
         </span>
       );
     }
@@ -638,7 +641,7 @@ export function VoiceCapture({
     if (cloneStatus === "failed") {
       return (
         <span style={{ ...base, color: "#991B1B", background: "#FEE2E2" }}>
-          <span aria-hidden="true">{"\u26A0\uFE0F"}</span> Clone failed
+          <span aria-hidden="true">{"\u26A0\uFE0F"}</span> {resolvePhrase("ui.provider.voice_capture.clone_failed", caregiverLang)}
         </span>
       );
     }
@@ -708,7 +711,7 @@ export function VoiceCapture({
                 ...animStyle,
               }}
             >
-              {step.text}
+              {resolvePhrase(step.textKey, caregiverLang)}
             </span>
           )}
           {step.kind === "number" && (
@@ -781,14 +784,14 @@ export function VoiceCapture({
                   animation: `voiceCoachFade ${stepDuration}ms ease-in-out both`,
                 }}
               >
-                {step.kind === "inhale" ? "Breathe in…" : "Breathe out…"}
+                {step.kind === "inhale" ? resolvePhrase("ui.provider.voice_capture.breathe_in", caregiverLang) : resolvePhrase("ui.provider.voice_capture.breathe_out", caregiverLang)}
               </span>
             </div>
           )}
         </div>
         <Btn
           onClick={cancelCountdown}
-          aria-label="Cancel recording countdown"
+          aria-label={resolvePhrase("ui.provider.voice_capture.cancel_countdown_aria", caregiverLang)}
           style={{
             background: "none",
             color: "#78350F", // amber-950
@@ -802,7 +805,7 @@ export function VoiceCapture({
             fontFamily: "inherit",
           }}
         >
-          Cancel
+          {resolvePhrase("ui.provider.voice_capture.cancel", caregiverLang)}
         </Btn>
       </div>
     );
@@ -828,7 +831,7 @@ export function VoiceCapture({
     const scriptVisible = hasPassage;
     let coaching = "";
     if (recordSecs >= RECORD_DURATION) {
-      coaching = "Done!";
+      coaching = resolvePhrase("ui.provider.voice_capture.done", caregiverLang);
     } else if (recordSecs >= RECORD_DURATION - 3) {
       coaching = script.closingHint;
     } else if (!hasPassage) {
@@ -864,7 +867,7 @@ export function VoiceCapture({
             {recordSecs}s / {RECORD_DURATION}s
           </span>
           <div
-            aria-label="Audio level"
+            aria-label={resolvePhrase("ui.provider.voice_capture.audio_level_aria", caregiverLang)}
             style={{
               display: "flex", alignItems: "center", gap: compact ? 2 : 3,
               height: barH, flex: 1, justifyContent: "center",
@@ -894,7 +897,7 @@ export function VoiceCapture({
         </div>
         <div
           role="progressbar"
-          aria-label="Recording progress"
+          aria-label={resolvePhrase("ui.provider.voice_capture.recording_progress_aria", caregiverLang)}
           aria-valuemin={0}
           aria-valuemax={RECORD_DURATION}
           aria-valuenow={recordSecs}
@@ -1002,7 +1005,7 @@ export function VoiceCapture({
           {recordSecs < RECORD_DURATION && (
             <Btn
               onClick={stopRecording}
-              aria-label="Stop recording early"
+              aria-label={resolvePhrase("ui.provider.voice_capture.stop_early_aria", caregiverLang)}
               style={{
                 flexShrink: 0, background: "none", color: "#92400E",
                 // amber-700 = 4.84:1 against the amber-50 card (passes AA);
@@ -1014,7 +1017,7 @@ export function VoiceCapture({
                 fontSize: btnFloor.fontSize, fontWeight: 600, fontFamily: "inherit",
               }}
             >
-              Stop early
+              {resolvePhrase("ui.provider.voice_capture.stop_early", caregiverLang)}
             </Btn>
           )}
         </div>
@@ -1030,11 +1033,11 @@ export function VoiceCapture({
         <div style={{ display: "flex", alignItems: "center", gap: btnFloor.gap, marginBottom: compact ? 10 : 12 }}>
           <span aria-hidden="true" style={{ fontSize: ui.iconLg }}>{"\uD83C\uDFA4"}</span>
           <span style={{ fontSize: ui.textMd, fontWeight: 600, color: "#92400E", flex: 1 }}>
-            {recordSecs}s recorded
+            {resolvePhrase("ui.provider.voice_capture.seconds_recorded", caregiverLang).replace("{n}", String(recordSecs))}
           </span>
           <Btn
             onClick={playing ? stopPlayback : () => playBlob(previewBlob)}
-            aria-label={playing ? "Stop preview playback" : "Play recording preview"}
+            aria-label={playing ? resolvePhrase("ui.provider.voice_capture.stop_preview_aria", caregiverLang) : resolvePhrase("ui.provider.voice_capture.play_preview_aria", caregiverLang)}
             style={{
               // amber-700 gives 5.02:1 with white text (passes AA small-text).
               // amber-600 was 3.19:1 — passes AA-large only; 14px bold is not
@@ -1048,13 +1051,13 @@ export function VoiceCapture({
           >
             <span aria-hidden="true">{playing ? "\u23F9" : "\u25B6"}</span>
             {" "}
-            {playing ? "Stop" : "Play"}
+            {playing ? resolvePhrase("ui.provider.voice_capture.stop", caregiverLang) : resolvePhrase("ui.provider.voice_capture.play", caregiverLang)}
           </Btn>
         </div>
         <div style={{ display: "flex", gap: btnFloor.gap }}>
           <Btn
             onClick={discardPreview}
-            aria-label="Discard this recording and start over"
+            aria-label={resolvePhrase("ui.provider.voice_capture.discard_aria", caregiverLang)}
             style={{
               // Text-button label was "Re-record" which misdescribed the
               // action — it returns to the Upload/Record choice, doesn't
@@ -1066,7 +1069,7 @@ export function VoiceCapture({
               fontSize: btnFloor.fontSize, fontWeight: 500, color: c.sub, fontFamily: "inherit",
             }}
           >
-            Discard recording
+            {resolvePhrase("ui.provider.voice_capture.discard", caregiverLang)}
           </Btn>
           <Btn
             onClick={acceptRecording}
@@ -1080,7 +1083,7 @@ export function VoiceCapture({
               fontSize: btnFloor.fontSize, fontWeight: 600, fontFamily: "inherit",
             }}
           >
-            Use this recording
+            {resolvePhrase("ui.provider.voice_capture.use_recording", caregiverLang)}
           </Btn>
         </div>
         {error && <ErrorRow compact={compact} message={error} />}
@@ -1103,7 +1106,7 @@ export function VoiceCapture({
         {fileInput}
         <span aria-hidden="true" style={{ fontSize: ui.iconMd, animation: "spin 1s linear infinite" }}>{"\u23F3"}</span>
         <span style={{ fontSize: ui.textMd, fontWeight: 500, color: "#1E40AF" }}>
-          Creating voice clone from sample...
+          {resolvePhrase("ui.provider.voice_capture.creating_from_sample", caregiverLang)}
         </span>
       </div>
     );
@@ -1123,12 +1126,12 @@ export function VoiceCapture({
         }}>
           <span aria-hidden="true" style={{ fontSize: ui.iconSm }}>{"\u2705"}</span>
           <span style={{ fontSize: ui.textSm, color: "#166534", fontWeight: 500, flex: 1, minWidth: 120 }}>
-            Voice captured
+            {resolvePhrase("ui.provider.voice_capture.captured", caregiverLang)}
           </span>
           {canPlay && (
             <Btn
               onClick={playing ? stopPlayback : () => playBlob((savedBlob || externalBlob)!)}
-              aria-label={playing ? "Stop playback of recorded sample" : "Play recorded voice sample"}
+              aria-label={playing ? resolvePhrase("ui.provider.voice_capture.stop_playback_aria", caregiverLang) : resolvePhrase("ui.provider.voice_capture.play_sample_aria", caregiverLang)}
               style={{
                 // emerald-700 for 5.48:1 contrast with white (passes AA).
                 background: "#047857", color: "#FFF", border: "none",
@@ -1140,12 +1143,12 @@ export function VoiceCapture({
             >
               <span aria-hidden="true">{playing ? "\u23F9" : "\u25B6"}</span>
               {" "}
-              {playing ? "Stop" : "Play"}
+              {playing ? resolvePhrase("ui.provider.voice_capture.stop", caregiverLang) : resolvePhrase("ui.provider.voice_capture.play", caregiverLang)}
             </Btn>
           )}
           <Btn
             onClick={handleRemove}
-            aria-label="Remove voice sample"
+            aria-label={resolvePhrase("ui.provider.voice_capture.remove_aria", caregiverLang)}
             style={{
               background: "none",
               // gray-500 gives 4.62:1 on the green-50 captured row; the
@@ -1159,7 +1162,7 @@ export function VoiceCapture({
               fontSize: btnFloor.fontSize, fontWeight: 500, fontFamily: "inherit",
             }}
           >
-            Remove
+            {resolvePhrase("ui.provider.voice_capture.remove", caregiverLang)}
           </Btn>
         </div>
         {/* Clone status indicator — live region so transitions are announced.
@@ -1175,7 +1178,7 @@ export function VoiceCapture({
             {cloneStatus === "failed" && (
               <Btn
                 onClick={retryEmbedding}
-                aria-label="Retry voice clone extraction"
+                aria-label={resolvePhrase("ui.provider.voice_capture.retry_aria", caregiverLang)}
                 style={{
                   background: "none",
                   // red-600 gives 4.83:1 on white; red-300 was 1.90:1.
@@ -1186,7 +1189,7 @@ export function VoiceCapture({
                   fontSize: btnFloor.fontSize, fontWeight: 600, color: "#991B1B", fontFamily: "inherit",
                 }}
               >
-                Retry
+                {resolvePhrase("ui.provider.voice_capture.retry", caregiverLang)}
               </Btn>
             )}
           </div>
@@ -1197,7 +1200,7 @@ export function VoiceCapture({
               lineHeight: 1.4,
               color: c.sub,
             }}>
-              {friendlyVoiceError(error)}
+              {friendlyVoiceError(error, caregiverLang)}
             </p>
           )}
         </div>
@@ -1212,7 +1215,7 @@ export function VoiceCapture({
       <div style={{ display: "flex", gap: btnFloor.gap }}>
         <Btn
           onClick={() => fileInputRef.current?.click()}
-          aria-label="Upload voice sample from file"
+          aria-label={resolvePhrase("ui.provider.voice_capture.upload_aria", caregiverLang)}
           style={{
             flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
             gap: 8,
@@ -1226,11 +1229,11 @@ export function VoiceCapture({
           }}
         >
           <span aria-hidden="true" style={{ fontSize: ui.iconSm }}>{"\uD83D\uDCC1"}</span>
-          Upload file
+          {resolvePhrase("ui.provider.voice_capture.upload_file", caregiverLang)}
         </Btn>
         <Btn
           onClick={startRecording}
-          aria-label="Record voice sample from microphone"
+          aria-label={resolvePhrase("ui.provider.voice_capture.record_aria", caregiverLang)}
           style={{
             flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
             gap: 8,
@@ -1244,7 +1247,7 @@ export function VoiceCapture({
           }}
         >
           <span aria-hidden="true" style={{ fontSize: ui.iconSm }}>{"\uD83C\uDF99\uFE0F"}</span>
-          Record
+          {resolvePhrase("ui.provider.voice_capture.record", caregiverLang)}
         </Btn>
       </div>
       {error && <ErrorRow compact={compact} message={error} />}
