@@ -145,7 +145,9 @@ describe("SettingsPanel", () => {
 
   it("shows voice status as 'Voice captured' when hasVoice is true", () => {
     renderPanel({ hasVoice: true });
-    expect(screen.getByText("Voice captured")).toBeInTheDocument();
+    // PatientsSection also renders "Voice captured" chips — use getAllByText
+    const matches = screen.getAllByText("Voice captured");
+    expect(matches.length).toBeGreaterThanOrEqual(1);
   });
 
   it("shows Upload/Record buttons when hasVoice is false", () => {
@@ -156,7 +158,9 @@ describe("SettingsPanel", () => {
 
   it("shows language display from cfg", () => {
     renderPanel({ patientLang: "es" });
-    expect(screen.getByText(/Español/)).toBeInTheDocument();
+    // PatientsSection also shows the locale flag+label — use getAllByText
+    const matches = screen.getAllByText(/Español/);
+    expect(matches.length).toBeGreaterThanOrEqual(1);
   });
 
   it("shows provider list when providers are configured", () => {
@@ -186,15 +190,20 @@ describe("SettingsPanel", () => {
   describe("Patient voice management", () => {
     it("when hasVoice is true, shows VoiceCapture with 'Voice captured'", () => {
       renderPanel({ hasVoice: true });
-      expect(screen.getByText("Voice captured")).toBeInTheDocument();
-      expect(screen.getByText("Remove")).toBeInTheDocument();
+      // PatientsSection also renders "Voice captured" chips and "Remove" buttons
+      const captured = screen.getAllByText("Voice captured");
+      expect(captured.length).toBeGreaterThanOrEqual(1);
+      const removeBtns = screen.getAllByText("Remove");
+      expect(removeBtns.length).toBeGreaterThanOrEqual(1);
     });
 
     it("clicking Remove updates hasVoice to false on the active patient (auto-save)", () => {
       renderPanel({ hasVoice: true });
 
-      // Click Remove on the voice capture widget
-      fireEvent.click(screen.getByText("Remove"));
+      // The VoiceCapture "Remove" has aria-label "Remove voice sample".
+      // PatientsSection "Remove" buttons have different aria context.
+      const voiceRemove = screen.getByRole("button", { name: /Remove voice sample/i });
+      fireEvent.click(voiceRemove);
 
       // No Save button — update is immediate.
       expect(screen.queryByText("Save changes")).not.toBeInTheDocument();

@@ -725,6 +725,16 @@ const en = {
   "ui.provider.settings.accessibility.pointer_hint_strong": "External pointer detected.",
   "ui.provider.settings.accessibility.pointer_hint_body": "Consider enabling Assistive Input Mode for this patient.",
 
+  // ── UI chrome: Settings — Patients section ────────────────────
+  "ui.provider.settings.patients.title": "Patients",
+  "ui.provider.settings.patients.active_remove_hint": "Switch to another patient before removing this one.",
+  "ui.provider.settings.patients.remove_button": "Remove",
+  "ui.provider.settings.patients.add_patient": "+ Add Patient",
+  "ui.provider.settings.patients.add_patient_disabled_hint": "Available in the next release.",
+  "ui.provider.settings.patients.remove_dialog.title": "Remove {name}?",
+  "ui.provider.settings.patients.remove_dialog.body": "This will delete their voice sample, conversation history, and cached audio for their voice clone. Care-team voice clones are kept for other patients. This cannot be undone.",
+  "ui.provider.settings.patients.remove_dialog.confirm": "Remove",
+
   // ── UI chrome: Settings — Care Team section ───────────────────
   "ui.provider.settings.care_team.heading": "Care Team",
   "ui.provider.settings.care_team.empty": "No providers added yet.",
