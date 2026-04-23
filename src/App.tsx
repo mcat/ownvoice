@@ -24,6 +24,7 @@ import { SettingsPanel } from "./components/settings/SettingsPanel";
 import { SwitchSheet } from "./components/switch/SwitchSheet";
 import { PinGate } from "./components/shared/PinGate";
 import { ConfirmDialogHost } from "./components/shared/ConfirmDialog";
+import { StaffSessionTimer } from "./components/shared/StaffSessionTimer";
 import { Setup } from "./components/settings/Setup";
 import { getModelManager } from "./models/modelManager";
 import { bootModels, verifyAllOnBoot } from "./models/bootModels";
@@ -464,6 +465,7 @@ export function App() {
         />
       )}
 
+      <StaffSessionTimer />
       <ConfirmDialogHost />
     </div>
   );
