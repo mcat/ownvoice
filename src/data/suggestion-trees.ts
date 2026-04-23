@@ -1,7 +1,8 @@
 import type { Message } from "../types";
 import type { FewShotExample } from "../models/types";
 import { getModelManager } from "../models/modelManager";
-import { getSuggestionTree, t } from "./phraseRegistry";
+import { getSuggestionTree, getKeyedSuggestionTree, t } from "./phraseRegistry";
+import type { SuggestionItem } from "./phraseRegistry";
 
 /**
  * Curated sentence completion trees for the Sentence Builder.
@@ -15,6 +16,9 @@ import { getSuggestionTree, t } from "./phraseRegistry";
  * Phrase text is sourced from the central phrase registry.
  */
 const BASE_SUGGESTIONS: Record<string, string[]> = getSuggestionTree("en");
+
+/** Keyed curated tree — values carry PhraseKey for bilingual resolution. */
+const KEYED_SUGGESTIONS: Record<string, SuggestionItem[]> = getKeyedSuggestionTree("en");
 
 /**
  * Generic word/phrase continuations when both curated trees and LLM
@@ -762,4 +766,112 @@ export async function getContextualSuggestions(
   // so the user always has something to tap.
   // LLM suggestions are fetched separately via getLLMSuggestions().
   return genericContinuations(partialKey);
+}
+
+// ── Keyed suggestions (bilingual token support) ─────────────────
+
+import type { PhraseKey } from "./phraseRegistry";
+
+/** Shorthand: build a SuggestionItem from a PhraseKey. */
+function sk(key: PhraseKey): SuggestionItem {
+  return { text: t(key), key };
+}
+
+/** Wrap a plain string as a keyless SuggestionItem. */
+function sf(text: string): SuggestionItem {
+  return { text };
+}
+
+/**
+ * Like `getContextualSuggestions` but each result carries an optional
+ * PhraseKey for bilingual resolution.  Curated results (base tree,
+ * context-aware, time-aware) carry keys; keyword/generic continuations
+ * do not.
+ */
+export async function getKeyedContextualSuggestions(
+  partialKey: string,
+  recentMessages: Message[],
+  hour: number,
+): Promise<SuggestionItem[]> {
+  const keyed = KEYED_SUGGESTIONS[partialKey];
+
+  // No partial input — generate context-aware starters
+  if (partialKey === "") {
+    const starters = [...(KEYED_SUGGESTIONS[""] ?? [])];
+    const lastProviderMsg = [...recentMessages]
+      .reverse()
+      .find((m) => m.from === "provider");
+
+    if (lastProviderMsg) {
+      const q = lastProviderMsg.text.toLowerCase();
+      if (q.includes("how are you") || q.includes("how are you feeling"))
+        return [
+          sk("suggest.ctx.feeling.i_feel"), sk("suggest.ctx.feeling.i_am"),
+          sk("suggest.ctx.feeling.better"), sk("suggest.ctx.feeling.not_great"),
+          sk("suggest.ctx.feeling.pain"), sk("suggest.ctx.feeling.okay"),
+          sk("suggest.ctx.feeling.help"),
+        ];
+      if (q.includes("anything you need") || q.includes("is there anything"))
+        return [
+          sk("suggest.ctx.need.i_need"), sk("suggest.ctx.need.i_want"),
+          sk("suggest.ctx.need.fine"), sk("suggest.ctx.need.yes"),
+          sk("suggest.ctx.need.no"), sk("suggest.ctx.need.stay"),
+        ];
+      if (q.includes("where") && q.includes("hurt"))
+        return [
+          sk("suggest.ctx.where_hurts.head"), sk("suggest.ctx.where_hurts.chest"),
+          sk("suggest.ctx.where_hurts.stomach"), sk("suggest.ctx.where_hurts.back"),
+          sk("suggest.ctx.where_hurts.left_arm"), sk("suggest.ctx.where_hurts.right_leg"),
+          sk("suggest.ctx.where_hurts.everywhere"),
+        ];
+      if (q.includes("rate your pain") || q.includes("pain"))
+        return [
+          sk("suggest.ctx.pain.very_bad"), sk("suggest.ctx.pain.worse"),
+          sk("suggest.ctx.pain.same"), sk("suggest.ctx.pain.little_better"),
+          sk("suggest.ctx.pain.need_relief"),
+        ];
+      if (q.includes("comfortable") || q.includes("sleep"))
+        return [
+          sk("suggest.ctx.comfort.comfortable"), sk("suggest.ctx.comfort.not_comfortable"),
+          sk("suggest.ctx.comfort.cant_sleep"), sk("suggest.ctx.comfort.cold"),
+          sk("suggest.ctx.comfort.hot"), sk("suggest.ctx.comfort.adjust_bed"),
+        ];
+    }
+
+    // Time-aware reranking
+    if (hour >= 20 || hour < 6) {
+      return [
+        sk("suggest.ctx.night.cant_sleep"), sk("suggest.ctx.night.i_need"),
+        sk("suggest.ctx.night.pain"), sk("suggest.ctx.night.i_feel"),
+        sk("suggest.ctx.night.can_you"), sk("suggest.ctx.night.please"),
+        sk("suggest.ctx.night.i_am"), sk("suggest.ctx.night.when"),
+      ];
+    }
+    if (hour < 10) {
+      return [
+        sk("suggest.ctx.morning.i_am"), sk("suggest.ctx.morning.i_need"),
+        sk("suggest.ctx.morning.i_feel"), sk("suggest.ctx.morning.doctor"),
+        sk("suggest.ctx.morning.i_want"), sk("suggest.ctx.morning.can_you"),
+        sk("suggest.ctx.morning.please"), sk("suggest.ctx.morning.tell_me"),
+      ];
+    }
+    return starters;
+  }
+
+  // Has base suggestions — return them (Layer 1 hit)
+  if (keyed) {
+    const recentTexts = recentMessages.map((m) => m.text.toLowerCase()).join(" ");
+    return [...keyed].sort((a, b) => {
+      const aRelevance = recentTexts.includes(a.text.toLowerCase()) ? -1 : 0;
+      const bRelevance = recentTexts.includes(b.text.toLowerCase()) ? -1 : 0;
+      return aRelevance - bRelevance;
+    });
+  }
+
+  // No curated match — Layer 1.5 (keyword-based contextual suggestions)
+  const keywordResults = getKeywordSuggestions(partialKey);
+  if (keywordResults.length > 0) return keywordResults.map(sf);
+
+  // No keyword match — generic continuations (no keys)
+  return genericContinuations(partialKey).map(sf);
 }
