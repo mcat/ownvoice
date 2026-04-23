@@ -489,6 +489,7 @@ const en = {
   "ui.dual.nav.wishes": "Wishes",
   "ui.provider.nav.listen": "Listen",
   "ui.provider.nav.staff": "Staff",
+  "ui.provider.nav.switch_patient": "Switch Patient",
   "ui.provider.nav.settings": "Settings",
   "ui.provider.nav.theme.auto": "Auto",
   "ui.provider.nav.theme.light": "Light",

@@ -34,7 +34,12 @@ const makeCfg = (overrides?: { patient?: Record<string, unknown>; cfg?: Partial<
   });
 
 describe("Header", () => {
+  const onSettings = vi.fn();
+  const onSwitchPatient = vi.fn();
+
   beforeEach(() => {
+    onSettings.mockReset();
+    onSwitchPatient.mockReset();
     useUIStore.setState({
       builderOpen: false,
       wishesOpen: false,
@@ -42,13 +47,14 @@ describe("Header", () => {
       listenOpen: false,
       settingsOpen: false,
       pinEntryOpen: false,
+      switchSheetOpen: false,
     });
   });
 
   function renderHeader(overrides?: { patient?: Record<string, unknown>; cfg?: Partial<AppSettings> }) {
     const cfg = makeCfg(overrides);
     useSettingsStore.setState({ cfg, speakerData: null, _hasHydrated: true });
-    return render(<Header cfg={cfg} />);
+    return render(<Header cfg={cfg} onSettings={onSettings} onSwitchPatient={onSwitchPatient} />);
   }
 
   it("shows patient name from cfg prop", () => {
@@ -87,18 +93,17 @@ describe("Header", () => {
     expect(useUIStore.getState().providerOpen).toBe(true);
   });
 
-  it("settings button opens pinEntry when PIN is set", () => {
+  it("settings button calls onSettings callback", () => {
     renderHeader({ cfg: { pin: "1234" } });
     const settingsBtn = screen.getByText("⚙️");
     fireEvent.click(settingsBtn);
-    expect(useUIStore.getState().pinEntryOpen).toBe(true);
-    expect(useUIStore.getState().settingsOpen).toBe(false);
+    expect(onSettings).toHaveBeenCalledTimes(1);
   });
 
-  it("settings button opens settings directly when no PIN", () => {
-    renderHeader({ cfg: { pin: "" } });
-    const settingsBtn = screen.getByText("⚙️");
-    fireEvent.click(settingsBtn);
-    expect(useUIStore.getState().settingsOpen).toBe(true);
+  it("switch patient button calls onSwitchPatient callback", () => {
+    renderHeader();
+    const switchBtn = screen.getByText("🔄");
+    fireEvent.click(switchBtn);
+    expect(onSwitchPatient).toHaveBeenCalledTimes(1);
   });
 });

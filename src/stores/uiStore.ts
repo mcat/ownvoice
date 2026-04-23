@@ -7,7 +7,8 @@ export type OverlayName =
   | "provider"
   | "listen"
   | "settings"
-  | "pinEntry";
+  | "pinEntry"
+  | "switch";
 
 interface UIState {
   tab: string;
@@ -18,6 +19,7 @@ interface UIState {
   listenOpen: boolean;
   settingsOpen: boolean;
   pinEntryOpen: boolean;
+  switchSheetOpen: boolean;
   activeProvIdx: number;
   speaking: SpeakingState | null;
 
@@ -45,6 +47,7 @@ const OVERLAY_KEYS: Record<OverlayName, keyof UIState> = {
   listen: "listenOpen",
   settings: "settingsOpen",
   pinEntry: "pinEntryOpen",
+  switch: "switchSheetOpen",
 };
 
 function getInitialThemeOverride(): ThemeName | null {
@@ -63,6 +66,7 @@ const INITIAL: Pick<
   | "listenOpen"
   | "settingsOpen"
   | "pinEntryOpen"
+  | "switchSheetOpen"
   | "activeProvIdx"
   | "speaking"
   | "themeOverride"
@@ -76,6 +80,7 @@ const INITIAL: Pick<
   listenOpen: false,
   settingsOpen: false,
   pinEntryOpen: false,
+  switchSheetOpen: false,
   activeProvIdx: 0,
   speaking: null,
   themeOverride: getInitialThemeOverride(),
@@ -101,6 +106,7 @@ export const useUIStore = create<UIState>((set) => ({
       listenOpen: false,
       settingsOpen: false,
       pinEntryOpen: false,
+      switchSheetOpen: false,
     }),
 
   setActiveProvIdx: (idx) => set({ activeProvIdx: idx }),

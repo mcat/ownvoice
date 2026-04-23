@@ -104,6 +104,7 @@ describe("App", () => {
       listenOpen: false,
       settingsOpen: false,
       pinEntryOpen: false,
+      switchSheetOpen: false,
       activeProvIdx: 0,
       speaking: null,
     });
@@ -352,6 +353,66 @@ describe("App", () => {
     // PinGate has a "Cancel" button
     fireEvent.click(screen.getByText("Cancel"));
     expect(useUIStore.getState().pinEntryOpen).toBe(false);
+  });
+
+  it("settings button opens settings after successful PIN entry", () => {
+    useSettingsStore.setState({
+      _hasHydrated: true,
+      cfg: makeCfg({ pin: "1234" }),
+    });
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+    expect(useUIStore.getState().pinEntryOpen).toBe(true);
+    // Enter the correct PIN
+    fireEvent.click(screen.getByText("1"));
+    fireEvent.click(screen.getByText("2"));
+    fireEvent.click(screen.getByText("3"));
+    fireEvent.click(screen.getByText("4"));
+    expect(useUIStore.getState().settingsOpen).toBe(true);
+    expect(useUIStore.getState().pinEntryOpen).toBe(false);
+  });
+
+  describe("Switch Patient button", () => {
+    it("opens SwitchSheet directly when no PIN is set", () => {
+      useSettingsStore.setState({
+        _hasHydrated: true,
+        cfg: makeCfg({ pin: "" }),
+      });
+      render(<App />);
+      fireEvent.click(screen.getByRole("button", { name: "Switch Patient" }));
+      expect(useUIStore.getState().switchSheetOpen).toBe(true);
+      expect(useUIStore.getState().pinEntryOpen).toBe(false);
+    });
+
+    it("opens PinGate when PIN is set", () => {
+      useSettingsStore.setState({
+        _hasHydrated: true,
+        cfg: makeCfg({ pin: "1234" }),
+      });
+      render(<App />);
+      fireEvent.click(screen.getByRole("button", { name: "Switch Patient" }));
+      expect(useUIStore.getState().pinEntryOpen).toBe(true);
+      expect(useUIStore.getState().switchSheetOpen).toBe(false);
+    });
+
+    it("opens SwitchSheet after successful PIN entry", () => {
+      useSettingsStore.setState({
+        _hasHydrated: true,
+        cfg: makeCfg({ pin: "1234" }),
+      });
+      render(<App />);
+      // Tap Switch Patient — opens PinGate
+      fireEvent.click(screen.getByRole("button", { name: "Switch Patient" }));
+      expect(useUIStore.getState().pinEntryOpen).toBe(true);
+      // Enter the correct PIN
+      fireEvent.click(screen.getByText("1"));
+      fireEvent.click(screen.getByText("2"));
+      fireEvent.click(screen.getByText("3"));
+      fireEvent.click(screen.getByText("4"));
+      // After correct PIN, SwitchSheet should open
+      expect(useUIStore.getState().switchSheetOpen).toBe(true);
+      expect(useUIStore.getState().pinEntryOpen).toBe(false);
+    });
   });
 
   describe("pre-gen trigger", () => {

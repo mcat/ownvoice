@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "preact/hooks";
+import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { useTheme } from "./hooks/useTheme";
 import { useAssistiveInput } from "./hooks/useAssistiveInput";
 import { useSpeakActions } from "./hooks/useSpeakActions";
@@ -21,6 +21,7 @@ import { ProviderPanel } from "./components/provider/ProviderPanel";
 import { ListenPanel } from "./components/provider/ListenPanel";
 import { SentenceBuilder } from "./components/builder/SentenceBuilder";
 import { SettingsPanel } from "./components/settings/SettingsPanel";
+import { SwitchSheet } from "./components/switch/SwitchSheet";
 import { PinGate } from "./components/shared/PinGate";
 import { ConfirmDialogHost } from "./components/shared/ConfirmDialog";
 import { Setup } from "./components/settings/Setup";
@@ -71,6 +72,7 @@ export function App() {
   const listenOpen = useUIStore((s) => s.listenOpen);
   const settingsOpen = useUIStore((s) => s.settingsOpen);
   const pinEntryOpen = useUIStore((s) => s.pinEntryOpen);
+  const switchSheetOpen = useUIStore((s) => s.switchSheetOpen);
   const activeProvIdx = useUIStore((s) => s.activeProvIdx);
   const speaking = useUIStore((s) => s.speaking);
   const setSpeaking = useUIStore((s) => s.setSpeaking);
@@ -83,6 +85,43 @@ export function App() {
   const setCfg = useSettingsStore((s) => s.setCfg);
   const hasHydrated = useSettingsStore((s) => s._hasHydrated);
   const active = useActivePatient();
+
+  // PIN-gated intent: both Settings and Switch Patient may require PIN entry.
+  // pinIntent tracks which action to perform after a successful PIN.
+  const [pinIntent, setPinIntent] = useState<"settings" | "switch" | null>(null);
+
+  const handleOpenSettings = useCallback(() => {
+    if (cfg?.pin) {
+      setPinIntent("settings");
+      openOverlay("pinEntry");
+    } else {
+      openOverlay("settings");
+    }
+  }, [cfg?.pin, openOverlay]);
+
+  const handleOpenSwitch = useCallback(() => {
+    if (cfg?.pin) {
+      setPinIntent("switch");
+      openOverlay("pinEntry");
+    } else {
+      openOverlay("switch");
+    }
+  }, [cfg?.pin, openOverlay]);
+
+  const handlePinSuccess = useCallback(() => {
+    closeOverlay("pinEntry");
+    if (pinIntent === "switch") {
+      openOverlay("switch");
+    } else {
+      openOverlay("settings");
+    }
+    setPinIntent(null);
+  }, [pinIntent, closeOverlay, openOverlay]);
+
+  const handlePinClose = useCallback(() => {
+    closeOverlay("pinEntry");
+    setPinIntent(null);
+  }, [closeOverlay]);
 
   // Initialize model manager and boot all on-device models (TTS, LLM, STT)
   useEffect(() => {
@@ -258,7 +297,7 @@ export function App() {
       class="font-sans flex flex-col relative"
       style={{ background: t.bg, color: t.text, height: "100dvh", overflow: "hidden" }}
     >
-      <Header cfg={cfg} />
+      <Header cfg={cfg} onSettings={handleOpenSettings} onSwitchPatient={handleOpenSwitch} />
 
       {/* Main content area. Thread is pinned at the top; the region below
           scrolls independently so the conversation never scrolls out of view. */}
@@ -409,11 +448,17 @@ export function App() {
       {pinEntryOpen && (
         <PinGate
           pin={cfg.pin}
-          onSuccess={() => {
-            closeOverlay("pinEntry");
-            openOverlay("settings");
-          }}
-          onClose={() => closeOverlay("pinEntry")}
+          onSuccess={handlePinSuccess}
+          onClose={handlePinClose}
+          t={t}
+          theme={theme}
+        />
+      )}
+
+      {switchSheetOpen && (
+        <SwitchSheet
+          open={switchSheetOpen}
+          onClose={() => closeOverlay("switch")}
           t={t}
           theme={theme}
         />

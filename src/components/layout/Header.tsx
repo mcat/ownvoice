@@ -1,5 +1,4 @@
 import { useTheme } from "../../hooks/useTheme";
-import { useUIStore } from "../../stores/uiStore";
 import { useActivePatient } from "../../stores/settingsStore";
 import { t as resolvePhrase } from "../../data/phraseRegistry";
 import { HeaderNav } from "./HeaderNav";
@@ -7,16 +6,13 @@ import type { AppSettings } from "../../types";
 
 interface HeaderProps {
   cfg: AppSettings;
+  onSettings: () => void;
+  onSwitchPatient: () => void;
 }
 
-export function Header({ cfg }: HeaderProps) {
+export function Header({ cfg, onSettings, onSwitchPatient }: HeaderProps) {
   const { theme, t } = useTheme();
-  const openOverlay = useUIStore((s) => s.openOverlay);
   const active = useActivePatient();
-
-  const handleSettings = () => {
-    openOverlay(cfg.pin ? "pinEntry" : "settings");
-  };
 
   const blue = theme === "dark" ? "#60A5FA" : "#2563EB";
   const patientLang = active?.patientLang ?? "en";
@@ -56,7 +52,7 @@ export function Header({ cfg }: HeaderProps) {
           </span>
         )}
       </div>
-      <HeaderNav onSettings={handleSettings} />
+      <HeaderNav onSettings={onSettings} onSwitchPatient={onSwitchPatient} />
     </header>
   );
 }
