@@ -1,6 +1,8 @@
 import { render, screen, fireEvent } from "@testing-library/preact";
 import { Thread } from "./Thread";
 import { light } from "../../theme/tokens";
+import { useSettingsStore } from "../../stores/settingsStore";
+import { makeTestCfg } from "../../test/makeCfg";
 import type { Message } from "../../types";
 
 const messages: Message[] = [
@@ -88,6 +90,96 @@ describe("Thread", () => {
       Element.prototype.scrollIntoView = spy;
       render(<Thread messages={messages} t={light} onRepeat={vi.fn()} />);
       expect(spy).toHaveBeenCalledWith({ behavior: "auto" });
+    });
+  });
+
+  describe("gloss rendering (dual-locale)", () => {
+    beforeEach(() => {
+      useSettingsStore.setState({
+        cfg: makeTestCfg({
+          patient: { name: "Maria", patientLang: "es" },
+          cfg: { caregiverLang: "en" },
+        }),
+        _hasHydrated: true,
+      });
+    });
+
+    it("renders gloss line when msg.gloss is defined and differs from text", () => {
+      const msgs: Message[] = [
+        {
+          from: "patient",
+          text: "Necesito agua",
+          gloss: "I need water",
+          time: "2:30 PM",
+          label: "Maria",
+        },
+      ];
+      render(<Thread messages={msgs} t={light} onRepeat={vi.fn()} />);
+      expect(screen.getByText("Necesito agua")).toBeInTheDocument();
+      expect(screen.getByText("I need water")).toBeInTheDocument();
+    });
+
+    it("renders plain text when msg.gloss is undefined", () => {
+      const msgs: Message[] = [
+        {
+          from: "patient",
+          text: "please help me breathe",
+          time: "2:30 PM",
+          label: "Maria",
+        },
+      ];
+      const { container } = render(<Thread messages={msgs} t={light} onRepeat={vi.fn()} />);
+      expect(screen.getByText("please help me breathe")).toBeInTheDocument();
+      // No DualLocaleText rendered — no gloss element
+      expect(container.querySelector("[data-dual-gloss]")).toBeNull();
+      expect(container.querySelector("[data-dual-primary]")).toBeNull();
+    });
+
+    it("renders plain text when msg.gloss equals msg.text", () => {
+      const msgs: Message[] = [
+        {
+          from: "patient",
+          text: "I need water",
+          gloss: "I need water",
+          time: "2:30 PM",
+          label: "Maria",
+        },
+      ];
+      render(<Thread messages={msgs} t={light} onRepeat={vi.fn()} />);
+      const buttons = screen.getAllByRole("button");
+      expect(buttons).toHaveLength(1);
+      // No DualLocaleText rendered (no data-dual-primary attribute)
+      expect(buttons[0].querySelector("[data-dual-primary]")).toBeNull();
+    });
+
+    it("renders DualLocaleText with correct primary/gloss for provider messages", () => {
+      const msgs: Message[] = [
+        {
+          from: "provider",
+          text: "How are you feeling?",
+          gloss: "Como te sientes?",
+          time: "2:31 PM",
+          label: "Dr. Smith",
+        },
+      ];
+      render(<Thread messages={msgs} t={light} onRepeat={vi.fn()} />);
+      expect(screen.getByText("How are you feeling?")).toBeInTheDocument();
+      expect(screen.getByText("Como te sientes?")).toBeInTheDocument();
+    });
+
+    it("gloss element has aria-hidden=true for transcript variant", () => {
+      const msgs: Message[] = [
+        {
+          from: "patient",
+          text: "Necesito agua",
+          gloss: "I need water",
+          time: "2:30 PM",
+          label: "Maria",
+        },
+      ];
+      render(<Thread messages={msgs} t={light} onRepeat={vi.fn()} />);
+      const glossEl = screen.getByText("I need water");
+      expect(glossEl.getAttribute("aria-hidden")).toBe("true");
     });
   });
 });

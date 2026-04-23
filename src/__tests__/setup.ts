@@ -31,6 +31,7 @@ Object.defineProperty(window, "matchMedia", {
 // SpeechSynthesisUtterance
 class MockUtterance {
   text = "";
+  lang = "";
   rate = 1;
   volume = 1;
   voice: unknown = null;

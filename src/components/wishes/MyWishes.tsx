@@ -9,12 +9,13 @@ import { Btn } from "../shared/Btn";
 import { BottomSheet } from "../shared/BottomSheet";
 
 interface MyWishesProps {
-  onSpeak: (text: string) => void;
+  onSpeak: (text: string, opts?: { gloss?: string }) => void;
   locale?: string;
   onAddToThread: (
     text: string,
     from: "patient" | "provider",
     label?: string,
+    gloss?: string,
   ) => void;
   onClose: () => void;
   t: ThemeTokens;
@@ -61,9 +62,22 @@ export function MyWishes({
 
   function handleShare() {
     if (!selected.length) return;
-    const sentence = composeWishSentence({ locale, topicId: topic.id, selectedResponseKeys: selected });
-    onAddToThread(resolvePhrase(topic.questionKey, locale), "provider", resolvePhrase("ui.patient.wishes.my_wishes", patientLang));
-    onSpeak(sentence);
+    const sentence = composeWishSentence({ locale: patientLang, topicId: topic.id, selectedResponseKeys: selected });
+    // Compose gloss in the opposite locale for thread dual-locale display
+    const gloss = caregiverLang !== patientLang
+      ? composeWishSentence({ locale: caregiverLang, topicId: topic.id, selectedResponseKeys: selected })
+      : undefined;
+    // The question is a provider-direction thread entry (shown in patient lang)
+    const questionGloss = caregiverLang !== patientLang
+      ? resolvePhrase(topic.questionKey, caregiverLang)
+      : undefined;
+    onAddToThread(
+      resolvePhrase(topic.questionKey, patientLang),
+      "provider",
+      resolvePhrase("ui.patient.wishes.my_wishes", patientLang),
+      questionGloss,
+    );
+    onSpeak(sentence, { gloss });
     advance();
   }
 
@@ -83,8 +97,11 @@ export function MyWishes({
     for (const tp of SICG_TOPICS) {
       const sel = selections[tp.id];
       if (sel && sel.length > 0) {
-        const sentence = composeWishSentence({ locale, topicId: tp.id, selectedResponseKeys: sel });
-        onSpeak(sentence);
+        const sentence = composeWishSentence({ locale: patientLang, topicId: tp.id, selectedResponseKeys: sel });
+        const gloss = caregiverLang !== patientLang
+          ? composeWishSentence({ locale: caregiverLang, topicId: tp.id, selectedResponseKeys: sel })
+          : undefined;
+        onSpeak(sentence, { gloss });
       }
     }
   }
@@ -119,7 +136,7 @@ export function MyWishes({
             </p>
           ) : (
             answeredTopics.map((tp) => {
-              const sentence = composeWishSentence({ locale, topicId: tp.id, selectedResponseKeys: selections[tp.id] });
+              const sentence = composeWishSentence({ locale: patientLang, topicId: tp.id, selectedResponseKeys: selections[tp.id] });
               return (
                 <div
                   key={tp.id}

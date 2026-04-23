@@ -11,7 +11,7 @@ import type { ThemeTokens, ThemeName } from "../../theme/tokens";
 type Step = "severity" | "location" | "descriptor";
 
 interface PainFlowProps {
-  onSelect: (text: string) => void;
+  onSelect: (text: string, opts?: { gloss?: string }) => void;
   t: ThemeTokens;
   theme: ThemeName;
   locale?: string;
@@ -77,12 +77,21 @@ export function PainFlow({ onSelect, t, theme, locale = "en" }: PainFlowProps) {
 
   function handleDescriptor(descriptorKey: PhraseKey) {
     const sentence = composePainSentence({
-      locale,
+      locale: patientLang,
       descriptorKey,
       regionKey: location!,
       severity: severity!,
     });
-    onSelect(sentence);
+    // Compose gloss in the opposite locale for thread dual-locale display
+    const gloss = caregiverLang !== patientLang
+      ? composePainSentence({
+          locale: caregiverLang,
+          descriptorKey,
+          regionKey: location!,
+          severity: severity!,
+        })
+      : undefined;
+    onSelect(sentence, { gloss });
     reset();
   }
 
