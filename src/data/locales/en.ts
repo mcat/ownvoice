@@ -788,6 +788,12 @@ const en = {
   "ui.provider.switch.last_active_days": "Last active {n}d ago",
   "ui.provider.switch.currently_active": "Currently active",
   "ui.provider.switch.switched_announcement": "Switched to {name}. {count} conversation messages.",
+
+  // ── UI chrome: Staff session warning toast ────────────────────
+  "ui.provider.staff_session.warning_title": "Staff session ending",
+  "ui.provider.staff_session.warning_body": "Your staff access will lock in {n} seconds.",
+  "ui.provider.staff_session.extend": "Extend session",
+  "ui.provider.staff_session.end_now": "End now",
 } as const;
 
 export type PhraseKey = keyof typeof en;
