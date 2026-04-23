@@ -2,6 +2,8 @@ import { useState, useRef, useCallback, useEffect } from "preact/hooks";
 import type { ComponentChildren } from "preact";
 import type { ThemeTokens } from "../../../theme/tokens";
 import { Btn } from "../../shared/Btn";
+import { confirm } from "../../shared/ConfirmDialog";
+import { t as resolvePhrase } from "../../../data/phraseRegistry";
 import { drivePrimer } from "../../../models/drivePrimer";
 import { verifyAllOnBoot } from "../../../models/bootModels";
 import { clearAudioCache } from "../../../models/audioCache";
@@ -32,6 +34,7 @@ export function OfflineReadinessSection({ t }: Props) {
 
   const cfg = useSettingsStore((s) => s.cfg);
   const speakerData = useSettingsStore((s) => s.speakerData);
+  const caregiverLang = useSettingsStore((s) => s.cfg?.caregiverLang ?? "en");
 
   const cacheRuns = useAudioCacheStore((s) => s.runs);
   const rebuildingCache = Object.values(cacheRuns).some(
@@ -72,13 +75,15 @@ export function OfflineReadinessSection({ t }: Props) {
    * interrupt. The primer refills OPFS.
    */
   async function forceRedownload() {
-    if (
-      !globalThis.confirm(
-        "Redownload all AI models? This will re-fetch roughly 1.7 GB. Voice synthesis keeps working through the refresh.",
-      )
-    ) {
-      return;
-    }
+    const ok = await confirm({
+      title: resolvePhrase("ui.provider.settings.offline.redownload_dialog.title", caregiverLang),
+      body: resolvePhrase("ui.provider.settings.offline.redownload_dialog.body", caregiverLang),
+      confirmLabel: resolvePhrase("ui.provider.settings.offline.redownload_dialog.confirm", caregiverLang),
+      cancelLabel: resolvePhrase("ui.provider.pin_gate.cancel", caregiverLang),
+      tone: "destructive",
+    });
+    if (!ok) return;
+
     setError(null);
     setForcingRedownload(true);
     try {
@@ -180,10 +185,9 @@ export function OfflineReadinessSection({ t }: Props) {
     totalBytes > 0 ? Math.min(100, (loadedBytes / totalBytes) * 100) : 0;
 
   return (
-    <Section label="Offline readiness" t={t}>
+    <Section label={resolvePhrase("ui.provider.settings.offline.heading", caregiverLang)} t={t}>
       <p style={{ margin: "0 0 14px", color: t.sub, fontSize: 14 }}>
-        Status of the AI models the app uses on-device for voice generation,
-        suggestions, and speech recognition.
+        {resolvePhrase("ui.provider.settings.offline.status_description", caregiverLang)}
       </p>
 
       {primerRunning && (
@@ -198,7 +202,7 @@ export function OfflineReadinessSection({ t }: Props) {
               marginBottom: 6,
             }}
           >
-            <span>Downloading models…</span>
+            <span>{resolvePhrase("ui.provider.settings.offline.downloading", caregiverLang)}</span>
             <span>
               {formatBytes(loadedBytes)} / {formatBytes(totalBytes || null)}
               {totalBytes > 0 && ` (${percent.toFixed(0)}%)`}
@@ -209,7 +213,7 @@ export function OfflineReadinessSection({ t }: Props) {
             aria-valuenow={Math.round(percent)}
             aria-valuemin={0}
             aria-valuemax={100}
-            aria-label="Model download progress"
+            aria-label={resolvePhrase("ui.provider.settings.offline.download_progress_aria", caregiverLang)}
             style={{
               width: "100%",
               height: 6,
@@ -239,7 +243,7 @@ export function OfflineReadinessSection({ t }: Props) {
             fontWeight: 600,
           }}
         >
-          All models ready
+          {resolvePhrase("ui.provider.settings.offline.all_ready", caregiverLang)}
         </p>
       )}
 
@@ -261,13 +265,13 @@ export function OfflineReadinessSection({ t }: Props) {
             opacity: offlineActionRunning ? 0.7 : 1,
           }}
         >
-          Redownload models
+          {resolvePhrase("ui.provider.settings.offline.redownload_button", caregiverLang)}
         </Btn>
       )}
 
       {alreadyReady && (
         <p style={{ marginTop: 8, fontSize: 14, color: t.sub, fontWeight: 500 }}>
-          Already up to date
+          {resolvePhrase("ui.provider.settings.offline.already_up_to_date", caregiverLang)}
         </p>
       )}
 
@@ -291,10 +295,10 @@ export function OfflineReadinessSection({ t }: Props) {
         }}
       >
         {verifying
-          ? "Checking…"
+          ? resolvePhrase("ui.provider.settings.offline.checking", caregiverLang)
           : justVerified
-            ? "✓ Models verified"
-            : "Check existing models"}
+            ? resolvePhrase("ui.provider.settings.offline.verified", caregiverLang)
+            : resolvePhrase("ui.provider.settings.offline.check_button", caregiverLang)}
       </Btn>
 
       {/* Force redownload — lets a clinician or tester trigger a visible
@@ -320,7 +324,9 @@ export function OfflineReadinessSection({ t }: Props) {
             opacity: offlineActionRunning ? 0.6 : 1,
           }}
         >
-          {forcingRedownload ? "Redownloading…" : "Force redownload all models"}
+          {forcingRedownload
+            ? resolvePhrase("ui.provider.settings.offline.redownloading", caregiverLang)
+            : resolvePhrase("ui.provider.settings.offline.force_redownload_button", caregiverLang)}
         </Btn>
       )}
 
@@ -336,10 +342,10 @@ export function OfflineReadinessSection({ t }: Props) {
           {verifiedEntries.map(([model, status]) => {
             const { label, color } =
               status === "verified"
-                ? { label: "ready", color: t.text }
+                ? { label: resolvePhrase("ui.provider.settings.offline.model_status_ready", caregiverLang), color: t.text }
                 : status === "not-primed"
-                  ? { label: "downloading…", color: t.muted }
-                  : { label: "needs retry", color: warnColor };
+                  ? { label: resolvePhrase("ui.provider.settings.offline.model_status_downloading", caregiverLang), color: t.muted }
+                  : { label: resolvePhrase("ui.provider.settings.offline.model_status_needs_retry", caregiverLang), color: warnColor };
             return (
               <li key={model} style={{ color, padding: "4px 0" }}>
                 {model}: {label}
@@ -361,7 +367,8 @@ export function OfflineReadinessSection({ t }: Props) {
 
       {lastVerifiedAt && (
         <p style={{ marginTop: 12, fontSize: 12, color: t.muted }}>
-          Last verified: {new Date(lastVerifiedAt).toLocaleString()}
+          {resolvePhrase("ui.provider.settings.offline.last_verified_prefix", caregiverLang)}
+          {new Date(lastVerifiedAt).toLocaleString()}
         </p>
       )}
 
@@ -383,9 +390,13 @@ export function OfflineReadinessSection({ t }: Props) {
           color: health.warning ? warnColor : t.muted,
         }}
       >
-        Storage: {formatBytes(health.usage)} of {formatBytes(health.quota)} used
+        {resolvePhrase("ui.provider.settings.offline.storage_prefix", caregiverLang)}
+        {formatBytes(health.usage)}
+        {resolvePhrase("ui.provider.settings.offline.storage_of", caregiverLang)}
+        {formatBytes(health.quota)}
+        {resolvePhrase("ui.provider.settings.offline.storage_used", caregiverLang)}
         {health.percentUsed != null && ` (${health.percentUsed.toFixed(0)}%)`}
-        {health.warning && " — running low"}
+        {health.warning && resolvePhrase("ui.provider.settings.offline.storage_low", caregiverLang)}
       </div>
 
       {health.warning && (
@@ -407,10 +418,12 @@ export function OfflineReadinessSection({ t }: Props) {
           }}
         >
           {clearingCache
-            ? "Clearing…"
+            ? resolvePhrase("ui.provider.settings.offline.clearing", caregiverLang)
             : rebuildingCache
-              ? `Rebuilding: ${rebuildCurrent} / ${rebuildTotal}`
-              : "Clear audio cache"}
+              ? resolvePhrase("ui.provider.settings.offline.rebuilding", caregiverLang)
+                  .replace("{current}", String(rebuildCurrent))
+                  .replace("{total}", String(rebuildTotal))
+              : resolvePhrase("ui.provider.settings.offline.clear_audio_cache", caregiverLang)}
         </Btn>
       )}
     </Section>
