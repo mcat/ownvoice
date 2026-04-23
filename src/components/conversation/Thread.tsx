@@ -4,6 +4,8 @@ import type { Message } from "../../types";
 import type { ThemeTokens } from "../../theme/tokens";
 import { t as resolvePhrase } from "../../data/phraseRegistry";
 import { useActivePatient } from "../../stores/settingsStore";
+import { useSettingsStore } from "../../stores/settingsStore";
+import { DualLocaleText } from "../shared/DualLocaleText";
 import { Btn } from "../shared/Btn";
 import { useReducedMotion } from "../../hooks/useReducedMotion";
 
@@ -19,9 +21,14 @@ interface ThreadProps {
  * Patient messages render right-aligned with blue background;
  * provider messages left-aligned with card background.
  * Tapping a bubble re-speaks the message without adding a duplicate.
+ *
+ * When a message carries a `gloss` that differs from `text`, the bubble
+ * renders a secondary-locale line via `<DualLocaleText variant="transcript">`.
  */
 export function Thread({ messages, t, onRepeat }: ThreadProps) {
-  const patientLang = useActivePatient()?.patientLang ?? "en";
+  const active = useActivePatient();
+  const patientLang = active?.patientLang ?? "en";
+  const caregiverLang = useSettingsStore((s) => s.cfg?.caregiverLang ?? "en");
   const endRef = useRef<HTMLDivElement>(null);
   const [repeatingIdx, setRepeatingIdx] = useState<number | null>(null);
   const reducedMotion = useReducedMotion();
@@ -64,6 +71,7 @@ export function Thread({ messages, t, onRepeat }: ThreadProps) {
       {messages.map((msg, idx) => {
         const isPatient = msg.from === "patient";
         const isRepeating = repeatingIdx === idx;
+        const showGloss = !!msg.gloss && msg.gloss !== msg.text;
 
         const bubbleStyle: JSX.CSSProperties = {
           display: "flex",
@@ -93,6 +101,10 @@ export function Thread({ messages, t, onRepeat }: ThreadProps) {
           transition: "background 0.15s, box-shadow 0.15s",
         };
 
+        // Determine locale pair for DualLocaleText
+        const primaryLocale = isPatient ? patientLang : caregiverLang;
+        const glossLocale = isPatient ? caregiverLang : patientLang;
+
         return (
           <div key={idx} style={bubbleStyle}>
             <Btn
@@ -100,7 +112,18 @@ export function Thread({ messages, t, onRepeat }: ThreadProps) {
               style={btnStyle}
               aria-label={resolvePhrase("ui.dual.thread.repeat_aria", patientLang).replace("{text}", msg.text)}
             >
-              {msg.text}
+              {showGloss ? (
+                <DualLocaleText
+                  variant="transcript"
+                  primaryKey={"quick.yes" as never}
+                  primaryLocale={primaryLocale}
+                  glossLocale={glossLocale}
+                  primaryText={msg.text}
+                  glossText={msg.gloss}
+                />
+              ) : (
+                msg.text
+              )}
             </Btn>
           </div>
         );

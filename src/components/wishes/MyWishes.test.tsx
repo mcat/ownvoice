@@ -76,9 +76,11 @@ describe("MyWishes", () => {
       t(SICG_TOPICS[0].questionKey, "en"),
       "provider",
       "My Wishes",
+      undefined, // gloss — same locale, so undefined
     );
     expect(onSpeak).toHaveBeenCalledWith(
       expect.stringContaining("being with my family"),
+      { gloss: undefined }, // same locale → no gloss
     );
   });
 
@@ -172,6 +174,7 @@ describe("MyWishes", () => {
     expect(onSpeak).toHaveBeenCalledTimes(2);
     expect(onSpeak).toHaveBeenCalledWith(
       expect.stringContaining("being with my family"),
+      { gloss: undefined }, // same locale → no gloss
     );
     vi.useRealTimers();
   });

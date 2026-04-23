@@ -153,6 +153,7 @@ describe("PainFlow", () => {
 
       expect(onSelect).toHaveBeenCalledWith(
         "I have sharp pain in my Lower Back, level 8 out of 10",
+        { gloss: undefined }, // same locale → no gloss
       );
     });
 

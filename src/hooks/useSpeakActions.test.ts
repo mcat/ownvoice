@@ -391,4 +391,190 @@ describe("useSpeakActions", () => {
       });
     });
   });
+
+  // ── Gloss population (PR 4) ──────────────────────────────────────
+
+  describe("gloss population", () => {
+    it("speakAsPatient with key resolves gloss in caregiverLang", () => {
+      const cfg = makeTestCfg({
+        patient: { name: "Alice", bed: "B-102", patientLang: "en", hasVoice: true },
+        cfg: {
+          pin: "0000",
+          caregiverLang: "en",
+          providers: [{ name: "Dr. Jones", hasVoice: false }],
+        },
+      });
+      useSettingsStore.setState({ cfg });
+
+      const { result } = renderHook(() => useSpeakActions());
+
+      act(() => {
+        result.current.speakAsPatient("Yes", { key: "quick.yes" });
+      });
+
+      const msgs = activeMessages();
+      expect(msgs).toHaveLength(1);
+      // Same locale → gloss resolves to the same value as text
+      expect(msgs[0].gloss).toBe("Yes");
+    });
+
+    it("speakAsPatient with explicit gloss uses the provided gloss", () => {
+      useSettingsStore.setState({ cfg: DEFAULT_CFG });
+
+      const { result } = renderHook(() => useSpeakActions());
+
+      act(() => {
+        result.current.speakAsPatient("Tengo dolor agudo en mi cabeza, nivel 8 de 10", {
+          gloss: "I have sharp pain in my Head, level 8 out of 10",
+        });
+      });
+
+      const msgs = activeMessages();
+      expect(msgs[0].gloss).toBe("I have sharp pain in my Head, level 8 out of 10");
+    });
+
+    it("speakAsPatient without opts leaves gloss undefined (free-text)", () => {
+      useSettingsStore.setState({ cfg: DEFAULT_CFG });
+
+      const { result } = renderHook(() => useSpeakActions());
+
+      act(() => {
+        result.current.speakAsPatient("please help me breathe");
+      });
+
+      const msgs = activeMessages();
+      expect(msgs[0].gloss).toBeUndefined();
+    });
+
+    it("speakAsProvider with key resolves gloss in patientLang", () => {
+      const cfg = makeTestCfg({
+        patient: { name: "Alice", bed: "B-102", patientLang: "en", hasVoice: true },
+        cfg: {
+          pin: "0000",
+          caregiverLang: "en",
+          providers: [{ name: "Dr. Jones", hasVoice: false }],
+        },
+      });
+      useSettingsStore.setState({ cfg });
+
+      const { result } = renderHook(() => useSpeakActions());
+
+      act(() => {
+        result.current.speakAsProvider("How are you feeling?", { key: "provider.questions.feeling" });
+      });
+
+      const msgs = activeMessages();
+      expect(msgs).toHaveLength(1);
+      expect(msgs[0].gloss).toBe("How are you feeling?");
+    });
+
+    it("speakAsProvider without opts leaves gloss undefined", () => {
+      useSettingsStore.setState({ cfg: DEFAULT_CFG });
+
+      const { result } = renderHook(() => useSpeakActions());
+
+      act(() => {
+        result.current.speakAsProvider("Take deep breaths");
+      });
+
+      const msgs = activeMessages();
+      expect(msgs[0].gloss).toBeUndefined();
+    });
+  });
+
+  // ── Speaker.lang threading (PR 4) ────────────────────────────────
+
+  describe("speaker lang threading", () => {
+    it("speakAsPatient sets speaker.lang to caregiverLang (patient voice speaks caregiver's language)", () => {
+      const cfg = makeTestCfg({
+        patient: { name: "Alice", bed: "B-102", patientLang: "es", hasVoice: true },
+        cfg: {
+          pin: "0000",
+          caregiverLang: "en",
+          providers: [{ name: "Dr. Jones", hasVoice: false }],
+        },
+      });
+      useSettingsStore.setState({ cfg });
+
+      const { result } = renderHook(() => useSpeakActions());
+
+      act(() => {
+        result.current.speakAsPatient("I need water");
+      });
+
+      expect(speak).toHaveBeenCalledWith("I need water", expect.objectContaining({
+        lang: "en",
+        type: "patient",
+      }));
+    });
+
+    it("speakAsProvider sets speaker.lang to patientLang (provider voice speaks patient's language)", () => {
+      const cfg = makeTestCfg({
+        patient: { name: "Alice", bed: "B-102", patientLang: "es", hasVoice: true },
+        cfg: {
+          pin: "0000",
+          caregiverLang: "en",
+          providers: [{ name: "Dr. Jones", hasVoice: false }],
+        },
+      });
+      useSettingsStore.setState({ cfg });
+
+      const { result } = renderHook(() => useSpeakActions());
+
+      act(() => {
+        result.current.speakAsProvider("How are you feeling?");
+      });
+
+      expect(speak).toHaveBeenCalledWith("How are you feeling?", expect.objectContaining({
+        lang: "es",
+        type: "provider",
+      }));
+    });
+
+    it("repeatSpeak sets speaker.lang to caregiverLang for patient repeats", () => {
+      const cfg = makeTestCfg({
+        patient: { name: "Alice", bed: "B-102", patientLang: "es", hasVoice: true },
+        cfg: {
+          pin: "0000",
+          caregiverLang: "en",
+          providers: [{ name: "Dr. Jones", hasVoice: false }],
+        },
+      });
+      useSettingsStore.setState({ cfg });
+
+      const { result } = renderHook(() => useSpeakActions());
+
+      act(() => {
+        result.current.repeatSpeak("I need water", "patient");
+      });
+
+      expect(speak).toHaveBeenCalledWith("I need water", expect.objectContaining({
+        lang: "en",
+        type: "patient",
+      }));
+    });
+
+    it("repeatSpeak sets speaker.lang to patientLang for provider repeats", () => {
+      const cfg = makeTestCfg({
+        patient: { name: "Alice", bed: "B-102", patientLang: "es", hasVoice: true },
+        cfg: {
+          pin: "0000",
+          caregiverLang: "en",
+          providers: [{ name: "Dr. Jones", hasVoice: false }],
+        },
+      });
+      useSettingsStore.setState({ cfg });
+
+      const { result } = renderHook(() => useSpeakActions());
+
+      act(() => {
+        result.current.repeatSpeak("How are you feeling?", "provider");
+      });
+
+      expect(speak).toHaveBeenCalledWith("How are you feeling?", expect.objectContaining({
+        lang: "es",
+        type: "provider",
+      }));
+    });
+  });
 });

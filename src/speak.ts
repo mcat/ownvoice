@@ -367,8 +367,13 @@ async function playConfirmationTone(): Promise<void> {
 /**
  * Fall back to Web Speech API.
  * Returns true if speech was successfully initiated, false if it failed/canceled.
+ *
+ * @param lang — BCP 47 locale code to set on the utterance. When provided,
+ *   the browser selects a voice matching that locale. For patient utterances
+ *   this is `caregiverLang` (the language the patient voice speaks); for
+ *   provider utterances it is `patientLang`.
  */
-async function tryWebSpeech(text: string): Promise<boolean> {
+async function tryWebSpeech(text: string, lang?: string): Promise<boolean> {
   if (!("speechSynthesis" in window)) return false;
 
   // Clear any stuck queue — Chrome can get wedged in speaking:true forever.
@@ -377,10 +382,13 @@ async function tryWebSpeech(text: string): Promise<boolean> {
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.rate = 0.9;
   utterance.volume = 1.0;
+  if (lang) utterance.lang = lang;
 
   const voices = cachedVoices.length > 0 ? cachedVoices : speechSynthesis.getVoices();
-  // Prefer the user's explicit selection; fall back to any English voice
+  // Prefer the user's explicit selection; fall back to a voice matching the
+  // requested locale, then any English voice as last resort.
   const voice = (fallbackVoiceURI && voices.find((v) => v.voiceURI === fallbackVoiceURI))
+    || (lang && voices.find((v) => v.lang.startsWith(lang)))
     || voices.find((v) => v.lang.startsWith("en"));
   if (voice) utterance.voice = voice;
 
@@ -479,7 +487,9 @@ export async function speak(text: string, speaker: Speaker): Promise<void> {
   }
 
   // Priority 1: Web Speech API — fast neutral voice while pre-gen fills the cache.
-  const speechWorked = await tryWebSpeech(text);
+  // Thread the speaker's locale so the utterance uses the correct language
+  // voice: patient utterances speak in caregiverLang, provider in patientLang.
+  const speechWorked = await tryWebSpeech(text, speaker.lang);
   if (speechWorked) {
     console.log("[OwnVoice:TTS] Web Speech played OK");
     return;

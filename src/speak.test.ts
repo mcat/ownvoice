@@ -522,6 +522,75 @@ describe("primeSpeechSynthesis", () => {
 });
 
 // =============================================================================
+// Web Speech: lang threading (PR 4)
+// =============================================================================
+describe("speak — Web Speech lang threading", () => {
+  it("sets utterance.lang to speaker.lang when provided", async () => {
+    const speaker = makeSpeaker({ lang: "es" });
+    let capturedUtterance: { lang?: string; onend?: (() => void) | null } | null = null;
+
+    (globalThis.speechSynthesis.speak as ReturnType<typeof vi.fn>).mockImplementation(
+      (utt: { lang?: string; onend?: (() => void) | null }) => {
+        capturedUtterance = utt;
+        queueMicrotask(() => utt.onend?.());
+      },
+    );
+
+    const promise = speak("Hola", speaker);
+    await vi.advanceTimersByTimeAsync(200);
+    await promise;
+
+    expect(capturedUtterance).not.toBeNull();
+    expect(capturedUtterance!.lang).toBe("es");
+  });
+
+  it("does not set utterance.lang when speaker.lang is undefined", async () => {
+    const speaker = makeSpeaker({ lang: undefined });
+    let capturedUtterance: { lang?: string; onend?: (() => void) | null } | null = null;
+
+    (globalThis.speechSynthesis.speak as ReturnType<typeof vi.fn>).mockImplementation(
+      (utt: { lang?: string; onend?: (() => void) | null }) => {
+        capturedUtterance = utt;
+        queueMicrotask(() => utt.onend?.());
+      },
+    );
+
+    const promise = speak("Hello", speaker);
+    await vi.advanceTimersByTimeAsync(200);
+    await promise;
+
+    expect(capturedUtterance).not.toBeNull();
+    // lang should be empty string (default from SpeechSynthesisUtterance)
+    expect(capturedUtterance!.lang).toBe("");
+  });
+
+  it("prefers a voice matching speaker.lang when fallbackVoiceURI is not set", async () => {
+    const esVoice = { lang: "es-ES", name: "Spanish", voiceURI: "urn:es" } as SpeechSynthesisVoice;
+    const enVoice = { lang: "en-US", name: "English", voiceURI: "urn:en" } as SpeechSynthesisVoice;
+
+    (globalThis as any).speechSynthesis = {
+      ...globalThis.speechSynthesis,
+      speak: vi.fn((utt: { onend?: (() => void) | null }) => {
+        queueMicrotask(() => utt.onend?.());
+      }),
+      cancel: vi.fn(),
+      getVoices: vi.fn(() => [enVoice, esVoice]),
+      speaking: false,
+    };
+
+    setFallbackVoice(null);
+
+    const speaker = makeSpeaker({ lang: "es" });
+    const promise = speak("Hola", speaker);
+    await vi.advanceTimersByTimeAsync(200);
+    await promise;
+
+    const utterance = (globalThis.speechSynthesis.speak as ReturnType<typeof vi.fn>).mock.calls[0]?.[0];
+    expect(utterance?.voice).toBe(esVoice);
+  });
+});
+
+// =============================================================================
 // setFallbackVoice
 // =============================================================================
 describe("setFallbackVoice", () => {
