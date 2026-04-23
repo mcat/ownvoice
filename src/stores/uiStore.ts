@@ -27,6 +27,11 @@ interface UIState {
   themeOverride: ThemeName | null;
   systemDark: boolean;
 
+  /** Staff authentication — transient, clears on page reload. */
+  staffAuthed: boolean;
+  /** Unix ms timestamp of the last staff-auth bump. */
+  staffAuthedAt: number | null;
+
   setTab: (tab: string) => void;
   setSub: (sub: number) => void;
   toggleBuilder: () => void;
@@ -38,6 +43,9 @@ interface UIState {
   setSpeaking: (state: SpeakingState | null) => void;
   setSystemDark: (dark: boolean) => void;
   toggleTheme: () => void;
+  setStaffAuthed: (v: boolean) => void;
+  bumpStaffAuthed: () => void;
+  endStaffSession: () => void;
   resetUI: () => void;
 }
 
@@ -71,6 +79,8 @@ const INITIAL: Pick<
   | "speaking"
   | "themeOverride"
   | "systemDark"
+  | "staffAuthed"
+  | "staffAuthedAt"
 > = {
   tab: "quick",
   sub: 0,
@@ -87,6 +97,8 @@ const INITIAL: Pick<
   systemDark: typeof window !== "undefined"
     ? window.matchMedia("(prefers-color-scheme: dark)").matches
     : false,
+  staffAuthed: false,
+  staffAuthedAt: null,
 };
 
 export const useUIStore = create<UIState>((set) => ({
@@ -125,5 +137,9 @@ export const useUIStore = create<UIState>((set) => ({
       localStorage.removeItem("ov-theme");
       return { themeOverride: null };
     }),
+  setStaffAuthed: (v) => set({ staffAuthed: v }),
+  bumpStaffAuthed: () =>
+    set((s) => (s.staffAuthed ? { staffAuthedAt: Date.now() } : {})),
+  endStaffSession: () => set({ staffAuthed: false, staffAuthedAt: null }),
   resetUI: () => set(INITIAL),
 }));
