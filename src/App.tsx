@@ -91,26 +91,33 @@ export function App() {
   // pinIntent tracks which action to perform after a successful PIN.
   const [pinIntent, setPinIntent] = useState<"settings" | "switch" | null>(null);
 
+  // Read staffAuthed reactively for the header's End Staff Session button.
+  const staffAuthed = useUIStore((s) => s.staffAuthed);
+
   const handleOpenSettings = useCallback(() => {
-    if (cfg?.pin) {
+    if (useUIStore.getState().staffAuthed || !cfg?.pin) {
+      useUIStore.getState().bumpStaffAuthed();
+      openOverlay("settings");
+    } else {
       setPinIntent("settings");
       openOverlay("pinEntry");
-    } else {
-      openOverlay("settings");
     }
   }, [cfg?.pin, openOverlay]);
 
   const handleOpenSwitch = useCallback(() => {
-    if (cfg?.pin) {
+    if (useUIStore.getState().staffAuthed || !cfg?.pin) {
+      useUIStore.getState().bumpStaffAuthed();
+      openOverlay("switch");
+    } else {
       setPinIntent("switch");
       openOverlay("pinEntry");
-    } else {
-      openOverlay("switch");
     }
   }, [cfg?.pin, openOverlay]);
 
   const handlePinSuccess = useCallback(() => {
     closeOverlay("pinEntry");
+    useUIStore.getState().setStaffAuthed(true);
+    useUIStore.getState().bumpStaffAuthed();
     if (pinIntent === "switch") {
       openOverlay("switch");
     } else {
@@ -298,7 +305,13 @@ export function App() {
       class="font-sans flex flex-col relative"
       style={{ background: t.bg, color: t.text, height: "100dvh", overflow: "hidden" }}
     >
-      <Header cfg={cfg} onSettings={handleOpenSettings} onSwitchPatient={handleOpenSwitch} />
+      <Header
+        cfg={cfg}
+        onSettings={handleOpenSettings}
+        onSwitchPatient={handleOpenSwitch}
+        staffAuthed={staffAuthed}
+        onEndStaffSession={() => useUIStore.getState().endStaffSession()}
+      />
 
       {/* Main content area. Thread is pinned at the top; the region below
           scrolls independently so the conversation never scrolls out of view. */}

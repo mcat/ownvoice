@@ -36,10 +36,12 @@ const makeCfg = (overrides?: { patient?: Record<string, unknown>; cfg?: Partial<
 describe("Header", () => {
   const onSettings = vi.fn();
   const onSwitchPatient = vi.fn();
+  const onEndStaffSession = vi.fn();
 
   beforeEach(() => {
     onSettings.mockReset();
     onSwitchPatient.mockReset();
+    onEndStaffSession.mockReset();
     useUIStore.setState({
       builderOpen: false,
       wishesOpen: false,
@@ -48,13 +50,23 @@ describe("Header", () => {
       settingsOpen: false,
       pinEntryOpen: false,
       switchSheetOpen: false,
+      staffAuthed: false,
+      staffAuthedAt: null,
     });
   });
 
   function renderHeader(overrides?: { patient?: Record<string, unknown>; cfg?: Partial<AppSettings> }) {
     const cfg = makeCfg(overrides);
     useSettingsStore.setState({ cfg, speakerData: null, _hasHydrated: true });
-    return render(<Header cfg={cfg} onSettings={onSettings} onSwitchPatient={onSwitchPatient} />);
+    return render(
+      <Header
+        cfg={cfg}
+        onSettings={onSettings}
+        onSwitchPatient={onSwitchPatient}
+        staffAuthed={false}
+        onEndStaffSession={onEndStaffSession}
+      />,
+    );
   }
 
   it("shows patient name from cfg prop", () => {

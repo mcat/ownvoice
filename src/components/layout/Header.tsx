@@ -8,9 +8,11 @@ interface HeaderProps {
   cfg: AppSettings;
   onSettings: () => void;
   onSwitchPatient: () => void;
+  staffAuthed: boolean;
+  onEndStaffSession: () => void;
 }
 
-export function Header({ cfg, onSettings, onSwitchPatient }: HeaderProps) {
+export function Header({ cfg, onSettings, onSwitchPatient, staffAuthed, onEndStaffSession }: HeaderProps) {
   const { theme, t } = useTheme();
   const active = useActivePatient();
 
@@ -52,7 +54,7 @@ export function Header({ cfg, onSettings, onSwitchPatient }: HeaderProps) {
           </span>
         )}
       </div>
-      <HeaderNav onSettings={onSettings} onSwitchPatient={onSwitchPatient} />
+      <HeaderNav onSettings={onSettings} onSwitchPatient={onSwitchPatient} staffAuthed={staffAuthed} onEndStaffSession={onEndStaffSession} />
     </header>
   );
 }

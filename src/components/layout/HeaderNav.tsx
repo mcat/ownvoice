@@ -15,6 +15,7 @@ const ICONS = {
   provider: "\uD83D\uDC69\u200D\u2695\uFE0F",
   switchPatient: "\uD83D\uDD04",
   settings: "\u2699\uFE0F",
+  endSession: "\uD83D\uDD12",
 } as const;
 
 // Overlay button definitions live at module scope — identity never changes
@@ -56,9 +57,11 @@ function labelStyle(t: ThemeTokens) {
 interface HeaderNavProps {
   onSettings: () => void;
   onSwitchPatient: () => void;
+  staffAuthed: boolean;
+  onEndStaffSession: () => void;
 }
 
-export function HeaderNav({ onSettings, onSwitchPatient }: HeaderNavProps) {
+export function HeaderNav({ onSettings, onSwitchPatient, staffAuthed, onEndStaffSession }: HeaderNavProps) {
   const { theme, toggle: onToggleTheme, isAuto, t } = useTheme();
   const openOverlay = useUIStore((s) => s.openOverlay);
   const cfg = useSettingsStore((s) => s.cfg);
@@ -93,6 +96,12 @@ export function HeaderNav({ onSettings, onSwitchPatient }: HeaderNavProps) {
         <span>{ICONS.settings}</span>
         <span style={labelStyle(t)}>{resolvePhrase("ui.provider.nav.settings", caregiverLang)}</span>
       </Btn>
+      {staffAuthed && (
+        <Btn key="endSession" onClick={onEndStaffSession} aria-label={resolvePhrase("ui.provider.nav.end_staff_session", caregiverLang)} style={btnStyle(t, ICONS.endSession)}>
+          <span>{ICONS.endSession}</span>
+          <span style={labelStyle(t)}>{resolvePhrase("ui.provider.nav.end_staff_session", caregiverLang)}</span>
+        </Btn>
+      )}
     </div>
   );
 }

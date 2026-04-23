@@ -11,6 +11,7 @@ import { CareTeamSection } from "./sections/CareTeamSection";
 import { AboutSection } from "./sections/AboutSection";
 import { OfflineReadinessSection } from "./sections/OfflineReadinessSection";
 import { ResetSection } from "./sections/ResetSection";
+import { useStaffActivityBump } from "../../hooks/useStaffActivityBump";
 
 interface SettingsPanelProps {
   cfg: AppSettings;
@@ -41,52 +42,56 @@ export function SettingsPanel({
   theme,
 }: SettingsPanelProps) {
   const caregiverLang = useSettingsStore((s) => s.cfg?.caregiverLang ?? "en");
+  const bump = useStaffActivityBump();
 
   function updateCfg(partial: Partial<AppSettings>): void {
     onUpdate({ ...cfg, ...partial });
   }
 
   return (
-    <BottomSheet onClose={onClose} t={t} zIndex={z.sheetStacked}>
-      <BottomSheet.Header>
-        <BottomSheet.Title>{resolvePhrase("ui.provider.settings.title", caregiverLang)}</BottomSheet.Title>
-        {/* "Done" text link instead of X — matches iPadOS convention for settings sheets. */}
-        <BottomSheet.CloseButton
-          aria-label={resolvePhrase("ui.provider.settings.close_aria", caregiverLang)}
-          style={{
-            fontSize: 16,
-            color: t.muted,
-            padding: "8px 12px",
-            minWidth: 64,
-            minHeight: 64,
-            fontFamily:
-              "'Atkinson Hyperlegible Next', system-ui, -apple-system, sans-serif",
-          }}
-        >
-          {resolvePhrase("ui.provider.settings.done", caregiverLang)}
-        </BottomSheet.CloseButton>
-      </BottomSheet.Header>
+    // eslint-disable-next-line jsx-a11y/no-static-element-interactions
+    <div onMouseDown={bump} onKeyDown={bump}>
+      <BottomSheet onClose={onClose} t={t} zIndex={z.sheetStacked}>
+        <BottomSheet.Header>
+          <BottomSheet.Title>{resolvePhrase("ui.provider.settings.title", caregiverLang)}</BottomSheet.Title>
+          {/* "Done" text link instead of X — matches iPadOS convention for settings sheets. */}
+          <BottomSheet.CloseButton
+            aria-label={resolvePhrase("ui.provider.settings.close_aria", caregiverLang)}
+            style={{
+              fontSize: 16,
+              color: t.muted,
+              padding: "8px 12px",
+              minWidth: 64,
+              minHeight: 64,
+              fontFamily:
+                "'Atkinson Hyperlegible Next', system-ui, -apple-system, sans-serif",
+            }}
+          >
+            {resolvePhrase("ui.provider.settings.done", caregiverLang)}
+          </BottomSheet.CloseButton>
+        </BottomSheet.Header>
 
-      <BottomSheet.Body>
-        <div style={{ padding: "0 4px" }}>
-          <PatientInfoSection
-            cfg={cfg}
-            updateCfg={updateCfg}
-            t={t}
-            theme={theme}
-          />
-          <AccessibilitySection cfg={cfg} updateCfg={updateCfg} t={t} />
-          <CareTeamSection
-            cfg={cfg}
-            t={t}
-            theme={theme}
-          />
-          <PatientsSection t={t} theme={theme} />
-          <AboutSection t={t} />
-          <OfflineReadinessSection t={t} />
-          <ResetSection onReset={onReset} t={t} theme={theme} />
-        </div>
-      </BottomSheet.Body>
-    </BottomSheet>
+        <BottomSheet.Body>
+          <div style={{ padding: "0 4px" }}>
+            <PatientInfoSection
+              cfg={cfg}
+              updateCfg={updateCfg}
+              t={t}
+              theme={theme}
+            />
+            <AccessibilitySection cfg={cfg} updateCfg={updateCfg} t={t} />
+            <CareTeamSection
+              cfg={cfg}
+              t={t}
+              theme={theme}
+            />
+            <PatientsSection t={t} theme={theme} />
+            <AboutSection t={t} />
+            <OfflineReadinessSection t={t} />
+            <ResetSection onReset={onReset} t={t} theme={theme} />
+          </div>
+        </BottomSheet.Body>
+      </BottomSheet>
+    </div>
   );
 }

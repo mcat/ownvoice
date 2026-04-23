@@ -107,6 +107,8 @@ describe("App", () => {
       switchSheetOpen: false,
       activeProvIdx: 0,
       speaking: null,
+      staffAuthed: false,
+      staffAuthedAt: null,
     });
     useConversationStore.setState({ messagesByPatientId: {} });
     // Reset the shared signal mocks so each test starts "neither path
@@ -412,6 +414,54 @@ describe("App", () => {
       // After correct PIN, SwitchSheet should open
       expect(useUIStore.getState().switchSheetOpen).toBe(true);
       expect(useUIStore.getState().pinEntryOpen).toBe(false);
+    });
+  });
+
+  describe("staffAuthed bridge", () => {
+    it("PIN success sets staffAuthed=true", () => {
+      useSettingsStore.setState({
+        _hasHydrated: true,
+        cfg: makeCfg({ pin: "1234" }),
+      });
+      render(<App />);
+      // Tap Settings to trigger PIN gate
+      fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+      expect(useUIStore.getState().pinEntryOpen).toBe(true);
+      // Enter correct PIN
+      fireEvent.click(screen.getByText("1"));
+      fireEvent.click(screen.getByText("2"));
+      fireEvent.click(screen.getByText("3"));
+      fireEvent.click(screen.getByText("4"));
+      // staffAuthed should now be true
+      expect(useUIStore.getState().staffAuthed).toBe(true);
+      expect(useUIStore.getState().staffAuthedAt).toBeGreaterThan(0);
+    });
+
+    it("subsequent tap on Switch Patient skips PinGate when staffAuthed", () => {
+      useSettingsStore.setState({
+        _hasHydrated: true,
+        cfg: makeCfg({ pin: "1234" }),
+      });
+      useUIStore.setState({ staffAuthed: true });
+      render(<App />);
+      fireEvent.click(screen.getByRole("button", { name: "Switch Patient" }));
+      // Should open switch directly — no PIN gate
+      expect(useUIStore.getState().switchSheetOpen).toBe(true);
+      expect(useUIStore.getState().pinEntryOpen).toBe(false);
+    });
+
+    it("End Staff Session button clears staffAuthed", () => {
+      useSettingsStore.setState({
+        _hasHydrated: true,
+        cfg: makeCfg({ pin: "1234" }),
+      });
+      useUIStore.setState({ staffAuthed: true, staffAuthedAt: Date.now() });
+      render(<App />);
+      // End Staff Session should be visible when staffAuthed
+      const endBtn = screen.getByRole("button", { name: "End staff session" });
+      fireEvent.click(endBtn);
+      expect(useUIStore.getState().staffAuthed).toBe(false);
+      expect(useUIStore.getState().staffAuthedAt).toBeNull();
     });
   });
 

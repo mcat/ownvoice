@@ -794,6 +794,7 @@ const en = {
   "ui.provider.staff_session.warning_body": "Your staff access will lock in {n} seconds.",
   "ui.provider.staff_session.extend": "Extend session",
   "ui.provider.staff_session.end_now": "End now",
+  "ui.provider.nav.end_staff_session": "End staff session",
 } as const;
 
 export type PhraseKey = keyof typeof en;

@@ -9,6 +9,7 @@ import { LANGS } from "../../data/phrases";
 import { t as resolvePhrase } from "../../data/phraseRegistry";
 import * as audioCacheRunner from "../../models/audioCacheRunner";
 import type { Patient } from "../../types";
+import { useStaffActivityBump } from "../../hooks/useStaffActivityBump";
 
 export interface SwitchSheetProps {
   open: boolean;
@@ -39,6 +40,7 @@ function langInfo(code: string) {
 }
 
 export function SwitchSheet({ open, onClose, t: tokens, theme }: SwitchSheetProps) {
+  const bump = useStaffActivityBump();
   const cfg = useSettingsStore((s) => s.cfg);
   const caregiverLang = cfg?.caregiverLang ?? "en";
   const patients = cfg?.patients ?? [];
@@ -151,14 +153,16 @@ export function SwitchSheet({ open, onClose, t: tokens, theme }: SwitchSheetProp
   };
 
   return (
-    <BottomSheet onClose={onClose} t={tokens} heightVh={88}>
-      <BottomSheet.Header>
-        <BottomSheet.Title>
-          {resolvePhrase("ui.provider.switch.title", caregiverLang)}
-        </BottomSheet.Title>
-        <BottomSheet.CloseButton aria-label="Close" />
-      </BottomSheet.Header>
-      <BottomSheet.Body>
+    // eslint-disable-next-line jsx-a11y/no-static-element-interactions
+    <div onMouseDown={bump} onKeyDown={bump}>
+      <BottomSheet onClose={onClose} t={tokens} heightVh={88}>
+        <BottomSheet.Header>
+          <BottomSheet.Title>
+            {resolvePhrase("ui.provider.switch.title", caregiverLang)}
+          </BottomSheet.Title>
+          <BottomSheet.CloseButton aria-label="Close" />
+        </BottomSheet.Header>
+        <BottomSheet.Body>
         {/* + Add Patient card — disabled for PR A */}
         <button
           type="button"
@@ -284,7 +288,8 @@ export function SwitchSheet({ open, onClose, t: tokens, theme }: SwitchSheetProp
         >
           {announcement}
         </div>
-      </BottomSheet.Body>
-    </BottomSheet>
+        </BottomSheet.Body>
+      </BottomSheet>
+    </div>
   );
 }
