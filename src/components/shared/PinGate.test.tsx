@@ -2,6 +2,7 @@ import { render, screen, fireEvent, act } from "@testing-library/preact";
 import { PinGate } from "./PinGate";
 import { light } from "../../theme/tokens";
 import { useSettingsStore } from "../../stores/settingsStore";
+import { makeTestCfg } from "../../test/makeCfg";
 
 const baseProps = {
   pin: "1234",
@@ -13,13 +14,7 @@ const baseProps = {
 
 beforeEach(() => {
   useSettingsStore.setState({
-    cfg: {
-      patientName: "Patient",
-      bed: "1",
-      patientLang: "en",
-      caregiverLang: "en",
-      providers: [],
-    } as import("../../types").AppSettings,
+    cfg: makeTestCfg({ patient: { name: "Patient", bed: "1" } }),
     _hasHydrated: true,
   });
 });

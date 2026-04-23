@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from "@testing-library/preact";
-import type { AppSettings } from "../../types";
+import { makeTestCfg } from "../../test/makeCfg";
 
 vi.mock("../../models/audioCacheRunner", () => ({
   retryFailed: vi.fn(),
@@ -11,15 +11,12 @@ import { VoiceCacheProgress } from "./VoiceCacheProgress";
 import { useAudioCacheStore } from "../../stores/audioCacheStore";
 import * as audioCacheRunner from "../../models/audioCacheRunner";
 
-const CFG: AppSettings = {
-  patientName: "Alice",
-  bed: "1",
-  patientLang: "en",
-  caregiverLang: "en",
-  patientVoice: true,
-  pin: "0000",
-  providers: [],
-};
+const TEST_PATIENT_ID = "test-patient-1";
+
+const CFG = makeTestCfg({
+  patient: { name: "Alice", bed: "1", patientLang: "en", hasVoice: true, speakerData: { some: "embed" } },
+  cfg: { pin: "0000" },
+});
 
 beforeEach(() => {
   useAudioCacheStore.setState({ runs: {}, activeKey: null });
@@ -30,7 +27,7 @@ describe("VoiceCacheProgress", () => {
   it("renders nothing when there's no run for the speaker", () => {
     const { container } = render(
       <VoiceCacheProgress
-        speakerKey="patient"
+        speakerKey={`patient:${TEST_PATIENT_ID}`}
         speakerLabel="Alice"
         cfg={CFG}
         patientSpeakerData={null}
@@ -52,7 +49,7 @@ describe("VoiceCacheProgress", () => {
           fingerprint: "fp-p0",
         },
       },
-      activeKey: "patient",
+      activeKey: `patient:${TEST_PATIENT_ID}`,
     });
 
     render(
@@ -71,7 +68,7 @@ describe("VoiceCacheProgress", () => {
   it("renders a progress bar while running", () => {
     useAudioCacheStore.setState({
       runs: {
-        patient: {
+        [`patient:${TEST_PATIENT_ID}`]: {
           status: "running",
           current: 47,
           total: 150,
@@ -81,12 +78,12 @@ describe("VoiceCacheProgress", () => {
           fingerprint: "fp",
         },
       },
-      activeKey: "patient",
+      activeKey: `patient:${TEST_PATIENT_ID}`,
     });
 
     render(
       <VoiceCacheProgress
-        speakerKey="patient"
+        speakerKey={`patient:${TEST_PATIENT_ID}`}
         speakerLabel="Alice"
         cfg={CFG}
         patientSpeakerData={null}
@@ -98,7 +95,7 @@ describe("VoiceCacheProgress", () => {
   it("renders success summary when status is done", () => {
     useAudioCacheStore.setState({
       runs: {
-        patient: {
+        [`patient:${TEST_PATIENT_ID}`]: {
           status: "done",
           current: 150,
           total: 150,
@@ -113,7 +110,7 @@ describe("VoiceCacheProgress", () => {
 
     render(
       <VoiceCacheProgress
-        speakerKey="patient"
+        speakerKey={`patient:${TEST_PATIENT_ID}`}
         speakerLabel="Alice"
         cfg={CFG}
         patientSpeakerData={null}
@@ -127,7 +124,7 @@ describe("VoiceCacheProgress", () => {
   it("renders a retry button when status is failed", () => {
     useAudioCacheStore.setState({
       runs: {
-        patient: {
+        [`patient:${TEST_PATIENT_ID}`]: {
           status: "failed",
           current: 150,
           total: 150,
@@ -142,7 +139,7 @@ describe("VoiceCacheProgress", () => {
 
     render(
       <VoiceCacheProgress
-        speakerKey="patient"
+        speakerKey={`patient:${TEST_PATIENT_ID}`}
         speakerLabel="Alice"
         cfg={CFG}
         patientSpeakerData={{ some: "embed" }}
@@ -153,8 +150,7 @@ describe("VoiceCacheProgress", () => {
     fireEvent.click(screen.getByText("Retry"));
     expect(audioCacheRunner.retryFailed).toHaveBeenCalledWith(
       CFG,
-      { some: "embed" },
-      "patient",
+      `patient:${TEST_PATIENT_ID}`,
     );
   });
 });

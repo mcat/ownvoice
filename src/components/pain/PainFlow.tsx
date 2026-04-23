@@ -5,7 +5,7 @@ import { getEmojiFPS, getPainDescriptors, getBodyRegions, composePainSentence, t
 import type { PhraseKey } from "../../data/phraseRegistry";
 import { DualLocaleText } from "../shared/DualLocaleText";
 import { painColors } from "../../theme/tokens";
-import { useSettingsStore } from "../../stores/settingsStore";
+import { useSettingsStore, useActivePatient } from "../../stores/settingsStore";
 import type { ThemeTokens, ThemeName } from "../../theme/tokens";
 
 type Step = "severity" | "location" | "descriptor";
@@ -38,7 +38,8 @@ export function PainFlow({ onSelect, t, theme, locale = "en" }: PainFlowProps) {
   // Single-slot hover key — only one tile is under the cursor at a time.
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
   const cfg = useSettingsStore((s) => s.cfg);
-  const patientLang = cfg?.patientLang ?? "en";
+  const active = useActivePatient();
+  const patientLang = active?.patientLang ?? "en";
   const caregiverLang = cfg?.caregiverLang ?? "en";
   const assistive = cfg?.assistiveInput === true;
 

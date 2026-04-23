@@ -5,7 +5,7 @@ import { LANGS } from "../../../data/phrases";
 import { VoiceCapture } from "../../shared/VoiceCapture";
 import { FallbackVoicePicker } from "../../shared/FallbackVoicePicker";
 import { VoiceCacheProgress } from "../VoiceCacheProgress";
-import { useSettingsStore } from "../../../stores/settingsStore";
+import { useSettingsStore, useActivePatient } from "../../../stores/settingsStore";
 import { t as resolvePhrase } from "../../../data/phraseRegistry";
 
 interface Props {
@@ -27,7 +27,8 @@ export function PatientInfoSection({
 }: Props) {
   const isDark = theme === "dark";
   const caregiverLang = useSettingsStore((s) => s.cfg?.caregiverLang ?? "en");
-  const selectedLang = LANGS.find((l) => l.code === cfg.patientLang);
+  const active = useActivePatient();
+  const selectedLang = LANGS.find((l) => l.code === (active?.patientLang ?? "en"));
 
   return (
     <Section label={resolvePhrase("ui.provider.settings.patient_info.heading", caregiverLang)} t={t}>
@@ -35,8 +36,8 @@ export function PatientInfoSection({
       <input
         id="settings-name"
         type="text"
-        value={cfg.patientName}
-        onInput={(e) => updateCfg({ patientName: (e.target as HTMLInputElement).value })}
+        value={active?.name ?? ""}
+        onInput={(e) => useSettingsStore.getState().updateActivePatient({ name: (e.target as HTMLInputElement).value })}
         style={inputStyle(t, isDark)}
       />
 
@@ -44,15 +45,15 @@ export function PatientInfoSection({
       <input
         id="settings-bed"
         type="text"
-        value={cfg.bed}
-        onInput={(e) => updateCfg({ bed: (e.target as HTMLInputElement).value })}
+        value={active?.bed ?? ""}
+        onInput={(e) => useSettingsStore.getState().updateActivePatient({ bed: (e.target as HTMLInputElement).value })}
         style={inputStyle(t, isDark)}
       />
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 16 }}>
         <span style={{ fontSize: 15, color: t.sub }}>{resolvePhrase("ui.provider.settings.patient_info.language_label", caregiverLang)}</span>
         <span style={{ fontSize: 15, color: t.text, fontWeight: 500 }}>
-          {selectedLang ? `${selectedLang.flag} ${selectedLang.label}` : cfg.patientLang}
+          {selectedLang ? `${selectedLang.flag} ${selectedLang.label}` : (active?.patientLang ?? "en")}
         </span>
       </div>
 
@@ -60,17 +61,21 @@ export function PatientInfoSection({
         <div style={labelStyle(t)}>{resolvePhrase("ui.provider.settings.patient_info.voice_label", caregiverLang)}</div>
         <VoiceCapture
           label="Patient"
-          hasVoice={cfg.patientVoice}
-          hasEmbedding={!!useSettingsStore.getState().speakerData}
+          hasVoice={active?.hasVoice ?? false}
+          hasEmbedding={!!active?.speakerData}
           onCapture={(_blob, embedding) => {
-            updateCfg({ patientVoice: true });
-            if (embedding) useSettingsStore.getState().setSpeakerData(embedding);
+            useSettingsStore.getState().updateActivePatient({
+              hasVoice: true,
+              speakerData: embedding ?? null,
+            });
           }}
           onRemove={() => {
-            updateCfg({ patientVoice: false });
-            useSettingsStore.getState().setSpeakerData(null);
+            useSettingsStore.getState().updateActivePatient({
+              hasVoice: false,
+              speakerData: null,
+            });
           }}
-          locale={cfg.patientLang}
+          locale={active?.patientLang ?? "en"}
           compact
           color={{
             text: t.text, sub: t.sub, muted: t.muted,
@@ -78,21 +83,25 @@ export function PatientInfoSection({
             cardBg: isDark ? "rgba(255,255,255,0.05)" : "#FFFFFF",
           }}
         />
-        <VoiceCacheProgress
-          speakerKey="patient"
-          speakerLabel={cfg.patientName || "Patient"}
-          cfg={cfg}
-          patientSpeakerData={useSettingsStore.getState().speakerData}
-        />
+        {active && (
+          <VoiceCacheProgress
+            speakerKey={`patient:${active.id}`}
+            speakerLabel={active.name || "Patient"}
+            cfg={cfg}
+            patientSpeakerData={active.speakerData ?? null}
+          />
+        )}
         {/* Separate row for the ~700-phrase pain matrix: runs only on GPU
             (hardware gated in audioCacheRunner), so on WASM-only systems
             this row is simply absent — the store has no entry to render. */}
-        <VoiceCacheProgress
-          speakerKey="patient:pain"
-          speakerLabel="Pain descriptions"
-          cfg={cfg}
-          patientSpeakerData={useSettingsStore.getState().speakerData}
-        />
+        {active && (
+          <VoiceCacheProgress
+            speakerKey={`patient:${active.id}:pain`}
+            speakerLabel="Pain descriptions"
+            cfg={cfg}
+            patientSpeakerData={active.speakerData ?? null}
+          />
+        )}
       </div>
 
       <div style={{ marginTop: 20 }}>
@@ -101,9 +110,9 @@ export function PatientInfoSection({
           {resolvePhrase("ui.provider.settings.patient_info.backup_voice_body", caregiverLang)}
         </p>
         <FallbackVoicePicker
-          selectedVoice={cfg.fallbackVoice ?? null}
-          onSelect={(v) => updateCfg({ fallbackVoice: v })}
-          lang={cfg.patientLang}
+          selectedVoice={active?.fallbackVoice ?? null}
+          onSelect={(v) => useSettingsStore.getState().updateActivePatient({ fallbackVoice: v })}
+          lang={active?.patientLang ?? "en"}
           color={{
             text: t.text, sub: t.sub, muted: t.muted,
             border: isDark ? "rgba(255,255,255,0.12)" : "#E5E7EB",

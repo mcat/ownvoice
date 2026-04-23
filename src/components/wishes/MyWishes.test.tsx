@@ -2,6 +2,8 @@ import { render, screen, fireEvent } from "@testing-library/preact";
 import { MyWishes } from "./MyWishes";
 import { light } from "../../theme/tokens";
 import { getWishTopics, t } from "../../data/phraseRegistry";
+import { useSettingsStore } from "../../stores/settingsStore";
+import { makeTestCfg } from "../../test/makeCfg";
 
 const SICG_TOPICS = getWishTopics();
 
@@ -17,6 +19,10 @@ const baseProps = {
 describe("MyWishes", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    useSettingsStore.setState({
+      cfg: makeTestCfg({ patient: { name: "Maria" } }),
+      _hasHydrated: true,
+    });
   });
 
   it("renders the first topic's question and hides the label on the active step", () => {

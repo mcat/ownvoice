@@ -1,6 +1,7 @@
 import { render, screen, fireEvent } from "@testing-library/preact";
 import { light } from "../../../theme/tokens";
 import { useSettingsStore } from "../../../stores/settingsStore";
+import { makeTestCfg } from "../../../test/makeCfg";
 import type { AppSettings } from "../../../types";
 
 // VoiceCapture normally drives microphone + ONNX worker flows. Swap it for
@@ -39,15 +40,10 @@ vi.mock("../VoiceCacheProgress", () => ({
 
 import { CareTeamSection } from "./CareTeamSection";
 
-const cfg: AppSettings = {
-  patientName: "Maria",
-  bed: "4A",
-  patientLang: "en",
-  caregiverLang: "en",
-  patientVoice: true,
-  pin: "1234",
-  providers: [{ name: "Dr. Smith", hasVoice: false, emoji: "👩‍⚕️" }],
-};
+const cfg = makeTestCfg({
+  patient: { name: "Maria", bed: "4A", patientLang: "en", hasVoice: true },
+  cfg: { pin: "1234", providers: [{ name: "Dr. Smith", hasVoice: false, emoji: "👩‍⚕️" }] },
+});
 
 function seedStore(next: AppSettings = cfg) {
   useSettingsStore.setState({ cfg: next, speakerData: null, _hasHydrated: true });

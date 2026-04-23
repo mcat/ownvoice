@@ -1,6 +1,6 @@
 import { Btn } from "../shared/Btn";
 import { useUIStore, type OverlayName } from "../../stores/uiStore";
-import { useSettingsStore } from "../../stores/settingsStore";
+import { useSettingsStore, useActivePatient } from "../../stores/settingsStore";
 import { useTheme } from "../../hooks/useTheme";
 import { t as resolvePhrase } from "../../data/phraseRegistry";
 import type { PhraseKey } from "../../data/phraseRegistry";
@@ -60,7 +60,8 @@ export function HeaderNav({ onSettings }: HeaderNavProps) {
   const { theme, toggle: onToggleTheme, isAuto, t } = useTheme();
   const openOverlay = useUIStore((s) => s.openOverlay);
   const cfg = useSettingsStore((s) => s.cfg);
-  const patientLang = cfg?.patientLang ?? "en";
+  const active = useActivePatient();
+  const patientLang = active?.patientLang ?? "en";
   const caregiverLang = cfg?.caregiverLang ?? "en";
 
   const themeIcon = isAuto ? ICONS.auto : theme === "light" ? ICONS.light : ICONS.dark;

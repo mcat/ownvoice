@@ -3,7 +3,7 @@ import type { JSX } from "preact";
 import type { Message } from "../../types";
 import type { ThemeTokens } from "../../theme/tokens";
 import { t as resolvePhrase } from "../../data/phraseRegistry";
-import { useSettingsStore } from "../../stores/settingsStore";
+import { useActivePatient } from "../../stores/settingsStore";
 import { Btn } from "../shared/Btn";
 import { useReducedMotion } from "../../hooks/useReducedMotion";
 
@@ -21,7 +21,7 @@ interface ThreadProps {
  * Tapping a bubble re-speaks the message without adding a duplicate.
  */
 export function Thread({ messages, t, onRepeat }: ThreadProps) {
-  const patientLang = useSettingsStore((s) => s.cfg?.patientLang ?? "en");
+  const patientLang = useActivePatient()?.patientLang ?? "en";
   const endRef = useRef<HTMLDivElement>(null);
   const [repeatingIdx, setRepeatingIdx] = useState<number | null>(null);
   const reducedMotion = useReducedMotion();

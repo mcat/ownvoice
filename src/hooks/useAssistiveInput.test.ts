@@ -1,17 +1,9 @@
 import { renderHook, act } from "@testing-library/preact";
 import { useAssistiveInput } from "./useAssistiveInput";
 import { useSettingsStore } from "../stores/settingsStore";
-import type { AppSettings } from "../types";
+import { makeTestCfg } from "../test/makeCfg";
 
-const baseCfg: AppSettings = {
-  patientName: "",
-  bed: "",
-  patientLang: "en",
-  caregiverLang: "en",
-  patientVoice: false,
-  pin: "",
-  providers: [],
-};
+const baseCfg = makeTestCfg();
 
 beforeEach(() => {
   document.documentElement.removeAttribute("data-assistive");

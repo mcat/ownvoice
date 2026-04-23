@@ -2,22 +2,21 @@ import { render, screen, fireEvent } from "@testing-library/preact";
 import { ProviderPanel } from "./ProviderPanel";
 import { light } from "../../theme/tokens";
 import { getProviderCategories } from "../../data/phraseRegistry";
+import { useSettingsStore } from "../../stores/settingsStore";
+import { makeTestCfg } from "../../test/makeCfg";
 
 const PROVIDER_CATEGORIES = getProviderCategories("en");
-import type { AppSettings } from "../../types";
 
-const cfg: AppSettings = {
-  patientName: "Maria",
-  bed: "4A",
-  patientLang: "en",
-  caregiverLang: "en",
-  patientVoice: true,
-  pin: "1234",
-  providers: [
-    { name: "Dr. Smith", hasVoice: false, emoji: "👩‍⚕️" },
-    { name: "Nurse Lee", hasVoice: false, emoji: "🧑‍⚕️" },
-  ],
-};
+const cfg = makeTestCfg({
+  patient: { name: "Maria", bed: "4A", patientLang: "en", hasVoice: true },
+  cfg: {
+    pin: "1234",
+    providers: [
+      { name: "Dr. Smith", hasVoice: false, emoji: "👩‍⚕️" },
+      { name: "Nurse Lee", hasVoice: false, emoji: "🧑‍⚕️" },
+    ],
+  },
+});
 
 const baseProps = {
   onSend: vi.fn(),
@@ -32,6 +31,7 @@ const baseProps = {
 describe("ProviderPanel", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    useSettingsStore.setState({ cfg, speakerData: null, _hasHydrated: true });
   });
 
   it("renders the Care Team title", () => {

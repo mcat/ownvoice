@@ -34,6 +34,12 @@ import { MODEL_URLS } from "./models/types";
 import { primeSpeechSynthesis, setFallbackVoice } from "./speak";
 import * as audioCacheRunner from "./models/audioCacheRunner";
 import { embeddingFingerprint } from "./models/audioCache";
+import type { Message } from "./types";
+
+/** Stable empty array for the messages selector. Allocating a fresh []
+ *  inside the selector would break Zustand's Object.is equality check
+ *  and cause infinite re-renders. */
+const EMPTY_MESSAGES: Message[] = [];
 
 export function App() {
   // Theme state — useTheme attaches the system listener and syncs side effects.
@@ -46,8 +52,11 @@ export function App() {
   useAssistiveInput();
 
   const activePatientId = useSettingsStore((s) => s.cfg?.activePatientId ?? null);
+  // Stable empty-array reference: Zustand selectors default to Object.is
+  // equality, so returning `?? []` inline would allocate a fresh array
+  // on every selector run and trigger infinite re-renders.
   const messages = useConversationStore((s) =>
-    activePatientId ? (s.messagesByPatientId[activePatientId] ?? []) : [],
+    activePatientId ? (s.messagesByPatientId[activePatientId] ?? EMPTY_MESSAGES) : EMPTY_MESSAGES,
   );
   const { speakAsPatient, speakAsProvider, addToThread, repeatSpeak, activeProv } =
     useSpeakActions();

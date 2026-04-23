@@ -30,8 +30,11 @@ export async function resetAll(): Promise<void> {
   getModelManager().clearAll();
 
   // 2. In-memory Zustand stores
+  // Clear conversation BEFORE settings reset — settings reset nulls cfg,
+  // making activePatientId unavailable for per-patient clear. Instead,
+  // wipe the entire messagesByPatientId map directly.
+  useConversationStore.setState({ messagesByPatientId: {} });
   useSettingsStore.getState().reset();
-  useConversationStore.getState().clear();
   useUIStore.getState().resetUI();
   useOfflineStore.getState().reset();
 

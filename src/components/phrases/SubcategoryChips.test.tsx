@@ -2,19 +2,11 @@ import { render, screen, fireEvent } from "@testing-library/preact";
 import { SubcategoryChips } from "./SubcategoryChips";
 import { light } from "../../theme/tokens";
 import { useSettingsStore } from "../../stores/settingsStore";
-import type { AppSettings } from "../../types";
+import { makeTestCfg } from "../../test/makeCfg";
 
 const labels = ["All", "Comfort", "Medical", "Emotional"];
 
-const baseCfg: AppSettings = {
-  patientName: "",
-  bed: "",
-  patientLang: "en",
-  caregiverLang: "en",
-  patientVoice: false,
-  pin: "",
-  providers: [],
-};
+const baseCfg = makeTestCfg();
 
 beforeEach(() => {
   useSettingsStore.setState({ cfg: baseCfg });

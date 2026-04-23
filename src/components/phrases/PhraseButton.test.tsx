@@ -2,19 +2,12 @@ import { render, screen, fireEvent } from "@testing-library/preact";
 import { PhraseButton } from "./PhraseButton";
 import { light } from "../../theme/tokens";
 import { useSettingsStore } from "../../stores/settingsStore";
-import type { Phrase, AppSettings } from "../../types";
+import { makeTestCfg } from "../../test/makeCfg";
+import type { Phrase } from "../../types";
 
 const phrase: Phrase = { text: "I need water", icon: "💧" };
 
-const baseCfg: AppSettings = {
-  patientName: "",
-  bed: "",
-  patientLang: "en",
-  caregiverLang: "en",
-  patientVoice: false,
-  pin: "",
-  providers: [],
-};
+const baseCfg = makeTestCfg();
 
 beforeEach(() => {
   useSettingsStore.setState({ cfg: baseCfg });

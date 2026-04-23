@@ -81,13 +81,15 @@ describe("Setup", () => {
     await waitFor(() => {
       expect(onDone).toHaveBeenCalledOnce();
     });
-    expect(onDone).toHaveBeenCalledWith(
+    const result = onDone.mock.calls[0][0];
+    expect(result.pin).toBe("");
+    expect(result.providers).toEqual([]);
+    expect(result.patients).toHaveLength(1);
+    expect(result.patients[0]).toEqual(
       expect.objectContaining({
-        patientName: "Alice",
+        name: "Alice",
         patientLang: "en",
-        patientVoice: false,
-        pin: "",
-        providers: [],
+        hasVoice: false,
       }),
     );
   });
@@ -190,9 +192,11 @@ describe("Setup", () => {
 
     fireEvent.click(startBtn);
     expect(onDone).toHaveBeenCalledOnce();
-    expect(onDone).toHaveBeenCalledWith(
+    const result = onDone.mock.calls[0][0];
+    expect(result.patients).toHaveLength(1);
+    expect(result.patients[0]).toEqual(
       expect.objectContaining({
-        patientName: "Carol",
+        name: "Carol",
         patientLang: "en",
       }),
     );
@@ -232,10 +236,12 @@ describe("Setup", () => {
     });
     fireEvent.click(screen.getByText("Skip setup"));
     await waitFor(() => {
-      expect(onDone).toHaveBeenCalledWith(
-        expect.objectContaining({ bed: "Room 5" }),
-      );
+      expect(onDone).toHaveBeenCalledOnce();
     });
+    const result = onDone.mock.calls[0][0];
+    expect(result.patients[0]).toEqual(
+      expect.objectContaining({ bed: "Room 5" }),
+    );
   });
 
   it("language selection updates the chosen language", async () => {
@@ -255,12 +261,12 @@ describe("Setup", () => {
     fireEvent.click(screen.getByText("Skip setup"));
 
     await waitFor(() => {
-      expect(onDone).toHaveBeenCalledWith(
-        expect.objectContaining({
-          patientLang: "es",
-        }),
-      );
+      expect(onDone).toHaveBeenCalledOnce();
     });
+    const result = onDone.mock.calls[0][0];
+    expect(result.patients[0]).toEqual(
+      expect.objectContaining({ patientLang: "es" }),
+    );
   });
 
   /* ---------- Step 1: Voice ---------- */

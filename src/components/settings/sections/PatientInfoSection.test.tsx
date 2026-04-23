@@ -1,17 +1,13 @@
 import { render, screen, fireEvent } from "@testing-library/preact";
 import { PatientInfoSection } from "./PatientInfoSection";
 import { light } from "../../../theme/tokens";
-import type { AppSettings } from "../../../types";
+import { useSettingsStore } from "../../../stores/settingsStore";
+import { makeTestCfg } from "../../../test/makeCfg";
 
-const cfg: AppSettings = {
-  patientName: "Maria",
-  bed: "4A",
-  patientLang: "en",
-  caregiverLang: "en",
-  patientVoice: true,
-  pin: "1234",
-  providers: [],
-};
+const cfg = makeTestCfg({
+  patient: { name: "Maria", bed: "4A", patientLang: "en", hasVoice: true },
+  cfg: { pin: "1234" },
+});
 
 const baseProps = {
   cfg,
@@ -21,7 +17,10 @@ const baseProps = {
 };
 
 describe("PatientInfoSection", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    useSettingsStore.setState({ cfg, speakerData: null, _hasHydrated: true });
+  });
 
   it("renders the name input with the current value", () => {
     render(<PatientInfoSection {...baseProps} />);
@@ -33,18 +32,23 @@ describe("PatientInfoSection", () => {
     expect(screen.getByLabelText("Bed / Room")).toHaveValue("4A");
   });
 
-  it("calls updateCfg with the new patientName on name edit (auto-save)", () => {
-    const updateCfg = vi.fn();
-    render(<PatientInfoSection {...baseProps} updateCfg={updateCfg} />);
+  it("calls updateActivePatient with the new name on name edit (auto-save)", () => {
+    render(<PatientInfoSection {...baseProps} />);
     fireEvent.input(screen.getByLabelText("Name"), { target: { value: "Alex" } });
-    expect(updateCfg).toHaveBeenCalledWith({ patientName: "Alex" });
+    // Writes go to the store action, not the prop
+    const active = useSettingsStore.getState().cfg?.patients.find(
+      (p) => p.id === useSettingsStore.getState().cfg?.activePatientId,
+    );
+    expect(active?.name).toBe("Alex");
   });
 
-  it("calls updateCfg with the new bed on bed edit (auto-save)", () => {
-    const updateCfg = vi.fn();
-    render(<PatientInfoSection {...baseProps} updateCfg={updateCfg} />);
+  it("calls updateActivePatient with the new bed on bed edit (auto-save)", () => {
+    render(<PatientInfoSection {...baseProps} />);
     fireEvent.input(screen.getByLabelText("Bed / Room"), { target: { value: "5B" } });
-    expect(updateCfg).toHaveBeenCalledWith({ bed: "5B" });
+    const active = useSettingsStore.getState().cfg?.patients.find(
+      (p) => p.id === useSettingsStore.getState().cfg?.activePatientId,
+    );
+    expect(active?.bed).toBe("5B");
   });
 
   it("does not render a Save button — persistence is automatic", () => {

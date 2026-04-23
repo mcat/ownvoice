@@ -1,5 +1,5 @@
 import { useState } from "preact/hooks";
-import type { AppSettings, FallbackVoice, Provider } from "../../types";
+import type { AppSettings, FallbackVoice, Patient, Provider } from "../../types";
 import { LANGS } from "../../data/phrases";
 import { z } from "../../theme/z";
 import { Btn } from "../shared/Btn";
@@ -34,14 +34,23 @@ const STEP_LABEL_KEYS: PhraseKey[] = [
 const STEP_COLORS = ["#2563EB", "#7C3AED", "#059669", "#D97706"];
 
 function defaults(): AppSettings {
-  return {
-    patientName: "",
+  const now = Date.now();
+  const patient: Patient = {
+    id: crypto.randomUUID(),
+    name: "",
     bed: "",
     patientLang: "en",
+    hasVoice: false,
+    speakerData: null,
+    addedAt: now,
+    lastActiveAt: now,
+  };
+  return {
     caregiverLang: "en",
-    patientVoice: false,
     pin: "",
     providers: [],
+    patients: [patient],
+    activePatientId: patient.id,
   };
 }
 
@@ -70,15 +79,24 @@ export function Setup({ onDone, mode: _mode }: SetupProps) {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   function finish() {
-    onDone({
-      patientName: name,
+    const now = Date.now();
+    const patient: Patient = {
+      id: crypto.randomUUID(),
+      name,
       bed,
       patientLang: lang,
-      caregiverLang: "en",
-      patientVoice,
+      hasVoice: patientVoice,
+      speakerData: null,
       fallbackVoice,
+      addedAt: now,
+      lastActiveAt: now,
+    };
+    onDone({
+      caregiverLang: "en",
       pin,
       providers,
+      patients: [patient],
+      activePatientId: patient.id,
     });
   }
 
