@@ -47,9 +47,13 @@ function defaults(): AppSettings {
 
 interface SetupProps {
   onDone: (settings: AppSettings) => void;
+  /** Controls which Setup flow to show. "first-run" is the default full
+   *  wizard; "add-patient" (PR B) shows only the patient-specific steps.
+   *  Ignored until the add-patient flow is implemented. */
+  mode?: "first-run" | "add-patient";
 }
 
-export function Setup({ onDone }: SetupProps) {
+export function Setup({ onDone, mode: _mode }: SetupProps) {
   const caregiverLang = useSettingsStore((s) => s.cfg?.caregiverLang ?? "en");
   const [step, setStep] = useState(0);
   const [name, setName] = useState("");

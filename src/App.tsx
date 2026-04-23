@@ -4,7 +4,7 @@ import { useAssistiveInput } from "./hooks/useAssistiveInput";
 import { useSpeakActions } from "./hooks/useSpeakActions";
 import { useConversationStore } from "./stores/conversationStore";
 import { useUIStore } from "./stores/uiStore";
-import { useSettingsStore } from "./stores/settingsStore";
+import { useSettingsStore, useActivePatient } from "./stores/settingsStore";
 import { resetAll } from "./stores/resetAll";
 import { t as resolvePhrase, getCategories, getTimeSuggestionsForPeriod } from "./data/phraseRegistry";
 import { Header } from "./components/layout/Header";
@@ -45,7 +45,10 @@ export function App() {
   // (debounce, hover intensity) read the setting directly from the store.
   useAssistiveInput();
 
-  const messages = useConversationStore((s) => s.messages);
+  const activePatientId = useSettingsStore((s) => s.cfg?.activePatientId ?? null);
+  const messages = useConversationStore((s) =>
+    activePatientId ? (s.messagesByPatientId[activePatientId] ?? []) : [],
+  );
   const { speakAsPatient, speakAsProvider, addToThread, repeatSpeak, activeProv } =
     useSpeakActions();
 
@@ -69,8 +72,8 @@ export function App() {
   // Settings store — persisted to IndexedDB
   const cfg = useSettingsStore((s) => s.cfg);
   const setCfg = useSettingsStore((s) => s.setCfg);
-  const speakerData = useSettingsStore((s) => s.speakerData);
   const hasHydrated = useSettingsStore((s) => s._hasHydrated);
+  const active = useActivePatient();
 
   // Initialize model manager and boot all on-device models (TTS, LLM, STT)
   useEffect(() => {
@@ -114,8 +117,8 @@ export function App() {
 
   // Sync the user-selected fallback voice to the speak module
   useEffect(() => {
-    setFallbackVoice(cfg?.fallbackVoice?.voiceURI ?? null);
-  }, [cfg?.fallbackVoice?.voiceURI]);
+    setFallbackVoice(active?.fallbackVoice?.voiceURI ?? null);
+  }, [active?.fallbackVoice?.voiceURI]);
 
   // Pre-generate cloned-voice audio in the background whenever the set
   // of embeddings or the patient locale changes. The runner aborts any
@@ -124,28 +127,30 @@ export function App() {
   // page reload once the TTS model is ready.
   const embeddingKey = useMemo(() => {
     if (!cfg) return "";
-    const patientFp = embeddingFingerprint(speakerData);
+    const active = cfg.activePatientId
+      ? cfg.patients.find((p) => p.id === cfg.activePatientId)
+      : null;
+    if (!active) return "no-active";
+    const patientFp = embeddingFingerprint(active.speakerData);
     const providerFps = cfg.providers
       .map((p, i) => `${i}:${embeddingFingerprint(p.embedding)}`)
       .join(",");
-    return `${cfg.patientLang}|${patientFp}|${providerFps}`;
-  }, [cfg, speakerData]);
+    return `${cfg.caregiverLang}:${active.id}:${patientFp}|${active.patientLang}:${providerFps}`;
+  }, [cfg]);
 
-  // Hold the latest cfg/speakerData in refs so the pre-gen effect can read
-  // them without depending on them. Writing refs inline during render keeps
-  // them in lockstep with the committed cfg — by the time any effect fires,
-  // the ref reflects the same cfg that produced the current render.
+  // Hold the latest cfg in a ref so the pre-gen effect can read it without
+  // depending on it. Writing refs inline during render keeps them in lockstep
+  // with the committed cfg — by the time any effect fires, the ref reflects
+  // the same cfg that produced the current render.
   //
-  // Why: with cfg/speakerData in the effect deps, every `cfg` change (e.g.
-  // auto-save of the Settings panel's patientName field as the user types)
-  // would abort the in-flight pre-gen run and restart from scratch. The
-  // memoised embeddingKey already captures the only things pre-gen cares
-  // about — locale and embedding fingerprints — so that's all the effect
-  // should depend on.
+  // Why: with cfg in the effect deps, every `cfg` change (e.g. auto-save of
+  // the Settings panel's patientName field as the user types) would abort the
+  // in-flight pre-gen run and restart from scratch. The memoised embeddingKey
+  // already captures the only things pre-gen cares about — locale, active
+  // patient, and embedding fingerprints — so that's all the effect should
+  // depend on.
   const cfgRef = useRef(cfg);
-  const speakerDataRef = useRef(speakerData);
   cfgRef.current = cfg;
-  speakerDataRef.current = speakerData;
 
   useEffect(() => {
     const initialCfg = cfgRef.current;
@@ -167,7 +172,7 @@ export function App() {
       // finishes downloading its ~1 GB of weights.
       if (!isGPUReady() && !mgr.isReady("tts")) return false;
       started = true;
-      audioCacheRunner.runPreGeneration(cfgRef.current, speakerDataRef.current);
+      audioCacheRunner.runPreGeneration(cfgRef.current);
       return true;
     }
 
@@ -185,11 +190,16 @@ export function App() {
 
   // Wait for IndexedDB hydration before deciding setup vs main app
   if (!hasHydrated) return null;
-  if (!cfg) return <Setup onDone={setCfg} />;
+  if (!cfg || cfg.patients.length === 0 || cfg.activePatientId === null) {
+    return <Setup onDone={setCfg} mode="first-run" />;
+  }
 
-  const cats = getCategories(cfg.patientLang);
+  // After the gate above, active is guaranteed non-null.
+  const patientLang = active!.patientLang;
+
+  const cats = getCategories(patientLang);
   const cat = cats.find((c) => c.id === tab);
-  const timeSugs = getTimeSuggestionsForPeriod(cfg.patientLang);
+  const timeSugs = getTimeSuggestionsForPeriod(patientLang);
   const hr = new Date().getHours();
   const sug = hr < 12 ? timeSugs.morning : hr < 17 ? timeSugs.afternoon : timeSugs.evening;
 
@@ -268,7 +278,7 @@ export function App() {
             border: 0,
           }}
         >
-          {resolvePhrase("ui.patient.app.aria_label", cfg.patientLang).replace("{name}", cfg.patientName || resolvePhrase("ui.patient.app.name_fallback", cfg.patientLang))}
+          {resolvePhrase("ui.patient.app.aria_label", patientLang).replace("{name}", active!.name || resolvePhrase("ui.patient.app.name_fallback", patientLang))}
         </h1>
 
         <Thread messages={messages} t={t} onRepeat={repeatSpeak} />
@@ -336,7 +346,7 @@ export function App() {
           onClose={() => closeOverlay("wishes")}
           t={t}
           theme={theme}
-          patientName={cfg.patientName}
+          patientName={active!.name}
         />
       )}
 

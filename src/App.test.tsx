@@ -2,6 +2,7 @@ import { render, screen, fireEvent } from "@testing-library/preact";
 import { useSettingsStore } from "./stores/settingsStore";
 import { useUIStore } from "./stores/uiStore";
 import { useConversationStore } from "./stores/conversationStore";
+import { makeTestCfg } from "./test/makeCfg";
 import type { AppSettings } from "./types";
 
 // Mock useTheme
@@ -76,16 +77,11 @@ vi.mock("./models/audioCacheRunner", () => ({
   abort: vi.fn(),
 }));
 
-const makeCfg = (overrides?: Partial<AppSettings>): AppSettings => ({
-  patientName: "Maria",
-  bed: "4A",
-  patientLang: "en",
-  caregiverLang: "en",
-  patientVoice: false,
-  pin: "",
-  providers: [],
-  ...overrides,
-});
+const makeCfg = (overrides?: Partial<AppSettings>): AppSettings =>
+  makeTestCfg({
+    patient: { name: "Maria", bed: "4A" },
+    cfg: overrides,
+  });
 
 // Import App after mocks are set up
 import { App } from "./App";
@@ -111,7 +107,7 @@ describe("App", () => {
       activeProvIdx: 0,
       speaking: null,
     });
-    useConversationStore.setState({ messages: [] });
+    useConversationStore.setState({ messagesByPatientId: {} });
     // Reset the shared signal mocks so each test starts "neither path
     // ready" unless it opts into a specific state.
     isGPUReadyMock.mockReset();
@@ -271,7 +267,12 @@ describe("App", () => {
     fireEvent.input(nameInput, { target: { value: "Ana" } });
 
     // The edit should have persisted AND the sheet should still be open.
-    expect(useSettingsStore.getState().cfg?.patientName).toBe("Ana");
+    // In multi-patient shape, patientName lives on the active patient.
+    const state = useSettingsStore.getState();
+    const activePatient = state.cfg?.patients.find(
+      (p) => p.id === state.cfg?.activePatientId,
+    );
+    expect(activePatient?.name).toBe("Ana");
     expect(useUIStore.getState().settingsOpen).toBe(true);
     expect(screen.getByRole("heading", { name: "Settings" })).toBeInTheDocument();
   });
