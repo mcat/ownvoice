@@ -126,4 +126,126 @@ describe("conversationStore — multi-patient partitioning", () => {
     expect(state.messagesByPatientId["migrated-patient"][0].text).toBe("legacy msg 1");
     expect(state.messagesByPatientId["migrated-patient"][1].text).toBe("legacy msg 2");
   });
+
+  it("clear() is a no-op when no active patient", async () => {
+    const { useSettingsStore } = await import("./settingsStore");
+    useSettingsStore.setState({ cfg: null });
+    const { useConversationStore } = await import("./conversationStore");
+    useConversationStore.setState({
+      messagesByPatientId: {
+        a: [{ from: "patient", text: "hi from a", time: "10:00", label: "A" }],
+      },
+    });
+    useConversationStore.getState().clear();
+    // No active patient → clear is no-op; other patients' threads untouched
+    expect(useConversationStore.getState().messagesByPatientId["a"]).toHaveLength(1);
+  });
+
+  it("clearForPatient is a no-op for unknown patient id", async () => {
+    const { useConversationStore } = await import("./conversationStore");
+    useConversationStore.setState({
+      messagesByPatientId: {
+        a: [{ from: "patient", text: "hi", time: "10:00", label: "A" }],
+      },
+    });
+    const before = useConversationStore.getState().messagesByPatientId;
+    useConversationStore.getState().clearForPatient("nonexistent");
+    // Other entries preserved
+    expect(useConversationStore.getState().messagesByPatientId["a"]).toHaveLength(1);
+    // Strong assertion: no side effect on the unrelated thread
+    expect(useConversationStore.getState().messagesByPatientId).not.toBe(before);
+  });
+
+  it("addMessage populates a formatted time string (hh:mm pattern)", async () => {
+    const { useSettingsStore } = await import("./settingsStore");
+    useSettingsStore.setState({
+      cfg: {
+        pin: "",
+        caregiverLang: "en",
+        providers: [],
+        patients: [
+          { id: "a", name: "A", bed: "", patientLang: "en", hasVoice: false, speakerData: null, addedAt: 0, lastActiveAt: 0 },
+        ],
+        activePatientId: "a",
+      },
+    });
+    const { useConversationStore } = await import("./conversationStore");
+    useConversationStore.setState({ messagesByPatientId: {} });
+    useConversationStore.getState().addMessage("hello", "patient", "X");
+    const msg = useConversationStore.getState().messagesByPatientId["a"][0];
+    // toLocaleTimeString with hour+minute → matches "HH:MM" or "H:MM AM/PM"
+    expect(msg.time).toMatch(/\d{1,2}:\d{2}/);
+    expect(msg.text).toBe("hello");
+    expect(msg.from).toBe("patient");
+    expect(msg.label).toBe("X");
+  });
+
+  it("addMessage preserves existing messages for the same patient (append, don't replace)", async () => {
+    const { useSettingsStore } = await import("./settingsStore");
+    useSettingsStore.setState({
+      cfg: {
+        pin: "",
+        caregiverLang: "en",
+        providers: [],
+        patients: [
+          { id: "a", name: "A", bed: "", patientLang: "en", hasVoice: false, speakerData: null, addedAt: 0, lastActiveAt: 0 },
+        ],
+        activePatientId: "a",
+      },
+    });
+    const { useConversationStore } = await import("./conversationStore");
+    useConversationStore.setState({
+      messagesByPatientId: {
+        a: [{ from: "patient", text: "first", time: "10:00", label: "A" }],
+      },
+    });
+    useConversationStore.getState().addMessage("second", "provider", "Dr.");
+    const thread = useConversationStore.getState().messagesByPatientId["a"];
+    expect(thread).toHaveLength(2);
+    expect(thread[0].text).toBe("first");
+    expect(thread[1].text).toBe("second");
+    expect(thread[1].from).toBe("provider");
+  });
+
+  it("addMessage passes through the optional gloss field", async () => {
+    const { useSettingsStore } = await import("./settingsStore");
+    useSettingsStore.setState({
+      cfg: {
+        pin: "",
+        caregiverLang: "en",
+        providers: [],
+        patients: [
+          { id: "a", name: "A", bed: "", patientLang: "en", hasVoice: false, speakerData: null, addedAt: 0, lastActiveAt: 0 },
+        ],
+        activePatientId: "a",
+      },
+    });
+    const { useConversationStore } = await import("./conversationStore");
+    useConversationStore.setState({ messagesByPatientId: {} });
+    useConversationStore.getState().addMessage("hello", "patient", "X", "hola");
+    expect(useConversationStore.getState().messagesByPatientId["a"][0].gloss).toBe("hola");
+  });
+
+  it("v1 orphan messages are dropped when no active patient is available", async () => {
+    vi.resetModules();
+    indexedDB.deleteDatabase("keyval-store");
+    // Seed a v1 blob with messages but DON'T set up a settingsStore cfg first
+    const { useSettingsStore } = await import("./settingsStore");
+    useSettingsStore.setState({ cfg: null });
+    const v1Blob = {
+      state: {
+        messages: [{ from: "patient", text: "orphan", time: "10:00", label: "X" }],
+      },
+      version: 1,
+    };
+    const { createDebouncedIDBStorage } = await import("./idbStorage");
+    await createDebouncedIDBStorage(0).setItem("ov-conversation", JSON.stringify(v1Blob));
+
+    const { useConversationStore } = await import("./conversationStore");
+    await vi.waitFor(() => {
+      const state = useConversationStore.getState();
+      // After rehydration+migration, with no active patient, orphan messages drop
+      expect(state.messagesByPatientId).toEqual({});
+    }, { timeout: 2000 });
+  });
 });

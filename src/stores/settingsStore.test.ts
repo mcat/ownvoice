@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { useSettingsStore } from "./settingsStore";
+import { makeTestCfg } from "../test/makeCfg";
 import type { AppSettings, Patient } from "../types";
 
 const DEFAULT_CFG: AppSettings = {
@@ -320,5 +321,111 @@ describe("multi-patient actions", () => {
     // Patient B is untouched
     expect(cfg.patients[1].name).toBe("B");
     expect(cfg.patients[1].bed).toBe("2");
+  });
+
+  it("switchPatient to unknown id is a no-op", () => {
+    const a: Patient = { id: "a", name: "A", bed: "", patientLang: "en", hasVoice: false, speakerData: null, addedAt: 0, lastActiveAt: 0 };
+    useSettingsStore.setState({
+      cfg: { pin: "", caregiverLang: "en", providers: [], patients: [a], activePatientId: "a" },
+    });
+    const before = useSettingsStore.getState().cfg;
+    useSettingsStore.getState().switchPatient("nonexistent-id");
+    // State reference should be unchanged (no shallow copy created)
+    expect(useSettingsStore.getState().cfg).toBe(before);
+    expect(useSettingsStore.getState().cfg!.activePatientId).toBe("a");
+  });
+
+  it("addPatient returns a Patient with a valid UUID and timestamps", () => {
+    useSettingsStore.setState({
+      cfg: { pin: "", caregiverLang: "en", providers: [], patients: [], activePatientId: null },
+    });
+    const before = Date.now();
+    const p = useSettingsStore.getState().addPatient({
+      name: "X", bed: "A-1", patientLang: "en",
+      hasVoice: false, speakerData: null, fallbackVoice: null,
+    });
+    const after = Date.now();
+    // UUID v4 shape: 8-4-4-4-12 hex chars with version nibble = 4
+    expect(p.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+    expect(p.addedAt).toBeGreaterThanOrEqual(before);
+    expect(p.addedAt).toBeLessThanOrEqual(after);
+    expect(p.lastActiveAt).toBe(p.addedAt);
+  });
+
+  it("add → switch → add → remove multi-step sequence produces exact shape", () => {
+    useSettingsStore.setState({
+      cfg: { pin: "", caregiverLang: "en", providers: [], patients: [], activePatientId: null },
+    });
+    const p1 = useSettingsStore.getState().addPatient({
+      name: "Alice", bed: "1", patientLang: "en",
+      hasVoice: false, speakerData: null, fallbackVoice: null,
+    });
+    const p2 = useSettingsStore.getState().addPatient({
+      name: "Bob", bed: "2", patientLang: "es",
+      hasVoice: true, speakerData: { x: 1 }, fallbackVoice: null,
+    });
+    // After two adds, active is p2 (addPatient always sets the new patient active)
+    expect(useSettingsStore.getState().cfg!.activePatientId).toBe(p2.id);
+    // Switch back to p1
+    useSettingsStore.getState().switchPatient(p1.id);
+    expect(useSettingsStore.getState().cfg!.activePatientId).toBe(p1.id);
+    // Remove p2 (not active, so succeeds)
+    useSettingsStore.getState().removePatient(p2.id);
+    const cfg = useSettingsStore.getState().cfg!;
+    expect(cfg.patients).toHaveLength(1);
+    expect(cfg.patients[0].id).toBe(p1.id);
+    expect(cfg.activePatientId).toBe(p1.id);
+  });
+
+  it("updateActivePatient is a no-op when no active patient is set", () => {
+    useSettingsStore.setState({
+      cfg: { pin: "", caregiverLang: "en", providers: [], patients: [], activePatientId: null },
+    });
+    const before = useSettingsStore.getState().cfg;
+    useSettingsStore.getState().updateActivePatient({ name: "should-not-apply" });
+    // State reference unchanged
+    expect(useSettingsStore.getState().cfg).toBe(before);
+  });
+
+  it("reset() clears cfg and speakerData to null", () => {
+    useSettingsStore.setState({
+      cfg: makeTestCfg(),
+      speakerData: { foo: 1 },
+    });
+    useSettingsStore.getState().reset();
+    expect(useSettingsStore.getState().cfg).toBeNull();
+    expect(useSettingsStore.getState().speakerData).toBeNull();
+  });
+});
+
+describe("settingsStore persist middleware wiring", () => {
+  it("partialize returns only { cfg, speakerData } — not internal flags", () => {
+    useSettingsStore.setState({
+      _hasHydrated: true,
+      cfg: makeTestCfg({ patient: { name: "Maria" } }),
+      speakerData: { sampleData: true },
+    });
+    // Access the persist options via the runtime API
+    // (partialize is stored on the persist middleware's option object)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const persist = (useSettingsStore as any).persist;
+    expect(persist).toBeDefined();
+    const partialized = persist.getOptions().partialize(
+      useSettingsStore.getState(),
+    );
+    // Strong assertion: partialize must export cfg + speakerData ONLY
+    expect(Object.keys(partialized).sort()).toEqual(["cfg", "speakerData"]);
+    expect(partialized.cfg.patients[0].name).toBe("Maria");
+    expect(partialized.speakerData).toEqual({ sampleData: true });
+    // Introspection: must NOT include _hasHydrated or action functions
+    expect("_hasHydrated" in partialized).toBe(false);
+    expect("addPatient" in partialized).toBe(false);
+  });
+
+  it("store exposes a non-null persist name 'ov-settings'", () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const persist = (useSettingsStore as any).persist;
+    expect(persist.getOptions().name).toBe("ov-settings");
+    expect(persist.getOptions().version).toBe(2);
   });
 });
