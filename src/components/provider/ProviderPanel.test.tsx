@@ -93,12 +93,20 @@ describe("ProviderPanel", () => {
     expect(onClose).toHaveBeenCalledOnce();
   });
 
-  it("shows patient name and provider label in subtitle", () => {
+  it("shows patient name and provider label in subtitle with bold emphasis", () => {
     render(<ProviderPanel {...baseProps} />);
-    // Patient name and provider label are embedded in the composed subtitle string
-    const subtitle = screen.getByText(/Speaking to/);
+    // Patient name + provider label are rendered as separate <strong>
+    // elements interpolated into the localized template; query the
+    // containing subtitle and assert against the full text content.
+    const prefix = screen.getByText(/Speaking to/);
+    const subtitle = prefix.parentElement as HTMLElement;
     expect(subtitle).toHaveTextContent(/Maria/);
     expect(subtitle).toHaveTextContent(/Dr\. Smith/);
+    // Both interpolated slots are rendered as <strong>
+    const strongs = subtitle.querySelectorAll("strong");
+    expect(strongs.length).toBe(2);
+    expect(strongs[0]).toHaveTextContent("Maria");
+    expect(strongs[1]).toHaveTextContent(/Dr\. Smith/);
   });
 
   it("renders provider selector chips when multiple providers exist", () => {

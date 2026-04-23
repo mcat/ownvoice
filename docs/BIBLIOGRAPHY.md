@@ -488,3 +488,63 @@ The following elements are informed by the research above but have not been inde
 | SICG (Ariadne Labs) | CC-BY-NC-SA 4.0 | Attribution, non-commercial, share-alike |
 | Atkinson Hyperlegible | SIL Open Font License | Free to use, attribution appreciated |
 | WCAG 2.1 | W3C Document License | Open standard |
+
+---
+
+## 11. Language Prevalence in ICU Populations
+
+This section informs which locales OwnVoice prioritises for translation. Full working brief with data-gap notes and regional breakdowns is preserved in `docs/superpowers/specs/2026-04-22-localization-design.md` Appendix B; citations below are reproduced in the project's canonical format.
+
+### US LEP baseline
+
+Approximately 25.7 million US residents (8% of population aged 5+) have limited English proficiency. The top five LEP languages nationally are Spanish (63%), Chinese (7%), Vietnamese (3%), Arabic (2%), Tagalog (2%) — covering ~77% of US LEP. All five are present in OwnVoice's 13-language list.
+
+> Kaiser Family Foundation. (2024). *Overview of health coverage and care for individuals with limited English proficiency (LEP).* KFF Issue Brief.
+
+> U.S. Census Bureau. (2023). Press release on English proficiency. American Community Survey 5-year estimates, 2018–2022.
+
+### Hospital-interpreter operational data (ranks healthcare encounters, not just population)
+
+AMN Healthcare's 2023 study of 204 million minutes of interpretation services across US healthcare facilities ranks the most-requested non-English languages as: Spanish, Mandarin, Cantonese, Vietnamese, Arabic, **Haitian Creole**, Russian, Portuguese, Korean. Additional high-demand: Nepali, Somali, Ukrainian, Hmong, Amharic, Rohingya.
+
+> AMN Healthcare. (2023). *AMN Healthcare study tracks 45 languages spoken in patient/provider encounters in U.S.* Press release, November 14, 2023.
+
+### ICU-specific evidence
+
+The only US multi-patient ICU language study identified is Barwise et al. (2018) at Mayo Clinic — 779 LEP ICU admissions out of 27,523 total. Distribution: Arabic 26.4%, Spanish 26.3%, **Somali 8.7%**, Cambodian 4.4%, Vietnamese 2.8%, Lao 2.6%, **Hmong 2.4%**. LEP patients had 0.6-day longer ICU stays and 2.7-day longer hospital stays (p<.001). The sample is single-site and reflects local refugee populations; it's the best evidence that ICU linguistic profiles diverge from the general LEP census.
+
+> Barwise, A.K., Jaramillo, C., Novotny, P., et al. (2018). Differences in code status and end-of-life decision making in patients with limited English proficiency in the intensive care unit. *Mayo Clinic Proceedings*, 93(9), 1271–1281.
+
+> Barwise, A.K., Nyquist, C.A., Espinosa Suarez, N.R., et al. (2019). End of life decision making for ICU patients with limited English proficiency: A qualitative study of healthcare team insights. *Critical Care Medicine*, 47(10), 1380–1387.
+
+### Policy context
+
+The Joint Commission's 2026 National Performance Goals require US hospitals to stratify safety data (readmissions, falls, medication errors, length of stay) by preferred language. HCAHPS surveys are administered in English, Spanish, Chinese, Russian, Vietnamese, Portuguese, German, Tagalog, and Arabic.
+
+> Joint Commission. (2026). *Language access and interpreter services — understanding the requirements.* Standards FAQ.
+
+> CMS. (2025). *HCAHPS: Patients' perspectives of care survey.*
+
+### Supporting reviews
+
+> Twersky, S.E., Jefferson, R., Garcia-Ortiz, L., et al. (2024). The impact of limited English proficiency on healthcare access and outcomes in the U.S.: A scoping review. *Healthcare (Basel)*, 12(3), 364.
+
+> Sliwinski, K., Kutney-Lee, A., McHugh, M.D., Lasater, K.B. (2024). A review of disparities in outcomes of hospitalized patients with limited English proficiency: The importance of nursing resources. *Journal of Health Care for the Poor and Underserved*, 35(1), 359–374.
+
+> Lehman, R., Moriarty, H. (2024). Limited English proficiency and outcomes in the intensive care unit: An integrated review. *Clinical Nurse Specialist*, 38(2), 85–94.
+
+### Evidence-informed roadmap priorities
+
+The current 13-language list covers ~77% of US LEP by population. Gap analysis against ICU-specific evidence identifies three languages absent from the current list but strongly supported by US ICU data:
+
+| Add next | Evidence | Chatterbox-native? | OwnVoice path |
+|---|---|---|---|
+| Haitian Creole (`ht`) | Top-6 US healthcare per AMN 2023; critical in FL and NY | No | Web Speech fallback |
+| Somali (`so`) | 8.7% of Mayo ICU LEP cohort; concentrated in MN/OH/ME | No | Web Speech fallback |
+| Hmong (`hmn`) | 2.4% of Mayo ICU LEP cohort; concentrated in WI/MN | No | Web Speech fallback |
+
+Two low-cost additions for international pilots (both Chatterbox-native, no new fallback plumbing needed): **Polish** (UK NHS, Germany) and **Turkish** (Germany, Australia).
+
+### Data gaps
+
+No multi-site US ICU language census exists; Mayo (Barwise 2018) is the only peer-reviewed ICU-specific prevalence source. HCAHPS collects preferred language but CMS does not release national distributions. Joint Commission language-stratified quality requirements are new in 2026 — aggregate findings not yet published. Global ICU language data outside the US is extremely sparse.
