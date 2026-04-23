@@ -7,6 +7,9 @@ import { FallbackVoicePicker } from "../../shared/FallbackVoicePicker";
 import { VoiceCacheProgress } from "../VoiceCacheProgress";
 import { useSettingsStore, useActivePatient } from "../../../stores/settingsStore";
 import { t as resolvePhrase } from "../../../data/phraseRegistry";
+import { confirm } from "../../shared/ConfirmDialog";
+import { canCloneForLocale } from "../../../data/chatterboxLocales";
+import { isGPUReady } from "../../../models/ttsEngine";
 
 interface Props {
   cfg: AppSettings;
@@ -28,7 +31,70 @@ export function PatientInfoSection({
   const isDark = theme === "dark";
   const caregiverLang = useSettingsStore((s) => s.cfg?.caregiverLang ?? "en");
   const active = useActivePatient();
-  const selectedLang = LANGS.find((l) => l.code === (active?.patientLang ?? "en"));
+
+  async function handlePatientLangChange(destLocale: string) {
+    const currentLang = active?.patientLang ?? "en";
+    if (destLocale === currentLang) return;
+
+    const destLangLabel = LANGS.find((l) => l.code === destLocale)?.label ?? destLocale;
+    const providerCount = cfg.providers.filter((p) => p.hasVoice).length;
+    const supported = canCloneForLocale(destLocale);
+    const estimatedMinutes = Math.max(1, Math.ceil((30 * providerCount) / (isGPUReady() ? 60 : 5)));
+
+    const body =
+      providerCount === 0
+        ? resolvePhrase("ui.provider.settings.lang.patient_dialog.body_no_providers", caregiverLang)
+        : supported
+        ? resolvePhrase("ui.provider.settings.lang.patient_dialog.body", caregiverLang)
+            .replace("{providerCount}", String(providerCount))
+            .replace("{estimatedMinutes}", String(estimatedMinutes))
+        : resolvePhrase("ui.provider.settings.lang.patient_dialog.body_unsupported", caregiverLang)
+            .replace("{lang}", destLangLabel);
+
+    const ok = await confirm({
+      title: resolvePhrase("ui.provider.settings.lang.patient_dialog.title", destLocale)
+        .replace("{lang}", destLangLabel),
+      body,
+      confirmLabel: resolvePhrase("ui.provider.settings.lang.change", destLocale),
+      cancelLabel: resolvePhrase("ui.provider.pin_gate.cancel", caregiverLang),
+    });
+    if (ok) {
+      useSettingsStore.getState().updateActivePatient({ patientLang: destLocale });
+    }
+  }
+
+  async function handleCaregiverLangChange(destLocale: string) {
+    if (destLocale === cfg.caregiverLang) return;
+
+    const destLangLabel = LANGS.find((l) => l.code === destLocale)?.label ?? destLocale;
+    const patientHasVoice = active?.hasVoice ?? false;
+    const supported = canCloneForLocale(destLocale);
+    // Patient cache = ~150 base phrases + ~700 pain matrix if GPU
+    const phraseCount = 150 + (isGPUReady() ? 700 : 0);
+    const estimatedMinutes = patientHasVoice
+      ? Math.max(1, Math.ceil(phraseCount / (isGPUReady() ? 60 : 5)))
+      : 1;
+
+    const body =
+      !patientHasVoice
+        ? resolvePhrase("ui.provider.settings.lang.caregiver_dialog.body_no_voice", destLocale)
+        : supported
+        ? resolvePhrase("ui.provider.settings.lang.caregiver_dialog.body", destLocale)
+            .replace("{estimatedMinutes}", String(estimatedMinutes))
+        : resolvePhrase("ui.provider.settings.lang.caregiver_dialog.body_unsupported", destLocale)
+            .replace("{lang}", destLangLabel);
+
+    const ok = await confirm({
+      title: resolvePhrase("ui.provider.settings.lang.caregiver_dialog.title", destLocale)
+        .replace("{lang}", destLangLabel),
+      body,
+      confirmLabel: resolvePhrase("ui.provider.settings.lang.change", destLocale),
+      cancelLabel: resolvePhrase("ui.provider.pin_gate.cancel", cfg.caregiverLang),
+    });
+    if (ok) {
+      useSettingsStore.getState().updateCfg({ caregiverLang: destLocale });
+    }
+  }
 
   return (
     <Section label={resolvePhrase("ui.provider.settings.patient_info.heading", caregiverLang)} t={t}>
@@ -50,11 +116,59 @@ export function PatientInfoSection({
         style={inputStyle(t, isDark)}
       />
 
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 16 }}>
-        <span style={{ fontSize: 15, color: t.sub }}>{resolvePhrase("ui.provider.settings.patient_info.language_label", caregiverLang)}</span>
-        <span style={{ fontSize: 15, color: t.text, fontWeight: 500 }}>
-          {selectedLang ? `${selectedLang.flag} ${selectedLang.label}` : (active?.patientLang ?? "en")}
-        </span>
+      {/* ── Patient language picker ─────────────────────────────── */}
+      <div style={{ ...labelStyle(t), marginTop: 16 }}>
+        {resolvePhrase("ui.provider.settings.lang.patient_section", caregiverLang)}
+      </div>
+      <div
+        role="radiogroup"
+        aria-label={resolvePhrase("ui.provider.settings.lang.patient_section", caregiverLang)}
+        style={chipGridStyle}
+      >
+        {LANGS.map((l) => {
+          const selected = l.code === (active?.patientLang ?? "en");
+          return (
+            <button
+              key={l.code}
+              role="radio"
+              aria-checked={selected}
+              onClick={() => handlePatientLangChange(l.code)}
+              style={chipStyle(selected, isDark)}
+            >
+              <span style={{ fontSize: 22 }}>{l.flag}</span>
+              <span style={{ fontWeight: selected ? 600 : 400 }}>{l.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ── Caregiver language picker ──────────────────────────── */}
+      <div style={{ ...labelStyle(t), marginTop: 20 }}>
+        {resolvePhrase("ui.provider.settings.lang.caregiver_section", caregiverLang)}
+      </div>
+      <p style={{ fontSize: 13, color: t.muted, margin: "0 0 8px" }}>
+        {resolvePhrase("ui.provider.settings.lang.caregiver_helper", caregiverLang)}
+      </p>
+      <div
+        role="radiogroup"
+        aria-label={resolvePhrase("ui.provider.settings.lang.caregiver_section", caregiverLang)}
+        style={chipGridStyle}
+      >
+        {LANGS.map((l) => {
+          const selected = l.code === cfg.caregiverLang;
+          return (
+            <button
+              key={l.code}
+              role="radio"
+              aria-checked={selected}
+              onClick={() => handleCaregiverLangChange(l.code)}
+              style={chipStyle(selected, isDark)}
+            >
+              <span style={{ fontSize: 22 }}>{l.flag}</span>
+              <span style={{ fontWeight: selected ? 600 : 400 }}>{l.label}</span>
+            </button>
+          );
+        })}
       </div>
 
       <div style={{ marginTop: 16 }}>
@@ -153,5 +267,33 @@ function inputStyle(t: ThemeTokens, isDark: boolean): JSX.CSSProperties {
     background: isDark ? "rgba(255,255,255,0.05)" : "#FAFAF8",
     fontSize: 16, color: t.text, outline: "none", boxSizing: "border-box",
     fontFamily: "'Atkinson Hyperlegible Next', system-ui, -apple-system, sans-serif",
+  };
+}
+
+const chipGridStyle: JSX.CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
+  gap: 8,
+  marginTop: 8,
+};
+
+function chipStyle(selected: boolean, isDark: boolean): JSX.CSSProperties {
+  return {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    padding: "12px 14px",
+    borderRadius: 12,
+    border: selected
+      ? `2px solid ${isDark ? "#60A5FA" : "#2563EB"}`
+      : `1px solid ${isDark ? "rgba(255,255,255,0.12)" : "#E5E7EB"}`,
+    background: selected
+      ? (isDark ? "rgba(37,99,235,0.15)" : "#EFF6FF")
+      : (isDark ? "rgba(255,255,255,0.05)" : "#FFFFFF"),
+    cursor: "pointer",
+    fontSize: 16,
+    color: isDark ? "#F3F4F6" : "#1A1A1A",
+    fontFamily: "inherit",
+    minHeight: 64,  // WCAG 2.5.5 AAA: 64×64 touch target
   };
 }

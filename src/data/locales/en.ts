@@ -744,6 +744,22 @@ const en = {
   "ui.provider.settings.patient_info.name_label": "Name",
   "ui.provider.settings.patient_info.bed_label": "Bed / Room",
   "ui.provider.settings.patient_info.language_label": "Language",
+
+  // ── UI chrome: Settings — Language pickers ────────────────────
+  "ui.provider.settings.lang.patient_section": "Patient language",
+  "ui.provider.settings.lang.caregiver_section": "Care team language",
+  "ui.provider.settings.lang.caregiver_helper": "The language your care team understands. Usually set once per device.",
+  "ui.provider.settings.lang.change": "Change language",
+
+  "ui.provider.settings.lang.patient_dialog.title": "Change patient language to {lang}?",
+  "ui.provider.settings.lang.patient_dialog.body": "Your voice clone stays ready — the phrases you tap will still sound the same. We'll prepare audio for {providerCount} care-team voices (~{estimatedMinutes} min). You can keep using the app while this happens.",
+  "ui.provider.settings.lang.patient_dialog.body_unsupported": "Care-team voice clones aren't available in {lang} — the system voice will be used instead. Existing recordings are kept in case you switch to a supported language later.",
+  "ui.provider.settings.lang.patient_dialog.body_no_providers": "The phrases you tap will still sound the same. No care-team voices are configured, so nothing will need to regenerate.",
+
+  "ui.provider.settings.lang.caregiver_dialog.title": "Change care team language to {lang}?",
+  "ui.provider.settings.lang.caregiver_dialog.body": "Your care-team voice clones stay ready. We'll prepare patient-voice audio in the new language (~{estimatedMinutes} min). You can keep using the app while this happens.",
+  "ui.provider.settings.lang.caregiver_dialog.body_unsupported": "The patient voice clone isn't available in {lang} — the system voice will be used instead. The recorded patient voice sample is kept in case you switch to a supported language later.",
+  "ui.provider.settings.lang.caregiver_dialog.body_no_voice": "No patient voice clone is configured, so nothing will need to regenerate.",
   "ui.provider.settings.patient_info.voice_label": "Voice",
   "ui.provider.settings.patient_info.backup_voice_label": "Backup voice",
   "ui.provider.settings.patient_info.backup_voice_body": "System voice used while the voice clone loads. Tap to preview.",
