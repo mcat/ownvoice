@@ -1,6 +1,6 @@
 import { Btn } from "../shared/Btn";
 import { useUIStore, type OverlayName } from "../../stores/uiStore";
-import { useSettingsStore } from "../../stores/settingsStore";
+import { useSettingsStore, useActivePatient } from "../../stores/settingsStore";
 import { useTheme } from "../../hooks/useTheme";
 import { t as resolvePhrase } from "../../data/phraseRegistry";
 import type { PhraseKey } from "../../data/phraseRegistry";
@@ -13,6 +13,7 @@ const ICONS = {
   wishes: "\u2764\uFE0F",
   listen: "\uD83D\uDC42",
   provider: "\uD83D\uDC69\u200D\u2695\uFE0F",
+  switchPatient: "\uD83D\uDD04",
   settings: "\u2699\uFE0F",
 } as const;
 
@@ -54,13 +55,15 @@ function labelStyle(t: ThemeTokens) {
 
 interface HeaderNavProps {
   onSettings: () => void;
+  onSwitchPatient: () => void;
 }
 
-export function HeaderNav({ onSettings }: HeaderNavProps) {
+export function HeaderNav({ onSettings, onSwitchPatient }: HeaderNavProps) {
   const { theme, toggle: onToggleTheme, isAuto, t } = useTheme();
   const openOverlay = useUIStore((s) => s.openOverlay);
   const cfg = useSettingsStore((s) => s.cfg);
-  const patientLang = cfg?.patientLang ?? "en";
+  const active = useActivePatient();
+  const patientLang = active?.patientLang ?? "en";
   const caregiverLang = cfg?.caregiverLang ?? "en";
 
   const themeIcon = isAuto ? ICONS.auto : theme === "light" ? ICONS.light : ICONS.dark;
@@ -82,6 +85,10 @@ export function HeaderNav({ onSettings }: HeaderNavProps) {
           </Btn>
         );
       })}
+      <Btn key="switchPatient" onClick={onSwitchPatient} aria-label={resolvePhrase("ui.provider.nav.switch_patient", caregiverLang)} style={btnStyle(t, ICONS.switchPatient)}>
+        <span>{ICONS.switchPatient}</span>
+        <span style={labelStyle(t)}>{resolvePhrase("ui.provider.nav.switch_patient", caregiverLang)}</span>
+      </Btn>
       <Btn key="settings" onClick={onSettings} aria-label={resolvePhrase("ui.provider.nav.settings", caregiverLang)} style={btnStyle(t, ICONS.settings)}>
         <span>{ICONS.settings}</span>
         <span style={labelStyle(t)}>{resolvePhrase("ui.provider.nav.settings", caregiverLang)}</span>

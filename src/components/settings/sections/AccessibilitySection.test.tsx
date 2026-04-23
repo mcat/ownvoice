@@ -1,17 +1,9 @@
 import { render, screen, fireEvent } from "@testing-library/preact";
 import { AccessibilitySection } from "./AccessibilitySection";
 import { light } from "../../../theme/tokens";
-import type { AppSettings } from "../../../types";
+import { makeTestCfg } from "../../../test/makeCfg";
 
-const baseCfg: AppSettings = {
-  patientName: "",
-  bed: "",
-  patientLang: "en",
-  caregiverLang: "en",
-  patientVoice: false,
-  pin: "",
-  providers: [],
-};
+const baseCfg = makeTestCfg();
 
 let pointerFineValue = false;
 vi.mock("../../../hooks/usePointerFine", () => ({

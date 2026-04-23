@@ -4,24 +4,22 @@ import { useSettingsStore } from "../stores/settingsStore";
 import { useConversationStore } from "../stores/conversationStore";
 import { useUIStore } from "../stores/uiStore";
 import { speak } from "../speak";
-import type { AppSettings } from "../types";
+import { makeTestCfg } from "../test/makeCfg";
 
 vi.mock("../speak", () => ({
   speak: vi.fn(),
 }));
 
-const DEFAULT_CFG: AppSettings = {
-  patientName: "Alice",
-  bed: "B-102",
-  patientLang: "en",
-  caregiverLang: "en",
-  patientVoice: true,
-  pin: "0000",
-  providers: [
-    { name: "Dr. Jones", hasVoice: false },
-    { name: "Nurse Lee", hasVoice: true },
-  ],
-};
+const DEFAULT_CFG = makeTestCfg({
+  patient: { name: "Alice", bed: "B-102", patientLang: "en", hasVoice: true },
+  cfg: {
+    pin: "0000",
+    providers: [
+      { name: "Dr. Jones", hasVoice: false },
+      { name: "Nurse Lee", hasVoice: true },
+    ],
+  },
+});
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -31,7 +29,7 @@ beforeEach(() => {
     speakerData: null,
     _hasHydrated: false,
   });
-  useConversationStore.setState({ messages: [] });
+  useConversationStore.setState({ messagesByPatientId: {} });
   useUIStore.setState({
     speaking: null,
     activeProvIdx: 0,
@@ -41,6 +39,13 @@ beforeEach(() => {
 afterEach(() => {
   vi.useRealTimers();
 });
+
+/** Helper to get messages for the active patient. */
+function activeMessages() {
+  const activeId = useSettingsStore.getState().cfg?.activePatientId;
+  if (!activeId) return [];
+  return useConversationStore.getState().messagesByPatientId[activeId] ?? [];
+}
 
 describe("useSpeakActions", () => {
   describe("when cfg is null (no-ops)", () => {
@@ -52,7 +57,7 @@ describe("useSpeakActions", () => {
       });
 
       expect(speak).not.toHaveBeenCalled();
-      expect(useConversationStore.getState().messages).toHaveLength(0);
+      expect(activeMessages()).toHaveLength(0);
     });
 
     it("speakAsProvider does nothing", () => {
@@ -63,7 +68,7 @@ describe("useSpeakActions", () => {
       });
 
       expect(speak).not.toHaveBeenCalled();
-      expect(useConversationStore.getState().messages).toHaveLength(0);
+      expect(activeMessages()).toHaveLength(0);
     });
 
     it("addToThread does nothing", () => {
@@ -73,7 +78,7 @@ describe("useSpeakActions", () => {
         result.current.addToThread("Hello", "patient");
       });
 
-      expect(useConversationStore.getState().messages).toHaveLength(0);
+      expect(activeMessages()).toHaveLength(0);
     });
 
     it("repeatSpeak does nothing", () => {
@@ -89,7 +94,7 @@ describe("useSpeakActions", () => {
 
   describe("speakAsPatient", () => {
     it("adds message to conversation and calls speak", () => {
-      useSettingsStore.setState({ cfg: DEFAULT_CFG, speakerData: null });
+      useSettingsStore.setState({ cfg: DEFAULT_CFG });
 
       const { result } = renderHook(() => useSpeakActions());
 
@@ -98,7 +103,7 @@ describe("useSpeakActions", () => {
       });
 
       // Check conversation message was added
-      const messages = useConversationStore.getState().messages;
+      const messages = activeMessages();
       expect(messages).toHaveLength(1);
       expect(messages[0].text).toBe("I need water");
       expect(messages[0].from).toBe("patient");
@@ -116,7 +121,17 @@ describe("useSpeakActions", () => {
 
     it("passes speakerData as embedding when available", () => {
       const speakerData = { embedding: [1, 2, 3] };
-      useSettingsStore.setState({ cfg: DEFAULT_CFG, speakerData });
+      const cfgWithSpeaker = makeTestCfg({
+        patient: { name: "Alice", bed: "B-102", patientLang: "en", hasVoice: true, speakerData },
+        cfg: {
+          pin: "0000",
+          providers: [
+            { name: "Dr. Jones", hasVoice: false },
+            { name: "Nurse Lee", hasVoice: true },
+          ],
+        },
+      });
+      useSettingsStore.setState({ cfg: cfgWithSpeaker });
 
       const { result } = renderHook(() => useSpeakActions());
 
@@ -171,7 +186,7 @@ describe("useSpeakActions", () => {
         result.current.speakAsProvider("Can you rate your pain?");
       });
 
-      const messages = useConversationStore.getState().messages;
+      const messages = activeMessages();
       expect(messages).toHaveLength(1);
       expect(messages[0].text).toBe("Can you rate your pain?");
       expect(messages[0].from).toBe("provider");
@@ -195,7 +210,7 @@ describe("useSpeakActions", () => {
         result.current.speakAsProvider("Take deep breaths");
       });
 
-      const messages = useConversationStore.getState().messages;
+      const messages = activeMessages();
       expect(messages[0].label).toBe("Nurse Lee");
 
       expect(speak).toHaveBeenCalledWith("Take deep breaths", {
@@ -208,13 +223,16 @@ describe("useSpeakActions", () => {
 
     it("passes the active provider's embedding through to speak", () => {
       const providerEmbedding = { token: "prov-embed" };
-      const cfgWithProviderEmbedding: AppSettings = {
-        ...DEFAULT_CFG,
-        providers: [
-          { name: "Dr. Jones", hasVoice: true, embedding: providerEmbedding },
-          { name: "Nurse Lee", hasVoice: true },
-        ],
-      };
+      const cfgWithProviderEmbedding = makeTestCfg({
+        patient: { name: "Alice", bed: "B-102", patientLang: "en", hasVoice: true },
+        cfg: {
+          pin: "0000",
+          providers: [
+            { name: "Dr. Jones", hasVoice: true, embedding: providerEmbedding },
+            { name: "Nurse Lee", hasVoice: true },
+          ],
+        },
+      });
       useSettingsStore.setState({ cfg: cfgWithProviderEmbedding });
 
       const { result } = renderHook(() => useSpeakActions());
@@ -232,10 +250,13 @@ describe("useSpeakActions", () => {
     });
 
     it("falls back to 'Care Team' when provider name is empty", () => {
-      const cfgNoName: AppSettings = {
-        ...DEFAULT_CFG,
-        providers: [{ name: "", hasVoice: false }],
-      };
+      const cfgNoName = makeTestCfg({
+        patient: { name: "Alice", bed: "B-102", patientLang: "en", hasVoice: true },
+        cfg: {
+          pin: "0000",
+          providers: [{ name: "", hasVoice: false }],
+        },
+      });
       useSettingsStore.setState({ cfg: cfgNoName });
 
       const { result } = renderHook(() => useSpeakActions());
@@ -244,7 +265,7 @@ describe("useSpeakActions", () => {
         result.current.speakAsProvider("Hello");
       });
 
-      const messages = useConversationStore.getState().messages;
+      const messages = activeMessages();
       expect(messages[0].label).toBe("Care Team");
     });
   });
@@ -259,7 +280,7 @@ describe("useSpeakActions", () => {
         result.current.addToThread("Note from nurse", "provider", "Nurse Lee");
       });
 
-      const messages = useConversationStore.getState().messages;
+      const messages = activeMessages();
       expect(messages).toHaveLength(1);
       expect(messages[0].text).toBe("Note from nurse");
       expect(messages[0].from).toBe("provider");
@@ -277,7 +298,7 @@ describe("useSpeakActions", () => {
         result.current.addToThread("I'm thirsty", "patient");
       });
 
-      const messages = useConversationStore.getState().messages;
+      const messages = activeMessages();
       expect(messages[0].label).toBe("Alice");
     });
 
@@ -290,7 +311,7 @@ describe("useSpeakActions", () => {
         result.current.addToThread("Noted", "provider");
       });
 
-      const messages = useConversationStore.getState().messages;
+      const messages = activeMessages();
       expect(messages[0].label).toBe("Care Team");
     });
   });
@@ -306,7 +327,7 @@ describe("useSpeakActions", () => {
       });
 
       // Should NOT add to conversation
-      expect(useConversationStore.getState().messages).toHaveLength(0);
+      expect(activeMessages()).toHaveLength(0);
 
       // Should call speak
       expect(speak).toHaveBeenCalledWith("I need help", {
@@ -353,10 +374,13 @@ describe("useSpeakActions", () => {
     });
 
     it("falls back to Care Team when providers array is empty", () => {
-      const cfgNoProviders: AppSettings = {
-        ...DEFAULT_CFG,
-        providers: [],
-      };
+      const cfgNoProviders = makeTestCfg({
+        patient: { name: "Alice", bed: "B-102", patientLang: "en", hasVoice: true },
+        cfg: {
+          pin: "0000",
+          providers: [],
+        },
+      });
       useSettingsStore.setState({ cfg: cfgNoProviders });
 
       const { result } = renderHook(() => useSpeakActions());

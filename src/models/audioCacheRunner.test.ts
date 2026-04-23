@@ -1,5 +1,5 @@
-import type { AppSettings } from "../types";
 import { useAudioCacheStore } from "../stores/audioCacheStore";
+import { makeTestCfg } from "../test/makeCfg";
 
 // Mock the underlying generators so we control progress without hitting
 // the actual TTS worker. The runner should orchestrate across speakers
@@ -35,15 +35,17 @@ import {
 const PATIENT_EMBED = new Float32Array([0.1, 0.2, 0.3, 0.4, 0.5]);
 const PROV_EMBED = new Float32Array([0.9, 0.8, 0.7, 0.6, 0.5]);
 
-const BASE_CFG: AppSettings = {
-  patientName: "Alice",
-  bed: "1",
-  patientLang: "en",
-  caregiverLang: "en",
-  patientVoice: true,
-  pin: "0000",
-  providers: [],
-};
+const TEST_PATIENT_ID = "test-patient-1";
+const PATIENT_KEY = `patient:${TEST_PATIENT_ID}` as const;
+const PAIN_KEY = `patient:${TEST_PATIENT_ID}:pain` as const;
+
+const BASE_CFG = makeTestCfg({
+  patient: {
+    id: TEST_PATIENT_ID,
+    speakerData: PATIENT_EMBED,
+    hasVoice: true,
+  },
+});
 
 function makeGenerator(
   progresses: Array<{ phrase: string; current: number; total: number; failed?: boolean }>,
@@ -63,7 +65,28 @@ beforeEach(() => {
 
 describe("audioCacheRunner.runPreGeneration", () => {
   it("does nothing when no embeddings are present", async () => {
-    await runPreGeneration(BASE_CFG, null);
+    const cfg = makeTestCfg();
+    await runPreGeneration(cfg);
+    expect(generateAllPhrases).not.toHaveBeenCalled();
+    expect(useAudioCacheStore.getState().runs).toEqual({});
+  });
+
+  it("does nothing when no activePatientId is set", async () => {
+    const cfg = makeTestCfg({
+      patient: { speakerData: PATIENT_EMBED, hasVoice: true },
+      cfg: { activePatientId: null },
+    });
+    await runPreGeneration(cfg);
+    expect(generateAllPhrases).not.toHaveBeenCalled();
+    expect(useAudioCacheStore.getState().runs).toEqual({});
+  });
+
+  it("does nothing when activePatientId points to a missing patient", async () => {
+    const cfg = makeTestCfg({
+      patient: { speakerData: PATIENT_EMBED, hasVoice: true },
+      cfg: { activePatientId: "nonexistent-id" },
+    });
+    await runPreGeneration(cfg);
     expect(generateAllPhrases).not.toHaveBeenCalled();
     expect(useAudioCacheStore.getState().runs).toEqual({});
   });
@@ -83,21 +106,27 @@ describe("audioCacheRunner.runPreGeneration", () => {
       })();
     });
 
-    const cfg: AppSettings = {
-      ...BASE_CFG,
-      providers: [
-        { name: "Dr. Jones", hasVoice: true, embedding: PROV_EMBED },
-      ],
-    };
+    const cfg = makeTestCfg({
+      patient: {
+        id: TEST_PATIENT_ID,
+        speakerData: PATIENT_EMBED,
+        hasVoice: true,
+      },
+      cfg: {
+        providers: [
+          { name: "Dr. Jones", hasVoice: true, embedding: PROV_EMBED },
+        ],
+      },
+    });
 
-    const run = runPreGeneration(cfg, PATIENT_EMBED);
+    const run = runPreGeneration(cfg);
     // Yield once so runPreGeneration can run the initial synchronous
     // seeding + patient.start() before we inspect store state.
     await Promise.resolve();
 
     const s = useAudioCacheStore.getState();
     // Patient is actively running — claimed activeKey.
-    expect(s.runs.patient?.status).toBe("running");
+    expect(s.runs[PATIENT_KEY]?.status).toBe("running");
     // Provider is queued and visible, not undefined.
     expect(s.runs["provider:0"]?.status).toBe("queued");
     expect(s.runs["provider:0"]?.total).toBeGreaterThan(0);
@@ -117,23 +146,87 @@ describe("audioCacheRunner.runPreGeneration", () => {
       ]);
     });
 
-    const cfg: AppSettings = {
-      ...BASE_CFG,
-      providers: [
-        { name: "Dr. Jones", hasVoice: true, embedding: PROV_EMBED },
-      ],
-    };
-    await runPreGeneration(cfg, PATIENT_EMBED);
+    const cfg = makeTestCfg({
+      patient: {
+        id: TEST_PATIENT_ID,
+        speakerData: PATIENT_EMBED,
+        hasVoice: true,
+      },
+      cfg: {
+        providers: [
+          { name: "Dr. Jones", hasVoice: true, embedding: PROV_EMBED },
+        ],
+      },
+    });
+    await runPreGeneration(cfg);
 
     expect(calls).toEqual(["patient", "provider"]);
 
     const s = useAudioCacheStore.getState();
-    expect(s.runs.patient?.status).toBe("done");
+    expect(s.runs[PATIENT_KEY]?.status).toBe("done");
     // `current` must advance from the progress yield — kills the block
     // mutant that elides the store.progress() call on successful phrases.
-    expect(s.runs.patient?.current).toBe(1);
+    expect(s.runs[PATIENT_KEY]?.current).toBe(1);
     expect(s.runs["provider:0"]?.status).toBe("done");
     expect(s.runs["provider:0"]?.current).toBe(1);
+  });
+
+  it("patient entry uses activePatient's speakerData and cfg.caregiverLang", async () => {
+    let capturedEmbedding: unknown;
+    vi.mocked(generateAllPhrases).mockImplementation((phrases, embedding) => {
+      capturedEmbedding = embedding;
+      return makeGenerator([
+        { phrase: phrases[0], current: 1, total: phrases.length },
+      ]);
+    });
+
+    const cfg = makeTestCfg({
+      patient: {
+        id: TEST_PATIENT_ID,
+        speakerData: PATIENT_EMBED,
+        hasVoice: true,
+        patientLang: "es",
+      },
+      cfg: { caregiverLang: "fr" },
+    });
+    await runPreGeneration(cfg);
+
+    // Patient entry should use the active patient's speakerData
+    expect(capturedEmbedding).toBe(PATIENT_EMBED);
+    // The patient key should be scoped by patient ID
+    const s = useAudioCacheStore.getState();
+    expect(s.runs[PATIENT_KEY]).toBeDefined();
+  });
+
+  it("provider entries use activePatient.patientLang", async () => {
+    const capturedPhrases: string[][] = [];
+    vi.mocked(generateAllPhrases).mockImplementation((phrases) => {
+      capturedPhrases.push([...phrases]);
+      return makeGenerator([
+        { phrase: phrases[0], current: 1, total: phrases.length },
+      ]);
+    });
+
+    const cfg = makeTestCfg({
+      patient: {
+        id: TEST_PATIENT_ID,
+        speakerData: PATIENT_EMBED,
+        hasVoice: true,
+        patientLang: "es",
+      },
+      cfg: {
+        caregiverLang: "en",
+        providers: [
+          { name: "Dr. Jones", hasVoice: true, embedding: PROV_EMBED },
+        ],
+      },
+    });
+    await runPreGeneration(cfg);
+
+    // Two calls: patient (caregiverLang=en) then provider (patientLang=es).
+    // Provider phrases should differ from patient phrases because the
+    // locale passed to getProviderSpokenPhrases is the patient's language.
+    expect(capturedPhrases.length).toBe(2);
   });
 
   it("skips providers whose embedding is missing", async () => {
@@ -141,18 +234,24 @@ describe("audioCacheRunner.runPreGeneration", () => {
       makeGenerator([{ phrase: phrases[0], current: 1, total: phrases.length }]),
     );
 
-    const cfg: AppSettings = {
-      ...BASE_CFG,
-      providers: [
-        { name: "Dr. No-Voice", hasVoice: false, embedding: null },
-      ],
-    };
-    await runPreGeneration(cfg, PATIENT_EMBED);
+    const cfg = makeTestCfg({
+      patient: {
+        id: TEST_PATIENT_ID,
+        speakerData: PATIENT_EMBED,
+        hasVoice: true,
+      },
+      cfg: {
+        providers: [
+          { name: "Dr. No-Voice", hasVoice: false, embedding: null },
+        ],
+      },
+    });
+    await runPreGeneration(cfg);
 
     // Only patient is in the plan — the embedding-less provider is filtered
     // out by isRunnable() in buildPlan.
     const s = useAudioCacheStore.getState();
-    expect(s.runs.patient?.status).toBe("done");
+    expect(s.runs[PATIENT_KEY]?.status).toBe("done");
     expect(s.runs["provider:0"]).toBeUndefined();
   });
 
@@ -163,9 +262,9 @@ describe("audioCacheRunner.runPreGeneration", () => {
       ]),
     );
 
-    await runPreGeneration(BASE_CFG, PATIENT_EMBED);
+    await runPreGeneration(BASE_CFG);
 
-    const run = useAudioCacheStore.getState().runs.patient!;
+    const run = useAudioCacheStore.getState().runs[PATIENT_KEY]!;
     expect(run.status).toBe("failed");
     expect(run.failedPhrases.length).toBeGreaterThan(0);
   });
@@ -184,10 +283,10 @@ describe("audioCacheRunner.runPreGeneration", () => {
       },
     );
 
-    const first = runPreGeneration(BASE_CFG, PATIENT_EMBED);
+    const first = runPreGeneration(BASE_CFG);
     await Promise.resolve();
     // Starting a second run should abort the first's signal
-    const second = runPreGeneration(BASE_CFG, PATIENT_EMBED);
+    const second = runPreGeneration(BASE_CFG);
     await first;
 
     expect(signals[0]?.aborted).toBe(true);
@@ -209,7 +308,7 @@ describe("audioCacheRunner.runPreGeneration", () => {
         })(),
     );
 
-    const run = runPreGeneration(BASE_CFG, PATIENT_EMBED);
+    const run = runPreGeneration(BASE_CFG);
     await Promise.resolve();
     abort();
     await run;
@@ -223,11 +322,11 @@ describe("audioCacheRunner.runPreGeneration", () => {
       makeGenerator([{ phrase: phrases[0], current: 1, total: phrases.length }]),
     );
 
-    await runPreGeneration(BASE_CFG, PATIENT_EMBED);
+    await runPreGeneration(BASE_CFG);
 
     const s = useAudioCacheStore.getState();
-    expect(s.runs.patient?.status).toBe("done");
-    expect(s.runs["patient:pain"]).toBeUndefined();
+    expect(s.runs[PATIENT_KEY]?.status).toBe("done");
+    expect(s.runs[PAIN_KEY]).toBeUndefined();
   });
 
   it("runs patient base phrases then the patient:pain matrix with gpuOnly when GPU is ready", async () => {
@@ -242,16 +341,113 @@ describe("audioCacheRunner.runPreGeneration", () => {
       },
     );
 
-    await runPreGeneration(BASE_CFG, PATIENT_EMBED);
+    await runPreGeneration(BASE_CFG);
 
     // Patient base phrases synthesized without gpuOnly; pain matrix with it.
     expect(callOrder).toEqual([{ gpuOnly: false }, { gpuOnly: true }]);
 
     const s = useAudioCacheStore.getState();
-    expect(s.runs.patient?.status).toBe("done");
-    expect(s.runs["patient:pain"]?.status).toBe("done");
+    expect(s.runs[PATIENT_KEY]?.status).toBe("done");
+    expect(s.runs[PAIN_KEY]?.status).toBe("done");
     // 9 descriptors × 13 regions × 6 severities = 702 composed sentences.
-    expect(s.runs["patient:pain"]?.total).toBe(702);
+    expect(s.runs[PAIN_KEY]?.total).toBe(702);
+  });
+
+  it("short-circuits patient when caregiverLang is unsupported by Chatterbox", async () => {
+    vi.mocked(generateAllPhrases).mockImplementation((phrases) =>
+      makeGenerator([{ phrase: phrases[0], current: 1, total: phrases.length }]),
+    );
+
+    const cfg = makeTestCfg({
+      patient: {
+        id: TEST_PATIENT_ID,
+        speakerData: PATIENT_EMBED,
+        hasVoice: true,
+        patientLang: "en",
+      },
+      cfg: { caregiverLang: "xx" },
+    });
+    await runPreGeneration(cfg);
+
+    // caregiverLang "xx" isn't in CHATTERBOX_LOCALES, so patient entry
+    // is omitted (canCloneForLocale returns false).
+    expect(generateAllPhrases).not.toHaveBeenCalled();
+    const s = useAudioCacheStore.getState();
+    expect(s.runs[PATIENT_KEY]).toBeUndefined();
+  });
+
+  it("short-circuits providers when patientLang is unsupported by Chatterbox", async () => {
+    vi.mocked(generateAllPhrases).mockImplementation((phrases) =>
+      makeGenerator([{ phrase: phrases[0], current: 1, total: phrases.length }]),
+    );
+
+    const cfg = makeTestCfg({
+      patient: {
+        id: TEST_PATIENT_ID,
+        speakerData: PATIENT_EMBED,
+        hasVoice: true,
+        patientLang: "xx", // unsupported
+      },
+      cfg: {
+        caregiverLang: "en",
+        providers: [
+          { name: "Dr. Jones", hasVoice: true, embedding: PROV_EMBED },
+        ],
+      },
+    });
+    await runPreGeneration(cfg);
+
+    // Patient entry should still appear (caregiverLang=en is supported),
+    // but provider entry is omitted (patientLang=xx is unsupported).
+    const s = useAudioCacheStore.getState();
+    expect(s.runs[PATIENT_KEY]?.status).toBe("done");
+    expect(s.runs["provider:0"]).toBeUndefined();
+  });
+
+  it("threads patientId into generateAllPhrases opts for patient entries", async () => {
+    let capturedOpts: { gpuOnly?: boolean; patientId?: string | null } | undefined;
+    vi.mocked(generateAllPhrases).mockImplementation(
+      (phrases, _embedding, _signal, opts) => {
+        capturedOpts = opts;
+        return makeGenerator([
+          { phrase: phrases[0], current: 1, total: phrases.length },
+        ]);
+      },
+    );
+
+    await runPreGeneration(BASE_CFG);
+
+    expect(capturedOpts?.patientId).toBe(TEST_PATIENT_ID);
+  });
+
+  it("threads patientId=null into generateAllPhrases opts for provider entries", async () => {
+    const capturedOpts: Array<{ gpuOnly?: boolean; patientId?: string | null }> = [];
+    vi.mocked(generateAllPhrases).mockImplementation(
+      (phrases, _embedding, _signal, opts) => {
+        capturedOpts.push(opts ?? {});
+        return makeGenerator([
+          { phrase: phrases[0], current: 1, total: phrases.length },
+        ]);
+      },
+    );
+
+    const cfg = makeTestCfg({
+      patient: {
+        id: TEST_PATIENT_ID,
+        speakerData: PATIENT_EMBED,
+        hasVoice: true,
+      },
+      cfg: {
+        providers: [
+          { name: "Dr. Jones", hasVoice: true, embedding: PROV_EMBED },
+        ],
+      },
+    });
+    await runPreGeneration(cfg);
+
+    // First call is patient (patientId set), second is provider (null).
+    expect(capturedOpts[0]?.patientId).toBe(TEST_PATIENT_ID);
+    expect(capturedOpts[1]?.patientId).toBeNull();
   });
 });
 
@@ -259,7 +455,7 @@ describe("audioCacheRunner.retryFailed", () => {
   it("only regenerates the store's failedPhrases for the given key", async () => {
     useAudioCacheStore.setState({
       runs: {
-        patient: {
+        [PATIENT_KEY]: {
           status: "failed",
           current: 3,
           total: 3,
@@ -280,16 +476,16 @@ describe("audioCacheRunner.retryFailed", () => {
       ]);
     });
 
-    await retryFailed(BASE_CFG, PATIENT_EMBED, "patient");
+    await retryFailed(BASE_CFG, PATIENT_KEY);
 
     const s = useAudioCacheStore.getState();
-    expect(s.runs.patient?.status).toBe("done");
-    expect(s.runs.patient?.failedPhrases).toEqual([]);
+    expect(s.runs[PATIENT_KEY]?.status).toBe("done");
+    expect(s.runs[PATIENT_KEY]?.failedPhrases).toEqual([]);
     expect(retryFailedGen).toHaveBeenCalledTimes(1);
   });
 
   it("is a no-op when nothing failed", async () => {
-    await retryFailed(BASE_CFG, PATIENT_EMBED, "patient");
+    await retryFailed(BASE_CFG, PATIENT_KEY);
     expect(retryFailedGen).not.toHaveBeenCalled();
   });
 
@@ -311,14 +507,14 @@ describe("audioCacheRunner.retryFailed", () => {
       activeKey: null,
     });
 
-    await retryFailed(BASE_CFG, PATIENT_EMBED, orphanKey);
+    await retryFailed(BASE_CFG, orphanKey);
     expect(retryFailedGen).not.toHaveBeenCalled();
   });
 
   it("records failed phrases emitted during retry", async () => {
     useAudioCacheStore.setState({
       runs: {
-        patient: {
+        [PATIENT_KEY]: {
           status: "failed",
           current: 2,
           total: 2,
@@ -337,9 +533,9 @@ describe("audioCacheRunner.retryFailed", () => {
       ]),
     );
 
-    await retryFailed(BASE_CFG, PATIENT_EMBED, "patient");
+    await retryFailed(BASE_CFG, PATIENT_KEY);
 
-    const run = useAudioCacheStore.getState().runs.patient!;
+    const run = useAudioCacheStore.getState().runs[PATIENT_KEY]!;
     expect(run.status).toBe("failed");
     expect(run.failedPhrases).toEqual(["still broken"]);
   });
@@ -347,7 +543,7 @@ describe("audioCacheRunner.retryFailed", () => {
   it("records successful progress during retry", async () => {
     useAudioCacheStore.setState({
       runs: {
-        patient: {
+        [PATIENT_KEY]: {
           status: "failed",
           current: 2,
           total: 2,
@@ -364,9 +560,9 @@ describe("audioCacheRunner.retryFailed", () => {
       makeGenerator([{ phrase: "recoverable", current: 1, total: 1 }]),
     );
 
-    await retryFailed(BASE_CFG, PATIENT_EMBED, "patient");
+    await retryFailed(BASE_CFG, PATIENT_KEY);
 
-    const run = useAudioCacheStore.getState().runs.patient!;
+    const run = useAudioCacheStore.getState().runs[PATIENT_KEY]!;
     // current must reflect the successful yield, not the pre-retry value.
     expect(run.current).toBe(1);
     expect(run.currentPhrase).toBeNull(); // finish() clears it
@@ -376,7 +572,7 @@ describe("audioCacheRunner.retryFailed", () => {
   it("passes gpuOnly:false to the generator when retrying the patient base run", async () => {
     useAudioCacheStore.setState({
       runs: {
-        patient: {
+        [PATIENT_KEY]: {
           status: "failed",
           current: 1,
           total: 1,
@@ -397,7 +593,7 @@ describe("audioCacheRunner.retryFailed", () => {
       },
     );
 
-    await retryFailed(BASE_CFG, PATIENT_EMBED, "patient");
+    await retryFailed(BASE_CFG, PATIENT_KEY);
 
     // Base-run retries must NOT be gated on GPU — the patient 150-phrase
     // pass works on WASM too. Only patient:pain carries gpuOnly.
@@ -408,7 +604,7 @@ describe("audioCacheRunner.retryFailed", () => {
     isGPUReadyMock.mockReturnValue(true);
     useAudioCacheStore.setState({
       runs: {
-        "patient:pain": {
+        [PAIN_KEY]: {
           status: "failed",
           current: 5,
           total: 5,
@@ -429,7 +625,7 @@ describe("audioCacheRunner.retryFailed", () => {
       },
     );
 
-    await retryFailed(BASE_CFG, PATIENT_EMBED, "patient:pain");
+    await retryFailed(BASE_CFG, PAIN_KEY);
 
     expect(captured?.gpuOnly).toBe(true);
   });
@@ -437,7 +633,7 @@ describe("audioCacheRunner.retryFailed", () => {
   it("skips finish() when the run is aborted mid-retry", async () => {
     useAudioCacheStore.setState({
       runs: {
-        patient: {
+        [PATIENT_KEY]: {
           status: "failed",
           current: 1,
           total: 1,
@@ -460,7 +656,7 @@ describe("audioCacheRunner.retryFailed", () => {
         })(),
     );
 
-    const retry = retryFailed(BASE_CFG, PATIENT_EMBED, "patient");
+    const retry = retryFailed(BASE_CFG, PATIENT_KEY);
     await Promise.resolve();
     // Newer run bumps currentRunId and aborts the in-flight retry signal.
     abort();
@@ -470,7 +666,7 @@ describe("audioCacheRunner.retryFailed", () => {
     // leave the slot in its pre-retry 'running' state untouched by finish.
     // `abort()` clears runs entirely, which is the observable signal that
     // finish() didn't fire (it would have set status to 'done').
-    expect(useAudioCacheStore.getState().runs.patient).toBeUndefined();
+    expect(useAudioCacheStore.getState().runs[PATIENT_KEY]).toBeUndefined();
   });
 });
 
@@ -492,17 +688,17 @@ describe("audioCacheRunner.pauseAll", () => {
         })(),
     );
 
-    const run = runPreGeneration(BASE_CFG, PATIENT_EMBED);
+    const run = runPreGeneration(BASE_CFG);
     await Promise.resolve();
-    expect(useAudioCacheStore.getState().runs.patient?.status).toBe("running");
+    expect(useAudioCacheStore.getState().runs[PATIENT_KEY]?.status).toBe("running");
 
     pauseAll();
     await run;
 
     const s = useAudioCacheStore.getState();
-    expect(s.runs.patient?.status).toBe("paused");
+    expect(s.runs[PATIENT_KEY]?.status).toBe("paused");
     // Progress is preserved (not wiped like abort()).
-    expect(s.runs.patient?.total).toBeGreaterThan(0);
+    expect(s.runs[PATIENT_KEY]?.total).toBeGreaterThan(0);
   });
 });
 
@@ -518,20 +714,20 @@ describe("audioCacheRunner.discardRun", () => {
         })(),
     );
 
-    const run = runPreGeneration(BASE_CFG, PATIENT_EMBED);
+    const run = runPreGeneration(BASE_CFG);
     await Promise.resolve();
-    expect(useAudioCacheStore.getState().runs.patient).toBeDefined();
+    expect(useAudioCacheStore.getState().runs[PATIENT_KEY]).toBeDefined();
 
-    discardRun("patient");
+    discardRun(PATIENT_KEY);
     await run;
 
     // Only the targeted key is dropped; other speakers would remain if present.
-    expect(useAudioCacheStore.getState().runs.patient).toBeUndefined();
+    expect(useAudioCacheStore.getState().runs[PATIENT_KEY]).toBeUndefined();
   });
 
   it("is safe when no run is in flight", () => {
     // No setup — just verify no throw and store stays empty.
-    expect(() => discardRun("patient")).not.toThrow();
+    expect(() => discardRun(PATIENT_KEY)).not.toThrow();
     expect(useAudioCacheStore.getState().runs).toEqual({});
   });
 });

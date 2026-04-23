@@ -3,17 +3,9 @@ import { TabBar } from "./TabBar";
 import { useUIStore } from "../../stores/uiStore";
 import { useSettingsStore } from "../../stores/settingsStore";
 import { getCategories } from "../../data/phraseRegistry";
-import type { AppSettings } from "../../types";
+import { makeTestCfg } from "../../test/makeCfg";
 
-const baseCfg: AppSettings = {
-  patientName: "",
-  bed: "",
-  patientLang: "en",
-  caregiverLang: "en",
-  patientVoice: false,
-  pin: "",
-  providers: [],
-};
+const baseCfg = makeTestCfg();
 
 const CATS = getCategories("en");
 

@@ -2,6 +2,7 @@ import { act, render, screen } from "@testing-library/preact";
 import { Speaking } from "./Speaking";
 import { light } from "../../theme/tokens";
 import { useSettingsStore } from "../../stores/settingsStore";
+import { makeTestCfg } from "../../test/makeCfg";
 
 const baseProps = {
   text: "I need water",
@@ -12,13 +13,10 @@ const baseProps = {
 
 beforeEach(() => {
   useSettingsStore.setState({
-    cfg: {
-      patientName: "Patient",
-      bed: "1",
-      patientLang: "en",
-      caregiverLang: "en",
-      providers: [{ name: "Dr. Lee", emoji: "👩‍⚕️", hasVoice: false }],
-    } as import("../../types").AppSettings,
+    cfg: makeTestCfg({
+      patient: { name: "Patient", bed: "1" },
+      cfg: { providers: [{ name: "Dr. Lee", emoji: "👩‍⚕️", hasVoice: false }] },
+    }),
     _hasHydrated: true,
   });
 });

@@ -3,7 +3,7 @@ import type { JSX } from "preact";
 import { Btn } from "../shared/Btn";
 import { t as resolvePhrase, getCategories } from "../../data/phraseRegistry";
 import { useUIStore } from "../../stores/uiStore";
-import { useSettingsStore } from "../../stores/settingsStore";
+import { useSettingsStore, useActivePatient } from "../../stores/settingsStore";
 import { useTheme } from "../../hooks/useTheme";
 
 /** Hover-tint alpha suffix: "10" (~6%) base, "26" (~15%) in assistive mode. */
@@ -36,7 +36,7 @@ const SAY_MORE_COLOR = "#0891B2";
 
 export function TabBar() {
   const { theme, t } = useTheme();
-  const locale = useSettingsStore((s) => s.cfg?.patientLang ?? "en");
+  const locale = useActivePatient()?.patientLang ?? "en";
   const CATS = getCategories(locale);
   const tab = useUIStore((s) => s.tab);
   const builderOpen = useUIStore((s) => s.builderOpen);

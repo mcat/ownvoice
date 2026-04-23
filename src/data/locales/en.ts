@@ -489,6 +489,7 @@ const en = {
   "ui.dual.nav.wishes": "Wishes",
   "ui.provider.nav.listen": "Listen",
   "ui.provider.nav.staff": "Staff",
+  "ui.provider.nav.switch_patient": "Switch Patient",
   "ui.provider.nav.settings": "Settings",
   "ui.provider.nav.theme.auto": "Auto",
   "ui.provider.nav.theme.light": "Light",
@@ -724,6 +725,16 @@ const en = {
   "ui.provider.settings.accessibility.pointer_hint_strong": "External pointer detected.",
   "ui.provider.settings.accessibility.pointer_hint_body": "Consider enabling Assistive Input Mode for this patient.",
 
+  // ── UI chrome: Settings — Patients section ────────────────────
+  "ui.provider.settings.patients.title": "Patients",
+  "ui.provider.settings.patients.active_remove_hint": "Switch to another patient before removing this one.",
+  "ui.provider.settings.patients.remove_button": "Remove",
+  "ui.provider.settings.patients.add_patient": "+ Add Patient",
+  "ui.provider.settings.patients.add_patient_disabled_hint": "Available in the next release.",
+  "ui.provider.settings.patients.remove_dialog.title": "Remove {name}?",
+  "ui.provider.settings.patients.remove_dialog.body": "This will delete their voice sample, conversation history, and cached audio for their voice clone. Care-team voice clones are kept for other patients. This cannot be undone.",
+  "ui.provider.settings.patients.remove_dialog.confirm": "Remove",
+
   // ── UI chrome: Settings — Care Team section ───────────────────
   "ui.provider.settings.care_team.heading": "Care Team",
   "ui.provider.settings.care_team.empty": "No providers added yet.",
@@ -764,6 +775,19 @@ const en = {
   "ui.provider.settings.offline.redownload_dialog.title": "Redownload all AI models?",
   "ui.provider.settings.offline.redownload_dialog.body": "This will re-fetch roughly 1.7 GB. Voice synthesis keeps working through the refresh.",
   "ui.provider.settings.offline.redownload_dialog.confirm": "Redownload",
+
+  // ── UI chrome: SwitchSheet ────────────────────────────────────
+  "ui.provider.switch.title": "Switch Patient",
+  "ui.provider.switch.add_patient": "+ Add Patient",
+  "ui.provider.switch.add_patient_disabled_hint": "Available in the next release.",
+  "ui.provider.switch.voice_captured": "Voice captured",
+  "ui.provider.switch.no_voice": "No voice",
+  "ui.provider.switch.last_active_just_now": "Just now",
+  "ui.provider.switch.last_active_minutes": "Last active {n}m ago",
+  "ui.provider.switch.last_active_hours": "Last active {n}h ago",
+  "ui.provider.switch.last_active_days": "Last active {n}d ago",
+  "ui.provider.switch.currently_active": "Currently active",
+  "ui.provider.switch.switched_announcement": "Switched to {name}. {count} conversation messages.",
 } as const;
 
 export type PhraseKey = keyof typeof en;

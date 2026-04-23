@@ -248,7 +248,7 @@ export function VoiceCacheProgress({
           {paused ? (
             <Btn
               onClick={() =>
-                audioCacheRunner.resumeAll(cfg, patientSpeakerData)
+                audioCacheRunner.resumeAll(cfg)
               }
               aria-label={resolvePhrase("ui.provider.settings.voice_cache.resume_aria", caregiverLang).replace("{label}", speakerLabel)}
               style={{
@@ -336,7 +336,7 @@ export function VoiceCacheProgress({
             .replace("{label}", speakerLabel)}
         </span>
         <Btn
-          onClick={() => audioCacheRunner.retryFailed(cfg, patientSpeakerData, speakerKey)}
+          onClick={() => audioCacheRunner.retryFailed(cfg, speakerKey)}
           aria-label={resolvePhrase("ui.provider.settings.voice_cache.retry_aria", caregiverLang)}
           style={{
             ...CTRL_BTN,

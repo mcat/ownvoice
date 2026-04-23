@@ -1,6 +1,8 @@
 import { render, screen, fireEvent } from "@testing-library/preact";
 import { Header } from "./Header";
 import { useUIStore } from "../../stores/uiStore";
+import { useSettingsStore } from "../../stores/settingsStore";
+import { makeTestCfg } from "../../test/makeCfg";
 import type { AppSettings } from "../../types";
 
 vi.mock("../../hooks/useTheme", () => ({
@@ -25,19 +27,19 @@ vi.mock("../../hooks/useTheme", () => ({
   }),
 }));
 
-const makeCfg = (overrides?: Partial<AppSettings>): AppSettings => ({
-  patientName: "Maria",
-  bed: "4A",
-  patientLang: "en",
-  caregiverLang: "en",
-  patientVoice: false,
-  pin: "",
-  providers: [],
-  ...overrides,
-});
+const makeCfg = (overrides?: { patient?: Record<string, unknown>; cfg?: Partial<AppSettings> }): AppSettings =>
+  makeTestCfg({
+    patient: { name: "Maria", bed: "4A", patientLang: "en", hasVoice: false, ...overrides?.patient },
+    cfg: { pin: "", ...overrides?.cfg },
+  });
 
 describe("Header", () => {
+  const onSettings = vi.fn();
+  const onSwitchPatient = vi.fn();
+
   beforeEach(() => {
+    onSettings.mockReset();
+    onSwitchPatient.mockReset();
     useUIStore.setState({
       builderOpen: false,
       wishesOpen: false,
@@ -45,57 +47,63 @@ describe("Header", () => {
       listenOpen: false,
       settingsOpen: false,
       pinEntryOpen: false,
+      switchSheetOpen: false,
     });
   });
 
+  function renderHeader(overrides?: { patient?: Record<string, unknown>; cfg?: Partial<AppSettings> }) {
+    const cfg = makeCfg(overrides);
+    useSettingsStore.setState({ cfg, speakerData: null, _hasHydrated: true });
+    return render(<Header cfg={cfg} onSettings={onSettings} onSwitchPatient={onSwitchPatient} />);
+  }
+
   it("shows patient name from cfg prop", () => {
-    render(<Header cfg={makeCfg()} />);
+    renderHeader();
     expect(screen.getByText("Maria")).toBeInTheDocument();
   });
 
   it("shows bed number when provided", () => {
-    render(<Header cfg={makeCfg({ bed: "4A" })} />);
+    renderHeader({ patient: { bed: "4A" } });
     expect(screen.getByText(/Bed 4A/)).toBeInTheDocument();
   });
 
   it("hides bed label when bed is empty", () => {
-    render(<Header cfg={makeCfg({ bed: "" })} />);
+    renderHeader({ patient: { bed: "" } });
     expect(screen.queryByText(/Bed/)).not.toBeInTheDocument();
   });
 
   it("wishes overlay button calls openOverlay on UI store", () => {
-    render(<Header cfg={makeCfg()} />);
-    const heartBtn = screen.getByText("\u2764\uFE0F");
+    renderHeader();
+    const heartBtn = screen.getByText("❤️");
     fireEvent.click(heartBtn);
     expect(useUIStore.getState().wishesOpen).toBe(true);
   });
 
   it("listen overlay button calls openOverlay on UI store", () => {
-    render(<Header cfg={makeCfg()} />);
-    const listenBtn = screen.getByText("\uD83D\uDC42");
+    renderHeader();
+    const listenBtn = screen.getByText("👂");
     fireEvent.click(listenBtn);
     expect(useUIStore.getState().listenOpen).toBe(true);
   });
 
   it("provider overlay button calls openOverlay on UI store", () => {
-    render(<Header cfg={makeCfg()} />);
-    const providerBtn = screen.getByText("\uD83D\uDC69\u200D\u2695\uFE0F");
+    renderHeader();
+    const providerBtn = screen.getByText("👩‍⚕️");
     fireEvent.click(providerBtn);
     expect(useUIStore.getState().providerOpen).toBe(true);
   });
 
-  it("settings button opens pinEntry when PIN is set", () => {
-    render(<Header cfg={makeCfg({ pin: "1234" })} />);
-    const settingsBtn = screen.getByText("\u2699\uFE0F");
+  it("settings button calls onSettings callback", () => {
+    renderHeader({ cfg: { pin: "1234" } });
+    const settingsBtn = screen.getByText("⚙️");
     fireEvent.click(settingsBtn);
-    expect(useUIStore.getState().pinEntryOpen).toBe(true);
-    expect(useUIStore.getState().settingsOpen).toBe(false);
+    expect(onSettings).toHaveBeenCalledTimes(1);
   });
 
-  it("settings button opens settings directly when no PIN", () => {
-    render(<Header cfg={makeCfg({ pin: "" })} />);
-    const settingsBtn = screen.getByText("\u2699\uFE0F");
-    fireEvent.click(settingsBtn);
-    expect(useUIStore.getState().settingsOpen).toBe(true);
+  it("switch patient button calls onSwitchPatient callback", () => {
+    renderHeader();
+    const switchBtn = screen.getByText("🔄");
+    fireEvent.click(switchBtn);
+    expect(onSwitchPatient).toHaveBeenCalledTimes(1);
   });
 });

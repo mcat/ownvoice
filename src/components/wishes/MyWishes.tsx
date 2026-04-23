@@ -4,7 +4,7 @@ import type { ThemeTokens, ThemeName } from "../../theme/tokens";
 import { getWishTopics, composeWishSentence, t as resolvePhrase } from "../../data/phraseRegistry";
 import type { PhraseKey } from "../../data/phraseRegistry";
 import { DualLocaleText } from "../shared/DualLocaleText";
-import { useSettingsStore } from "../../stores/settingsStore";
+import { useSettingsStore, useActivePatient } from "../../stores/settingsStore";
 import { Btn } from "../shared/Btn";
 import { BottomSheet } from "../shared/BottomSheet";
 
@@ -32,7 +32,7 @@ export function MyWishes({
   locale = "en",
 }: MyWishesProps) {
   const cfg = useSettingsStore((s) => s.cfg);
-  const patientLang = cfg?.patientLang ?? "en";
+  const patientLang = useActivePatient()?.patientLang ?? "en";
   const caregiverLang = cfg?.caregiverLang ?? "en";
   const SICG_TOPICS = getWishTopics();
   const [currentIdx, setCurrentIdx] = useState(0);

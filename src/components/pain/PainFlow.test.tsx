@@ -3,17 +3,9 @@ import { PainFlow } from "./PainFlow";
 import { light } from "../../theme/tokens";
 import { getEmojiFPS, getBodyRegions, getPainDescriptors, t } from "../../data/phraseRegistry";
 import { useSettingsStore } from "../../stores/settingsStore";
-import type { AppSettings } from "../../types";
+import { makeTestCfg } from "../../test/makeCfg";
 
-const baseCfg: AppSettings = {
-  patientName: "",
-  bed: "",
-  patientLang: "en",
-  caregiverLang: "en",
-  patientVoice: false,
-  pin: "",
-  providers: [],
-};
+const baseCfg = makeTestCfg();
 
 const EMOJI_FPS = getEmojiFPS();
 const BODY_REGIONS = getBodyRegions();

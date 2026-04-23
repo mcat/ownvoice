@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "preact/hooks";
 import { t as resolvePhrase } from "../../data/phraseRegistry";
-import { useSettingsStore } from "../../stores/settingsStore";
+import { useSettingsStore, useActivePatient } from "../../stores/settingsStore";
 import { useUIStore } from "../../stores/uiStore";
 import type { ThemeTokens } from "../../theme/tokens";
 import { z } from "../../theme/z";
@@ -23,7 +23,7 @@ export function Speaking({
   const [exiting, setExiting] = useState(false);
 
   const cfg = useSettingsStore((s) => s.cfg);
-  const patientLang = cfg?.patientLang ?? "en";
+  const patientLang = useActivePatient()?.patientLang ?? "en";
   const activeProvIdx = useUIStore((s) => s.activeProvIdx);
   const activeProv = cfg?.providers?.[activeProvIdx] ?? cfg?.providers?.[0];
 

@@ -13,6 +13,7 @@ import {
   getProviderSpokenPhrases,
   getPatientPainSentencesForSpeech,
 } from "../data/phraseRegistry";
+import { canCloneForLocale } from "../data/chatterboxLocales";
 import { isGPUReady } from "./ttsEngine";
 
 /**
@@ -21,8 +22,8 @@ import { isGPUReady } from "./ttsEngine";
  * TTS shares state that isn't safe to run concurrently.
  *
  * Trigger model:
- *   - App.tsx calls `runPreGeneration(cfg, patientEmbedding)` whenever
- *     the embedding set or patient locale changes.
+ *   - App.tsx calls `runPreGeneration(cfg)` whenever the active patient,
+ *     embedding set, or locale changes.
  *   - A fresh call aborts the previous run. Any in-flight worker await
  *     unblocks via the AbortSignal passed into generateAllPhrases.
  *   - Runs are resumable: `generateAllPhrases` skips cached phrases, so
@@ -32,10 +33,16 @@ import { isGPUReady } from "./ttsEngine";
 let currentController: AbortController | null = null;
 let currentRunId = 0;
 
-interface SpeakerPlan {
+export interface SpeakerPlan {
   key: SpeakerKey;
   speakerData: unknown;
   phrases: string[];
+  /**
+   * The patient this speaker belongs to. Set for patient base + pain
+   * entries; null for provider entries (provider clips are not tracked
+   * in the per-patient index).
+   */
+  patientId: string | null;
   /**
    * When true, the generator skips entirely if WebGPU isn't ready and
    * never falls back to WASM mid-run. Used for the 702-phrase pain
@@ -49,35 +56,52 @@ function isRunnable(speakerData: unknown): boolean {
   return embeddingFingerprint(speakerData) !== "none";
 }
 
-function buildPlan(
-  cfg: AppSettings,
-  patientSpeakerData: unknown,
-): SpeakerPlan[] {
+function buildPlan(cfg: AppSettings): SpeakerPlan[] {
   const plan: SpeakerPlan[] = [];
-  if (isRunnable(patientSpeakerData)) {
+  const activeId = cfg.activePatientId;
+  const activePatient = activeId
+    ? cfg.patients.find((p) => p.id === activeId)
+    : null;
+  if (!activePatient) return plan;
+
+  if (
+    canCloneForLocale(cfg.caregiverLang) &&
+    isRunnable(activePatient.speakerData)
+  ) {
     plan.push({
-      key: "patient",
-      speakerData: patientSpeakerData,
+      key: `patient:${activePatient.id}`,
+      speakerData: activePatient.speakerData,
       phrases: getPatientSpokenPhrases(cfg.caregiverLang),
+      patientId: activePatient.id,
     });
   }
-  cfg.providers.forEach((p, i) => {
-    if (isRunnable(p.embedding)) {
-      plan.push({
-        key: `provider:${i}`,
-        speakerData: p.embedding,
-        phrases: getProviderSpokenPhrases(cfg.patientLang),
-      });
-    }
-  });
+
+  if (canCloneForLocale(activePatient.patientLang)) {
+    cfg.providers.forEach((p, i) => {
+      if (isRunnable(p.embedding)) {
+        plan.push({
+          key: `provider:${i}`,
+          speakerData: p.embedding,
+          phrases: getProviderSpokenPhrases(activePatient.patientLang),
+          patientId: null,
+        });
+      }
+    });
+  }
+
   // Pain matrix: ~700 composed sentences, runs last and only when GPU is
   // available. On WASM-only systems it's omitted entirely (WASM would take
   // hours) — pain taps continue to fall through to Web Speech per speak.ts.
-  if (isRunnable(patientSpeakerData) && isGPUReady()) {
+  if (
+    canCloneForLocale(cfg.caregiverLang) &&
+    isRunnable(activePatient.speakerData) &&
+    isGPUReady()
+  ) {
     plan.push({
-      key: "patient:pain",
-      speakerData: patientSpeakerData,
+      key: `patient:${activePatient.id}:pain`,
+      speakerData: activePatient.speakerData,
       phrases: getPatientPainSentencesForSpeech(cfg.caregiverLang),
+      patientId: activePatient.id,
       gpuOnly: true,
     });
   }
@@ -89,14 +113,16 @@ function buildPlan(
  * runs abort cleanly. Returns a promise that resolves when the full
  * sequence finishes or is aborted.
  */
-export async function runPreGeneration(
-  cfg: AppSettings,
-  patientSpeakerData: unknown,
-): Promise<void> {
+export async function runPreGeneration(cfg: AppSettings): Promise<void> {
   abort();
 
-  const plan = buildPlan(cfg, patientSpeakerData);
+  const plan = buildPlan(cfg);
   if (plan.length === 0) return;
+
+  const activePatient = cfg.activePatientId
+    ? cfg.patients.find((p) => p.id === cfg.activePatientId)
+    : null;
+  const locale = activePatient?.patientLang ?? cfg.caregiverLang;
 
   const controller = new AbortController();
   currentController = controller;
@@ -112,7 +138,7 @@ export async function runPreGeneration(
     store.queue(
       speaker.key,
       speaker.phrases.length,
-      cfg.patientLang,
+      locale,
       embeddingFingerprint(speaker.speakerData),
     );
   }
@@ -124,7 +150,7 @@ export async function runPreGeneration(
     store.start(
       speaker.key,
       speaker.phrases.length,
-      cfg.patientLang,
+      locale,
       fingerprint,
     );
 
@@ -133,7 +159,7 @@ export async function runPreGeneration(
         speaker.phrases,
         speaker.speakerData,
         controller.signal,
-        { gpuOnly: speaker.gpuOnly === true },
+        { gpuOnly: speaker.gpuOnly === true, patientId: speaker.patientId },
       )) {
         if (controller.signal.aborted) return;
         if (progress.failed) {
@@ -159,12 +185,16 @@ export async function runPreGeneration(
 /** Retry only the previously-failed phrases for one speaker. */
 export async function retryFailed(
   cfg: AppSettings,
-  patientSpeakerData: unknown,
   key: SpeakerKey,
 ): Promise<void> {
-  const plan = buildPlan(cfg, patientSpeakerData);
+  const plan = buildPlan(cfg);
   const speaker = plan.find((p) => p.key === key);
   if (!speaker) return;
+
+  const activePatient = cfg.activePatientId
+    ? cfg.patients.find((p) => p.id === cfg.activePatientId)
+    : null;
+  const locale = activePatient?.patientLang ?? cfg.caregiverLang;
 
   const store = useAudioCacheStore.getState();
   const prev = store.runs[key];
@@ -178,14 +208,14 @@ export async function retryFailed(
 
   store.resetFailed(key);
   const fingerprint = embeddingFingerprint(speaker.speakerData);
-  store.start(key, failed.length, cfg.patientLang, fingerprint);
+  store.start(key, failed.length, locale, fingerprint);
 
   try {
     for await (const progress of retryFailedGen(
       failed,
       speaker.speakerData,
       controller.signal,
-      { gpuOnly: speaker.gpuOnly === true },
+      { gpuOnly: speaker.gpuOnly === true, patientId: speaker.patientId },
     )) {
       if (controller.signal.aborted || runId !== currentRunId) return;
       if (progress.failed) {
@@ -229,11 +259,19 @@ export function pauseAll(): void {
  * up quickly to where the paused run left off. Safe to call even if no
  * runs are paused; it will kick off a fresh plan.
  */
-export async function resumeAll(
-  cfg: AppSettings,
-  patientSpeakerData: unknown,
-): Promise<void> {
-  await runPreGeneration(cfg, patientSpeakerData);
+export async function resumeAll(cfg: AppSettings): Promise<void> {
+  await runPreGeneration(cfg);
+}
+
+/**
+ * Transition helper for switching active patients. Synchronously pauses
+ * any in-flight run, then kicks off pre-generation for the new patient
+ * on the next microtask. Callers (App.tsx) should call this after
+ * updating `cfg.activePatientId`.
+ */
+export function switchPatientTransition(cfg: AppSettings): void {
+  pauseAll();
+  queueMicrotask(() => runPreGeneration(cfg));
 }
 
 /**

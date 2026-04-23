@@ -6,7 +6,7 @@ import { useOfflineStore } from "../../../stores/offlineStore";
 import { useAudioCacheStore } from "../../../stores/audioCacheStore";
 import { useSettingsStore } from "../../../stores/settingsStore";
 import { light } from "../../../theme/tokens";
-import type { AppSettings } from "../../../types";
+import { makeTestCfg } from "../../../test/makeCfg";
 
 const drivePrimerMock = vi.fn(async () => {
   const s = useOfflineStore.getState();
@@ -34,7 +34,7 @@ const abortRunnerMock = vi.fn();
 const runPreGenerationMock = vi.fn();
 vi.mock("../../../models/audioCacheRunner", () => ({
   abort: () => abortRunnerMock(),
-  runPreGeneration: (cfg: unknown, data: unknown) => runPreGenerationMock(cfg, data),
+  runPreGeneration: (cfg: unknown) => runPreGenerationMock(cfg),
   retryFailed: vi.fn(),
 }));
 
@@ -48,8 +48,10 @@ function installStorageEstimate(usage: number, quota: number) {
 
 function seedSettings() {
   useSettingsStore.setState({
-    cfg: { patientLang: "en", providers: [] } as unknown as AppSettings,
-    speakerData: { embedding: [1, 2, 3] },
+    cfg: makeTestCfg({
+      patient: { hasVoice: true, speakerData: { embedding: [1, 2, 3] } },
+    }),
+    speakerData: null,
   });
 }
 

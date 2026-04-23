@@ -2,6 +2,7 @@ import { useSettingsStore } from "./settingsStore";
 import { useConversationStore } from "./conversationStore";
 import { useUIStore } from "./uiStore";
 import { useOfflineStore } from "./offlineStore";
+import { makeTestCfg } from "../test/makeCfg";
 
 // Mock external deps that touch OPFS / workers
 vi.mock("../store", () => ({
@@ -10,6 +11,10 @@ vi.mock("../store", () => ({
 
 vi.mock("../models/audioCache", () => ({
   clearAudioCache: vi.fn(() => Promise.resolve()),
+}));
+
+vi.mock("./patientIndex", () => ({
+  clearIndex: vi.fn(() => Promise.resolve()),
 }));
 
 vi.mock("../models/audioCacheRunner", () => ({
@@ -33,23 +38,23 @@ import { clearAudioCache } from "../models/audioCache";
 import * as audioCacheRunner from "../models/audioCacheRunner";
 import { getModelManager } from "../models/modelManager";
 
+const TEST_PATIENT_ID = "test-patient-1";
+
 beforeEach(() => {
   vi.clearAllMocks();
   // Set up some non-default state so we can verify the reset
+  const cfg = makeTestCfg({
+    patient: { name: "Alice", bed: "C-3", patientLang: "es", hasVoice: true, speakerData: { data: true } },
+    cfg: { pin: "9999" },
+  });
   useSettingsStore.setState({
-    cfg: {
-      patientName: "Alice",
-      bed: "C-3",
-      patientLang: "es",
-      caregiverLang: "en",
-      patientVoice: true,
-      pin: "9999",
-      providers: [],
-    },
-    speakerData: { data: true },
+    cfg,
+    speakerData: null,
   });
   useConversationStore.setState({
-    messages: [{ from: "patient", text: "Help", time: "1:00 PM", label: "quick" }],
+    messagesByPatientId: {
+      [TEST_PATIENT_ID]: [{ from: "patient", text: "Help", time: "1:00 PM", label: "quick" }],
+    },
   });
   useUIStore.getState().setTab("pain");
   useUIStore.getState().openOverlay("wishes");
@@ -87,6 +92,12 @@ describe("resetAll", () => {
     expect(manager.clearAll).toHaveBeenCalledOnce();
   });
 
+  it("clears the patient-index file", async () => {
+    const { clearIndex } = await import("./patientIndex");
+    await resetAll();
+    expect(clearIndex).toHaveBeenCalledOnce();
+  });
+
   it("resets settings store", async () => {
     await resetAll();
     const s = useSettingsStore.getState();
@@ -96,7 +107,7 @@ describe("resetAll", () => {
 
   it("clears conversation store", async () => {
     await resetAll();
-    expect(useConversationStore.getState().messages).toEqual([]);
+    expect(useConversationStore.getState().messagesByPatientId).toEqual({});
   });
 
   it("resets UI store", async () => {

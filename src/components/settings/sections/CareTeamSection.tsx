@@ -5,7 +5,7 @@ import type { ThemeTokens, ThemeName } from "../../../theme/tokens";
 import { Btn } from "../../shared/Btn";
 import { VoiceCapture } from "../../shared/VoiceCapture";
 import { VoiceCacheProgress } from "../VoiceCacheProgress";
-import { useSettingsStore } from "../../../stores/settingsStore";
+import { useSettingsStore, useActivePatient } from "../../../stores/settingsStore";
 import { t as resolvePhrase } from "../../../data/phraseRegistry";
 
 // Provider edits (add / remove / voice capture / voice remove) write directly
@@ -43,6 +43,7 @@ export function CareTeamSection({
 }: Props) {
   const isDark = theme === "dark";
   const caregiverLang = useSettingsStore((s) => s.cfg?.caregiverLang ?? "en");
+  const active = useActivePatient();
   const providers = useSettingsStore((s) => s.cfg?.providers ?? []);
   const [newProvName, setNewProvName] = useState("");
   const [newProvEmoji, setNewProvEmoji] = useState(EMOJIS[0]);
@@ -132,7 +133,7 @@ export function CareTeamSection({
                 else toggleProviderVoice(i, true);
               }}
               onRemove={() => toggleProviderVoice(i, false)}
-              locale={cfg.patientLang}
+              locale={active?.patientLang ?? "en"}
               compact
               color={{
                 text: t.text, sub: t.sub, muted: t.muted,
@@ -144,7 +145,7 @@ export function CareTeamSection({
               speakerKey={`provider:${i}`}
               speakerLabel={p.name}
               cfg={cfg}
-              patientSpeakerData={useSettingsStore.getState().speakerData}
+              patientSpeakerData={active?.speakerData ?? null}
             />
           </div>
         </div>

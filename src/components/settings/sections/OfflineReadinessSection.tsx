@@ -9,7 +9,7 @@ import { verifyAllOnBoot } from "../../../models/bootModels";
 import { clearAudioCache } from "../../../models/audioCache";
 import * as audioCacheRunner from "../../../models/audioCacheRunner";
 import { useOfflineStore } from "../../../stores/offlineStore";
-import { useSettingsStore } from "../../../stores/settingsStore";
+import { useSettingsStore, useActivePatient } from "../../../stores/settingsStore";
 import { useAudioCacheStore } from "../../../stores/audioCacheStore";
 import { useStorageHealth } from "../../../hooks/useStorageHealth";
 
@@ -33,7 +33,7 @@ export function OfflineReadinessSection({ t }: Props) {
   const markPrimerComplete = useOfflineStore((s) => s.markPrimerComplete);
 
   const cfg = useSettingsStore((s) => s.cfg);
-  const speakerData = useSettingsStore((s) => s.speakerData);
+  const active = useActivePatient();
   const caregiverLang = useSettingsStore((s) => s.cfg?.caregiverLang ?? "en");
 
   const cacheRuns = useAudioCacheStore((s) => s.runs);
@@ -159,10 +159,10 @@ export function OfflineReadinessSection({ t }: Props) {
       audioCacheRunner.abort();
       await clearAudioCache();
       // Repopulate in the background if we have a voice clone to generate from.
-      // Skips silently when no cfg/speakerData — the App-level effect will
-      // kick generation on next relevant state change.
-      if (cfg && speakerData) {
-        audioCacheRunner.runPreGeneration(cfg, speakerData);
+      // Skips silently when no cfg or no active patient with voice data —
+      // the App-level effect will kick generation on next relevant state change.
+      if (cfg && active?.hasVoice) {
+        audioCacheRunner.runPreGeneration(cfg);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));

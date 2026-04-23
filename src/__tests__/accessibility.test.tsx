@@ -16,6 +16,7 @@ expect.extend({ toHaveNoViolations });
 Element.prototype.scrollIntoView = vi.fn();
 import { light } from "../theme/tokens";
 import type { Message, AppSettings } from "../types";
+import { makeTestCfg } from "../test/makeCfg";
 
 // --- Mocks for store-connected components ---
 vi.mock("../hooks/useTheme", () => ({
@@ -74,15 +75,10 @@ const sampleMessages: Message[] = [
   { from: "patient", text: "Thank you", time: "3:51 PM", label: "Eleanor" },
 ];
 
-const sampleCfg: AppSettings = {
-  patientName: "Eleanor",
-  bed: "4B",
-  patientLang: "en",
-  caregiverLang: "en",
-  patientVoice: false,
-  pin: "",
-  providers: [{ name: "Nurse Davis", hasVoice: false }],
-};
+const sampleCfg = makeTestCfg({
+  patient: { name: "Eleanor", bed: "4B", patientLang: "en", hasVoice: false },
+  cfg: { providers: [{ name: "Nurse Davis", hasVoice: false }] },
+});
 
 const samplePhrases = [
   { text: "Yes", icon: "👍" },

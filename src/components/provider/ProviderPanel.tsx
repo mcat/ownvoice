@@ -3,7 +3,7 @@ import type { JSX } from "preact";
 import type { AppSettings } from "../../types";
 import type { ThemeTokens, ThemeName } from "../../theme/tokens";
 import { t as resolvePhrase, getProviderCategories } from "../../data/phraseRegistry";
-import { useSettingsStore } from "../../stores/settingsStore";
+import { useSettingsStore, useActivePatient } from "../../stores/settingsStore";
 import { Btn } from "../shared/Btn";
 import { BottomSheet } from "../shared/BottomSheet";
 
@@ -31,6 +31,7 @@ export function ProviderPanel({
   onSelectProvider,
 }: ProviderPanelProps) {
   const caregiverLang = useSettingsStore((s) => s.cfg?.caregiverLang ?? "en");
+  const active = useActivePatient();
   const PROVIDER_CATEGORIES = getProviderCategories(caregiverLang);
   const SECTION_KEYS = Object.keys(PROVIDER_CATEGORIES);
 
@@ -87,7 +88,7 @@ export function ProviderPanel({
         <BottomSheet.CloseButton aria-label={resolvePhrase("ui.provider.close_panel", caregiverLang)} />
         <div style={{ flexBasis: "100%", fontSize: 14, color: t.sub }}>
           {resolvePhrase("ui.provider.speaking_to", caregiverLang)
-            .replace("{name}", cfg.patientName || resolvePhrase("ui.provider.patient_fallback", caregiverLang))
+            .replace("{name}", active?.name || resolvePhrase("ui.provider.patient_fallback", caregiverLang))
             .replace("{prov}", providerLabel)}
         </div>
       </BottomSheet.Header>

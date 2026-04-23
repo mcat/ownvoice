@@ -5,6 +5,7 @@ import { BottomSheet } from "../shared/BottomSheet";
 import { t as resolvePhrase } from "../../data/phraseRegistry";
 import { useSettingsStore } from "../../stores/settingsStore";
 import { PatientInfoSection } from "./sections/PatientInfoSection";
+import { PatientsSection } from "./sections/PatientsSection";
 import { AccessibilitySection } from "./sections/AccessibilitySection";
 import { CareTeamSection } from "./sections/CareTeamSection";
 import { AboutSection } from "./sections/AboutSection";
@@ -80,6 +81,7 @@ export function SettingsPanel({
             t={t}
             theme={theme}
           />
+          <PatientsSection t={t} theme={theme} />
           <AboutSection t={t} />
           <OfflineReadinessSection t={t} />
           <ResetSection onReset={onReset} t={t} theme={theme} />

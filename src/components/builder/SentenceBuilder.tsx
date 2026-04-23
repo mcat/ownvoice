@@ -5,7 +5,7 @@ import {
   getLLMSuggestions,
 } from "../../data/suggestion-trees";
 import { t as resolvePhrase } from "../../data/phraseRegistry";
-import { useSettingsStore } from "../../stores/settingsStore";
+import { useActivePatient } from "../../stores/settingsStore";
 import { polishSentence } from "../../utils/polishSentence";
 import type { Message } from "../../types";
 import type { ThemeTokens, ThemeName } from "../../theme/tokens";
@@ -23,7 +23,7 @@ export function SentenceBuilder({
   theme,
   messages,
 }: SentenceBuilderProps) {
-  const patientLang = useSettingsStore((s) => s.cfg?.patientLang ?? "en");
+  const patientLang = useActivePatient()?.patientLang ?? "en";
   const [text, setText] = useState("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [llmSuggestions, setLlmSuggestions] = useState<string[]>([]);
