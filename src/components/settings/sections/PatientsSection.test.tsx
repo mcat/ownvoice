@@ -1,4 +1,5 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/preact";
+import { axe } from "vitest-axe";
 import { PatientsSection } from "./PatientsSection";
 import { ConfirmDialogHost } from "../../shared/ConfirmDialog";
 import { light } from "../../../theme/tokens";
@@ -234,5 +235,15 @@ describe("PatientsSection", () => {
     fireEvent.click(addBtn);
 
     expect(useUIStore.getState().addPatientOpen).toBe(true);
+  });
+});
+
+describe("PatientsSection accessibility", () => {
+  it("has no WCAG AA a11y violations", async () => {
+    const { container } = renderSection();
+    const results = await axe(container, {
+      rules: { "color-contrast": { enabled: false } },
+    });
+    expect(results).toHaveNoViolations();
   });
 });

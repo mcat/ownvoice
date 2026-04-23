@@ -1,4 +1,5 @@
 import { render, screen, fireEvent, cleanup } from "@testing-library/preact";
+import { axe } from "vitest-axe";
 import { WarningToast } from "./WarningToast";
 import { light } from "../../theme/tokens";
 import { useSettingsStore } from "../../stores/settingsStore";
@@ -116,5 +117,17 @@ describe("WarningToast", () => {
     expect(endNowBtn.style.minHeight).toBe("64px");
     expect(extendBtn.style.minWidth).toBe("64px");
     expect(endNowBtn.style.minWidth).toBe("64px");
+  });
+});
+
+describe("WarningToast accessibility", () => {
+  it("has no WCAG AA a11y violations", async () => {
+    // axe-core needs real timers; the file-level beforeEach sets fake timers
+    vi.useRealTimers();
+    const { container } = render(<WarningToast {...baseProps} />);
+    const results = await axe(container, {
+      rules: { "color-contrast": { enabled: false } },
+    });
+    expect(results).toHaveNoViolations();
   });
 });

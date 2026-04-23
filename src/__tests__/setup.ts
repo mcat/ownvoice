@@ -1,7 +1,10 @@
 import "fake-indexeddb/auto";
 import "@testing-library/jest-dom/vitest";
+import { toHaveNoViolations } from "vitest-axe/dist/matchers";
 import { cleanup } from "@testing-library/preact";
-import { afterEach, vi } from "vitest";
+import { afterEach, expect, vi } from "vitest";
+
+expect.extend({ toHaveNoViolations });
 
 afterEach(() => {
   cleanup();

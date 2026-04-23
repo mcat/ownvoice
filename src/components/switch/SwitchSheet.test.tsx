@@ -1,4 +1,5 @@
 import { render, screen, fireEvent } from "@testing-library/preact";
+import { axe } from "vitest-axe";
 import { SwitchSheet } from "./SwitchSheet";
 import { light } from "../../theme/tokens";
 import { useSettingsStore } from "../../stores/settingsStore";
@@ -258,5 +259,17 @@ describe("SwitchSheet keyboard navigation", () => {
     expect(useSettingsStore.getState().cfg?.activePatientId).toBe("patient-b");
     await flushMicrotask();
     expect(onClose).toHaveBeenCalledOnce();
+  });
+});
+
+describe("SwitchSheet accessibility", () => {
+  it("has no WCAG AA a11y violations", async () => {
+    const { container } = render(
+      <SwitchSheet open onClose={() => {}} t={light} theme="light" />,
+    );
+    const results = await axe(container, {
+      rules: { "color-contrast": { enabled: false } },
+    });
+    expect(results).toHaveNoViolations();
   });
 });

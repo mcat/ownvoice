@@ -1,4 +1,5 @@
 import { render, screen, fireEvent, cleanup, act, waitFor } from "@testing-library/preact";
+import { axe } from "vitest-axe";
 import { ConfirmDialogHost, confirm } from "./ConfirmDialog";
 import { describe, it, expect, afterEach, vi } from "vitest";
 
@@ -77,5 +78,28 @@ describe("ConfirmDialog", () => {
     expect(result).toBe(false);
     expect(warn).toHaveBeenCalled();
     warn.mockRestore();
+  });
+});
+
+describe("ConfirmDialog accessibility", () => {
+  it("has no WCAG AA a11y violations", async () => {
+    render(<ConfirmDialogHost />);
+    let p: Promise<boolean>;
+    act(() => {
+      p = confirm({
+        title: "Remove Bob?",
+        body: "This will erase all data for Bob.",
+        confirmLabel: "Remove",
+        cancelLabel: "Cancel",
+      });
+    });
+    await screen.findByRole("dialog");
+    const results = await axe(document.body, {
+      rules: { "color-contrast": { enabled: false } },
+    });
+    expect(results).toHaveNoViolations();
+    // Cleanup: dismiss the dialog
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    await p!;
   });
 });
