@@ -76,22 +76,38 @@ export interface FallbackVoice {
   name: string;
 }
 
-export interface AppSettings {
-  patientName: string;
+export interface Patient {
+  /** UUID, generated client-side at add-time. Never displayed. */
+  id: string;
+  name: string;
   bed: string;
+  /** BCP 47 — each patient's preferred language. */
   patientLang: string;
+  hasVoice: boolean;
+  /** Chatterbox Turbo speech-encoder output for this patient's voice clone. */
+  speakerData: unknown;
+  /** Per-patient system-voice preference paired with patientLang. */
+  fallbackVoice?: FallbackVoice | null;
+  /** Unix ms when the patient was added. Used for sort order. */
+  addedAt: number;
+  /** Unix ms of the last time this patient was active. */
+  lastActiveAt: number;
+}
+
+export interface AppSettings {
+  pin: string;
   /** The caregiver/listener's language. Controls the language the patient
    *  voice speaks and the language provider-facing UI renders. Defaults
    *  to "en"; adjustable from Setup and Settings. */
   caregiverLang: string;
-  patientVoice: boolean;
-  pin: string;
-  providers: Provider[];
-  /** User-selected Web Speech API voice for the fallback TTS path */
-  fallbackVoice?: FallbackVoice | null;
   /** Accessibility: amplifies feedback + lengthens debounce for patients using
    *  assistive input devices (trackball, joystick, AssistiveTouch, switch). */
   assistiveInput?: boolean;
+  providers: Provider[];
+  patients: Patient[];
+  /** null when no patient is active (fresh device, or after removing the
+   *  last patient). */
+  activePatientId: string | null;
 }
 
 export interface SpeakingState {
