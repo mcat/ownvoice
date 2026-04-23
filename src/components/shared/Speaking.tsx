@@ -1,4 +1,7 @@
 import { useState, useEffect, useRef } from "preact/hooks";
+import { t as resolvePhrase } from "../../data/phraseRegistry";
+import { useSettingsStore } from "../../stores/settingsStore";
+import { useUIStore } from "../../stores/uiStore";
 import type { ThemeTokens } from "../../theme/tokens";
 import { z } from "../../theme/z";
 
@@ -18,6 +21,17 @@ export function Speaking({
 }: SpeakingProps) {
   const [progress, setProgress] = useState(0);
   const [exiting, setExiting] = useState(false);
+
+  const cfg = useSettingsStore((s) => s.cfg);
+  const patientLang = cfg?.patientLang ?? "en";
+  const activeProvIdx = useUIStore((s) => s.activeProvIdx);
+  const activeProv = cfg?.providers?.[activeProvIdx] ?? cfg?.providers?.[0];
+
+  const subLabel = isProvider
+    ? activeProv
+      ? `${activeProv.emoji ? activeProv.emoji + " " : ""}${activeProv.name}`
+      : resolvePhrase("ui.dual.speaking.patient_voice", patientLang)
+    : resolvePhrase("ui.dual.speaking.patient_voice", patientLang);
 
   // onDone is typically an inline arrow from the parent — a new reference
   // every render. Tracking it via a ref keeps the animation effect from
@@ -63,7 +77,7 @@ export function Speaking({
     <div
       role="status"
       aria-live="polite"
-      aria-label={`Speaking: ${text}`}
+      aria-label={resolvePhrase("ui.dual.speaking.aria_label", patientLang).replace("{text}", text)}
       style={{
         position: "fixed",
         top: 0,
@@ -100,21 +114,19 @@ export function Speaking({
         {"\uD83D\uDD0A"}
       </div>
       <div style={{ minWidth: 0, flex: 1 }}>
-        {isProvider && (
-          <div
-            class="font-sans"
-            style={{
-              fontSize: 13,
-              color: "rgba(245,245,245,0.7)",
-              letterSpacing: 1.5,
-              textTransform: "uppercase",
-              lineHeight: 1,
-              marginBottom: 4,
-            }}
-          >
-            Care Team
-          </div>
-        )}
+        <div
+          class="font-sans"
+          style={{
+            fontSize: 13,
+            color: "rgba(245,245,245,0.7)",
+            letterSpacing: 1.5,
+            textTransform: "uppercase",
+            lineHeight: 1,
+            marginBottom: 4,
+          }}
+        >
+          {subLabel}
+        </div>
         <div
           class="font-sans"
           style={{

@@ -549,6 +549,10 @@ const en = {
   "ui.provider.listen.transcript_aria": "Transcript",
   "ui.provider.listen.add_as": "Add to conversation as {prov}",
   "ui.provider.listen.privacy_notice": "On-device · Whisper · no audio leaves this device",
+
+  // ── UI chrome: Speaking overlay ────────────────────────────────
+  "ui.dual.speaking.aria_label": "Speaking: {text}",
+  "ui.dual.speaking.patient_voice": "Your voice",
 } as const;
 
 export type PhraseKey = keyof typeof en;
