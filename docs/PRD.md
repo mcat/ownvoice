@@ -96,7 +96,7 @@ Hospital tablet deployments overwhelmingly use iPads due to Apple's MDM ecosyste
 
 **The defining feature of OwnVoice.** A caregiver uploads 3–10 seconds of the patient's voice (from a voicemail, video, or voice message provided by family). The app creates a speaker embedding on-device using a zero-shot voice cloning model. All speech output uses the patient's reconstructed voice.
 
-Providers can also load their own voice model. When a provider taps a response like "I will call your family," it is spoken in the provider's voice, translated into the patient's language. The patient hears a familiar caregiver voice speaking their language.
+Providers can also load their own voice model. When a provider taps a response like "I will call your family," it is spoken in the provider's cloned voice, in the patient's language. The patient hears a familiar caregiver voice speaking their own language. (See §8 Voice-direction model for the full bilingual UX.)
 
 **Technical approach:**
 
@@ -208,7 +208,7 @@ OwnVoice maintains a visible conversation thread showing both patient and provid
 - Questions: "How are you feeling?", "Is there anything you need?"
 - Directions: "Time for your medication," "I need to draw blood"
 
-Provider responses are spoken in the provider's cloned voice (if configured) and translated into the patient's language. Both the original and translated text appear in the conversation thread.
+Provider responses are spoken in the provider's cloned voice (if configured), in the patient's language. Both primary and gloss text appear in the conversation thread when the patient and caregiver locales differ.
 
 **Conversation thread behavior:**
 - Scrollable, showing the last several exchanges
@@ -392,14 +392,18 @@ No PHI is stored — only the first name, room identifier, and voice model data.
 
 OwnVoice supports 13 languages: English, Spanish, Chinese, Arabic, French, German, Hindi, Portuguese, Russian, Korean, Japanese, Tagalog, Vietnamese.
 
-**Dual-language interaction model:**
-- Patient selects their preferred language during setup
-- Provider language defaults to English (configurable)
-- When a patient taps a phrase, it is spoken in the patient's language and displayed in both languages in the text bar and conversation thread
-- When a provider taps a response, it is spoken in the provider's language and translated/displayed in the patient's language
+**Voice-direction model (revised 2026-04-22):**
+
+- **Patient and caregiver languages are both selected during Setup**; either can be changed from Settings. Each Patient carries its own `patientLang`; `caregiverLang` lives device-wide.
+- **Patient voice clone speaks in the caregiver's language.** Phrases on the patient surface display in the patient's language.
+- **Provider voice clones speak in the patient's language.** Phrases on the provider surface display in the caregiver's language.
+- Conversation thread shows both languages for every utterance (primary + smaller gloss) when the two locales differ.
+- Voice cloning is only offered when Chatterbox Turbo supports the target speech-output locale. Otherwise the device's system voice is used via Web Speech.
+
+**Design history:** earlier versions of this PRD described patient voice speaking in the patient's language. The clinical rationale for the revised model is that voiceless ICU patients need their bedside caregivers to understand them; speaking the caregiver's language removes the interpreter bottleneck in acute moments. See `docs/superpowers/specs/2026-04-22-localization-design.md` for the full design.
 
 **Voice cloning across languages:**
-Modern zero-shot TTS models support cross-lingual voice cloning — a speaker embedding extracted from an English audio sample can generate speech in Spanish using the same voice characteristics. This enables the patient to hear their own voice speaking their native language, even if the original sample was in a different language.
+Modern zero-shot TTS models support cross-lingual voice cloning — a speaker embedding extracted from an English audio sample can generate speech in Spanish using the same voice characteristics. This enables each voice clone to speak in the locale that serves its listener: the patient's voice reaches the caregiver in the caregiver's language; each care-team voice reaches the patient in the patient's language.
 
 ---
 

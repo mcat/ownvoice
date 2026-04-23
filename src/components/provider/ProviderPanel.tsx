@@ -18,6 +18,34 @@ interface ProviderPanelProps {
 }
 
 /**
+ * Interpolate the localized "Speaking to {name} as {prov}" template with
+ * bold JSX spans. Splitting on the placeholder tokens preserves whatever
+ * word order the destination language uses (Spanish "Hablando con {name}
+ * como {prov}" and English differ in word order but share {name}/{prov}
+ * as anchor tokens). A previous fix replaced the placeholders via String
+ * .replace() which worked for text but lost the <strong> emphasis — see
+ * PR 2 visual-regression note.
+ */
+function renderSpeakingTo(
+  template: string,
+  name: string,
+  prov: string,
+  provColor: string,
+): JSX.Element[] {
+  const tokens = template.split(/(\{name\}|\{prov\})/);
+  return tokens.map((tok, i) => {
+    if (tok === "{name}") return <strong key={i}>{name}</strong>;
+    if (tok === "{prov}")
+      return (
+        <strong key={i} style={{ color: provColor }}>
+          {prov}
+        </strong>
+      );
+    return <span key={i}>{tok}</span>;
+  });
+}
+
+/**
  * Bottom-sheet overlay showing care-team response phrases in 4 categories.
  * Provider speaks a phrase with a single tap.
  */
@@ -44,6 +72,10 @@ export function ProviderPanel({
 
   const blueText = theme === "dark" ? "#60A5FA" : "#1E40AF";
   const providerGreen = "#059669";
+  // Text color for the provider name in the "Speaking to ..." header.
+  // Dark-theme variant keeps the green hue but lifts lightness so the
+  // bolded name meets 7:1 AAA contrast against the activeBg card.
+  const providerGreenText = theme === "dark" ? "#34D399" : "#065F46";
 
   const phrases = PROVIDER_CATEGORIES[activeSection] ?? [];
 
@@ -87,9 +119,12 @@ export function ProviderPanel({
         <BottomSheet.Title>{resolvePhrase("ui.provider.care_team.title", caregiverLang)}</BottomSheet.Title>
         <BottomSheet.CloseButton aria-label={resolvePhrase("ui.provider.close_panel", caregiverLang)} />
         <div style={{ flexBasis: "100%", fontSize: 14, color: t.sub }}>
-          {resolvePhrase("ui.provider.speaking_to", caregiverLang)
-            .replace("{name}", active?.name || resolvePhrase("ui.provider.patient_fallback", caregiverLang))
-            .replace("{prov}", providerLabel)}
+          {renderSpeakingTo(
+            resolvePhrase("ui.provider.speaking_to", caregiverLang),
+            active?.name || resolvePhrase("ui.provider.patient_fallback", caregiverLang),
+            providerLabel,
+            providerGreenText,
+          )}
         </div>
       </BottomSheet.Header>
 
