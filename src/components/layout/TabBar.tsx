@@ -1,7 +1,7 @@
 import { useState } from "preact/hooks";
 import type { JSX } from "preact";
 import { Btn } from "../shared/Btn";
-import { getCategories } from "../../data/phraseRegistry";
+import { t as resolvePhrase, getCategories } from "../../data/phraseRegistry";
 import { useUIStore } from "../../stores/uiStore";
 import { useSettingsStore } from "../../stores/settingsStore";
 import { useTheme } from "../../hooks/useTheme";
@@ -139,7 +139,7 @@ export function TabBar() {
         onPointerEnter={onEnter("__saymore__")}
         onPointerLeave={onLeave}
         aria-current={builderOpen ? "page" : undefined}
-        aria-label="Say More"
+        aria-label={resolvePhrase("ui.patient.tabbar.say_more", locale)}
         style={{
           flex: 1,
           background: "none",
@@ -177,7 +177,7 @@ export function TabBar() {
           {"\u270F\uFE0F"}
         </div>
         <span style={{ fontSize: 14, fontWeight: builderOpen ? 700 : 600, color: smLabelColor }}>
-          Say More
+          {resolvePhrase("ui.patient.tabbar.say_more", locale)}
         </span>
       </Btn>
         );

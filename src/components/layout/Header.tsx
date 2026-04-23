@@ -1,5 +1,6 @@
 import { useTheme } from "../../hooks/useTheme";
 import { useUIStore } from "../../stores/uiStore";
+import { t as resolvePhrase } from "../../data/phraseRegistry";
 import { HeaderNav } from "./HeaderNav";
 import type { AppSettings } from "../../types";
 
@@ -16,6 +17,7 @@ export function Header({ cfg }: HeaderProps) {
   };
 
   const blue = theme === "dark" ? "#60A5FA" : "#2563EB";
+  const patientLang = cfg.patientLang ?? "en";
 
   return (
     <header
@@ -30,11 +32,11 @@ export function Header({ cfg }: HeaderProps) {
     >
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <span class="font-sans" style={{ fontSize: 17, fontWeight: 700, color: t.text }}>
-          {cfg.patientName || "Patient"}
+          {cfg.patientName || resolvePhrase("ui.patient.header.name_fallback", patientLang)}
         </span>
         {cfg.bed && (
           <span style={{ fontSize: 13, fontWeight: 600, color: t.muted }}>
-            {"\u00B7"} Bed {cfg.bed}
+            {"\u00B7"} {resolvePhrase("ui.patient.header.bed_prefix", patientLang)}{cfg.bed}
           </span>
         )}
         {cfg.patientVoice && (

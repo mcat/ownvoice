@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "preact/hooks";
+import { t as resolvePhrase } from "../../data/phraseRegistry";
+import { useSettingsStore } from "../../stores/settingsStore";
 import type { FallbackVoice } from "../../types";
 import { curateVoices, isEnhancedVoice } from "./voiceCuration";
 import { getRecordingScript } from "../../data/recordingScripts";
@@ -80,6 +82,7 @@ export function FallbackVoicePicker({
   color,
 }: FallbackVoicePickerProps) {
   const c = color ?? LIGHT_COLORS;
+  const caregiverLang = useSettingsStore((s) => s.cfg?.caregiverLang ?? "en");
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [playingURI, setPlayingURI] = useState<string | null>(null);
   const cancelTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -212,7 +215,7 @@ export function FallbackVoicePicker({
   if (!("speechSynthesis" in window)) {
     return (
       <p style={{ fontSize: 14, color: c.muted, margin: 0 }}>
-        System voices are not available on this device.
+        {resolvePhrase("ui.provider.fallback_voice.unavailable", caregiverLang)}
       </p>
     );
   }
@@ -220,7 +223,7 @@ export function FallbackVoicePicker({
   if (sorted.length === 0) {
     return (
       <p style={{ fontSize: 14, color: c.muted, margin: 0 }}>
-        Loading available voices...
+        {resolvePhrase("ui.provider.fallback_voice.loading", caregiverLang)}
       </p>
     );
   }
@@ -267,7 +270,7 @@ export function FallbackVoicePicker({
             <span>{v.name}</span>
             {enhanced && (
               <span
-                aria-label="Enhanced neural voice"
+                aria-label={resolvePhrase("ui.provider.fallback_voice.enhanced_aria", caregiverLang)}
                 style={{
                   fontSize: 11,
                   fontWeight: 700,
@@ -280,13 +283,13 @@ export function FallbackVoicePicker({
                   textTransform: "uppercase",
                 }}
               >
-                Enhanced
+                {resolvePhrase("ui.provider.fallback_voice.enhanced_badge", caregiverLang)}
               </span>
             )}
           </div>
           <div style={{ fontSize: 13, color: c.muted, marginTop: 2 }}>
             {v.lang}
-            {v.localService ? " · On-device" : ""}
+            {v.localService ? ` · ${resolvePhrase("ui.provider.fallback_voice.on_device_badge", caregiverLang)}` : ""}
           </div>
         </div>
         {isPlaying && (
@@ -298,7 +301,7 @@ export function FallbackVoicePicker({
               whiteSpace: "nowrap",
             }}
           >
-            Playing...
+            {resolvePhrase("ui.provider.fallback_voice.playing", caregiverLang)}
           </span>
         )}
         {isSelected && !isPlaying && (
@@ -360,8 +363,8 @@ export function FallbackVoicePicker({
               {showOther ? "▼" : "▶"}
             </span>
             {showOther
-              ? "Hide other voices"
-              : `More voices (${disclosureList.length})`}
+              ? resolvePhrase("ui.provider.fallback_voice.hide_others", caregiverLang)
+              : resolvePhrase("ui.provider.fallback_voice.more_voices", caregiverLang).replace("{n}", String(disclosureList.length))}
           </button>
 
           {showOther && (

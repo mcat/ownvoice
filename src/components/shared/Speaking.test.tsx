@@ -1,6 +1,7 @@
 import { act, render, screen } from "@testing-library/preact";
 import { Speaking } from "./Speaking";
 import { light } from "../../theme/tokens";
+import { useSettingsStore } from "../../stores/settingsStore";
 
 const baseProps = {
   text: "I need water",
@@ -8,6 +9,19 @@ const baseProps = {
   onDone: vi.fn(),
   t: light,
 };
+
+beforeEach(() => {
+  useSettingsStore.setState({
+    cfg: {
+      patientName: "Patient",
+      bed: "1",
+      patientLang: "en",
+      caregiverLang: "en",
+      providers: [{ name: "Dr. Lee", emoji: "👩‍⚕️", hasVoice: false }],
+    } as import("../../types").AppSettings,
+    _hasHydrated: true,
+  });
+});
 
 describe("Speaking", () => {
   beforeEach(() => {
@@ -32,15 +46,15 @@ describe("Speaking", () => {
     expect(screen.getByText("I need water")).toBeInTheDocument();
   });
 
-  it("does not render a caption for patient voice", () => {
+  it("shows 'Your voice' sub-label for patient speech", () => {
     render(<Speaking {...baseProps} />);
-    expect(screen.queryByText(/speaking as/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/care team/i)).not.toBeInTheDocument();
+    expect(screen.getByText("Your voice")).toBeInTheDocument();
   });
 
-  it("shows 'Care Team' caption when isProvider is true", () => {
+  it("shows active provider name + emoji when isProvider is true", () => {
     render(<Speaking {...baseProps} isProvider={true} />);
-    expect(screen.getByText("Care Team")).toBeInTheDocument();
+    // Provider name + emoji from the settings store
+    expect(screen.getByText(/Dr\. Lee/)).toBeInTheDocument();
   });
 
   it("has role=status and aria-live=polite", () => {

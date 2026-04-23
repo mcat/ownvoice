@@ -4,6 +4,8 @@ import {
   getContextualSuggestions,
   getLLMSuggestions,
 } from "../../data/suggestion-trees";
+import { t as resolvePhrase } from "../../data/phraseRegistry";
+import { useSettingsStore } from "../../stores/settingsStore";
 import { polishSentence } from "../../utils/polishSentence";
 import type { Message } from "../../types";
 import type { ThemeTokens, ThemeName } from "../../theme/tokens";
@@ -21,6 +23,7 @@ export function SentenceBuilder({
   theme,
   messages,
 }: SentenceBuilderProps) {
+  const patientLang = useSettingsStore((s) => s.cfg?.patientLang ?? "en");
   const [text, setText] = useState("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [llmSuggestions, setLlmSuggestions] = useState<string[]>([]);
@@ -145,7 +148,7 @@ export function SentenceBuilder({
           type="text"
           value={text}
           onInput={(e) => setText((e.target as HTMLInputElement).value)}
-          placeholder="Tap words below or type..."
+          placeholder={resolvePhrase("ui.patient.builder.placeholder", patientLang)}
           style={{
             flex: 1,
             fontSize: 20,
@@ -158,7 +161,7 @@ export function SentenceBuilder({
             lineHeight: 1.4,
             minWidth: 0,
           }}
-          aria-label="Your message"
+          aria-label={resolvePhrase("ui.patient.builder.message_aria", patientLang)}
         />
 
         {hasText && (
@@ -178,7 +181,7 @@ export function SentenceBuilder({
                 justifyContent: "center",
                 padding: 0,
               }}
-              aria-label="Undo last word"
+              aria-label={resolvePhrase("ui.patient.builder.undo", patientLang)}
             >
               &#x2190;
             </Btn>
@@ -197,7 +200,7 @@ export function SentenceBuilder({
                 justifyContent: "center",
                 padding: 0,
               }}
-              aria-label="Clear message"
+              aria-label={resolvePhrase("ui.patient.builder.clear", patientLang)}
             >
               &#x2715;
             </Btn>
@@ -269,7 +272,7 @@ export function SentenceBuilder({
             <Btn
               onClick={() => setLlmRefreshNonce((n) => n + 1)}
               disabled={loadingLlm}
-              aria-label="Refresh AI suggestions"
+              aria-label={resolvePhrase("ui.patient.builder.refresh_ai", patientLang)}
               style={{
                 display: "inline-flex",
                 alignItems: "center",
@@ -342,11 +345,11 @@ export function SentenceBuilder({
             </div>
           ) : loadingLlm ? (
             <div role="status" aria-live="polite" style={{ color: llmAccent, fontSize: 14 }}>
-              AI is thinking...
+              {resolvePhrase("ui.patient.builder.ai_thinking", patientLang)}
             </div>
           ) : (
             <div role="status" aria-live="polite" style={{ color: t.muted, fontSize: 14 }}>
-              No AI suggestions. Tap refresh to try again.
+              {resolvePhrase("ui.patient.builder.no_ai_suggestions", patientLang)}
             </div>
           )}
         </div>
@@ -363,7 +366,7 @@ export function SentenceBuilder({
             marginBottom: 16,
           }}
         >
-          Your message is ready. Tap Speak to send.
+          {resolvePhrase("ui.patient.builder.ready", patientLang)}
         </div>
       )}
 
@@ -384,7 +387,7 @@ export function SentenceBuilder({
           transition: "background 0.15s ease, color 0.15s ease",
         }}
       >
-        Speak
+        {resolvePhrase("ui.patient.builder.speak", patientLang)}
       </Btn>
     </div>
   );

@@ -1,6 +1,9 @@
 import { Btn } from "../shared/Btn";
 import { useUIStore, type OverlayName } from "../../stores/uiStore";
+import { useSettingsStore } from "../../stores/settingsStore";
 import { useTheme } from "../../hooks/useTheme";
+import { t as resolvePhrase } from "../../data/phraseRegistry";
+import type { PhraseKey } from "../../data/phraseRegistry";
 import type { ThemeTokens } from "../../theme/tokens";
 
 const ICONS = {
@@ -15,10 +18,10 @@ const ICONS = {
 
 // Overlay button definitions live at module scope — identity never changes
 // across renders, so React/Preact reuses the same array reference.
-const OVERLAY_BUTTONS: readonly { overlay: OverlayName; icon: string; label: string }[] = [
-  { overlay: "wishes", icon: ICONS.wishes, label: "Wishes" },
-  { overlay: "listen", icon: ICONS.listen, label: "Listen" },
-  { overlay: "provider", icon: ICONS.provider, label: "Staff" },
+const OVERLAY_BUTTONS: readonly { overlay: OverlayName; icon: string; labelKey: PhraseKey; usePatientLang?: boolean }[] = [
+  { overlay: "wishes", icon: ICONS.wishes, labelKey: "ui.dual.nav.wishes", usePatientLang: true },
+  { overlay: "listen", icon: ICONS.listen, labelKey: "ui.provider.nav.listen" },
+  { overlay: "provider", icon: ICONS.provider, labelKey: "ui.provider.nav.staff" },
 ];
 
 function btnStyle(t: ThemeTokens, icon: string) {
@@ -56,9 +59,13 @@ interface HeaderNavProps {
 export function HeaderNav({ onSettings }: HeaderNavProps) {
   const { theme, toggle: onToggleTheme, isAuto, t } = useTheme();
   const openOverlay = useUIStore((s) => s.openOverlay);
+  const cfg = useSettingsStore((s) => s.cfg);
+  const patientLang = cfg?.patientLang ?? "en";
+  const caregiverLang = cfg?.caregiverLang ?? "en";
 
   const themeIcon = isAuto ? ICONS.auto : theme === "light" ? ICONS.light : ICONS.dark;
-  const themeLabel = isAuto ? "Auto" : theme === "light" ? "Light" : "Dark";
+  const themeLabelKey: PhraseKey = isAuto ? "ui.provider.nav.theme.auto" : theme === "light" ? "ui.provider.nav.theme.light" : "ui.provider.nav.theme.dark";
+  const themeLabel = resolvePhrase(themeLabelKey, caregiverLang);
 
   return (
     <div style={{ display: "flex", gap: 12 }}>
@@ -66,15 +73,18 @@ export function HeaderNav({ onSettings }: HeaderNavProps) {
         <span>{themeIcon}</span>
         <span style={labelStyle(t)}>{themeLabel}</span>
       </Btn>
-      {OVERLAY_BUTTONS.map(({ overlay, icon, label }) => (
-        <Btn key={overlay} onClick={() => openOverlay(overlay)} aria-label={label} style={btnStyle(t, icon)}>
-          <span>{icon}</span>
-          <span style={labelStyle(t)}>{label}</span>
-        </Btn>
-      ))}
-      <Btn key="settings" onClick={onSettings} aria-label="Settings" style={btnStyle(t, ICONS.settings)}>
+      {OVERLAY_BUTTONS.map(({ overlay, icon, labelKey, usePatientLang }) => {
+        const label = resolvePhrase(labelKey, usePatientLang ? patientLang : caregiverLang);
+        return (
+          <Btn key={overlay} onClick={() => openOverlay(overlay)} aria-label={label} style={btnStyle(t, icon)}>
+            <span>{icon}</span>
+            <span style={labelStyle(t)}>{label}</span>
+          </Btn>
+        );
+      })}
+      <Btn key="settings" onClick={onSettings} aria-label={resolvePhrase("ui.provider.nav.settings", caregiverLang)} style={btnStyle(t, ICONS.settings)}>
         <span>{ICONS.settings}</span>
-        <span style={labelStyle(t)}>Settings</span>
+        <span style={labelStyle(t)}>{resolvePhrase("ui.provider.nav.settings", caregiverLang)}</span>
       </Btn>
     </div>
   );

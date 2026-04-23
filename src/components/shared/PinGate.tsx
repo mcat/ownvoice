@@ -1,4 +1,6 @@
 import { useState, useEffect, useId } from "preact/hooks";
+import { t as resolvePhrase } from "../../data/phraseRegistry";
+import { useSettingsStore } from "../../stores/settingsStore";
 import type { ThemeTokens, ThemeName } from "../../theme/tokens";
 import { z } from "../../theme/z";
 import { Btn } from "./Btn";
@@ -23,6 +25,7 @@ export function PinGate({ pin, onSuccess, onClose, t, theme }: PinGateProps) {
   const [entry, setEntry] = useState("");
   const [error, setError] = useState(false);
   const isDark = theme === "dark";
+  const caregiverLang = useSettingsStore((s) => s.cfg?.caregiverLang ?? "en");
   const titleId = useId();
   const { dialogRef } = useDialog({ onClose, titleId });
 
@@ -106,10 +109,10 @@ export function PinGate({ pin, onSuccess, onClose, t, theme }: PinGateProps) {
             margin: "0 0 4px",
           }}
         >
-          Enter PIN
+          {resolvePhrase("ui.provider.pin_gate.title", caregiverLang)}
         </h2>
         <p style={{ fontSize: 14, color: t.muted, margin: "0 0 24px" }}>
-          Staff access only
+          {resolvePhrase("ui.provider.pin_gate.subtitle", caregiverLang)}
         </p>
 
         {/* Dots */}
@@ -154,7 +157,7 @@ export function PinGate({ pin, onSuccess, onClose, t, theme }: PinGateProps) {
         >
           {error && (
             <span style={{ fontSize: 14, color: "#DC2626", fontWeight: 500 }}>
-              Incorrect PIN
+              {resolvePhrase("ui.provider.pin_gate.incorrect", caregiverLang)}
             </span>
           )}
         </div>
@@ -178,7 +181,7 @@ export function PinGate({ pin, onSuccess, onClose, t, theme }: PinGateProps) {
                 key={i}
                 onClick={() => press(key)}
                 disabled={error}
-                aria-label={isDel ? "Delete" : `Digit ${key}`}
+                aria-label={isDel ? resolvePhrase("ui.provider.pin_gate.delete_aria", caregiverLang) : resolvePhrase("ui.provider.pin_gate.digit_aria", caregiverLang).replace("{n}", key)}
                 style={{
                   width: "100%",
                   height: 64,
@@ -219,7 +222,7 @@ export function PinGate({ pin, onSuccess, onClose, t, theme }: PinGateProps) {
             fontFamily: "inherit",
           }}
         >
-          Cancel
+          {resolvePhrase("ui.provider.pin_gate.cancel", caregiverLang)}
         </button>
       </div>
     </div>

@@ -1,12 +1,15 @@
 import type { ComponentChildren } from "preact";
 import { useEffect, useState } from "preact/hooks";
 import type { ThemeTokens } from "../../../theme/tokens";
+import { t as resolvePhrase } from "../../../data/phraseRegistry";
+import { useSettingsStore } from "../../../stores/settingsStore";
 
 interface Props {
   t: ThemeTokens;
 }
 
 export function AboutSection({ t }: Props) {
+  const caregiverLang = useSettingsStore((s) => s.cfg?.caregiverLang ?? "en");
   // SW cache names read live via `caches.keys()`. Lets a clinician (or
   // us during debugging) confirm which service-worker cache is actually
   // persisted on this device — catches the "pulled new build but old
@@ -32,18 +35,18 @@ export function AboutSection({ t }: Props) {
   }, []);
 
   return (
-    <Section label="About" t={t}>
+    <Section label={resolvePhrase("ui.provider.settings.about.heading", caregiverLang)} t={t}>
       <p style={{ fontSize: 15, fontWeight: 600, color: t.text, margin: "0 0 8px" }}>
         OwnVoice v0.1
       </p>
       <p style={{ fontSize: 14, color: t.sub, margin: "0 0 4px" }}>
-        In-patient AAC communication aid.
+        {resolvePhrase("ui.provider.settings.about.subtitle", caregiverLang)}
       </p>
       <p style={{ fontSize: 13, color: t.muted, margin: "0 0 4px" }}>
-        Pain scale: Emoji-FPS (Li et al., JMIR 2023) — CC-BY 4.0
+        {resolvePhrase("ui.provider.settings.about.attribution_1", caregiverLang)}
       </p>
       <p style={{ fontSize: 13, color: t.muted, margin: "0 0 8px" }}>
-        Goals of care: SICG (Ariadne Labs) — CC-BY-NC-SA 4.0
+        {resolvePhrase("ui.provider.settings.about.attribution_2", caregiverLang)}
       </p>
       {swCaches.length > 0 && (
         <p
@@ -55,7 +58,7 @@ export function AboutSection({ t }: Props) {
             fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
           }}
         >
-          SW cache: {swCaches.join(", ")}
+          {resolvePhrase("ui.provider.settings.about.sw_cache_prefix", caregiverLang)} {swCaches.join(", ")}
         </p>
       )}
     </Section>

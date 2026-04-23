@@ -95,11 +95,9 @@ describe("ProviderPanel", () => {
 
   it("shows patient name and provider label in subtitle", () => {
     render(<ProviderPanel {...baseProps} />);
-    // Patient name is in a <strong> tag within the subtitle
-    expect(screen.getByText("Maria")).toBeInTheDocument();
-    // Provider label appears in the subtitle ("Speaking to ... as ...")
-    // and also in the provider chip — check the subtitle specifically
+    // Patient name and provider label are embedded in the composed subtitle string
     const subtitle = screen.getByText(/Speaking to/);
+    expect(subtitle).toHaveTextContent(/Maria/);
     expect(subtitle).toHaveTextContent(/Dr\. Smith/);
   });
 

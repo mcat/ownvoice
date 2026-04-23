@@ -2,7 +2,8 @@ import { useState } from "preact/hooks";
 import type { JSX } from "preact";
 import type { AppSettings } from "../../types";
 import type { ThemeTokens, ThemeName } from "../../theme/tokens";
-import { getProviderCategories } from "../../data/phraseRegistry";
+import { t as resolvePhrase, getProviderCategories } from "../../data/phraseRegistry";
+import { useSettingsStore } from "../../stores/settingsStore";
 import { Btn } from "../shared/Btn";
 import { BottomSheet } from "../shared/BottomSheet";
 
@@ -15,10 +16,6 @@ interface ProviderPanelProps {
   activeProvIdx: number;
   onSelectProvider: (idx: number) => void;
 }
-
-// Provider phrases are English-only (see project memory: provider_english_only.md)
-const PROVIDER_CATEGORIES = getProviderCategories("en");
-const SECTION_KEYS = Object.keys(PROVIDER_CATEGORIES);
 
 /**
  * Bottom-sheet overlay showing care-team response phrases in 4 categories.
@@ -33,16 +30,19 @@ export function ProviderPanel({
   activeProvIdx,
   onSelectProvider,
 }: ProviderPanelProps) {
+  const caregiverLang = useSettingsStore((s) => s.cfg?.caregiverLang ?? "en");
+  const PROVIDER_CATEGORIES = getProviderCategories(caregiverLang);
+  const SECTION_KEYS = Object.keys(PROVIDER_CATEGORIES);
+
   const [activeSection, setActiveSection] = useState(SECTION_KEYS[0]);
 
   const provider = cfg.providers[activeProvIdx] ?? cfg.providers[0];
   const providerLabel = provider
     ? `${provider.emoji ?? ""} ${provider.name}`.trim()
-    : "Provider";
+    : resolvePhrase("ui.provider.fallback_name", caregiverLang);
 
   const blueText = theme === "dark" ? "#60A5FA" : "#1E40AF";
   const providerGreen = "#059669";
-  const providerGreenText = theme === "dark" ? "#34D399" : "#065F46";
 
   const phrases = PROVIDER_CATEGORIES[activeSection] ?? [];
 
@@ -83,11 +83,12 @@ export function ProviderPanel({
   return (
     <BottomSheet onClose={onClose} t={t}>
       <BottomSheet.Header>
-        <BottomSheet.Title>Care Team</BottomSheet.Title>
-        <BottomSheet.CloseButton aria-label="Close panel" />
+        <BottomSheet.Title>{resolvePhrase("ui.provider.care_team.title", caregiverLang)}</BottomSheet.Title>
+        <BottomSheet.CloseButton aria-label={resolvePhrase("ui.provider.close_panel", caregiverLang)} />
         <div style={{ flexBasis: "100%", fontSize: 14, color: t.sub }}>
-          Speaking to <strong>{cfg.patientName || "patient"}</strong> as{" "}
-          <strong style={{ color: providerGreenText }}>{providerLabel}</strong>
+          {resolvePhrase("ui.provider.speaking_to", caregiverLang)
+            .replace("{name}", cfg.patientName || resolvePhrase("ui.provider.patient_fallback", caregiverLang))
+            .replace("{prov}", providerLabel)}
         </div>
       </BottomSheet.Header>
 
@@ -99,7 +100,7 @@ export function ProviderPanel({
                 key={idx}
                 onClick={() => onSelectProvider(idx)}
                 style={chipStyle(idx === activeProvIdx, providerGreen)}
-                aria-label={`Select ${prov.name}`}
+                aria-label={resolvePhrase("ui.provider.select_provider", caregiverLang).replace("{name}", prov.name)}
                 aria-pressed={idx === activeProvIdx}
               >
                 {prov.emoji ? `${prov.emoji} ` : ""}
@@ -115,7 +116,7 @@ export function ProviderPanel({
               key={key}
               onClick={() => setActiveSection(key)}
               style={chipStyle(key === activeSection, blueText)}
-              aria-label={`Show ${key}`}
+              aria-label={resolvePhrase("ui.provider.show_category", caregiverLang).replace("{key}", key)}
               aria-pressed={key === activeSection}
             >
               {key}
@@ -129,7 +130,7 @@ export function ProviderPanel({
               key={idx}
               onClick={() => onSend(phrase)}
               style={phraseBtnStyle}
-              aria-label={`Speak: ${phrase}`}
+              aria-label={resolvePhrase("ui.provider.speak_phrase", caregiverLang).replace("{phrase}", phrase)}
             >
               {phrase}
             </Btn>

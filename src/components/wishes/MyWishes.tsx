@@ -3,6 +3,8 @@ import type { JSX } from "preact";
 import type { ThemeTokens, ThemeName } from "../../theme/tokens";
 import { getWishTopics, composeWishSentence, t as resolvePhrase } from "../../data/phraseRegistry";
 import type { PhraseKey } from "../../data/phraseRegistry";
+import { DualLocaleText } from "../shared/DualLocaleText";
+import { useSettingsStore } from "../../stores/settingsStore";
 import { Btn } from "../shared/Btn";
 import { BottomSheet } from "../shared/BottomSheet";
 
@@ -29,6 +31,9 @@ export function MyWishes({
   patientName,
   locale = "en",
 }: MyWishesProps) {
+  const cfg = useSettingsStore((s) => s.cfg);
+  const patientLang = cfg?.patientLang ?? "en";
+  const caregiverLang = cfg?.caregiverLang ?? "en";
   const SICG_TOPICS = getWishTopics();
   const [currentIdx, setCurrentIdx] = useState(0);
   const [selections, setSelections] = useState<Record<string, PhraseKey[]>>({});
@@ -57,7 +62,7 @@ export function MyWishes({
   function handleShare() {
     if (!selected.length) return;
     const sentence = composeWishSentence({ locale, topicId: topic.id, selectedResponseKeys: selected });
-    onAddToThread(resolvePhrase(topic.questionKey, locale), "provider", "My Wishes");
+    onAddToThread(resolvePhrase(topic.questionKey, locale), "provider", resolvePhrase("ui.patient.wishes.my_wishes", patientLang));
     onSpeak(sentence);
     advance();
   }
@@ -96,8 +101,8 @@ export function MyWishes({
     return (
       <BottomSheet onClose={onClose} t={t}>
         <BottomSheet.Header>
-          <BottomSheet.Title>{patientName}'s Wishes</BottomSheet.Title>
-          <BottomSheet.CloseButton aria-label="Close" />
+          <BottomSheet.Title>{resolvePhrase("ui.patient.wishes.completion_title", patientLang).replace("{name}", patientName)}</BottomSheet.Title>
+          <BottomSheet.CloseButton aria-label={resolvePhrase("ui.patient.wishes.close", patientLang)} />
         </BottomSheet.Header>
 
         <BottomSheet.Body>
@@ -110,7 +115,7 @@ export function MyWishes({
                 marginTop: 40,
               }}
             >
-              No wishes were shared.
+              {resolvePhrase("ui.patient.wishes.none_shared", patientLang)}
             </p>
           ) : (
             answeredTopics.map((tp) => {
@@ -133,7 +138,8 @@ export function MyWishes({
                       marginBottom: 6,
                     }}
                   >
-                    {tp.icon} {resolvePhrase(tp.labelKey, locale)}
+                    {tp.icon}{" "}
+                    <DualLocaleText variant="co-read" primaryKey={tp.labelKey} primaryLocale={patientLang} glossLocale={caregiverLang} style={{ display: "inline" }} />
                   </div>
                   <div style={{ fontSize: 18, color: t.text }}>{sentence}</div>
                 </div>
@@ -158,7 +164,7 @@ export function MyWishes({
                 minHeight: 64,
               }}
             >
-              Share all wishes again
+              {resolvePhrase("ui.patient.wishes.share_all_again", patientLang)}
             </Btn>
           )}
           <Btn
@@ -176,7 +182,7 @@ export function MyWishes({
               minWidth: 64,
             }}
           >
-            Close
+            {resolvePhrase("ui.patient.wishes.close", patientLang)}
           </Btn>
         </BottomSheet.Actions>
       </BottomSheet>
@@ -188,14 +194,14 @@ export function MyWishes({
   return (
     <BottomSheet onClose={onClose} t={t}>
       <BottomSheet.Header>
-        <BottomSheet.Title>My Wishes</BottomSheet.Title>
-        <BottomSheet.CloseButton aria-label="Close" />
+        <BottomSheet.Title>{resolvePhrase("ui.patient.wishes.my_wishes", patientLang)}</BottomSheet.Title>
+        <BottomSheet.CloseButton aria-label={resolvePhrase("ui.patient.wishes.close", patientLang)} />
         <div style={{ flexBasis: "100%" }}>
           <div
             class="font-sans"
             style={{ fontSize: 13, color: t.muted, marginBottom: 6 }}
           >
-            Step {currentIdx + 1} of {SICG_TOPICS.length}
+            {resolvePhrase("ui.patient.wishes.step_of", patientLang).replace("{n}", String(currentIdx + 1)).replace("{total}", String(SICG_TOPICS.length))}
           </div>
           <div style={progressRow}>
             {SICG_TOPICS.map((tp, i) => {
@@ -242,7 +248,7 @@ export function MyWishes({
             lineHeight: 1.35,
           }}
         >
-          {resolvePhrase(topic.questionKey, locale)}
+          <DualLocaleText variant="co-read" primaryKey={topic.questionKey} primaryLocale={patientLang} glossLocale={caregiverLang} />
         </h2>
 
         {/* Response buttons */}
@@ -294,7 +300,7 @@ export function MyWishes({
                 >
                   {isSelected ? "✓" : ""}
                 </div>
-                <span>{resolvePhrase(rk, locale)}</span>
+                <DualLocaleText variant="co-read" primaryKey={rk} primaryLocale={patientLang} glossLocale={caregiverLang} />
               </Btn>
             );
           })}
@@ -323,7 +329,7 @@ export function MyWishes({
             opacity: selected.length === 0 ? 0.6 : 1,
           }}
         >
-          Share
+          {resolvePhrase("ui.patient.wishes.share", patientLang)}
         </Btn>
         <Btn
           onClick={handleSkip}
@@ -339,7 +345,7 @@ export function MyWishes({
             minWidth: 64,
           }}
         >
-          Skip
+          {resolvePhrase("ui.patient.wishes.skip", patientLang)}
         </Btn>
       </BottomSheet.Actions>
     </BottomSheet>

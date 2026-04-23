@@ -7,6 +7,8 @@ import {
 import * as audioCacheRunner from "../../models/audioCacheRunner";
 import type { AppSettings } from "../../types";
 import { Btn } from "../shared/Btn";
+import { t as resolvePhrase } from "../../data/phraseRegistry";
+import { useSettingsStore } from "../../stores/settingsStore";
 
 interface Props {
   speakerKey: SpeakerKey;
@@ -58,6 +60,7 @@ export function VoiceCacheProgress({
   patientSpeakerData,
 }: Props) {
   const run = useAudioCacheStore((s) => s.runs[speakerKey]);
+  const caregiverLang = useSettingsStore((s) => s.cfg?.caregiverLang ?? "en");
   const [confirmingDiscard, setConfirmingDiscard] = useState(false);
   if (!run) return null;
 
@@ -85,31 +88,31 @@ export function VoiceCacheProgress({
             margin: "0 0 8px",
           }}
         >
-          Discard {speakerLabel}'s voice preparation?
+          {resolvePhrase("ui.provider.settings.voice_cache.discard_title", caregiverLang).replace("{label}", speakerLabel)}
         </p>
         <p style={{ fontSize: 14, color: "#4B5563", margin: "0 0 16px", lineHeight: 1.5 }}>
-          Progress ({run.current} / {run.total} phrases) will be lost. The
-          recorded voice sample itself is kept — you can restart preparation
-          later.
+          {resolvePhrase("ui.provider.settings.voice_cache.discard_body", caregiverLang)
+            .replace("{current}", String(run.current))
+            .replace("{total}", String(run.total))}
         </p>
         <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
           <Btn
             onClick={() => setConfirmingDiscard(false)}
-            aria-label="Cancel and keep voice preparation"
+            aria-label={resolvePhrase("ui.provider.settings.voice_cache.cancel_aria", caregiverLang)}
             style={{
               ...CTRL_BTN,
               border: "1px solid #6B7280",
               color: "#374151",
             }}
           >
-            Cancel
+            {resolvePhrase("ui.provider.settings.voice_cache.cancel", caregiverLang)}
           </Btn>
           <Btn
             onClick={() => {
               audioCacheRunner.discardRun(speakerKey);
               setConfirmingDiscard(false);
             }}
-            aria-label="Confirm discard voice preparation"
+            aria-label={resolvePhrase("ui.provider.settings.voice_cache.discard_confirm_aria", caregiverLang)}
             style={{
               ...CTRL_BTN,
               border: "none",
@@ -117,7 +120,7 @@ export function VoiceCacheProgress({
               color: "#FFFFFF",
             }}
           >
-            Discard
+            {resolvePhrase("ui.provider.settings.voice_cache.discard_confirm", caregiverLang)}
           </Btn>
         </div>
       </div>
@@ -149,8 +152,10 @@ export function VoiceCacheProgress({
         }}
       >
         <span aria-hidden="true">{"\u23F3"}</span>
-        Queued — {speakerLabel}'s voice will prepare next ({run.total}{" "}
-        phrase{run.total === 1 ? "" : "s"})
+        {resolvePhrase("ui.provider.settings.voice_cache.queued", caregiverLang)
+          .replace("{label}", speakerLabel)
+          .replace("{total}", String(run.total))
+          .replace("{plural}", run.total === 1 ? "" : "s")}
       </div>
     );
   }
@@ -204,8 +209,15 @@ export function VoiceCacheProgress({
             marginBottom: 8,
           }}
         >
-          {paused ? "Paused — " : "Preparing "}
-          {speakerLabel}'s voice… {run.current} / {run.total}
+          {paused
+            ? resolvePhrase("ui.provider.settings.voice_cache.paused", caregiverLang)
+                .replace("{label}", speakerLabel)
+                .replace("{current}", String(run.current))
+                .replace("{total}", String(run.total))
+            : resolvePhrase("ui.provider.settings.voice_cache.preparing", caregiverLang)
+                .replace("{label}", speakerLabel)
+                .replace("{current}", String(run.current))
+                .replace("{total}", String(run.total))}
         </div>
         <div
           style={{
@@ -238,34 +250,34 @@ export function VoiceCacheProgress({
               onClick={() =>
                 audioCacheRunner.resumeAll(cfg, patientSpeakerData)
               }
-              aria-label={`Resume preparing ${speakerLabel}'s voice`}
+              aria-label={resolvePhrase("ui.provider.settings.voice_cache.resume_aria", caregiverLang).replace("{label}", speakerLabel)}
               style={{
                 ...CTRL_BTN,
                 border: `1px solid ${palette.primaryBorder}`,
                 color: palette.primaryText,
               }}
             >
-              <span aria-hidden="true">{"\u25B6"}</span> Resume
+              <span aria-hidden="true">{"\u25B6"}</span> {resolvePhrase("ui.provider.settings.voice_cache.resume", caregiverLang)}
             </Btn>
           ) : (
             <Btn
               onClick={() => audioCacheRunner.pauseAll()}
-              aria-label={`Pause preparing ${speakerLabel}'s voice`}
+              aria-label={resolvePhrase("ui.provider.settings.voice_cache.pause_aria", caregiverLang).replace("{label}", speakerLabel)}
               style={{
                 ...CTRL_BTN,
                 border: `1px solid ${palette.btnBorder}`,
                 color: palette.btnText,
               }}
             >
-              <span aria-hidden="true">{"\u23F8"}</span> Pause
+              <span aria-hidden="true">{"\u23F8"}</span> {resolvePhrase("ui.provider.settings.voice_cache.pause", caregiverLang)}
             </Btn>
           )}
           <Btn
             onClick={() => setConfirmingDiscard(true)}
-            aria-label={`Discard preparing ${speakerLabel}'s voice`}
+            aria-label={resolvePhrase("ui.provider.settings.voice_cache.discard_trigger_aria", caregiverLang).replace("{label}", speakerLabel)}
             style={DISCARD_OUTLINE}
           >
-            Discard
+            {resolvePhrase("ui.provider.settings.voice_cache.discard_confirm", caregiverLang)}
           </Btn>
         </div>
       </div>
@@ -292,8 +304,9 @@ export function VoiceCacheProgress({
         }}
       >
         <span aria-hidden="true">{"\u2705"}</span>
-        Voice clone active — all {run.total} phrases ready in{" "}
-        {speakerLabel}'s voice
+        {resolvePhrase("ui.provider.settings.voice_cache.done", caregiverLang)
+          .replace("{total}", String(run.total))
+          .replace("{label}", speakerLabel)}
       </div>
     );
   }
@@ -317,12 +330,14 @@ export function VoiceCacheProgress({
       >
         <span style={{ fontSize: 14, fontWeight: 600, color: "#991B1B", flex: 1, minWidth: 180 }}>
           <span aria-hidden="true">{"\u26A0\uFE0F"}</span>{" "}
-          {run.failedPhrases.length} phrase
-          {run.failedPhrases.length === 1 ? "" : "s"} failed for {speakerLabel}
+          {resolvePhrase("ui.provider.settings.voice_cache.failed", caregiverLang)
+            .replace("{count}", String(run.failedPhrases.length))
+            .replace("{plural}", run.failedPhrases.length === 1 ? "" : "s")
+            .replace("{label}", speakerLabel)}
         </span>
         <Btn
           onClick={() => audioCacheRunner.retryFailed(cfg, patientSpeakerData, speakerKey)}
-          aria-label="Retry failed voice cache phrases"
+          aria-label={resolvePhrase("ui.provider.settings.voice_cache.retry_aria", caregiverLang)}
           style={{
             ...CTRL_BTN,
             // red-600 gives 4.41:1 on the red-50 card (passes 3:1 non-text).
@@ -330,14 +345,14 @@ export function VoiceCacheProgress({
             color: "#991B1B",
           }}
         >
-          Retry
+          {resolvePhrase("ui.provider.settings.voice_cache.retry", caregiverLang)}
         </Btn>
         <Btn
           onClick={() => setConfirmingDiscard(true)}
-          aria-label={`Discard preparing ${speakerLabel}'s voice`}
+          aria-label={resolvePhrase("ui.provider.settings.voice_cache.discard_trigger_aria", caregiverLang).replace("{label}", speakerLabel)}
           style={DISCARD_OUTLINE}
         >
-          Discard
+          {resolvePhrase("ui.provider.settings.voice_cache.discard_confirm", caregiverLang)}
         </Btn>
       </div>
     );

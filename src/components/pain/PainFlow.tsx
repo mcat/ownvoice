@@ -3,6 +3,7 @@ import type { JSX } from "preact";
 import { Btn } from "../shared/Btn";
 import { getEmojiFPS, getPainDescriptors, getBodyRegions, composePainSentence, t as resolvePhrase } from "../../data/phraseRegistry";
 import type { PhraseKey } from "../../data/phraseRegistry";
+import { DualLocaleText } from "../shared/DualLocaleText";
 import { painColors } from "../../theme/tokens";
 import { useSettingsStore } from "../../stores/settingsStore";
 import type { ThemeTokens, ThemeName } from "../../theme/tokens";
@@ -18,10 +19,16 @@ interface PainFlowProps {
 
 const STEPS: Step[] = ["severity", "location", "descriptor"];
 
-const STEP_LABELS: Record<Step, string> = {
-  severity: "Severity",
-  location: "Location",
-  descriptor: "Describe",
+const STEP_LABEL_KEYS: Record<Step, PhraseKey> = {
+  severity: "pain.step.severity",
+  location: "pain.step.location",
+  descriptor: "pain.step.descriptor",
+};
+
+const STEP_HEADING_KEYS: Record<Step, PhraseKey> = {
+  severity: "ui.dual.pain.heading.severity",
+  location: "ui.dual.pain.heading.location",
+  descriptor: "ui.dual.pain.heading.descriptor",
 };
 
 export function PainFlow({ onSelect, t, theme, locale = "en" }: PainFlowProps) {
@@ -30,7 +37,10 @@ export function PainFlow({ onSelect, t, theme, locale = "en" }: PainFlowProps) {
   const [location, setLocation] = useState<PhraseKey | null>(null);
   // Single-slot hover key — only one tile is under the cursor at a time.
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
-  const assistive = useSettingsStore((s) => s.cfg?.assistiveInput === true);
+  const cfg = useSettingsStore((s) => s.cfg);
+  const patientLang = cfg?.patientLang ?? "en";
+  const caregiverLang = cfg?.caregiverLang ?? "en";
+  const assistive = cfg?.assistiveInput === true;
 
   const onTileEnter = (key: string) => (e: JSX.TargetedPointerEvent<HTMLButtonElement>) => {
     if (e.pointerType === "mouse") setHoveredKey(key);
@@ -105,7 +115,7 @@ export function PainFlow({ onSelect, t, theme, locale = "en" }: PainFlowProps) {
         class="font-sans"
         style={{ fontSize: 13, color: t.muted, marginBottom: 6 }}
       >
-        Step {currentIndex + 1} of {STEPS.length}
+        {resolvePhrase("ui.patient.pain.step_of", patientLang).replace("{n}", String(currentIndex + 1)).replace("{total}", String(STEPS.length))}
       </div>
       <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
         {STEPS.map((s, i) => {
@@ -132,7 +142,7 @@ export function PainFlow({ onSelect, t, theme, locale = "en" }: PainFlowProps) {
                   textAlign: "center",
                 }}
               >
-                {STEP_LABELS[s]}
+                {resolvePhrase(STEP_LABEL_KEYS[s], locale)}
               </div>
             </>
           );
@@ -151,7 +161,7 @@ export function PainFlow({ onSelect, t, theme, locale = "en" }: PainFlowProps) {
                   cursor: "pointer",
                   fontFamily: "inherit",
                 }}
-                aria-label={`Go back to ${STEP_LABELS[s]}`}
+                aria-label={resolvePhrase("ui.patient.pain.back_to", patientLang).replace("{label}", resolvePhrase(STEP_LABEL_KEYS[s], patientLang))}
               >
                 {content}
               </button>
@@ -190,8 +200,8 @@ export function PainFlow({ onSelect, t, theme, locale = "en" }: PainFlowProps) {
         }}
       >
         {breadcrumb}
-        <h2 class="font-sans" style={{ color: t.sub, fontSize: 18, fontWeight: 600, margin: "0 0 16px", flexShrink: 0 }}>
-          How much pain do you have?
+        <h2 class="font-sans" style={{ color: t.sub, margin: "0 0 16px", flexShrink: 0 }}>
+          <DualLocaleText variant="co-read" primaryKey="ui.dual.pain.heading.severity" primaryLocale={patientLang} glossLocale={caregiverLang} style={{ fontSize: 18, fontWeight: 600 }} />
         </h2>
         <div
           style={{
@@ -216,7 +226,7 @@ export function PainFlow({ onSelect, t, theme, locale = "en" }: PainFlowProps) {
               onClick={() => handleSeverity(face.n)}
               onPointerEnter={onTileEnter(key)}
               onPointerLeave={onTileLeave}
-              aria-label={`Pain level ${face.n}, ${resolvePhrase(face.labelKey, locale)}`}
+              aria-label={resolvePhrase("ui.patient.pain.level_aria", patientLang).replace("{n}", String(face.n)).replace("{label}", resolvePhrase(face.labelKey, patientLang))}
               style={{
                 display: "flex",
                 flexDirection: "column",
@@ -277,8 +287,8 @@ export function PainFlow({ onSelect, t, theme, locale = "en" }: PainFlowProps) {
         }}
       >
         {breadcrumb}
-        <h2 class="font-sans" style={{ color: t.sub, fontSize: 18, fontWeight: 600, margin: "0 0 16px", flexShrink: 0 }}>
-          Where is your pain?
+        <h2 class="font-sans" style={{ color: t.sub, margin: "0 0 16px", flexShrink: 0 }}>
+          <DualLocaleText variant="co-read" primaryKey="ui.dual.pain.heading.location" primaryLocale={patientLang} glossLocale={caregiverLang} style={{ fontSize: 18, fontWeight: 600 }} />
         </h2>
         <div
           style={{
@@ -349,8 +359,8 @@ export function PainFlow({ onSelect, t, theme, locale = "en" }: PainFlowProps) {
       }}
     >
       {breadcrumb}
-      <h2 class="font-sans" style={{ color: t.sub, fontSize: 18, fontWeight: 600, margin: "0 0 16px", flexShrink: 0 }}>
-        What does the pain feel like?
+      <h2 class="font-sans" style={{ color: t.sub, margin: "0 0 16px", flexShrink: 0 }}>
+        <DualLocaleText variant="co-read" primaryKey="ui.dual.pain.heading.descriptor" primaryLocale={patientLang} glossLocale={caregiverLang} style={{ fontSize: 18, fontWeight: 600 }} />
       </h2>
       <div
         style={{

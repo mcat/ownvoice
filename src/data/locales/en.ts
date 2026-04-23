@@ -463,9 +463,6 @@ const en = {
   "suggest.ctx.morning.please": "Please",
   "suggest.ctx.morning.tell_me": "Tell me",
 
-  // ── Emergency phrase ───────────────────────────────────────────
-  "emergency.help": "I need help",
-
   // ── Category labels (UI, not spoken but needed for i18n) ───────
   "cat.quick": "Quick",
   "cat.needs": "I Need",
@@ -483,6 +480,290 @@ const en = {
   "provider.cat.questions": "Questions",
   "provider.cat.directions": "Directions",
   "provider.cat.goals_of_care": "Goals of Care",
+
+  // ── UI chrome: App + Layout ────────────────────────────────────
+  "ui.patient.app.aria_label": "OwnVoice — {name} conversation",
+  "ui.patient.app.name_fallback": "Patient",
+  "ui.patient.header.name_fallback": "Patient",
+  "ui.patient.header.bed_prefix": "Bed ",
+  "ui.dual.nav.wishes": "Wishes",
+  "ui.provider.nav.listen": "Listen",
+  "ui.provider.nav.staff": "Staff",
+  "ui.provider.nav.settings": "Settings",
+  "ui.provider.nav.theme.auto": "Auto",
+  "ui.provider.nav.theme.light": "Light",
+  "ui.provider.nav.theme.dark": "Dark",
+  "ui.patient.tabbar.say_more": "Say More",
+
+  // ── UI chrome: PainFlow ────────────────────────────────────────
+  "ui.dual.pain.heading.severity": "How much pain do you have?",
+  "ui.dual.pain.heading.location": "Where is your pain?",
+  "ui.dual.pain.heading.descriptor": "What does the pain feel like?",
+  "ui.patient.pain.step_of": "Step {n} of {total}",
+  "ui.patient.pain.back_to": "Go back to {label}",
+  "ui.patient.pain.level_aria": "Pain level {n}, {label}",
+
+  // ── UI chrome: MyWishes ────────────────────────────────────────
+  "ui.patient.wishes.completion_title": "{name}'s Wishes",
+  "ui.patient.wishes.my_wishes": "My Wishes",
+  "ui.patient.wishes.step_of": "Step {n} of {total}",
+  "ui.patient.wishes.none_shared": "No wishes were shared.",
+  "ui.patient.wishes.share_all_again": "Share all wishes again",
+  "ui.patient.wishes.close": "Close",
+  "ui.patient.wishes.share": "Share",
+  "ui.patient.wishes.skip": "Skip",
+
+  // ── UI chrome: SentenceBuilder ─────────────────────────────────
+  "ui.patient.builder.placeholder": "Tap words below or type...",
+  "ui.patient.builder.message_aria": "Your message",
+  "ui.patient.builder.undo": "Undo last word",
+  "ui.patient.builder.clear": "Clear message",
+  "ui.patient.builder.refresh_ai": "Refresh AI suggestions",
+  "ui.patient.builder.ai_thinking": "AI is thinking...",
+  "ui.patient.builder.no_ai_suggestions": "No AI suggestions. Tap refresh to try again.",
+  "ui.patient.builder.ready": "Your message is ready. Tap Speak to send.",
+  "ui.patient.builder.speak": "Speak",
+
+  // ── UI chrome: Thread ──────────────────────────────────────────
+  "ui.dual.thread.repeat_aria": "Repeat: {text}",
+
+  // ── UI chrome: ProviderPanel ───────────────────────────────────
+  "ui.provider.care_team.title": "Care Team",
+  "ui.provider.fallback_name": "Provider",
+  "ui.provider.speaking_to": "Speaking to {name} as {prov}",
+  "ui.provider.patient_fallback": "patient",
+  "ui.provider.close_panel": "Close panel",
+  "ui.provider.select_provider": "Select {name}",
+  "ui.provider.show_category": "Show {key}",
+  "ui.provider.speak_phrase": "Speak: {phrase}",
+
+  // ── UI chrome: ListenPanel ─────────────────────────────────────
+  "ui.provider.listen.title": "Listen",
+  "ui.provider.listen.stop_aria": "Stop listening",
+  "ui.provider.listen.start_aria": "Tap to start listening",
+  "ui.provider.listen.listening": "Listening...",
+  "ui.provider.listen.transcribing": "Transcribing...",
+  "ui.provider.listen.listening_placeholder": "Listening for speech...",
+  "ui.provider.listen.transcribing_placeholder": "Transcribing speech...",
+  "ui.provider.listen.type_placeholder": "Or type what was said...",
+  "ui.provider.listen.transcript_aria": "Transcript",
+  "ui.provider.listen.add_as": "Add to conversation as {prov}",
+  "ui.provider.listen.privacy_notice": "On-device · Whisper · no audio leaves this device",
+
+  // ── UI chrome: Speaking overlay ────────────────────────────────
+  "ui.dual.speaking.aria_label": "Speaking: {text}",
+  "ui.dual.speaking.patient_voice": "Your voice",
+
+  // ── UI chrome: PinGate ─────────────────────────────────────────
+  "ui.provider.pin_gate.title": "Enter PIN",
+  "ui.provider.pin_gate.subtitle": "Staff access only",
+  "ui.provider.pin_gate.incorrect": "Incorrect PIN",
+  "ui.provider.pin_gate.delete_aria": "Delete",
+  "ui.provider.pin_gate.digit_aria": "Digit {n}",
+  "ui.provider.pin_gate.cancel": "Cancel",
+
+  // ── UI chrome: VoiceCapture ────────────────────────────────────
+  "ui.provider.voice_capture.coaching_intro": "You're about to read a sentence out loud.",
+  "ui.provider.voice_capture.coaching_breath": "Take a few deep breaths.",
+  "ui.provider.voice_capture.coaching_ready": "Ready.",
+  "ui.provider.voice_capture.breathe_in": "Breathe in…",
+  "ui.provider.voice_capture.breathe_out": "Breathe out…",
+  "ui.provider.voice_capture.creating": "Creating voice clone...",
+  "ui.provider.voice_capture.creating_from_sample": "Creating voice clone from sample...",
+  "ui.provider.voice_capture.loading_model": "Voice model loading...",
+  "ui.provider.voice_capture.clone_failed": "Clone failed",
+  "ui.provider.voice_capture.captured": "Voice captured",
+  "ui.provider.voice_capture.stop": "Stop",
+  "ui.provider.voice_capture.play": "Play",
+  "ui.provider.voice_capture.discard": "Discard recording",
+  "ui.provider.voice_capture.use_recording": "Use this recording",
+  "ui.provider.voice_capture.upload_file": "Upload file",
+  "ui.provider.voice_capture.record": "Record",
+  "ui.provider.voice_capture.stop_early": "Stop early",
+  "ui.provider.voice_capture.remove": "Remove",
+  "ui.provider.voice_capture.retry": "Retry",
+  "ui.provider.voice_capture.done": "Done!",
+  "ui.provider.voice_capture.cancel": "Cancel",
+  "ui.provider.voice_capture.seconds_recorded": "{n}s recorded",
+  "ui.provider.voice_capture.cancel_countdown_aria": "Cancel recording countdown",
+  "ui.provider.voice_capture.stop_early_aria": "Stop recording early",
+  "ui.provider.voice_capture.audio_level_aria": "Audio level",
+  "ui.provider.voice_capture.recording_progress_aria": "Recording progress",
+  "ui.provider.voice_capture.stop_preview_aria": "Stop preview playback",
+  "ui.provider.voice_capture.play_preview_aria": "Play recording preview",
+  "ui.provider.voice_capture.discard_aria": "Discard this recording and start over",
+  "ui.provider.voice_capture.stop_playback_aria": "Stop playback of recorded sample",
+  "ui.provider.voice_capture.play_sample_aria": "Play recorded voice sample",
+  "ui.provider.voice_capture.remove_aria": "Remove voice sample",
+  "ui.provider.voice_capture.retry_aria": "Retry voice clone extraction",
+  "ui.provider.voice_capture.upload_aria": "Upload voice sample from file",
+  "ui.provider.voice_capture.record_aria": "Record voice sample from microphone",
+  "ui.provider.voice_capture.err_network": "Couldn't reach the voice model. Check your connection, then tap Retry.",
+  "ui.provider.voice_capture.err_timeout": "Voice processing took too long. Tap Retry to try again.",
+  "ui.provider.voice_capture.err_mic_denied": "Microphone access is blocked. Enable it in your browser settings or upload a file instead.",
+  "ui.provider.voice_capture.err_generic": "We couldn't finish preparing your voice. Tap Retry to try again.",
+  "ui.provider.voice_capture.err_mic_denied_raw": "Microphone access denied. Try uploading a file instead.",
+  "ui.provider.voice_capture.err_playback": "Could not play audio.",
+
+  // ── UI chrome: FallbackVoicePicker ─────────────────────────────
+  "ui.provider.fallback_voice.enhanced_badge": "Enhanced",
+  "ui.provider.fallback_voice.enhanced_aria": "Enhanced neural voice",
+  "ui.provider.fallback_voice.on_device_badge": "On-device",
+  "ui.provider.fallback_voice.playing": "Playing...",
+  "ui.provider.fallback_voice.unavailable": "System voices are not available on this device.",
+  "ui.provider.fallback_voice.loading": "Loading available voices...",
+  "ui.provider.fallback_voice.hide_others": "Hide other voices",
+  "ui.provider.fallback_voice.more_voices": "More voices ({n})",
+
+  // ── UI chrome: Setup wizard ───────────────────────────────────
+  // Step labels (progress bar)
+  "ui.provider.setup.steps.patient": "Patient",
+  "ui.provider.setup.steps.voice": "Voice",
+  "ui.provider.setup.steps.care_team": "Care Team",
+  "ui.provider.setup.steps.confirm": "Confirm",
+
+  // Skip button + confirm dialog
+  "ui.provider.setup.skip": "Skip →",
+  "ui.provider.setup.skip_aria": "Skip setup",
+  "ui.provider.setup.skip_dialog.title": "Skip setup?",
+  "ui.provider.setup.skip_dialog.body": "You can finish this later in Settings.",
+  "ui.provider.setup.skip_dialog.confirm": "Skip setup",
+  "ui.provider.setup.skip_dialog.cancel": "Keep going",
+
+  // Navigation
+  "ui.provider.setup.back": "Back",
+  "ui.provider.setup.continue": "Continue",
+  "ui.provider.setup.start": "Start OwnVoice",
+
+  // Step 0: Patient info
+  "ui.provider.setup.step0.heading": "Welcome to OwnVoice",
+  "ui.provider.setup.step0.subhead": "Let's set up your communication board. Everything stays on this device.",
+  "ui.provider.setup.step0.name_label": "Patient name",
+  "ui.provider.setup.step0.name_placeholder": "First name or preferred name",
+  "ui.provider.setup.step0.bed_label": "Bed / Room",
+  "ui.provider.setup.step0.bed_placeholder": "e.g. 4B-12",
+  "ui.provider.setup.step0.language_label": "Language",
+
+  // Step 1: Voice sample
+  "ui.provider.setup.step1.heading": "Voice sample",
+  "ui.provider.setup.step1.body1": "Capture a voice sample so OwnVoice can speak in the patient's own voice. This step is optional.",
+  "ui.provider.setup.step1.body2": "Voice cloning runs entirely on-device. No audio leaves this tablet.",
+  "ui.provider.setup.step1.patient_label": "Patient",
+  "ui.provider.setup.step1.backup_voice_heading": "Backup voice",
+  "ui.provider.setup.step1.backup_voice_body1": "Choose a system voice to use while the voice clone loads, or if no sample is recorded. Tap a voice to hear a preview.",
+  "ui.provider.setup.step1.backup_voice_body2": "This uses your device's built-in text-to-speech.",
+
+  // Step 2: Care team
+  "ui.provider.setup.step2.heading": "Care team",
+  "ui.provider.setup.step2.body": "Add the providers who will be caring for this patient.",
+  "ui.provider.setup.step2.icon_label": "Icon",
+  "ui.provider.setup.step2.name_label": "Name",
+  "ui.provider.setup.step2.name_placeholder": "Dr. Smith, Nurse Jay...",
+  "ui.provider.setup.step2.add": "Add",
+
+  // Step 3: Confirm
+  "ui.provider.setup.step3.heading": "Ready to go",
+  "ui.provider.setup.step3.body": "Review your setup. You can change anything later in Settings.",
+  "ui.provider.setup.step3.summary.patient": "Patient",
+  "ui.provider.setup.step3.summary.bed": "Bed / Room",
+  "ui.provider.setup.step3.summary.language": "Language",
+  "ui.provider.setup.step3.summary.language_default": "English",
+  "ui.provider.setup.step3.summary.voice": "Voice",
+  "ui.provider.setup.step3.summary.care_team": "Care team",
+  "ui.provider.setup.step3.summary.not_set": "Not set",
+  "ui.provider.setup.step3.summary.captured": "Captured",
+  "ui.provider.setup.step3.summary.not_captured": "Not captured",
+  "ui.provider.setup.step3.summary.none_added": "None added",
+  "ui.provider.setup.step3.pin_label": "Staff PIN (optional)",
+  "ui.provider.setup.step3.pin_body": "Set a 4-digit PIN to protect provider settings.",
+  "ui.provider.setup.step3.pin_placeholder": "1234",
+
+  // ── UI chrome: Settings panel ─────────────────────────────────
+  "ui.provider.settings.title": "Settings",
+  "ui.provider.settings.done": "Done",
+  "ui.provider.settings.close_aria": "Close settings",
+
+  // ── UI chrome: VoiceCacheProgress ─────────────────────────────
+  "ui.provider.settings.voice_cache.discard_title": "Discard {label}'s voice preparation?",
+  "ui.provider.settings.voice_cache.discard_body": "Progress ({current} / {total} phrases) will be lost. The recorded voice sample itself is kept — you can restart preparation later.",
+  "ui.provider.settings.voice_cache.cancel": "Cancel",
+  "ui.provider.settings.voice_cache.cancel_aria": "Cancel and keep voice preparation",
+  "ui.provider.settings.voice_cache.discard_confirm": "Discard",
+  "ui.provider.settings.voice_cache.discard_confirm_aria": "Confirm discard voice preparation",
+  "ui.provider.settings.voice_cache.discard_trigger_aria": "Discard preparing {label}'s voice",
+  "ui.provider.settings.voice_cache.queued": "Queued — {label}'s voice will prepare next ({total} phrase{plural})",
+  "ui.provider.settings.voice_cache.preparing": "Preparing {label}'s voice… {current} / {total}",
+  "ui.provider.settings.voice_cache.paused": "Paused — {label}'s voice… {current} / {total}",
+  "ui.provider.settings.voice_cache.resume": "Resume",
+  "ui.provider.settings.voice_cache.resume_aria": "Resume preparing {label}'s voice",
+  "ui.provider.settings.voice_cache.pause": "Pause",
+  "ui.provider.settings.voice_cache.pause_aria": "Pause preparing {label}'s voice",
+  "ui.provider.settings.voice_cache.done": "Voice clone active — all {total} phrases ready in {label}'s voice",
+  "ui.provider.settings.voice_cache.failed": "{count} phrase{plural} failed for {label}",
+  "ui.provider.settings.voice_cache.retry": "Retry",
+  "ui.provider.settings.voice_cache.retry_aria": "Retry failed voice cache phrases",
+
+  // ── UI chrome: Settings — About section ───────────────────────
+  "ui.provider.settings.about.heading": "About",
+  "ui.provider.settings.about.subtitle": "In-patient AAC communication aid.",
+  "ui.provider.settings.about.attribution_1": "Pain scale: Emoji-FPS (Li et al., JMIR 2023) — CC-BY 4.0",
+  "ui.provider.settings.about.attribution_2": "Goals of care: SICG (Ariadne Labs) — CC-BY-NC-SA 4.0",
+  "ui.provider.settings.about.sw_cache_prefix": "SW cache:",
+
+  // ── UI chrome: Settings — Reset section ───────────────────────
+  "ui.provider.settings.reset.heading": "Reset",
+  "ui.provider.settings.reset.action_label": "Reset app for new patient",
+  "ui.provider.settings.reset.confirm_title": "Are you sure?",
+  "ui.provider.settings.reset.confirm_body": "This will erase all patient data, voice samples, conversation history, and provider settings. This cannot be undone.",
+  "ui.provider.settings.reset.confirm_destructive": "Reset everything",
+
+  // ── UI chrome: Settings — Accessibility section ───────────────
+  "ui.provider.settings.accessibility.heading": "Accessibility",
+  "ui.provider.settings.accessibility.toggle_label": "Assistive Input Mode",
+  "ui.provider.settings.accessibility.toggle_description": "Amplifies focus rings, lengthens tap debounce, and strengthens hover feedback for patients using a trackball, joystick, AssistiveTouch cursor, or switch.",
+  "ui.provider.settings.accessibility.pointer_hint_strong": "External pointer detected.",
+  "ui.provider.settings.accessibility.pointer_hint_body": "Consider enabling Assistive Input Mode for this patient.",
+
+  // ── UI chrome: Settings — Care Team section ───────────────────
+  "ui.provider.settings.care_team.heading": "Care Team",
+  "ui.provider.settings.care_team.empty": "No providers added yet.",
+
+  // ── UI chrome: Settings — Patient Information section ─────────
+  "ui.provider.settings.patient_info.heading": "Patient Information",
+  "ui.provider.settings.patient_info.name_label": "Name",
+  "ui.provider.settings.patient_info.bed_label": "Bed / Room",
+  "ui.provider.settings.patient_info.language_label": "Language",
+  "ui.provider.settings.patient_info.voice_label": "Voice",
+  "ui.provider.settings.patient_info.backup_voice_label": "Backup voice",
+  "ui.provider.settings.patient_info.backup_voice_body": "System voice used while the voice clone loads. Tap to preview.",
+
+  // ── UI chrome: Settings — Offline Readiness section ───────────
+  "ui.provider.settings.offline.heading": "Offline readiness",
+  "ui.provider.settings.offline.status_description": "Status of the AI models the app uses on-device for voice generation, suggestions, and speech recognition.",
+  "ui.provider.settings.offline.downloading": "Downloading models…",
+  "ui.provider.settings.offline.download_progress_aria": "Model download progress",
+  "ui.provider.settings.offline.all_ready": "All models ready",
+  "ui.provider.settings.offline.redownload_button": "Redownload models",
+  "ui.provider.settings.offline.already_up_to_date": "Already up to date",
+  "ui.provider.settings.offline.checking": "Checking…",
+  "ui.provider.settings.offline.verified": "✓ Models verified",
+  "ui.provider.settings.offline.check_button": "Check existing models",
+  "ui.provider.settings.offline.redownloading": "Redownloading…",
+  "ui.provider.settings.offline.force_redownload_button": "Force redownload all models",
+  "ui.provider.settings.offline.model_status_ready": "ready",
+  "ui.provider.settings.offline.model_status_downloading": "downloading…",
+  "ui.provider.settings.offline.model_status_needs_retry": "needs retry",
+  "ui.provider.settings.offline.last_verified_prefix": "Last verified: ",
+  "ui.provider.settings.offline.storage_prefix": "Storage: ",
+  "ui.provider.settings.offline.storage_of": " of ",
+  "ui.provider.settings.offline.storage_used": " used",
+  "ui.provider.settings.offline.storage_low": " — running low",
+  "ui.provider.settings.offline.clear_audio_cache": "Clear audio cache",
+  "ui.provider.settings.offline.clearing": "Clearing…",
+  "ui.provider.settings.offline.rebuilding": "Rebuilding: {current} / {total}",
+  "ui.provider.settings.offline.redownload_dialog.title": "Redownload all AI models?",
+  "ui.provider.settings.offline.redownload_dialog.body": "This will re-fetch roughly 1.7 GB. Voice synthesis keeps working through the refresh.",
+  "ui.provider.settings.offline.redownload_dialog.confirm": "Redownload",
 } as const;
 
 export type PhraseKey = keyof typeof en;

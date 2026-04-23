@@ -6,6 +6,7 @@ import { VoiceCapture } from "../../shared/VoiceCapture";
 import { FallbackVoicePicker } from "../../shared/FallbackVoicePicker";
 import { VoiceCacheProgress } from "../VoiceCacheProgress";
 import { useSettingsStore } from "../../../stores/settingsStore";
+import { t as resolvePhrase } from "../../../data/phraseRegistry";
 
 interface Props {
   cfg: AppSettings;
@@ -25,11 +26,12 @@ export function PatientInfoSection({
   theme,
 }: Props) {
   const isDark = theme === "dark";
+  const caregiverLang = useSettingsStore((s) => s.cfg?.caregiverLang ?? "en");
   const selectedLang = LANGS.find((l) => l.code === cfg.patientLang);
 
   return (
-    <Section label="Patient Information" t={t}>
-      <label htmlFor="settings-name" style={labelStyle(t)}>Name</label>
+    <Section label={resolvePhrase("ui.provider.settings.patient_info.heading", caregiverLang)} t={t}>
+      <label htmlFor="settings-name" style={labelStyle(t)}>{resolvePhrase("ui.provider.settings.patient_info.name_label", caregiverLang)}</label>
       <input
         id="settings-name"
         type="text"
@@ -38,7 +40,7 @@ export function PatientInfoSection({
         style={inputStyle(t, isDark)}
       />
 
-      <label htmlFor="settings-bed" style={{ ...labelStyle(t), marginTop: 16 }}>Bed / Room</label>
+      <label htmlFor="settings-bed" style={{ ...labelStyle(t), marginTop: 16 }}>{resolvePhrase("ui.provider.settings.patient_info.bed_label", caregiverLang)}</label>
       <input
         id="settings-bed"
         type="text"
@@ -48,14 +50,14 @@ export function PatientInfoSection({
       />
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 16 }}>
-        <span style={{ fontSize: 15, color: t.sub }}>Language</span>
+        <span style={{ fontSize: 15, color: t.sub }}>{resolvePhrase("ui.provider.settings.patient_info.language_label", caregiverLang)}</span>
         <span style={{ fontSize: 15, color: t.text, fontWeight: 500 }}>
           {selectedLang ? `${selectedLang.flag} ${selectedLang.label}` : cfg.patientLang}
         </span>
       </div>
 
       <div style={{ marginTop: 16 }}>
-        <div style={labelStyle(t)}>Voice</div>
+        <div style={labelStyle(t)}>{resolvePhrase("ui.provider.settings.patient_info.voice_label", caregiverLang)}</div>
         <VoiceCapture
           label="Patient"
           hasVoice={cfg.patientVoice}
@@ -94,9 +96,9 @@ export function PatientInfoSection({
       </div>
 
       <div style={{ marginTop: 20 }}>
-        <div style={labelStyle(t)}>Backup voice</div>
+        <div style={labelStyle(t)}>{resolvePhrase("ui.provider.settings.patient_info.backup_voice_label", caregiverLang)}</div>
         <p style={{ fontSize: 13, color: t.muted, margin: "0 0 10px" }}>
-          System voice used while the voice clone loads. Tap to preview.
+          {resolvePhrase("ui.provider.settings.patient_info.backup_voice_body", caregiverLang)}
         </p>
         <FallbackVoicePicker
           selectedVoice={cfg.fallbackVoice ?? null}

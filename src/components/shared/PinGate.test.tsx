@@ -1,6 +1,7 @@
 import { render, screen, fireEvent, act } from "@testing-library/preact";
 import { PinGate } from "./PinGate";
 import { light } from "../../theme/tokens";
+import { useSettingsStore } from "../../stores/settingsStore";
 
 const baseProps = {
   pin: "1234",
@@ -9,6 +10,19 @@ const baseProps = {
   t: light,
   theme: "light" as const,
 };
+
+beforeEach(() => {
+  useSettingsStore.setState({
+    cfg: {
+      patientName: "Patient",
+      bed: "1",
+      patientLang: "en",
+      caregiverLang: "en",
+      providers: [],
+    } as import("../../types").AppSettings,
+    _hasHydrated: true,
+  });
+});
 
 /** Click digit buttons to enter a PIN sequence.
  *  Advances fake timers 300ms between clicks to clear Btn debounce lockout. */

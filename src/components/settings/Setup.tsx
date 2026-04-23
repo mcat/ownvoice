@@ -6,6 +6,9 @@ import { Btn } from "../shared/Btn";
 import { VoiceCapture } from "../shared/VoiceCapture";
 import { FallbackVoicePicker } from "../shared/FallbackVoicePicker";
 import { useSettingsStore } from "../../stores/settingsStore";
+import { t as resolvePhrase } from "../../data/phraseRegistry";
+import type { PhraseKey } from "../../data/phraseRegistry";
+import { confirm } from "../shared/ConfirmDialog";
 
 const EMOJIS = [
   "\uD83D\uDC69\u200D\u2695\uFE0F", // woman health worker
@@ -22,7 +25,12 @@ const EMOJIS = [
   "\u2B50",                            // star
 ];
 
-const STEP_LABELS = ["Patient", "Voice", "Care Team", "Confirm"];
+const STEP_LABEL_KEYS: PhraseKey[] = [
+  "ui.provider.setup.steps.patient",
+  "ui.provider.setup.steps.voice",
+  "ui.provider.setup.steps.care_team",
+  "ui.provider.setup.steps.confirm",
+];
 const STEP_COLORS = ["#2563EB", "#7C3AED", "#059669", "#D97706"];
 
 function defaults(): AppSettings {
@@ -42,6 +50,7 @@ interface SetupProps {
 }
 
 export function Setup({ onDone }: SetupProps) {
+  const caregiverLang = useSettingsStore((s) => s.cfg?.caregiverLang ?? "en");
   const [step, setStep] = useState(0);
   const [name, setName] = useState("");
   const [bed, setBed] = useState("");
@@ -148,14 +157,18 @@ export function Setup({ onDone }: SetupProps) {
           OwnVoice
         </span>
         <button
-          onClick={() => {
+          onClick={async () => {
             // Confirm before discarding setup — otherwise a tremor-tap loses
             // everything (WCAG 3.3.6 AAA Error Prevention).
-            if (window.confirm("Skip setup? You can finish this later in Settings.")) {
-              finish();
-            }
+            const ok = await confirm({
+              title: resolvePhrase("ui.provider.setup.skip_dialog.title", caregiverLang),
+              body: resolvePhrase("ui.provider.setup.skip_dialog.body", caregiverLang),
+              confirmLabel: resolvePhrase("ui.provider.setup.skip_dialog.confirm", caregiverLang),
+              cancelLabel: resolvePhrase("ui.provider.setup.skip_dialog.cancel", caregiverLang),
+            });
+            if (ok) finish();
           }}
-          aria-label="Skip setup"
+          aria-label={resolvePhrase("ui.provider.setup.skip_aria", caregiverLang)}
           style={{
             background: "none",
             border: "none",
@@ -166,7 +179,7 @@ export function Setup({ onDone }: SetupProps) {
             fontFamily: "inherit",
           }}
         >
-          Skip &rarr;
+          {resolvePhrase("ui.provider.setup.skip", caregiverLang)}
         </button>
       </div>
 
@@ -181,7 +194,7 @@ export function Setup({ onDone }: SetupProps) {
           gap: 6,
         }}
       >
-        {STEP_LABELS.map((label, i) => (
+        {STEP_LABEL_KEYS.map((key, i) => (
           <div key={i} style={{ flex: 1 }} aria-current={i === step ? "step" : undefined}>
             <div
               style={{
@@ -200,7 +213,7 @@ export function Setup({ onDone }: SetupProps) {
                 textAlign: "center",
               }}
             >
-              {label}
+              {resolvePhrase(key, caregiverLang)}
             </div>
           </div>
         ))}
@@ -227,6 +240,7 @@ export function Setup({ onDone }: SetupProps) {
             setBed={setBed}
             lang={lang}
             setLang={setLang}
+            caregiverLang={caregiverLang}
           />
         )}
         {step === 1 && (
@@ -237,6 +251,7 @@ export function Setup({ onDone }: SetupProps) {
             fallbackVoice={fallbackVoice}
             setFallbackVoice={setFallbackVoice}
             lang={lang}
+            caregiverLang={caregiverLang}
           />
         )}
         {step === 2 && (
@@ -253,6 +268,7 @@ export function Setup({ onDone }: SetupProps) {
             toggleProviderVoice={toggleProviderVoice}
             setProviderEmbedding={setProviderEmbedding}
             lang={lang}
+            caregiverLang={caregiverLang}
           />
         )}
         {step === 3 && (
@@ -264,6 +280,7 @@ export function Setup({ onDone }: SetupProps) {
             providers={providers}
             pin={pin}
             setPin={setPin}
+            caregiverLang={caregiverLang}
           />
         )}
       </div>
@@ -299,7 +316,7 @@ export function Setup({ onDone }: SetupProps) {
               minHeight: 56,
             }}
           >
-            Back
+            {resolvePhrase("ui.provider.setup.back", caregiverLang)}
           </Btn>
         )}
         <Btn
@@ -317,7 +334,7 @@ export function Setup({ onDone }: SetupProps) {
             minHeight: 56,
           }}
         >
-          {step === 3 ? "Start OwnVoice" : "Continue"}
+          {step === 3 ? resolvePhrase("ui.provider.setup.start", caregiverLang) : resolvePhrase("ui.provider.setup.continue", caregiverLang)}
         </Btn>
       </div>
     </div>
@@ -333,6 +350,7 @@ function StepPatient({
   setBed,
   lang,
   setLang,
+  caregiverLang,
 }: {
   name: string;
   setName: (v: string) => void;
@@ -340,38 +358,39 @@ function StepPatient({
   setBed: (v: string) => void;
   lang: string;
   setLang: (v: string) => void;
+  caregiverLang: string;
 }) {
   return (
     <div>
       <h2 style={{ fontSize: 26, fontWeight: 700, color: "#1A1A1A", margin: "0 0 8px" }}>
-        Welcome to OwnVoice
+        {resolvePhrase("ui.provider.setup.step0.heading", caregiverLang)}
       </h2>
       <p style={{ fontSize: 16, color: "#4B5563", margin: "0 0 28px" }}>
-        Let's set up your communication board. Everything stays on this device.
+        {resolvePhrase("ui.provider.setup.step0.subhead", caregiverLang)}
       </p>
 
-      <label htmlFor="setup-name" style={labelStyle}>Patient name</label>
+      <label htmlFor="setup-name" style={labelStyle}>{resolvePhrase("ui.provider.setup.step0.name_label", caregiverLang)}</label>
       <input
         id="setup-name"
         type="text"
         value={name}
         onInput={(e) => setName((e.target as HTMLInputElement).value)}
-        placeholder="First name or preferred name"
+        placeholder={resolvePhrase("ui.provider.setup.step0.name_placeholder", caregiverLang)}
         style={inputStyle}
       />
 
-      <label htmlFor="setup-bed" style={{ ...labelStyle, marginTop: 20 }}>Bed / Room</label>
+      <label htmlFor="setup-bed" style={{ ...labelStyle, marginTop: 20 }}>{resolvePhrase("ui.provider.setup.step0.bed_label", caregiverLang)}</label>
       <input
         id="setup-bed"
         type="text"
         value={bed}
         onInput={(e) => setBed((e.target as HTMLInputElement).value)}
-        placeholder="e.g. 4B-12"
+        placeholder={resolvePhrase("ui.provider.setup.step0.bed_placeholder", caregiverLang)}
         style={inputStyle}
       />
 
       {/* "Language" labels a group of buttons, not a single input — use <div> */}
-      <div style={{ ...labelStyle, marginTop: 20 }}>Language</div>
+      <div style={{ ...labelStyle, marginTop: 20 }}>{resolvePhrase("ui.provider.setup.step0.language_label", caregiverLang)}</div>
       <div
         style={{
           display: "grid",
@@ -420,6 +439,7 @@ function StepVoice({
   fallbackVoice,
   setFallbackVoice,
   lang,
+  caregiverLang,
 }: {
   patientName: string;
   patientVoice: boolean;
@@ -427,22 +447,22 @@ function StepVoice({
   fallbackVoice: FallbackVoice | null;
   setFallbackVoice: (v: FallbackVoice | null) => void;
   lang: string;
+  caregiverLang: string;
 }) {
   return (
     <div>
       <h2 style={{ fontSize: 26, fontWeight: 700, color: "#1A1A1A", margin: "0 0 8px" }}>
-        Voice sample
+        {resolvePhrase("ui.provider.setup.step1.heading", caregiverLang)}
       </h2>
       <p style={{ fontSize: 16, color: "#4B5563", margin: "0 0 8px" }}>
-        Capture a voice sample so OwnVoice can speak in the patient's own voice.
-        This step is optional.
+        {resolvePhrase("ui.provider.setup.step1.body1", caregiverLang)}
       </p>
       <p style={{ fontSize: 14, color: "#4B5563", margin: "0 0 28px" }}>
-        Voice cloning runs entirely on-device. No audio leaves this tablet.
+        {resolvePhrase("ui.provider.setup.step1.body2", caregiverLang)}
       </p>
 
       <VoiceCapture
-        label="Patient"
+        label={resolvePhrase("ui.provider.setup.step1.patient_label", caregiverLang)}
         hasVoice={patientVoice}
         onCapture={(_blob, embedding) => {
           setPatientVoice(true);
@@ -454,14 +474,13 @@ function StepVoice({
 
       <div style={{ marginTop: 36 }}>
         <h3 style={{ fontSize: 20, fontWeight: 700, color: "#1A1A1A", margin: "0 0 8px" }}>
-          Backup voice
+          {resolvePhrase("ui.provider.setup.step1.backup_voice_heading", caregiverLang)}
         </h3>
         <p style={{ fontSize: 15, color: "#4B5563", margin: "0 0 6px" }}>
-          Choose a system voice to use while the voice clone loads, or if no
-          sample is recorded. Tap a voice to hear a preview.
+          {resolvePhrase("ui.provider.setup.step1.backup_voice_body1", caregiverLang)}
         </p>
         <p style={{ fontSize: 14, color: "#4B5563", margin: "0 0 16px" }}>
-          This uses your device's built-in text-to-speech.
+          {resolvePhrase("ui.provider.setup.step1.backup_voice_body2", caregiverLang)}
         </p>
 
         <FallbackVoicePicker
@@ -489,6 +508,7 @@ function StepCareTeam({
   toggleProviderVoice,
   setProviderEmbedding,
   lang,
+  caregiverLang,
 }: {
   providers: Provider[];
   newProvName: string;
@@ -502,14 +522,15 @@ function StepCareTeam({
   toggleProviderVoice: (index: number, hasVoice: boolean) => void;
   setProviderEmbedding: (index: number, embedding: unknown) => void;
   lang: string;
+  caregiverLang: string;
 }) {
   return (
     <div>
       <h2 style={{ fontSize: 26, fontWeight: 700, color: "#1A1A1A", margin: "0 0 8px" }}>
-        Care team
+        {resolvePhrase("ui.provider.setup.step2.heading", caregiverLang)}
       </h2>
       <p style={{ fontSize: 16, color: "#4B5563", margin: "0 0 28px" }}>
-        Add the providers who will be caring for this patient.
+        {resolvePhrase("ui.provider.setup.step2.body", caregiverLang)}
       </p>
 
       {/* Provider list */}
@@ -583,7 +604,7 @@ function StepCareTeam({
         <div style={{ display: "flex", gap: 10, alignItems: "flex-end" }}>
           {/* Emoji selector */}
           <div style={{ position: "relative" }}>
-            <div id="setup-provider-icon-label" style={{ ...labelStyle, fontSize: 13 }}>Icon</div>
+            <div id="setup-provider-icon-label" style={{ ...labelStyle, fontSize: 13 }}>{resolvePhrase("ui.provider.setup.step2.icon_label", caregiverLang)}</div>
             <button
               aria-labelledby="setup-provider-icon-label"
               onClick={() => setShowEmojiPicker(!showEmojiPicker)}
@@ -647,7 +668,7 @@ function StepCareTeam({
 
           {/* Name input */}
           <div style={{ flex: 1 }}>
-            <label htmlFor="setup-new-provider-name" style={{ ...labelStyle, fontSize: 13 }}>Name</label>
+            <label htmlFor="setup-new-provider-name" style={{ ...labelStyle, fontSize: 13 }}>{resolvePhrase("ui.provider.setup.step2.name_label", caregiverLang)}</label>
             <input
               id="setup-new-provider-name"
               type="text"
@@ -655,7 +676,7 @@ function StepCareTeam({
               onInput={(e) =>
                 setNewProvName((e.target as HTMLInputElement).value)
               }
-              placeholder="Dr. Smith, Nurse Jay..."
+              placeholder={resolvePhrase("ui.provider.setup.step2.name_placeholder", caregiverLang)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") addProvider();
               }}
@@ -680,7 +701,7 @@ function StepCareTeam({
               whiteSpace: "nowrap",
             }}
           >
-            Add
+            {resolvePhrase("ui.provider.setup.step2.add", caregiverLang)}
           </Btn>
         </div>
       </div>
@@ -698,6 +719,7 @@ function StepConfirm({
   providers,
   pin,
   setPin,
+  caregiverLang,
 }: {
   name: string;
   bed: string;
@@ -706,14 +728,15 @@ function StepConfirm({
   providers: Provider[];
   pin: string;
   setPin: (v: string) => void;
+  caregiverLang: string;
 }) {
   return (
     <div>
       <h2 style={{ fontSize: 26, fontWeight: 700, color: "#1A1A1A", margin: "0 0 8px" }}>
-        Ready to go
+        {resolvePhrase("ui.provider.setup.step3.heading", caregiverLang)}
       </h2>
       <p style={{ fontSize: 16, color: "#4B5563", margin: "0 0 28px" }}>
-        Review your setup. You can change anything later in Settings.
+        {resolvePhrase("ui.provider.setup.step3.body", caregiverLang)}
       </p>
 
       {/* Summary */}
@@ -726,26 +749,30 @@ function StepConfirm({
         }}
       >
         <SummaryRow
-          label="Patient"
-          value={name || "Not set"}
+          label={resolvePhrase("ui.provider.setup.step3.summary.patient", caregiverLang)}
+          value={name || resolvePhrase("ui.provider.setup.step3.summary.not_set", caregiverLang)}
           muted={!name}
         />
-        <SummaryRow label="Bed / Room" value={bed || "Not set"} muted={!bed} />
         <SummaryRow
-          label="Language"
-          value={lang ? `${lang.flag} ${lang.label}` : "English"}
+          label={resolvePhrase("ui.provider.setup.step3.summary.bed", caregiverLang)}
+          value={bed || resolvePhrase("ui.provider.setup.step3.summary.not_set", caregiverLang)}
+          muted={!bed}
         />
         <SummaryRow
-          label="Voice"
-          value={patientVoice ? "Captured" : "Not captured"}
+          label={resolvePhrase("ui.provider.setup.step3.summary.language", caregiverLang)}
+          value={lang ? `${lang.flag} ${lang.label}` : resolvePhrase("ui.provider.setup.step3.summary.language_default", caregiverLang)}
+        />
+        <SummaryRow
+          label={resolvePhrase("ui.provider.setup.step3.summary.voice", caregiverLang)}
+          value={patientVoice ? resolvePhrase("ui.provider.setup.step3.summary.captured", caregiverLang) : resolvePhrase("ui.provider.setup.step3.summary.not_captured", caregiverLang)}
           muted={!patientVoice}
         />
         <SummaryRow
-          label="Care team"
+          label={resolvePhrase("ui.provider.setup.step3.summary.care_team", caregiverLang)}
           value={
             providers.length > 0
               ? providers.map((p) => `${p.emoji ?? ""} ${p.name}`).join(", ")
-              : "None added"
+              : resolvePhrase("ui.provider.setup.step3.summary.none_added", caregiverLang)
           }
           muted={providers.length === 0}
           last
@@ -754,7 +781,7 @@ function StepConfirm({
 
       {/* PIN */}
       <div style={{ marginTop: 28 }}>
-        <label htmlFor="setup-pin" style={labelStyle}>Staff PIN (optional)</label>
+        <label htmlFor="setup-pin" style={labelStyle}>{resolvePhrase("ui.provider.setup.step3.pin_label", caregiverLang)}</label>
         <p
           style={{
             fontSize: 14,
@@ -762,7 +789,7 @@ function StepConfirm({
             margin: "4px 0 12px",
           }}
         >
-          Set a 4-digit PIN to protect provider settings.
+          {resolvePhrase("ui.provider.setup.step3.pin_body", caregiverLang)}
         </p>
         <input
           id="setup-pin"
@@ -774,7 +801,7 @@ function StepConfirm({
             const v = (e.target as HTMLInputElement).value.replace(/\D/g, "");
             setPin(v.slice(0, 4));
           }}
-          placeholder="1234"
+          placeholder={resolvePhrase("ui.provider.setup.step3.pin_placeholder", caregiverLang)}
           style={{
             ...inputStyle,
             maxWidth: 160,

@@ -2,6 +2,8 @@ import type { ComponentChildren, JSX } from "preact";
 import type { AppSettings } from "../../../types";
 import type { ThemeTokens } from "../../../theme/tokens";
 import { usePointerFine } from "../../../hooks/usePointerFine";
+import { t as resolvePhrase } from "../../../data/phraseRegistry";
+import { useSettingsStore } from "../../../stores/settingsStore";
 
 interface Props {
   cfg: AppSettings;
@@ -16,15 +18,16 @@ interface Props {
  * but never flip the toggle automatically. The clinician decides.
  */
 export function AccessibilitySection({ cfg, updateCfg, t }: Props) {
+  const caregiverLang = useSettingsStore((s) => s.cfg?.caregiverLang ?? "en");
   const enabled = cfg.assistiveInput === true;
   const pointerFine = usePointerFine();
   const showHint = pointerFine && !enabled;
 
   return (
-    <Section label="Accessibility" t={t}>
+    <Section label={resolvePhrase("ui.provider.settings.accessibility.heading", caregiverLang)} t={t}>
       <ToggleRow
-        label="Assistive Input Mode"
-        description="Amplifies focus rings, lengthens tap debounce, and strengthens hover feedback for patients using a trackball, joystick, AssistiveTouch cursor, or switch."
+        label={resolvePhrase("ui.provider.settings.accessibility.toggle_label", caregiverLang)}
+        description={resolvePhrase("ui.provider.settings.accessibility.toggle_description", caregiverLang)}
         checked={enabled}
         onChange={(next) => updateCfg({ assistiveInput: next })}
         t={t}
@@ -44,9 +47,9 @@ export function AccessibilitySection({ cfg, updateCfg, t }: Props) {
           }}
         >
           <strong style={{ color: t.text, fontWeight: 600 }}>
-            External pointer detected.
+            {resolvePhrase("ui.provider.settings.accessibility.pointer_hint_strong", caregiverLang)}
           </strong>{" "}
-          Consider enabling Assistive Input Mode for this patient.
+          {resolvePhrase("ui.provider.settings.accessibility.pointer_hint_body", caregiverLang)}
         </div>
       )}
     </Section>

@@ -1,5 +1,6 @@
 import { render, screen, fireEvent, waitFor, act } from "@testing-library/preact";
 import { Setup } from "./Setup";
+import { ConfirmDialogHost } from "../shared/ConfirmDialog";
 
 // Mock getModelManager to avoid model init side effects
 vi.mock("../../models/modelManager", () => ({
@@ -15,16 +16,22 @@ vi.mock("../../models/modelManager", () => ({
   }),
 }));
 
+/** Render Setup with ConfirmDialogHost so confirm() works. */
+function renderSetup(onDone: ReturnType<typeof vi.fn>) {
+  return render(
+    <>
+      <Setup onDone={onDone} />
+      <ConfirmDialogHost />
+    </>,
+  );
+}
+
 describe("Setup", () => {
   const onDone = vi.fn();
 
   beforeEach(() => {
     onDone.mockClear();
     vi.useFakeTimers();
-    // Skip button now gates behind window.confirm (WCAG 3.3.6 AAA).
-    // Default to accept so existing skip tests continue exercising the
-    // skip path; individual tests can override.
-    vi.spyOn(window, "confirm").mockReturnValue(true);
   });
 
   afterEach(() => {
@@ -33,7 +40,7 @@ describe("Setup", () => {
   });
 
   it("renders step 0 with patient name input and language selection", () => {
-    render(<Setup onDone={onDone} />);
+    renderSetup(onDone);
     expect(screen.getByText("Welcome to OwnVoice")).toBeInTheDocument();
     expect(screen.getByPlaceholderText("First name or preferred name")).toBeInTheDocument();
     expect(screen.getByPlaceholderText("e.g. 4B-12")).toBeInTheDocument();
@@ -42,15 +49,16 @@ describe("Setup", () => {
   });
 
   it("has a 4-step progress indicator with correct labels", () => {
-    render(<Setup onDone={onDone} />);
+    renderSetup(onDone);
     expect(screen.getByText("Patient")).toBeInTheDocument();
     expect(screen.getByText("Voice")).toBeInTheDocument();
     expect(screen.getByText("Care Team")).toBeInTheDocument();
     expect(screen.getByText("Confirm")).toBeInTheDocument();
   });
 
-  it("'Skip' calls onDone with default settings and entered name", () => {
-    render(<Setup onDone={onDone} />);
+  it("'Skip' opens confirm dialog and confirms to call onDone", async () => {
+    vi.useRealTimers();
+    renderSetup(onDone);
 
     // Enter a patient name
     const nameInput = screen.getByPlaceholderText("First name or preferred name");
@@ -60,7 +68,19 @@ describe("Setup", () => {
     const skipBtn = screen.getByText(/Skip/);
     fireEvent.click(skipBtn);
 
-    expect(onDone).toHaveBeenCalledOnce();
+    // Wait for the confirm dialog to appear
+    await waitFor(() => {
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
+    });
+    expect(screen.getByText("Skip setup?")).toBeInTheDocument();
+    expect(screen.getByText("You can finish this later in Settings.")).toBeInTheDocument();
+
+    // Click the confirm button in the dialog
+    fireEvent.click(screen.getByText("Skip setup"));
+
+    await waitFor(() => {
+      expect(onDone).toHaveBeenCalledOnce();
+    });
     expect(onDone).toHaveBeenCalledWith(
       expect.objectContaining({
         patientName: "Alice",
@@ -72,8 +92,31 @@ describe("Setup", () => {
     );
   });
 
+  it("'Skip' dialog cancel keeps setup open", async () => {
+    vi.useRealTimers();
+    renderSetup(onDone);
+
+    // Click "Skip →"
+    fireEvent.click(screen.getByText(/Skip/));
+
+    // Wait for the confirm dialog to appear
+    await waitFor(() => {
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
+    });
+
+    // Click "Keep going" (cancel)
+    fireEvent.click(screen.getByText("Keep going"));
+
+    // Dialog should close, setup should still be visible, onDone not called
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+    expect(onDone).not.toHaveBeenCalled();
+    expect(screen.getByText("Welcome to OwnVoice")).toBeInTheDocument();
+  });
+
   it("'Continue' advances through steps", () => {
-    render(<Setup onDone={onDone} />);
+    renderSetup(onDone);
 
     // Step 0 visible
     expect(screen.getByText("Welcome to OwnVoice")).toBeInTheDocument();
@@ -96,7 +139,7 @@ describe("Setup", () => {
   });
 
   it("Step 3 shows confirm summary with review text", () => {
-    render(<Setup onDone={onDone} />);
+    renderSetup(onDone);
 
     // Enter name first
     fireEvent.input(screen.getByPlaceholderText("First name or preferred name"), {
@@ -126,7 +169,7 @@ describe("Setup", () => {
   });
 
   it("Step 3 'Start OwnVoice' button calls onDone with gathered settings", () => {
-    render(<Setup onDone={onDone} />);
+    renderSetup(onDone);
 
     // Enter name
     fireEvent.input(screen.getByPlaceholderText("First name or preferred name"), {
@@ -156,7 +199,7 @@ describe("Setup", () => {
   });
 
   it("Back button appears on step 1+ and navigates backwards", () => {
-    render(<Setup onDone={onDone} />);
+    renderSetup(onDone);
 
     // Step 0 has no Back button
     expect(screen.queryByText("Back")).not.toBeInTheDocument();
@@ -176,19 +219,28 @@ describe("Setup", () => {
     expect(screen.getByText("Welcome to OwnVoice")).toBeInTheDocument();
   });
 
-  it("bed input updates the bed field in onDone", () => {
-    render(<Setup onDone={onDone} />);
+  it("bed input updates the bed field in onDone", async () => {
+    vi.useRealTimers();
+    renderSetup(onDone);
     fireEvent.input(screen.getByPlaceholderText("e.g. 4B-12"), {
       target: { value: "Room 5" },
     });
     fireEvent.click(screen.getByText(/Skip/));
-    expect(onDone).toHaveBeenCalledWith(
-      expect.objectContaining({ bed: "Room 5" }),
-    );
+    // Wait for confirm dialog
+    await waitFor(() => {
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText("Skip setup"));
+    await waitFor(() => {
+      expect(onDone).toHaveBeenCalledWith(
+        expect.objectContaining({ bed: "Room 5" }),
+      );
+    });
   });
 
-  it("language selection updates the chosen language", () => {
-    render(<Setup onDone={onDone} />);
+  it("language selection updates the chosen language", async () => {
+    vi.useRealTimers();
+    renderSetup(onDone);
 
     // Select Spanish
     fireEvent.click(screen.getByText("Español"));
@@ -196,17 +248,25 @@ describe("Setup", () => {
     // Skip to finish — should have Spanish language
     fireEvent.click(screen.getByText(/Skip/));
 
-    expect(onDone).toHaveBeenCalledWith(
-      expect.objectContaining({
-        patientLang: "es",
-      }),
-    );
+    // Wait for confirm dialog
+    await waitFor(() => {
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText("Skip setup"));
+
+    await waitFor(() => {
+      expect(onDone).toHaveBeenCalledWith(
+        expect.objectContaining({
+          patientLang: "es",
+        }),
+      );
+    });
   });
 
   /* ---------- Step 1: Voice ---------- */
   describe("Step 1 (Voice)", () => {
     function goToStep1() {
-      render(<Setup onDone={onDone} />);
+      renderSetup(onDone);
       fireEvent.click(screen.getByText("Continue"));
       vi.advanceTimersByTime(300);
     }
@@ -414,7 +474,7 @@ describe("Setup", () => {
   /* ---------- Step 2: Care Team ---------- */
   describe("Step 2 (Care Team)", () => {
     function goToStep2() {
-      render(<Setup onDone={onDone} />);
+      renderSetup(onDone);
       fireEvent.click(screen.getByText("Continue")); // → Step 1
       vi.advanceTimersByTime(300);
       fireEvent.click(screen.getByText("Continue")); // → Step 2
@@ -456,7 +516,7 @@ describe("Setup", () => {
       expect(screen.getByText("Nurse Jay")).toBeInTheDocument();
 
       // Remove it (✕ button)
-      fireEvent.click(screen.getByText("\u2715"));
+      fireEvent.click(screen.getByText("✕"));
       expect(screen.queryByText("Nurse Jay")).not.toBeInTheDocument();
     });
 
@@ -528,7 +588,7 @@ describe("Setup", () => {
   /* ---------- Step 3: Confirm ---------- */
   describe("Step 3 (Confirm)", () => {
     function goToStep3(enterName = true) {
-      render(<Setup onDone={onDone} />);
+      renderSetup(onDone);
       if (enterName) {
         fireEvent.input(
           screen.getByPlaceholderText("First name or preferred name"),
@@ -589,7 +649,7 @@ describe("Setup", () => {
     });
 
     it("shows provider names in summary when providers added", () => {
-      render(<Setup onDone={onDone} />);
+      renderSetup(onDone);
       // Enter name
       fireEvent.input(
         screen.getByPlaceholderText("First name or preferred name"),
@@ -616,7 +676,7 @@ describe("Setup", () => {
     });
 
     it("finish/skip flow includes provider hasVoice state", () => {
-      render(<Setup onDone={onDone} />);
+      renderSetup(onDone);
 
       // Go to step 2
       fireEvent.click(screen.getByText("Continue")); // → Step 1
@@ -651,7 +711,7 @@ describe("Setup", () => {
     });
 
     it("PIN entered is sent to onDone", () => {
-      render(<Setup onDone={onDone} />);
+      renderSetup(onDone);
       // Navigate to step 3
       fireEvent.click(screen.getByText("Continue")); // → Step 1
       vi.advanceTimersByTime(300);

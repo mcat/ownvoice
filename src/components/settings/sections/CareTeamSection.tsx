@@ -6,6 +6,7 @@ import { Btn } from "../../shared/Btn";
 import { VoiceCapture } from "../../shared/VoiceCapture";
 import { VoiceCacheProgress } from "../VoiceCacheProgress";
 import { useSettingsStore } from "../../../stores/settingsStore";
+import { t as resolvePhrase } from "../../../data/phraseRegistry";
 
 // Provider edits (add / remove / voice capture / voice remove) write directly
 // to the settings store instead of buffering through SettingsPanel's draft +
@@ -41,6 +42,7 @@ export function CareTeamSection({
   theme,
 }: Props) {
   const isDark = theme === "dark";
+  const caregiverLang = useSettingsStore((s) => s.cfg?.caregiverLang ?? "en");
   const providers = useSettingsStore((s) => s.cfg?.providers ?? []);
   const [newProvName, setNewProvName] = useState("");
   const [newProvEmoji, setNewProvEmoji] = useState(EMOJIS[0]);
@@ -87,10 +89,10 @@ export function CareTeamSection({
   }
 
   return (
-    <Section label="Care Team" t={t}>
+    <Section label={resolvePhrase("ui.provider.settings.care_team.heading", caregiverLang)} t={t}>
       {providers.length === 0 && (
         <p style={{ fontSize: 15, color: t.muted, margin: "0 0 12px" }}>
-          No providers added yet.
+          {resolvePhrase("ui.provider.settings.care_team.empty", caregiverLang)}
         </p>
       )}
 
@@ -165,7 +167,7 @@ export function CareTeamSection({
                 display: "block", fontSize: 12, fontWeight: 600, color: t.muted, marginBottom: 4,
               }}
             >
-              Icon
+              {resolvePhrase("ui.provider.setup.step2.icon_label", caregiverLang)}
             </div>
             <button
               aria-labelledby="new-provider-icon-label"
@@ -223,14 +225,14 @@ export function CareTeamSection({
                 display: "block", fontSize: 12, fontWeight: 600, color: t.muted, marginBottom: 4,
               }}
             >
-              Name
+              {resolvePhrase("ui.provider.setup.step2.name_label", caregiverLang)}
             </label>
             <input
               id="new-provider-name"
               type="text"
               value={newProvName}
               onInput={(e) => setNewProvName((e.target as HTMLInputElement).value)}
-              placeholder="Dr. Smith, Nurse Jay..."
+              placeholder={resolvePhrase("ui.provider.setup.step2.name_placeholder", caregiverLang)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") addProvider();
               }}
@@ -250,7 +252,7 @@ export function CareTeamSection({
               height: 44, whiteSpace: "nowrap",
             }}
           >
-            Add
+            {resolvePhrase("ui.provider.setup.step2.add", caregiverLang)}
           </Btn>
         </div>
       </div>

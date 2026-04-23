@@ -2,6 +2,8 @@ import { useState } from "preact/hooks";
 import type { JSX } from "preact";
 import type { Provider } from "../../types";
 import type { ThemeTokens, ThemeName } from "../../theme/tokens";
+import { t as resolvePhrase } from "../../data/phraseRegistry";
+import { useSettingsStore } from "../../stores/settingsStore";
 import { Btn } from "../shared/Btn";
 import { useMicrophone } from "../../hooks/useMicrophone";
 import { BottomSheet } from "../shared/BottomSheet";
@@ -30,6 +32,8 @@ export function ListenPanel({
   activeProvIdx,
   onSelectProvider,
 }: ListenPanelProps) {
+  const caregiverLang = useSettingsStore((s) => s.cfg?.caregiverLang ?? "en");
+
   const {
     isListening: listening,
     transcript: sttTranscript,
@@ -47,7 +51,7 @@ export function ListenPanel({
   const provider = providers[activeProvIdx] ?? providers[0];
   const providerLabel = provider
     ? `${provider.emoji ?? ""} ${provider.name}`.trim()
-    : "Provider";
+    : resolvePhrase("ui.provider.fallback_name", caregiverLang);
 
   const blue = theme === "dark" ? "#60A5FA" : "#2563EB";
   const providerGreen = "#059669";
@@ -147,8 +151,8 @@ export function ListenPanel({
   return (
     <BottomSheet onClose={onClose} t={t}>
       <BottomSheet.Header>
-        <BottomSheet.Title>Listen</BottomSheet.Title>
-        <BottomSheet.CloseButton aria-label="Close panel" />
+        <BottomSheet.Title>{resolvePhrase("ui.provider.listen.title", caregiverLang)}</BottomSheet.Title>
+        <BottomSheet.CloseButton aria-label={resolvePhrase("ui.provider.close_panel", caregiverLang)} />
       </BottomSheet.Header>
 
       <BottomSheet.Body>
@@ -159,7 +163,7 @@ export function ListenPanel({
                 key={idx}
                 onClick={() => onSelectProvider(idx)}
                 style={chipStyle(idx === activeProvIdx)}
-                aria-label={`Select ${prov.name}`}
+                aria-label={resolvePhrase("ui.provider.select_provider", caregiverLang).replace("{name}", prov.name)}
                 aria-pressed={idx === activeProvIdx}
               >
                 {prov.emoji ? `${prov.emoji} ` : ""}
@@ -170,7 +174,7 @@ export function ListenPanel({
         ) : (
           <div style={singleProvStyle}>
             {provider?.emoji ? `${provider.emoji} ` : ""}
-            {provider?.name ?? "Provider"}
+            {provider?.name ?? resolvePhrase("ui.provider.fallback_name", caregiverLang)}
           </div>
         )}
 
@@ -185,12 +189,12 @@ export function ListenPanel({
               }
             }}
             style={micBtnStyle}
-            aria-label={listening ? "Stop listening" : "Tap to start listening"}
+            aria-label={listening ? resolvePhrase("ui.provider.listen.stop_aria", caregiverLang) : resolvePhrase("ui.provider.listen.start_aria", caregiverLang)}
           >
             🎙
           </Btn>
           <div style={{ fontSize: 13, color: t.muted, marginTop: 10 }}>
-            {listening ? "Listening..." : transcribing ? "Transcribing..." : "Tap to start listening"}
+            {listening ? resolvePhrase("ui.provider.listen.listening", caregiverLang) : transcribing ? resolvePhrase("ui.provider.listen.transcribing", caregiverLang) : resolvePhrase("ui.provider.listen.start_aria", caregiverLang)}
           </div>
           {micError && (
             <div
@@ -212,21 +216,21 @@ export function ListenPanel({
           style={textareaStyle}
           value={transcript}
           onInput={(e) => setEditedTranscript((e.target as HTMLTextAreaElement).value)}
-          placeholder={listening ? "Listening for speech..." : transcribing ? "Transcribing speech..." : "Or type what was said..."}
-          aria-label="Transcript"
+          placeholder={listening ? resolvePhrase("ui.provider.listen.listening_placeholder", caregiverLang) : transcribing ? resolvePhrase("ui.provider.listen.transcribing_placeholder", caregiverLang) : resolvePhrase("ui.provider.listen.type_placeholder", caregiverLang)}
+          aria-label={resolvePhrase("ui.provider.listen.transcript_aria", caregiverLang)}
         />
 
         <Btn
           onClick={handleSubmit}
           disabled={!canSubmit}
           style={submitBtnStyle}
-          aria-label={`Add to conversation as ${providerLabel}`}
+          aria-label={resolvePhrase("ui.provider.listen.add_as", caregiverLang).replace("{prov}", providerLabel)}
         >
-          Add to conversation as {providerLabel}
+          {resolvePhrase("ui.provider.listen.add_as", caregiverLang).replace("{prov}", providerLabel)}
         </Btn>
 
         <div style={{ fontSize: 12, color: t.muted, textAlign: "center", marginTop: 14 }}>
-          On-device &middot; Whisper &middot; no audio leaves this device
+          {resolvePhrase("ui.provider.listen.privacy_notice", caregiverLang)}
         </div>
       </BottomSheet.Body>
     </BottomSheet>
