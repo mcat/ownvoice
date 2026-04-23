@@ -9,6 +9,7 @@ import { useSettingsStore } from "../../stores/settingsStore";
 import { t as resolvePhrase } from "../../data/phraseRegistry";
 import type { PhraseKey } from "../../data/phraseRegistry";
 import { confirm } from "../shared/ConfirmDialog";
+import * as audioCacheRunner from "../../models/audioCacheRunner";
 
 const EMOJIS = [
   "\uD83D\uDC69\u200D\u2695\uFE0F", // woman health worker
@@ -69,9 +70,11 @@ interface SetupProps {
   onFirstRunDone?: (cfg: AppSettings) => void;
   /** Called when the add-patient flow completes with the new Patient. */
   onAddPatientDone?: (patient: Patient) => void;
+  /** Called when the user cancels the add-patient flow (via Skip). */
+  onCancel?: () => void;
 }
 
-export function Setup({ mode = "first-run", onFirstRunDone, onAddPatientDone }: SetupProps) {
+export function Setup({ mode = "first-run", onFirstRunDone, onAddPatientDone, onCancel }: SetupProps) {
   const isAddPatient = mode === "add-patient";
   const stepLabelKeys = isAddPatient ? ADD_PATIENT_STEP_KEYS : FIRST_RUN_STEP_KEYS;
   const stepColors = isAddPatient ? ADD_PATIENT_STEP_COLORS : FIRST_RUN_STEP_COLORS;
@@ -112,6 +115,7 @@ export function Setup({ mode = "first-run", onFirstRunDone, onAddPatientDone }: 
 
   function finish() {
     if (isAddPatient) {
+      audioCacheRunner.pauseAll();
       const patient = useSettingsStore.getState().addPatient({
         name,
         bed,
@@ -226,13 +230,22 @@ export function Setup({ mode = "first-run", onFirstRunDone, onAddPatientDone }: 
           onClick={async () => {
             // Confirm before discarding setup — otherwise a tremor-tap loses
             // everything (WCAG 3.3.6 AAA Error Prevention).
+            const bodyKey = isAddPatient
+              ? "ui.provider.setup.skip_dialog.body_add_patient" as const
+              : "ui.provider.setup.skip_dialog.body" as const;
             const ok = await confirm({
               title: resolvePhrase("ui.provider.setup.skip_dialog.title", caregiverLang),
-              body: resolvePhrase("ui.provider.setup.skip_dialog.body", caregiverLang),
+              body: resolvePhrase(bodyKey, caregiverLang),
               confirmLabel: resolvePhrase("ui.provider.setup.skip_dialog.confirm", caregiverLang),
               cancelLabel: resolvePhrase("ui.provider.setup.skip_dialog.cancel", caregiverLang),
             });
-            if (ok) finish();
+            if (ok) {
+              if (isAddPatient) {
+                onCancel?.();
+              } else {
+                finish();
+              }
+            }
           }}
           aria-label={resolvePhrase("ui.provider.setup.skip_aria", caregiverLang)}
           style={{

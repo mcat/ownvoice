@@ -5,6 +5,7 @@ import { light } from "../../../theme/tokens";
 import { useSettingsStore } from "../../../stores/settingsStore";
 import { useConversationStore } from "../../../stores/conversationStore";
 import { useAudioCacheStore } from "../../../stores/audioCacheStore";
+import { useUIStore } from "../../../stores/uiStore";
 import { makeTestCfg } from "../../../test/makeCfg";
 import type { Patient } from "../../../types";
 
@@ -79,6 +80,7 @@ function renderSection() {
 
 beforeEach(() => {
   setupStore();
+  useUIStore.getState().resetUI();
   vi.mocked(removePatientHashes).mockClear();
 });
 
@@ -224,14 +226,13 @@ describe("PatientsSection", () => {
     expect(removeButtons[0]).toBeDisabled();
   });
 
-  it("+ Add Patient button is disabled with hint", () => {
+  it("+ Add Patient tap opens addPatient overlay", () => {
     renderSection();
     const addBtn = screen.getByRole("button", { name: /\+ Add Patient/i });
-    expect(addBtn).toBeDisabled();
-    const hintId = addBtn.getAttribute("aria-describedby");
-    expect(hintId).toBeTruthy();
-    const hintEl = document.getElementById(hintId!);
-    expect(hintEl).toBeInTheDocument();
-    expect(hintEl!.textContent).toMatch(/Available in the next release/);
+    expect(addBtn).not.toBeDisabled();
+
+    fireEvent.click(addBtn);
+
+    expect(useUIStore.getState().addPatientOpen).toBe(true);
   });
 });

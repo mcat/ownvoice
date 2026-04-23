@@ -74,6 +74,7 @@ export function App() {
   const settingsOpen = useUIStore((s) => s.settingsOpen);
   const pinEntryOpen = useUIStore((s) => s.pinEntryOpen);
   const switchSheetOpen = useUIStore((s) => s.switchSheetOpen);
+  const addPatientOpen = useUIStore((s) => s.addPatientOpen);
   const activeProvIdx = useUIStore((s) => s.activeProvIdx);
   const speaking = useUIStore((s) => s.speaking);
   const setSpeaking = useUIStore((s) => s.setSpeaking);
@@ -475,6 +476,16 @@ export function App() {
           onClose={() => closeOverlay("switch")}
           t={t}
           theme={theme}
+        />
+      )}
+
+      {addPatientOpen && (
+        <Setup
+          mode="add-patient"
+          onAddPatientDone={() => {
+            closeOverlay("addPatient");
+          }}
+          onCancel={() => closeOverlay("addPatient")}
         />
       )}
 

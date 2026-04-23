@@ -2,6 +2,14 @@ import { render, screen, fireEvent, waitFor, act } from "@testing-library/preact
 import { Setup } from "./Setup";
 import { ConfirmDialogHost } from "../shared/ConfirmDialog";
 import { useSettingsStore } from "../../stores/settingsStore";
+import * as audioCacheRunner from "../../models/audioCacheRunner";
+
+vi.mock("../../models/audioCacheRunner", () => ({
+  pauseAll: vi.fn(),
+  runPreGeneration: vi.fn(),
+  retryFailed: vi.fn(),
+  abort: vi.fn(),
+}));
 
 // Mock getModelManager to avoid model init side effects
 vi.mock("../../models/modelManager", () => ({
@@ -30,11 +38,16 @@ function renderSetup(onDone: ReturnType<typeof vi.fn>) {
 /** Render Setup in add-patient mode. */
 function renderAddPatient(
   onAddPatientDone: ReturnType<typeof vi.fn>,
-  onFirstRunDone?: ReturnType<typeof vi.fn>,
+  opts?: { onFirstRunDone?: ReturnType<typeof vi.fn>; onCancel?: ReturnType<typeof vi.fn> },
 ) {
   return render(
     <>
-      <Setup mode="add-patient" onAddPatientDone={onAddPatientDone} onFirstRunDone={onFirstRunDone} />
+      <Setup
+        mode="add-patient"
+        onAddPatientDone={onAddPatientDone}
+        onFirstRunDone={opts?.onFirstRunDone}
+        onCancel={opts?.onCancel}
+      />
       <ConfirmDialogHost />
     </>,
   );
@@ -870,7 +883,7 @@ describe("Setup", () => {
 
     it("onFirstRunDone is NOT called in add-patient mode", () => {
       const onFirstRun = vi.fn();
-      renderAddPatient(onAddDone, onFirstRun);
+      renderAddPatient(onAddDone, { onFirstRunDone: onFirstRun });
 
       // Navigate to confirm and finish
       fireEvent.click(screen.getByText("Continue")); // → Voice
@@ -881,6 +894,52 @@ describe("Setup", () => {
 
       expect(onFirstRun).not.toHaveBeenCalled();
       expect(onAddDone).toHaveBeenCalledOnce();
+    });
+
+    it("finish calls pauseAll before addPatient", () => {
+      vi.mocked(audioCacheRunner.pauseAll).mockReset();
+      renderAddPatient(onAddDone);
+
+      // Navigate through and finish
+      fireEvent.click(screen.getByText("Continue")); // → Voice
+      vi.advanceTimersByTime(300);
+      fireEvent.click(screen.getByText("Continue")); // → Confirm
+      vi.advanceTimersByTime(300);
+      fireEvent.click(screen.getByText("Start OwnVoice"));
+
+      expect(audioCacheRunner.pauseAll).toHaveBeenCalledOnce();
+      expect(onAddDone).toHaveBeenCalledOnce();
+    });
+
+    it("Skip in add-patient mode calls onCancel (not onAddPatientDone)", async () => {
+      vi.useRealTimers();
+      const onCancel = vi.fn();
+      vi.mocked(audioCacheRunner.pauseAll).mockReset();
+      renderAddPatient(onAddDone, { onCancel });
+
+      // Click Skip
+      fireEvent.click(screen.getByText(/Skip/));
+
+      // Confirm dialog appears with add-patient body text
+      await waitFor(() => {
+        expect(screen.getByRole("dialog")).toBeInTheDocument();
+      });
+      expect(screen.getByText("No patient will be added.")).toBeInTheDocument();
+
+      // Confirm skip
+      const dialog = screen.getByRole("dialog");
+      const dialogConfirmBtns = dialog.querySelectorAll("button");
+      const dialogConfirm = Array.from(dialogConfirmBtns).find(
+        (btn) => btn.textContent === "Skip setup",
+      )!;
+      fireEvent.click(dialogConfirm);
+
+      await waitFor(() => {
+        expect(onCancel).toHaveBeenCalledOnce();
+      });
+      expect(onAddDone).not.toHaveBeenCalled();
+      // pauseAll should NOT be called on skip — no patient is being added
+      expect(audioCacheRunner.pauseAll).not.toHaveBeenCalled();
     });
   });
 });

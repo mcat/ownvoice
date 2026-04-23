@@ -9,6 +9,7 @@ import { useAudioCacheStore } from "../../../stores/audioCacheStore";
 import { removePatientHashes } from "../../../stores/patientIndex";
 import { LANGS } from "../../../data/phrases";
 import { t as resolvePhrase } from "../../../data/phraseRegistry";
+import { useUIStore } from "../../../stores/uiStore";
 import type { Patient } from "../../../types";
 
 interface Props {
@@ -28,8 +29,6 @@ export function PatientsSection({ t, theme }: Props) {
   const activePatientId = useSettingsStore((s) => s.cfg?.activePatientId ?? null);
 
   const providerColor = isDark ? colors.provider.dark : colors.provider.light;
-
-  const addHintId = "patients-section-add-hint";
 
   async function handleRemove(patient: Patient) {
     const ok = await confirm({
@@ -74,8 +73,7 @@ export function PatientsSection({ t, theme }: Props) {
     fontFamily: "inherit",
     color: t.muted,
     background: t.activeBg,
-    cursor: "not-allowed",
-    opacity: 0.6,
+    cursor: "pointer",
     padding: "12px 16px",
     width: "100%",
   };
@@ -90,21 +88,14 @@ export function PatientsSection({ t, theme }: Props) {
 
   return (
     <Section label={resolvePhrase("ui.provider.settings.patients.title", caregiverLang)} t={t}>
-      {/* + Add Patient — disabled for PR A */}
+      {/* + Add Patient */}
       <button
         type="button"
-        disabled
-        aria-describedby={addHintId}
+        onClick={() => useUIStore.getState().openOverlay("addPatient")}
         style={addCardStyle}
       >
         {resolvePhrase("ui.provider.settings.patients.add_patient", caregiverLang)}
       </button>
-      <span
-        id={addHintId}
-        style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)" }}
-      >
-        {resolvePhrase("ui.provider.settings.patients.add_patient_disabled_hint", caregiverLang)}
-      </span>
 
       {patients.map((patient, i) => {
         const isActive = patient.id === activePatientId;

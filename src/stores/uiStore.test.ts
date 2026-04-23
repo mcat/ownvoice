@@ -27,6 +27,7 @@ describe("useUIStore", () => {
       expect(s.settingsOpen).toBe(false);
       expect(s.pinEntryOpen).toBe(false);
       expect(s.switchSheetOpen).toBe(false);
+      expect(s.addPatientOpen).toBe(false);
     });
 
     it("has speaking=null", () => {
@@ -87,6 +88,7 @@ describe("useUIStore", () => {
       ["settings", "settingsOpen"],
       ["pinEntry", "pinEntryOpen"],
       ["switch", "switchSheetOpen"],
+      ["addPatient", "addPatientOpen"],
     ] as const;
 
     for (const [name, key] of overlays) {
@@ -112,6 +114,7 @@ describe("useUIStore", () => {
       openOverlay("settings");
       openOverlay("pinEntry");
       openOverlay("switch");
+      openOverlay("addPatient");
 
       closeAllOverlays();
 
@@ -122,6 +125,7 @@ describe("useUIStore", () => {
       expect(s.settingsOpen).toBe(false);
       expect(s.pinEntryOpen).toBe(false);
       expect(s.switchSheetOpen).toBe(false);
+      expect(s.addPatientOpen).toBe(false);
     });
   });
 
@@ -213,6 +217,7 @@ describe("useUIStore", () => {
       expect(after.settingsOpen).toBe(false);
       expect(after.pinEntryOpen).toBe(false);
       expect(after.switchSheetOpen).toBe(false);
+      expect(after.addPatientOpen).toBe(false);
       expect(after.activeProvIdx).toBe(0);
       expect(after.speaking).toBeNull();
     });

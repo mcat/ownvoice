@@ -9,6 +9,7 @@ import { LANGS } from "../../data/phrases";
 import { t as resolvePhrase } from "../../data/phraseRegistry";
 import * as audioCacheRunner from "../../models/audioCacheRunner";
 import type { Patient } from "../../types";
+import { useUIStore } from "../../stores/uiStore";
 import { useStaffActivityBump } from "../../hooks/useStaffActivityBump";
 
 export interface SwitchSheetProps {
@@ -56,7 +57,6 @@ export function SwitchSheet({ open, onClose, t: tokens, theme }: SwitchSheetProp
 
   // Announcement for screen readers
   const [announcement, setAnnouncement] = useState("");
-  const addHintId = "switch-sheet-add-hint";
 
   useEffect(() => {
     if (focusedIndex >= 0 && focusedIndex < sorted.length) {
@@ -137,8 +137,7 @@ export function SwitchSheet({ open, onClose, t: tokens, theme }: SwitchSheetProp
     fontFamily: "inherit",
     color: tokens.muted,
     background: tokens.activeBg,
-    cursor: "not-allowed",
-    opacity: 0.6,
+    cursor: "pointer",
     padding: "12px 16px",
     width: "100%",
   };
@@ -163,21 +162,17 @@ export function SwitchSheet({ open, onClose, t: tokens, theme }: SwitchSheetProp
           <BottomSheet.CloseButton aria-label="Close" />
         </BottomSheet.Header>
         <BottomSheet.Body>
-        {/* + Add Patient card — disabled for PR A */}
+        {/* + Add Patient card */}
         <button
           type="button"
-          disabled
-          aria-describedby={addHintId}
+          onClick={() => {
+            onClose();
+            useUIStore.getState().openOverlay("addPatient");
+          }}
           style={addCardStyle}
         >
           {resolvePhrase("ui.provider.switch.add_patient", caregiverLang)}
         </button>
-        <span
-          id={addHintId}
-          style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)" }}
-        >
-          {resolvePhrase("ui.provider.switch.add_patient_disabled_hint", caregiverLang)}
-        </span>
 
         {/* Patient list */}
         {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
