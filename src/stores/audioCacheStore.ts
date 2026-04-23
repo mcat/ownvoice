@@ -9,7 +9,10 @@ import { create } from "zustand";
  * this would risk drift from disk state.
  */
 
-export type SpeakerKey = "patient" | "patient:pain" | `provider:${number}`;
+export type SpeakerKey =
+  | `patient:${string}`
+  | `patient:${string}:pain`
+  | `provider:${number}`;
 
 export type RunStatus =
   | "idle"
@@ -78,6 +81,8 @@ interface AudioCacheState {
   pauseAllRuns: () => void;
   /** Drop just this speaker's run from state (for discard). */
   discard: (key: SpeakerKey) => void;
+  /** Drop all runs whose key belongs to the given patient (base + :pain). */
+  discardByPatientId: (patientId: string) => void;
   /** Drop all runs and clear the active key. */
   abortAll: () => void;
 }
@@ -180,6 +185,23 @@ export const useAudioCacheStore = create<AudioCacheState>()((set) => ({
       return {
         runs,
         activeKey: s.activeKey === key ? null : s.activeKey,
+      };
+    }),
+
+  discardByPatientId: (patientId) =>
+    set((s) => {
+      const prefix = `patient:${patientId}`;
+      const runs: Partial<Record<SpeakerKey, RunState>> = { ...s.runs };
+      let clearActive = false;
+      for (const k of Object.keys(runs) as SpeakerKey[]) {
+        if (k === prefix || k.startsWith(`${prefix}:`)) {
+          if (s.activeKey === k) clearActive = true;
+          delete runs[k];
+        }
+      }
+      return {
+        runs,
+        activeKey: clearActive ? null : s.activeKey,
       };
     }),
 
