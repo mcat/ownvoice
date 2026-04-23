@@ -677,6 +677,62 @@ const en = {
   "ui.provider.setup.step3.pin_label": "Staff PIN (optional)",
   "ui.provider.setup.step3.pin_body": "Set a 4-digit PIN to protect provider settings.",
   "ui.provider.setup.step3.pin_placeholder": "1234",
+
+  // ── UI chrome: Settings panel ─────────────────────────────────
+  "ui.provider.settings.title": "Settings",
+  "ui.provider.settings.done": "Done",
+  "ui.provider.settings.close_aria": "Close settings",
+
+  // ── UI chrome: VoiceCacheProgress ─────────────────────────────
+  "ui.provider.settings.voice_cache.discard_title": "Discard {label}'s voice preparation?",
+  "ui.provider.settings.voice_cache.discard_body": "Progress ({current} / {total} phrases) will be lost. The recorded voice sample itself is kept — you can restart preparation later.",
+  "ui.provider.settings.voice_cache.cancel": "Cancel",
+  "ui.provider.settings.voice_cache.cancel_aria": "Cancel and keep voice preparation",
+  "ui.provider.settings.voice_cache.discard_confirm": "Discard",
+  "ui.provider.settings.voice_cache.discard_confirm_aria": "Confirm discard voice preparation",
+  "ui.provider.settings.voice_cache.discard_trigger_aria": "Discard preparing {label}'s voice",
+  "ui.provider.settings.voice_cache.queued": "Queued — {label}'s voice will prepare next ({total} phrase{plural})",
+  "ui.provider.settings.voice_cache.preparing": "Preparing {label}'s voice… {current} / {total}",
+  "ui.provider.settings.voice_cache.paused": "Paused — {label}'s voice… {current} / {total}",
+  "ui.provider.settings.voice_cache.resume": "Resume",
+  "ui.provider.settings.voice_cache.resume_aria": "Resume preparing {label}'s voice",
+  "ui.provider.settings.voice_cache.pause": "Pause",
+  "ui.provider.settings.voice_cache.pause_aria": "Pause preparing {label}'s voice",
+  "ui.provider.settings.voice_cache.done": "Voice clone active — all {total} phrases ready in {label}'s voice",
+  "ui.provider.settings.voice_cache.failed": "{count} phrase{plural} failed for {label}",
+  "ui.provider.settings.voice_cache.retry": "Retry",
+  "ui.provider.settings.voice_cache.retry_aria": "Retry failed voice cache phrases",
+
+  // ── UI chrome: Settings — About section ───────────────────────
+  "ui.provider.settings.about.heading": "About",
+  "ui.provider.settings.about.subtitle": "In-patient AAC communication aid.",
+  "ui.provider.settings.about.attribution_1": "Pain scale: Emoji-FPS (Li et al., JMIR 2023) — CC-BY 4.0",
+  "ui.provider.settings.about.attribution_2": "Goals of care: SICG (Ariadne Labs) — CC-BY-NC-SA 4.0",
+  "ui.provider.settings.about.sw_cache_prefix": "SW cache:",
+
+  // ── UI chrome: Settings — Reset section ───────────────────────
+  "ui.provider.settings.reset.heading": "Reset",
+  "ui.provider.settings.reset.action_label": "Reset app for new patient",
+  "ui.provider.settings.reset.confirm_title": "Are you sure?",
+  "ui.provider.settings.reset.confirm_body": "This will erase all patient data, voice samples, conversation history, and provider settings. This cannot be undone.",
+  "ui.provider.settings.reset.confirm_destructive": "Reset everything",
+
+  // ── UI chrome: Settings — Accessibility section ───────────────
+  "ui.provider.settings.accessibility.heading": "Accessibility",
+  "ui.provider.settings.accessibility.toggle_label": "Assistive Input Mode",
+  "ui.provider.settings.accessibility.toggle_description": "Amplifies focus rings, lengthens tap debounce, and strengthens hover feedback for patients using a trackball, joystick, AssistiveTouch cursor, or switch.",
+  "ui.provider.settings.accessibility.pointer_hint_strong": "External pointer detected.",
+  "ui.provider.settings.accessibility.pointer_hint_body": "Consider enabling Assistive Input Mode for this patient.",
+
+  // ── UI chrome: Settings — Care Team section ───────────────────
+  "ui.provider.settings.care_team.heading": "Care Team",
+  "ui.provider.settings.care_team.empty": "No providers added yet.",
+
+  // ── UI chrome: Settings — Patient Information section ─────────
+  "ui.provider.settings.patient_info.heading": "Patient Information",
+  "ui.provider.settings.patient_info.voice_label": "Voice",
+  "ui.provider.settings.patient_info.backup_voice_label": "Backup voice",
+  "ui.provider.settings.patient_info.backup_voice_body": "System voice used while the voice clone loads. Tap to preview.",
 } as const;
 
 export type PhraseKey = keyof typeof en;

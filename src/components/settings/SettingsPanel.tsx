@@ -2,6 +2,8 @@ import type { AppSettings } from "../../types";
 import type { ThemeTokens, ThemeName } from "../../theme/tokens";
 import { z } from "../../theme/z";
 import { BottomSheet } from "../shared/BottomSheet";
+import { t as resolvePhrase } from "../../data/phraseRegistry";
+import { useSettingsStore } from "../../stores/settingsStore";
 import { PatientInfoSection } from "./sections/PatientInfoSection";
 import { AccessibilitySection } from "./sections/AccessibilitySection";
 import { CareTeamSection } from "./sections/CareTeamSection";
@@ -37,6 +39,8 @@ export function SettingsPanel({
   t,
   theme,
 }: SettingsPanelProps) {
+  const caregiverLang = useSettingsStore((s) => s.cfg?.caregiverLang ?? "en");
+
   function updateCfg(partial: Partial<AppSettings>): void {
     onUpdate({ ...cfg, ...partial });
   }
@@ -44,10 +48,10 @@ export function SettingsPanel({
   return (
     <BottomSheet onClose={onClose} t={t} zIndex={z.sheetStacked}>
       <BottomSheet.Header>
-        <BottomSheet.Title>Settings</BottomSheet.Title>
+        <BottomSheet.Title>{resolvePhrase("ui.provider.settings.title", caregiverLang)}</BottomSheet.Title>
         {/* "Done" text link instead of X — matches iPadOS convention for settings sheets. */}
         <BottomSheet.CloseButton
-          aria-label="Close settings"
+          aria-label={resolvePhrase("ui.provider.settings.close_aria", caregiverLang)}
           style={{
             fontSize: 16,
             color: t.muted,
@@ -58,7 +62,7 @@ export function SettingsPanel({
               "'Atkinson Hyperlegible Next', system-ui, -apple-system, sans-serif",
           }}
         >
-          Done
+          {resolvePhrase("ui.provider.settings.done", caregiverLang)}
         </BottomSheet.CloseButton>
       </BottomSheet.Header>
 
