@@ -43,7 +43,6 @@ export function ProviderPanel({
 
   const blueText = theme === "dark" ? "#60A5FA" : "#1E40AF";
   const providerGreen = "#059669";
-  const providerGreenText = theme === "dark" ? "#34D399" : "#065F46";
 
   const phrases = PROVIDER_CATEGORIES[activeSection] ?? [];
 

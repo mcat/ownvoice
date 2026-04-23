@@ -536,6 +536,19 @@ const en = {
   "ui.provider.select_provider": "Select {name}",
   "ui.provider.show_category": "Show {key}",
   "ui.provider.speak_phrase": "Speak: {phrase}",
+
+  // ── UI chrome: ListenPanel ─────────────────────────────────────
+  "ui.provider.listen.title": "Listen",
+  "ui.provider.listen.stop_aria": "Stop listening",
+  "ui.provider.listen.start_aria": "Tap to start listening",
+  "ui.provider.listen.listening": "Listening...",
+  "ui.provider.listen.transcribing": "Transcribing...",
+  "ui.provider.listen.listening_placeholder": "Listening for speech...",
+  "ui.provider.listen.transcribing_placeholder": "Transcribing speech...",
+  "ui.provider.listen.type_placeholder": "Or type what was said...",
+  "ui.provider.listen.transcript_aria": "Transcript",
+  "ui.provider.listen.add_as": "Add to conversation as {prov}",
+  "ui.provider.listen.privacy_notice": "On-device · Whisper · no audio leaves this device",
 } as const;
 
 export type PhraseKey = keyof typeof en;
