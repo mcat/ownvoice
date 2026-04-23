@@ -553,6 +553,14 @@ const en = {
   // ── UI chrome: Speaking overlay ────────────────────────────────
   "ui.dual.speaking.aria_label": "Speaking: {text}",
   "ui.dual.speaking.patient_voice": "Your voice",
+
+  // ── UI chrome: PinGate ─────────────────────────────────────────
+  "ui.provider.pin_gate.title": "Enter PIN",
+  "ui.provider.pin_gate.subtitle": "Staff access only",
+  "ui.provider.pin_gate.incorrect": "Incorrect PIN",
+  "ui.provider.pin_gate.delete_aria": "Delete",
+  "ui.provider.pin_gate.digit_aria": "Digit {n}",
+  "ui.provider.pin_gate.cancel": "Cancel",
 } as const;
 
 export type PhraseKey = keyof typeof en;
