@@ -13,6 +13,10 @@ vi.mock("../models/audioCache", () => ({
   clearAudioCache: vi.fn(() => Promise.resolve()),
 }));
 
+vi.mock("./patientIndex", () => ({
+  clearIndex: vi.fn(() => Promise.resolve()),
+}));
+
 vi.mock("../models/audioCacheRunner", () => ({
   abort: vi.fn(),
   runPreGeneration: vi.fn(),
@@ -86,6 +90,12 @@ describe("resetAll", () => {
     await resetAll();
     const manager = getModelManager();
     expect(manager.clearAll).toHaveBeenCalledOnce();
+  });
+
+  it("clears the patient-index file", async () => {
+    const { clearIndex } = await import("./patientIndex");
+    await resetAll();
+    expect(clearIndex).toHaveBeenCalledOnce();
   });
 
   it("resets settings store", async () => {

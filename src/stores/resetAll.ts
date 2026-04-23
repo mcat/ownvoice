@@ -2,6 +2,7 @@ import { useSettingsStore } from "./settingsStore";
 import { useConversationStore } from "./conversationStore";
 import { useUIStore } from "./uiStore";
 import { useOfflineStore } from "./offlineStore";
+import { clearIndex } from "./patientIndex";
 import { clearAll } from "../store";
 import { clearAudioCache } from "../models/audioCache";
 import * as audioCacheRunner from "../models/audioCacheRunner";
@@ -12,7 +13,8 @@ import { getModelManager } from "../models/modelManager";
  *
  * Storage cleared:
  *   - IndexedDB "ownvoice" / "kv" (settings, speaker data, conversation)
- *   - OPFS "audio-cache" (pre-generated TTS clips)
+ *   - OPFS "audio-cache-v3" (pre-generated TTS clips)
+ *   - OPFS "audio-cache-v3/patient-index.json" (patient→hashes metadata)
  *   - OPFS "models" (downloaded ONNX weights) + terminates workers
  *   - Cache API (service worker cached responses including model files)
  *   - Service worker registration
@@ -26,7 +28,8 @@ export async function resetAll(): Promise<void> {
 
   // 1. Persistent storage (IndexedDB, OPFS)
   clearAll();
-  clearAudioCache();
+  await clearAudioCache();
+  await clearIndex();
   getModelManager().clearAll();
 
   // 2. In-memory Zustand stores
