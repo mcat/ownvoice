@@ -526,6 +526,16 @@ const en = {
 
   // ── UI chrome: Thread ──────────────────────────────────────────
   "ui.dual.thread.repeat_aria": "Repeat: {text}",
+
+  // ── UI chrome: ProviderPanel ───────────────────────────────────
+  "ui.provider.care_team.title": "Care Team",
+  "ui.provider.fallback_name": "Provider",
+  "ui.provider.speaking_to": "Speaking to {name} as {prov}",
+  "ui.provider.patient_fallback": "patient",
+  "ui.provider.close_panel": "Close panel",
+  "ui.provider.select_provider": "Select {name}",
+  "ui.provider.show_category": "Show {key}",
+  "ui.provider.speak_phrase": "Speak: {phrase}",
 } as const;
 
 export type PhraseKey = keyof typeof en;
