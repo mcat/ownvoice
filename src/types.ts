@@ -1,3 +1,5 @@
+import type { PhraseKey } from "./data/locales/en";
+
 export interface Phrase {
   text: string;
   icon: string;
@@ -21,21 +23,25 @@ export interface Category {
 export interface PainFace {
   n: number;
   face: string;
-  label: string;
+  labelKey: PhraseKey;
 }
 
 export interface PainDescriptor {
-  text: string;
+  key: PhraseKey;
   icon: string;
 }
 
 export interface WishTopic {
   id: string;
   icon: string;
-  label: string;
-  question: string;
-  stem: string;
-  responses: string[];
+  labelKey: PhraseKey;
+  questionKey: PhraseKey;
+  stemKey: PhraseKey;
+  responseKeys: PhraseKey[];
+}
+
+export interface BodyRegion {
+  key: PhraseKey;
 }
 
 export interface Speaker {
@@ -50,6 +56,9 @@ export interface Speaker {
 export interface Message {
   from: "patient" | "provider";
   text: string;
+  /** Secondary-locale rendering for Thread dual-locale display. Populated
+   *  by useSpeakActions at add time in PR 4. */
+  gloss?: string;
   time: string;
   label: string;
 }
@@ -71,6 +80,10 @@ export interface AppSettings {
   patientName: string;
   bed: string;
   patientLang: string;
+  /** The caregiver/listener's language. Controls the language the patient
+   *  voice speaks and the language provider-facing UI renders. Defaults
+   *  to "en"; adjustable from Setup and Settings. */
+  caregiverLang: string;
   patientVoice: boolean;
   pin: string;
   providers: Provider[];

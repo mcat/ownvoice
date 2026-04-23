@@ -10,6 +10,7 @@ const cfg: AppSettings = {
   patientName: "Maria",
   bed: "4A",
   patientLang: "en",
+  caregiverLang: "en",
   patientVoice: true,
   pin: "1234",
   providers: [

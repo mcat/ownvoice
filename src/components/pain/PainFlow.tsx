@@ -1,7 +1,8 @@
 import { useState } from "preact/hooks";
 import type { JSX } from "preact";
 import { Btn } from "../shared/Btn";
-import { getEmojiFPS, getPainDescriptors, getBodyRegions, composePainSentence } from "../../data/phraseRegistry";
+import { getEmojiFPS, getPainDescriptors, getBodyRegions, composePainSentence, t as resolvePhrase } from "../../data/phraseRegistry";
+import type { PhraseKey } from "../../data/phraseRegistry";
 import { painColors } from "../../theme/tokens";
 import { useSettingsStore } from "../../stores/settingsStore";
 import type { ThemeTokens, ThemeName } from "../../theme/tokens";
@@ -26,7 +27,7 @@ const STEP_LABELS: Record<Step, string> = {
 export function PainFlow({ onSelect, t, theme, locale = "en" }: PainFlowProps) {
   const [step, setStep] = useState<Step>("severity");
   const [severity, setSeverity] = useState<number | null>(null);
-  const [location, setLocation] = useState<string | null>(null);
+  const [location, setLocation] = useState<PhraseKey | null>(null);
   // Single-slot hover key — only one tile is under the cursor at a time.
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
   const assistive = useSettingsStore((s) => s.cfg?.assistiveInput === true);
@@ -41,9 +42,9 @@ export function PainFlow({ onSelect, t, theme, locale = "en" }: PainFlowProps) {
     ? (theme === "dark" ? "rgba(255,255,255,0.08)" : "rgba(220,38,38,0.06)")
     : (theme === "dark" ? "rgba(255,255,255,0.04)" : "rgba(220,38,38,0.03)");
 
-  const EMOJI_FPS = getEmojiFPS(locale);
-  const PAIN_DESCRIPTORS = getPainDescriptors(locale);
-  const BODY_REGIONS = getBodyRegions(locale);
+  const EMOJI_FPS = getEmojiFPS();
+  const PAIN_DESCRIPTORS = getPainDescriptors();
+  const BODY_REGIONS = getBodyRegions();
 
   const currentIndex = STEPS.indexOf(step);
 
@@ -58,13 +59,18 @@ export function PainFlow({ onSelect, t, theme, locale = "en" }: PainFlowProps) {
     setStep("location");
   }
 
-  function handleLocation(region: string) {
-    setLocation(region);
+  function handleLocation(regionKey: PhraseKey) {
+    setLocation(regionKey);
     setStep("descriptor");
   }
 
-  function handleDescriptor(desc: string) {
-    const sentence = composePainSentence(locale, desc, location!, severity!);
+  function handleDescriptor(descriptorKey: PhraseKey) {
+    const sentence = composePainSentence({
+      locale,
+      descriptorKey,
+      regionKey: location!,
+      severity: severity!,
+    });
     onSelect(sentence);
     reset();
   }
@@ -210,7 +216,7 @@ export function PainFlow({ onSelect, t, theme, locale = "en" }: PainFlowProps) {
               onClick={() => handleSeverity(face.n)}
               onPointerEnter={onTileEnter(key)}
               onPointerLeave={onTileLeave}
-              aria-label={`Pain level ${face.n}, ${face.label}`}
+              aria-label={`Pain level ${face.n}, ${resolvePhrase(face.labelKey, locale)}`}
               style={{
                 display: "flex",
                 flexDirection: "column",
@@ -247,7 +253,7 @@ export function PainFlow({ onSelect, t, theme, locale = "en" }: PainFlowProps) {
                   textAlign: "center",
                 }}
               >
-                {face.label}
+                {resolvePhrase(face.labelKey, locale)}
               </span>
             </Btn>
             );
@@ -289,13 +295,13 @@ export function PainFlow({ onSelect, t, theme, locale = "en" }: PainFlowProps) {
           }}
         >
           {BODY_REGIONS.map((region) => {
-            const key = `loc-${region}`;
-            const isHovered = hoveredKey === key;
+            const hk = `loc-${region.key}`;
+            const isHovered = hoveredKey === hk;
             return (
             <Btn
-              key={region}
-              onClick={() => handleLocation(region)}
-              onPointerEnter={onTileEnter(key)}
+              key={region.key}
+              onClick={() => handleLocation(region.key)}
+              onPointerEnter={onTileEnter(hk)}
               onPointerLeave={onTileLeave}
               style={{
                 display: "flex",
@@ -320,7 +326,7 @@ export function PainFlow({ onSelect, t, theme, locale = "en" }: PainFlowProps) {
                   fontWeight: 500,
                 }}
               >
-                {region}
+                {resolvePhrase(region.key, locale)}
               </span>
             </Btn>
             );
@@ -359,13 +365,13 @@ export function PainFlow({ onSelect, t, theme, locale = "en" }: PainFlowProps) {
         }}
       >
         {PAIN_DESCRIPTORS.map((desc) => {
-          const key = `desc-${desc.text}`;
-          const isHovered = hoveredKey === key;
+          const hk = `desc-${desc.key}`;
+          const isHovered = hoveredKey === hk;
           return (
           <Btn
-            key={desc.text}
-            onClick={() => handleDescriptor(desc.text)}
-            onPointerEnter={onTileEnter(key)}
+            key={desc.key}
+            onClick={() => handleDescriptor(desc.key)}
+            onPointerEnter={onTileEnter(hk)}
             onPointerLeave={onTileLeave}
             style={{
               display: "flex",
@@ -393,7 +399,7 @@ export function PainFlow({ onSelect, t, theme, locale = "en" }: PainFlowProps) {
                 fontWeight: 500,
               }}
             >
-              {desc.text}
+              {resolvePhrase(desc.key, locale)}
             </span>
           </Btn>
           );

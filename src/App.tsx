@@ -22,6 +22,7 @@ import { ListenPanel } from "./components/provider/ListenPanel";
 import { SentenceBuilder } from "./components/builder/SentenceBuilder";
 import { SettingsPanel } from "./components/settings/SettingsPanel";
 import { PinGate } from "./components/shared/PinGate";
+import { ConfirmDialogHost } from "./components/shared/ConfirmDialog";
 import { Setup } from "./components/settings/Setup";
 import { getModelManager } from "./models/modelManager";
 import { bootModels, verifyAllOnBoot } from "./models/bootModels";
@@ -398,6 +399,8 @@ export function App() {
           theme={theme}
         />
       )}
+
+      <ConfirmDialogHost />
     </div>
   );
 }

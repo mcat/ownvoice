@@ -41,6 +41,7 @@ beforeEach(() => {
       patientName: "Alice",
       bed: "C-3",
       patientLang: "es",
+      caregiverLang: "en",
       patientVoice: true,
       pin: "9999",
       providers: [],

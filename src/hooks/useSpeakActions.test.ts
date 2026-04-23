@@ -14,6 +14,7 @@ const DEFAULT_CFG: AppSettings = {
   patientName: "Alice",
   bed: "B-102",
   patientLang: "en",
+  caregiverLang: "en",
   patientVoice: true,
   pin: "0000",
   providers: [

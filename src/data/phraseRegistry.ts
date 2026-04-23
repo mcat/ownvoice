@@ -11,12 +11,12 @@
  *   getCategories(locale)       — patient phrase categories (CATS equivalent)
  *   getProviderCategories(locale) — provider phrase categories
  *   getPainData(locale)         — pain faces, descriptors, regions, template
- *   getWishTopics(locale)       — SICG wish topics
+ *   getWishTopics()             — SICG wish topics (returns keys)
  *   getTimeSuggestions(locale)  — time-of-day suggestions
  *   getSuggestionTree(locale)   — sentence builder suggestion tree
- *   getPatientSpeakablePhrases(locale) — flat string[] for patient audio cache
- *   getProviderSpeakablePhrases(locale) — flat string[] for provider audio cache
- *   composePainSentence(locale, ...) — fill pain template
+ *   getPatientSpokenPhrases(caregiverLocale) — flat string[] for patient audio cache
+ *   composePainSentence(opts)   — fill pain template (key-based)
+ *   composeWishSentence(opts)   — fill wish template (key-based)
  *   composeWishSentence(locale, ...) — fill wish template
  */
 
@@ -29,6 +29,7 @@ import type {
   PainFace,
   PainDescriptor,
   WishTopic,
+  BodyRegion,
 } from "../types";
 
 // ── Locale registry ──────────────────────────────────────────────
@@ -210,59 +211,60 @@ export function getProviderCategories(locale: string = "en"): Record<string, str
 
 // ── Pain data ────────────────────────────────────────────────────
 
-export function getEmojiFPS(locale: string = "en"): PainFace[] {
+export function getEmojiFPS(): PainFace[] {
   return [
-    { n: 0, face: "\uD83D\uDE00", label: t("pain.face.0", locale) },
-    { n: 2, face: "\uD83D\uDE42", label: t("pain.face.2", locale) },
-    { n: 4, face: "\uD83D\uDE10", label: t("pain.face.4", locale) },
-    { n: 6, face: "\uD83D\uDE41", label: t("pain.face.6", locale) },
-    { n: 8, face: "\uD83D\uDE23", label: t("pain.face.8", locale) },
-    { n: 10, face: "\uD83D\uDE2D", label: t("pain.face.10", locale) },
+    { n: 0,  face: "\uD83D\uDE00", labelKey: "pain.face.0" },
+    { n: 2,  face: "\uD83D\uDE42", labelKey: "pain.face.2" },
+    { n: 4,  face: "\uD83D\uDE10", labelKey: "pain.face.4" },
+    { n: 6,  face: "\uD83D\uDE41", labelKey: "pain.face.6" },
+    { n: 8,  face: "\uD83D\uDE23", labelKey: "pain.face.8" },
+    { n: 10, face: "\uD83D\uDE2D", labelKey: "pain.face.10" },
   ];
 }
 
-export function getPainDescriptors(locale: string = "en"): PainDescriptor[] {
+export function getPainDescriptors(): PainDescriptor[] {
   return [
-    { text: t("pain.descriptor.aching", locale), icon: "\u3030\uFE0F" },
-    { text: t("pain.descriptor.burning", locale), icon: "\uD83D\uDD25" },
-    { text: t("pain.descriptor.sharp", locale), icon: "\u26A1" },
-    { text: t("pain.descriptor.throbbing", locale), icon: "\uD83D\uDCA2" },
-    { text: t("pain.descriptor.cramping", locale), icon: "\uD83D\uDD04" },
-    { text: t("pain.descriptor.constant", locale), icon: "\u27A1\uFE0F" },
-    { text: t("pain.descriptor.comes_and_goes", locale), icon: "\u2194\uFE0F" },
-    { text: t("pain.descriptor.numb", locale), icon: "\u2744\uFE0F" },
-    { text: t("pain.descriptor.pressure", locale), icon: "\u2B07\uFE0F" },
+    { key: "pain.descriptor.aching",        icon: "\u3030\uFE0F" },
+    { key: "pain.descriptor.burning",       icon: "\uD83D\uDD25" },
+    { key: "pain.descriptor.sharp",         icon: "\u26A1" },
+    { key: "pain.descriptor.throbbing",     icon: "\uD83D\uDCA2" },
+    { key: "pain.descriptor.cramping",      icon: "\uD83D\uDD04" },
+    { key: "pain.descriptor.constant",      icon: "\u27A1\uFE0F" },
+    { key: "pain.descriptor.comes_and_goes", icon: "\u2194\uFE0F" },
+    { key: "pain.descriptor.numb",          icon: "\u2744\uFE0F" },
+    { key: "pain.descriptor.pressure",      icon: "\u2B07\uFE0F" },
   ];
 }
 
-export function getBodyRegions(locale: string = "en"): string[] {
+export function getBodyRegions(): BodyRegion[] {
   return [
-    t("pain.region.head", locale),
-    t("pain.region.face", locale),
-    t("pain.region.neck", locale),
-    t("pain.region.chest", locale),
-    t("pain.region.left_shoulder", locale),
-    t("pain.region.right_shoulder", locale),
-    t("pain.region.left_arm", locale),
-    t("pain.region.right_arm", locale),
-    t("pain.region.stomach", locale),
-    t("pain.region.upper_back", locale),
-    t("pain.region.lower_back", locale),
-    t("pain.region.left_leg", locale),
-    t("pain.region.right_leg", locale),
+    { key: "pain.region.head" },
+    { key: "pain.region.face" },
+    { key: "pain.region.neck" },
+    { key: "pain.region.chest" },
+    { key: "pain.region.left_shoulder" },
+    { key: "pain.region.right_shoulder" },
+    { key: "pain.region.left_arm" },
+    { key: "pain.region.right_arm" },
+    { key: "pain.region.stomach" },
+    { key: "pain.region.upper_back" },
+    { key: "pain.region.lower_back" },
+    { key: "pain.region.left_leg" },
+    { key: "pain.region.right_leg" },
   ];
 }
 
 /** Compose a pain sentence using the locale's template and word order. */
-export function composePainSentence(
-  locale: string,
-  descriptor: string,
-  region: string,
-  severity: number,
-): string {
+export function composePainSentence(opts: {
+  locale: string;
+  descriptorKey: PhraseKey;
+  regionKey: PhraseKey;
+  severity: number;
+}): string {
+  const { locale, descriptorKey, regionKey, severity } = opts;
   return t("pain.sentence", locale)
-    .replace("{descriptor}", descriptor.toLowerCase())
-    .replace("{region}", region)
+    .replace("{descriptor}", t(descriptorKey, locale).toLowerCase())
+    .replace("{region}", t(regionKey, locale))
     .replace("{severity}", String(severity));
 }
 
@@ -311,33 +313,35 @@ const WISH_RESPONSE_KEYS: Record<string, PhraseKey[]> = {
   ],
 };
 
-export function getWishTopics(locale: string = "en"): WishTopic[] {
+export function getWishTopics(): WishTopic[] {
   return WISH_IDS.map((id) => ({
     id,
     icon: WISH_ICONS[id],
-    label: t(`wishes.${id}.label` as PhraseKey, locale),
-    question: t(`wishes.${id}.question` as PhraseKey, locale),
-    stem: t(`wishes.${id}.stem` as PhraseKey, locale),
-    responses: WISH_RESPONSE_KEYS[id].map((key) => t(key, locale)),
+    labelKey: `wishes.${id}.label` as PhraseKey,
+    questionKey: `wishes.${id}.question` as PhraseKey,
+    stemKey: `wishes.${id}.stem` as PhraseKey,
+    responseKeys: WISH_RESPONSE_KEYS[id],
   }));
 }
 
 /** Compose a wish sentence using the locale's template. */
-export function composeWishSentence(
-  locale: string,
-  topic: WishTopic,
-  selected: string[],
-): string {
-  if (!selected.length) return "";
-  const items = selected.map((r) => r.toLowerCase());
+export function composeWishSentence(opts: {
+  locale: string;
+  topicId: string;
+  selectedResponseKeys: PhraseKey[];
+}): string {
+  const { locale, topicId, selectedResponseKeys } = opts;
+  if (!selectedResponseKeys.length) return "";
+  const items = selectedResponseKeys.map((k) => t(k, locale).toLowerCase());
   const list =
     items.length === 1
       ? items[0]
       : items.length === 2
         ? `${items[0]} and ${items[1]}`
         : `${items.slice(0, -1).join(", ")}, and ${items[items.length - 1]}`;
+  const stem = t(`wishes.${topicId}.stem` as PhraseKey, locale);
   return t("wishes.compose", locale)
-    .replace("{stem}", topic.stem)
+    .replace("{stem}", stem)
     .replace("{list}", list);
 }
 
@@ -486,39 +490,41 @@ export function getSuggestionTree(locale: string = "en"): Record<string, string[
 // ── Flat phrase lists for audio cache ────────────────────────────
 
 /**
- * Every phrase the patient speaks through their cloned voice.
- *
- * Order follows the registry for predictable pre-generation — Quick tab
- * phrases come first so the most-tapped phrases are cached earliest.
- * Excludes composed sentences (pain, wishes, sentence-builder) — those
- * are assembled at runtime from variable parts.
+ * 702 composed pain sentences for the patient-voice cache runner (GPU-only
+ * pass). Speaks in the caregiver's language. Deliberately separated from
+ * getPatientSpokenPhrases because this set is only viable on WebGPU — WASM
+ * would take hours.
  */
-/**
- * Every composed pain-report sentence for a locale — the full cross-product of
- * descriptor × body region × severity. With en defaults that's 9 × 13 × 6 = 702
- * sentences. Deliberately kept OUT of `getPatientSpeakablePhrases` because this
- * list is only viable to pre-generate on WebGPU; WASM would take 3–6 hours.
- * The cache runner enumerates this separately and runs it in a GPU-only pass.
- */
-export function getPatientPainSentences(locale: string = "en"): string[] {
+export function getPatientPainSentencesForSpeech(caregiverLocale: string = "en"): string[] {
   const phrases = new Set<string>();
-  const descriptors = getPainDescriptors(locale);
-  const regions = getBodyRegions(locale);
-  const severities = getEmojiFPS(locale);
+  const descriptors = getPainDescriptors();
+  const regions = getBodyRegions();
+  const severities = getEmojiFPS();
   for (const d of descriptors) {
     for (const r of regions) {
       for (const s of severities) {
-        phrases.add(composePainSentence(locale, d.text, r, s.n));
+        phrases.add(composePainSentence({
+          locale: caregiverLocale,
+          descriptorKey: d.key,
+          regionKey: r.key,
+          severity: s.n,
+        }));
       }
     }
   }
   return Array.from(phrases);
 }
 
-export function getPatientSpeakablePhrases(locale: string = "en"): string[] {
+/**
+ * Flat phrase list for the patient-voice audio cache runner. The patient
+ * voice speaks the caregiver's language, so callers pass cfg.caregiverLang.
+ * Excludes composed sentences (pain, wishes) — those assemble at runtime
+ * from keys via composePainSentence / composeWishSentence.
+ */
+export function getPatientSpokenPhrases(caregiverLocale: string = "en"): string[] {
   const phrases = new Set<string>();
 
-  for (const cat of getCategories(locale)) {
+  for (const cat of getCategories(caregiverLocale)) {
     if (cat.phrases) {
       for (const p of cat.phrases) phrases.add(p.text);
     }
@@ -529,33 +535,30 @@ export function getPatientSpeakablePhrases(locale: string = "en"): string[] {
     }
   }
 
-  for (const f of getEmojiFPS(locale)) phrases.add(f.label);
-  for (const d of getPainDescriptors(locale)) phrases.add(d.text);
-  for (const r of getBodyRegions(locale)) phrases.add(r);
+  for (const f of getEmojiFPS()) phrases.add(t(f.labelKey, caregiverLocale));
+  for (const d of getPainDescriptors()) phrases.add(t(d.key, caregiverLocale));
+  for (const r of getBodyRegions()) phrases.add(t(r.key, caregiverLocale));
 
-  for (const topic of getWishTopics(locale)) {
-    phrases.add(topic.question);
-    for (const r of topic.responses) phrases.add(r);
+  for (const topic of getWishTopics()) {
+    phrases.add(t(topic.questionKey, caregiverLocale));
+    for (const rk of topic.responseKeys) phrases.add(t(rk, caregiverLocale));
   }
 
-  const time = getTimeSuggestionsForPeriod(locale);
+  const time = getTimeSuggestionsForPeriod(caregiverLocale);
   for (const arr of Object.values(time)) {
     for (const s of arr) phrases.add(s);
   }
-
-  phrases.add(t("emergency.help", locale));
 
   return Array.from(phrases);
 }
 
 /**
- * Every phrase a provider speaks through their cloned voice. Provider
- * audio is generated in the patient's locale so the patient hears every
- * voice in their own language.
+ * Flat phrase list for each provider-voice audio cache runner. Provider
+ * voices speak the patient's language, so callers pass cfg.patientLang.
  */
-export function getProviderSpeakablePhrases(locale: string = "en"): string[] {
+export function getProviderSpokenPhrases(patientLocale: string = "en"): string[] {
   const phrases = new Set<string>();
-  for (const arr of Object.values(getProviderCategories(locale))) {
+  for (const arr of Object.values(getProviderCategories(patientLocale))) {
     for (const p of arr) phrases.add(p);
   }
   return Array.from(phrases);

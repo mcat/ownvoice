@@ -1,7 +1,8 @@
 import { useState } from "preact/hooks";
 import type { JSX } from "preact";
 import type { ThemeTokens, ThemeName } from "../../theme/tokens";
-import { getWishTopics, composeWishSentence } from "../../data/phraseRegistry";
+import { getWishTopics, composeWishSentence, t as resolvePhrase } from "../../data/phraseRegistry";
+import type { PhraseKey } from "../../data/phraseRegistry";
 import { Btn } from "../shared/Btn";
 import { BottomSheet } from "../shared/BottomSheet";
 
@@ -28,9 +29,9 @@ export function MyWishes({
   patientName,
   locale = "en",
 }: MyWishesProps) {
-  const SICG_TOPICS = getWishTopics(locale);
+  const SICG_TOPICS = getWishTopics();
   const [currentIdx, setCurrentIdx] = useState(0);
-  const [selections, setSelections] = useState<Record<string, string[]>>({});
+  const [selections, setSelections] = useState<Record<string, PhraseKey[]>>({});
   const [complete, setComplete] = useState(false);
 
   const blue = theme === "dark" ? "#60A5FA" : "#2563EB";
@@ -39,24 +40,24 @@ export function MyWishes({
   const topic = SICG_TOPICS[currentIdx];
   const selected = selections[topic?.id] ?? [];
 
-  function toggleResponse(response: string) {
+  function toggleResponse(responseKey: PhraseKey) {
     const topicId = topic.id;
     const current = selections[topicId] ?? [];
-    const idx = current.indexOf(response);
+    const idx = current.indexOf(responseKey);
     if (idx >= 0) {
       setSelections({
         ...selections,
-        [topicId]: current.filter((r) => r !== response),
+        [topicId]: current.filter((r) => r !== responseKey),
       });
     } else {
-      setSelections({ ...selections, [topicId]: [...current, response] });
+      setSelections({ ...selections, [topicId]: [...current, responseKey] });
     }
   }
 
   function handleShare() {
     if (!selected.length) return;
-    const sentence = composeWishSentence(locale, topic, selected);
-    onAddToThread(topic.question, "provider", "My Wishes");
+    const sentence = composeWishSentence({ locale, topicId: topic.id, selectedResponseKeys: selected });
+    onAddToThread(resolvePhrase(topic.questionKey, locale), "provider", "My Wishes");
     onSpeak(sentence);
     advance();
   }
@@ -77,7 +78,7 @@ export function MyWishes({
     for (const tp of SICG_TOPICS) {
       const sel = selections[tp.id];
       if (sel && sel.length > 0) {
-        const sentence = composeWishSentence(locale, tp, sel);
+        const sentence = composeWishSentence({ locale, topicId: tp.id, selectedResponseKeys: sel });
         onSpeak(sentence);
       }
     }
@@ -113,7 +114,7 @@ export function MyWishes({
             </p>
           ) : (
             answeredTopics.map((tp) => {
-              const sentence = composeWishSentence(locale, tp, selections[tp.id]);
+              const sentence = composeWishSentence({ locale, topicId: tp.id, selectedResponseKeys: selections[tp.id] });
               return (
                 <div
                   key={tp.id}
@@ -132,7 +133,7 @@ export function MyWishes({
                       marginBottom: 6,
                     }}
                   >
-                    {tp.icon} {tp.label}
+                    {tp.icon} {resolvePhrase(tp.labelKey, locale)}
                   </div>
                   <div style={{ fontSize: 18, color: t.text }}>{sentence}</div>
                 </div>
@@ -241,7 +242,7 @@ export function MyWishes({
             lineHeight: 1.35,
           }}
         >
-          {topic.question}
+          {resolvePhrase(topic.questionKey, locale)}
         </h2>
 
         {/* Response buttons */}
@@ -252,13 +253,13 @@ export function MyWishes({
             gap: 10,
           }}
         >
-          {topic.responses.map((response) => {
-            const isSelected = selected.includes(response);
+          {topic.responseKeys.map((rk) => {
+            const isSelected = selected.includes(rk);
 
             return (
               <Btn
-                key={response}
-                onClick={() => toggleResponse(response)}
+                key={rk}
+                onClick={() => toggleResponse(rk)}
                 aria-pressed={isSelected}
                 style={{
                   display: "flex",
@@ -293,7 +294,7 @@ export function MyWishes({
                 >
                   {isSelected ? "✓" : ""}
                 </div>
-                <span>{response}</span>
+                <span>{resolvePhrase(rk, locale)}</span>
               </Btn>
             );
           })}

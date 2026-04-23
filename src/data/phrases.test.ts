@@ -1,8 +1,9 @@
 import { LANGS } from "./phrases";
 import {
   getCategories,
-  getPatientSpeakablePhrases,
-  getProviderSpeakablePhrases,
+  getPatientSpokenPhrases,
+  getProviderSpokenPhrases,
+  getPatientPainSentencesForSpeech,
   getProviderCategories,
 } from "./phraseRegistry";
 
@@ -97,8 +98,8 @@ describe("CATS", () => {
   });
 });
 
-describe("getPatientSpeakablePhrases", () => {
-  const patient = getPatientSpeakablePhrases("en");
+describe("getPatientSpokenPhrases", () => {
+  const patient = getPatientSpokenPhrases("en");
   const providerText = new Set(
     Object.values(getProviderCategories("en")).flat(),
   );
@@ -117,10 +118,9 @@ describe("getPatientSpeakablePhrases", () => {
     expect(patient.indexOf(firstQuick)).toBeLessThan(6);
   });
 
-  it("includes category phrases, pain parts, wish responses, time suggestions, emergency", () => {
+  it("includes category phrases, pain parts, wish responses, time suggestions", () => {
     expect(patient).toContain("Yes");
     expect(patient).toContain("I need water");
-    expect(patient).toContain("I need help");
   });
 
   it("excludes phrases that only appear in provider categories", () => {
@@ -138,8 +138,8 @@ describe("getPatientSpeakablePhrases", () => {
   });
 });
 
-describe("getProviderSpeakablePhrases", () => {
-  const provider = getProviderSpeakablePhrases("en");
+describe("getProviderSpokenPhrases", () => {
+  const provider = getProviderSpokenPhrases("en");
 
   it("returns a non-empty list", () => {
     expect(provider.length).toBeGreaterThan(0);
@@ -156,5 +156,36 @@ describe("getProviderSpeakablePhrases", () => {
     for (const p of provider) {
       expect(providerSet.has(p)).toBe(true);
     }
+  });
+});
+
+describe("rename: audio-cache flat-list helpers", () => {
+  it("getPatientSpokenPhrases returns the patient-speakable set in caregiver locale", () => {
+    const phrases = getPatientSpokenPhrases("en");
+    expect(phrases.length).toBeGreaterThan(100);
+    expect(phrases).toContain("I need water");
+    // Confirm emergency.help is no longer included
+    expect(phrases).not.toContain("I need help");
+  });
+
+  it("getProviderSpokenPhrases returns the provider-speakable set in patient locale", () => {
+    const phrases = getProviderSpokenPhrases("en");
+    expect(phrases).toContain("I will get that for you.");
+  });
+
+  it("getPatientPainSentencesForSpeech returns the composed pain sentences", () => {
+    const phrases = getPatientPainSentencesForSpeech("en");
+    // 9 descriptors x 13 regions x 6 severities = 702
+    expect(phrases.length).toBe(702);
+    expect(phrases[0]).toMatch(/I have .* pain in my .*, level \d+ out of 10/);
+  });
+
+  it("getPatientSpokenPhrases uses caregiver locale, not patient", () => {
+    // When only en.ts exists, both resolve to the same content — this test
+    // doesn't truly exercise cross-locale behavior until Phase B adds a
+    // second locale. For now, assert the param is passed through cleanly
+    // by checking that passing "en" returns English text.
+    const phrases = getPatientSpokenPhrases("en");
+    expect(phrases.some((p) => p.includes("water"))).toBe(true);
   });
 });
