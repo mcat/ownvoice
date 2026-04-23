@@ -604,6 +604,16 @@ const en = {
   "ui.provider.voice_capture.err_generic": "We couldn't finish preparing your voice. Tap Retry to try again.",
   "ui.provider.voice_capture.err_mic_denied_raw": "Microphone access denied. Try uploading a file instead.",
   "ui.provider.voice_capture.err_playback": "Could not play audio.",
+
+  // ── UI chrome: FallbackVoicePicker ─────────────────────────────
+  "ui.provider.fallback_voice.enhanced_badge": "Enhanced",
+  "ui.provider.fallback_voice.enhanced_aria": "Enhanced neural voice",
+  "ui.provider.fallback_voice.on_device_badge": "On-device",
+  "ui.provider.fallback_voice.playing": "Playing...",
+  "ui.provider.fallback_voice.unavailable": "System voices are not available on this device.",
+  "ui.provider.fallback_voice.loading": "Loading available voices...",
+  "ui.provider.fallback_voice.hide_others": "Hide other voices",
+  "ui.provider.fallback_voice.more_voices": "More voices ({n})",
 } as const;
 
 export type PhraseKey = keyof typeof en;
