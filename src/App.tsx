@@ -239,7 +239,7 @@ export function App() {
   // Wait for IndexedDB hydration before deciding setup vs main app
   if (!hasHydrated) return null;
   if (!cfg || cfg.patients.length === 0 || cfg.activePatientId === null) {
-    return <Setup onDone={setCfg} mode="first-run" />;
+    return <Setup onFirstRunDone={setCfg} mode="first-run" />;
   }
 
   // After the gate above, active is guaranteed non-null.
