@@ -1,32 +1,56 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { createDebouncedIDBStorage } from "./idbStorage";
-import type { AppSettings } from "../types";
+import type { AppSettings, Patient } from "../types";
 
 // 300 ms debounce on IDB persistence — avoids a round-trip per keystroke
 // when the Settings panel auto-saves text fields as the user types.
 // In-memory Zustand updates stay synchronous so controlled inputs don't
 // lag; only the disk write is batched.
 const PERSIST_DEBOUNCE_MS = 300;
+const STORE_VERSION = 2;
 
 interface SettingsPersistedState {
   cfg: AppSettings | null;
+  /** Legacy: v1 stored speakerData here. v2 moves it into each Patient.
+   *  Kept on the persisted shape for migration compatibility; set to null
+   *  after migration and on v2 writes. */
   speakerData: unknown | null;
 }
 
 interface SettingsState extends SettingsPersistedState {
   _hasHydrated: boolean;
-
   setCfg: (cfg: AppSettings) => void;
   updateCfg: (partial: Partial<AppSettings>) => void;
   setSpeakerData: (data: unknown) => void;
   setHasHydrated: (v: boolean) => void;
   reset: () => void;
+
+  // Multi-patient actions
+  addPatient: (data: Omit<Patient, "id" | "addedAt" | "lastActiveAt">) => Patient;
+  switchPatient: (id: string) => void;
+  removePatient: (id: string) => void;
+  updateActivePatient: (partial: Partial<Omit<Patient, "id">>) => void;
+}
+
+function newPatientFromLegacy(legacyCfg: Record<string, unknown>, speakerData: unknown): Patient {
+  const now = Date.now();
+  return {
+    id: crypto.randomUUID(),
+    name: String(legacyCfg.patientName ?? ""),
+    bed: String(legacyCfg.bed ?? ""),
+    patientLang: String(legacyCfg.patientLang ?? "en"),
+    hasVoice: Boolean(legacyCfg.patientVoice),
+    speakerData: speakerData ?? null,
+    fallbackVoice: (legacyCfg.fallbackVoice ?? null) as Patient["fallbackVoice"],
+    addedAt: now,
+    lastActiveAt: now,
+  };
 }
 
 export const useSettingsStore = create<SettingsState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       cfg: null,
       speakerData: null,
       _hasHydrated: false,
@@ -37,24 +61,109 @@ export const useSettingsStore = create<SettingsState>()(
       setSpeakerData: (speakerData) => set({ speakerData }),
       setHasHydrated: (v) => set({ _hasHydrated: v }),
       reset: () => set({ cfg: null, speakerData: null }),
+
+      addPatient: (data) => {
+        const now = Date.now();
+        const patient: Patient = {
+          ...data,
+          id: crypto.randomUUID(),
+          addedAt: now,
+          lastActiveAt: now,
+        };
+        set((s) => s.cfg ? {
+          cfg: {
+            ...s.cfg,
+            patients: [...s.cfg.patients, patient],
+            activePatientId: patient.id,
+          },
+        } : {});
+        return patient;
+      },
+
+      switchPatient: (id) => {
+        const s = get();
+        if (!s.cfg) return;
+        const target = s.cfg.patients.find((p) => p.id === id);
+        if (!target) {
+          console.warn(`[settingsStore] switchPatient: id ${id} not found`);
+          return;
+        }
+        const now = Date.now();
+        set({
+          cfg: {
+            ...s.cfg,
+            activePatientId: id,
+            patients: s.cfg.patients.map((p) =>
+              p.id === id ? { ...p, lastActiveAt: now } : p,
+            ),
+          },
+        });
+      },
+
+      removePatient: (id) => {
+        const s = get();
+        if (!s.cfg) return;
+        if (s.cfg.activePatientId === id) {
+          throw new Error(
+            "removePatient: cannot remove the active patient; switch first",
+          );
+        }
+        set({
+          cfg: {
+            ...s.cfg,
+            patients: s.cfg.patients.filter((p) => p.id !== id),
+          },
+        });
+      },
+
+      updateActivePatient: (partial) => {
+        const s = get();
+        if (!s.cfg || !s.cfg.activePatientId) return;
+        const activeId = s.cfg.activePatientId;
+        set({
+          cfg: {
+            ...s.cfg,
+            patients: s.cfg.patients.map((p) =>
+              p.id === activeId ? { ...p, ...partial } : p,
+            ),
+          },
+        });
+      },
     }),
     {
       name: "ov-settings",
-      version: 1,
+      version: STORE_VERSION,
       storage: createJSONStorage(() => createDebouncedIDBStorage(PERSIST_DEBOUNCE_MS)),
-      migrate: (persisted, fromVersion) => {
+      migrate: (persisted, fromVersion): SettingsPersistedState => {
         const typed = persisted as SettingsPersistedState | null;
-        if (typed && fromVersion < 1 && typed.cfg) {
-          // v0 data may lack caregiverLang even though AppSettings requires it
-          const cfg = typed.cfg as unknown as Record<string, unknown>;
-          if (!("caregiverLang" in cfg)) {
-            return {
-              speakerData: typed.speakerData,
-              cfg: { ...typed.cfg, caregiverLang: "en" },
-            };
+        if (!typed) return { cfg: null, speakerData: null };
+
+        // v0 → v1: add caregiverLang (from previous migration)
+        let cfg = typed.cfg;
+        if (fromVersion < 1 && cfg) {
+          const c = cfg as unknown as Record<string, unknown>;
+          if (!("caregiverLang" in c)) {
+            cfg = { ...cfg, caregiverLang: "en" } as AppSettings;
           }
         }
-        return typed as SettingsPersistedState;
+
+        // v1 → v2: migrate single-patient fields into patients[] + activePatientId
+        if (fromVersion < 2 && cfg) {
+          const legacyCfg = cfg as unknown as Record<string, unknown>;
+          if (!Array.isArray(legacyCfg.patients)) {
+            const patient = newPatientFromLegacy(legacyCfg, typed.speakerData);
+            cfg = {
+              pin: String(legacyCfg.pin ?? ""),
+              caregiverLang: String(legacyCfg.caregiverLang ?? "en"),
+              assistiveInput: Boolean(legacyCfg.assistiveInput),
+              providers: (legacyCfg.providers as AppSettings["providers"]) ?? [],
+              patients: [patient],
+              activePatientId: patient.id,
+            };
+          }
+          return { cfg, speakerData: null };
+        }
+        return { cfg, speakerData: typed.speakerData };
       },
       partialize: (s): SettingsPersistedState => ({
         cfg: s.cfg,
@@ -74,3 +183,19 @@ export const useSettingsStore = create<SettingsState>()(
     },
   ),
 );
+
+/** Hook: returns the currently-active Patient, or null if none. */
+export function useActivePatient(): Patient | null {
+  return useSettingsStore((s) => {
+    const id = s.cfg?.activePatientId;
+    if (!id) return null;
+    return s.cfg?.patients.find((p) => p.id === id) ?? null;
+  });
+}
+
+/** Hook: returns a specific patient by id. */
+export function usePatientById(id: string | null): Patient | null {
+  return useSettingsStore((s) =>
+    !id ? null : s.cfg?.patients.find((p) => p.id === id) ?? null,
+  );
+}
