@@ -614,6 +614,69 @@ const en = {
   "ui.provider.fallback_voice.loading": "Loading available voices...",
   "ui.provider.fallback_voice.hide_others": "Hide other voices",
   "ui.provider.fallback_voice.more_voices": "More voices ({n})",
+
+  // ── UI chrome: Setup wizard ───────────────────────────────────
+  // Step labels (progress bar)
+  "ui.provider.setup.steps.patient": "Patient",
+  "ui.provider.setup.steps.voice": "Voice",
+  "ui.provider.setup.steps.care_team": "Care Team",
+  "ui.provider.setup.steps.confirm": "Confirm",
+
+  // Skip button + confirm dialog
+  "ui.provider.setup.skip": "Skip →",
+  "ui.provider.setup.skip_aria": "Skip setup",
+  "ui.provider.setup.skip_dialog.title": "Skip setup?",
+  "ui.provider.setup.skip_dialog.body": "You can finish this later in Settings.",
+  "ui.provider.setup.skip_dialog.confirm": "Skip setup",
+  "ui.provider.setup.skip_dialog.cancel": "Keep going",
+
+  // Navigation
+  "ui.provider.setup.back": "Back",
+  "ui.provider.setup.continue": "Continue",
+  "ui.provider.setup.start": "Start OwnVoice",
+
+  // Step 0: Patient info
+  "ui.provider.setup.step0.heading": "Welcome to OwnVoice",
+  "ui.provider.setup.step0.subhead": "Let's set up your communication board. Everything stays on this device.",
+  "ui.provider.setup.step0.name_label": "Patient name",
+  "ui.provider.setup.step0.name_placeholder": "First name or preferred name",
+  "ui.provider.setup.step0.bed_label": "Bed / Room",
+  "ui.provider.setup.step0.bed_placeholder": "e.g. 4B-12",
+  "ui.provider.setup.step0.language_label": "Language",
+
+  // Step 1: Voice sample
+  "ui.provider.setup.step1.heading": "Voice sample",
+  "ui.provider.setup.step1.body1": "Capture a voice sample so OwnVoice can speak in the patient's own voice. This step is optional.",
+  "ui.provider.setup.step1.body2": "Voice cloning runs entirely on-device. No audio leaves this tablet.",
+  "ui.provider.setup.step1.patient_label": "Patient",
+  "ui.provider.setup.step1.backup_voice_heading": "Backup voice",
+  "ui.provider.setup.step1.backup_voice_body1": "Choose a system voice to use while the voice clone loads, or if no sample is recorded. Tap a voice to hear a preview.",
+  "ui.provider.setup.step1.backup_voice_body2": "This uses your device's built-in text-to-speech.",
+
+  // Step 2: Care team
+  "ui.provider.setup.step2.heading": "Care team",
+  "ui.provider.setup.step2.body": "Add the providers who will be caring for this patient.",
+  "ui.provider.setup.step2.icon_label": "Icon",
+  "ui.provider.setup.step2.name_label": "Name",
+  "ui.provider.setup.step2.name_placeholder": "Dr. Smith, Nurse Jay...",
+  "ui.provider.setup.step2.add": "Add",
+
+  // Step 3: Confirm
+  "ui.provider.setup.step3.heading": "Ready to go",
+  "ui.provider.setup.step3.body": "Review your setup. You can change anything later in Settings.",
+  "ui.provider.setup.step3.summary.patient": "Patient",
+  "ui.provider.setup.step3.summary.bed": "Bed / Room",
+  "ui.provider.setup.step3.summary.language": "Language",
+  "ui.provider.setup.step3.summary.language_default": "English",
+  "ui.provider.setup.step3.summary.voice": "Voice",
+  "ui.provider.setup.step3.summary.care_team": "Care team",
+  "ui.provider.setup.step3.summary.not_set": "Not set",
+  "ui.provider.setup.step3.summary.captured": "Captured",
+  "ui.provider.setup.step3.summary.not_captured": "Not captured",
+  "ui.provider.setup.step3.summary.none_added": "None added",
+  "ui.provider.setup.step3.pin_label": "Staff PIN (optional)",
+  "ui.provider.setup.step3.pin_body": "Set a 4-digit PIN to protect provider settings.",
+  "ui.provider.setup.step3.pin_placeholder": "1234",
 } as const;
 
 export type PhraseKey = keyof typeof en;
