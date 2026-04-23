@@ -764,6 +764,19 @@ const en = {
   "ui.provider.settings.offline.redownload_dialog.title": "Redownload all AI models?",
   "ui.provider.settings.offline.redownload_dialog.body": "This will re-fetch roughly 1.7 GB. Voice synthesis keeps working through the refresh.",
   "ui.provider.settings.offline.redownload_dialog.confirm": "Redownload",
+
+  // ── UI chrome: SwitchSheet ────────────────────────────────────
+  "ui.provider.switch.title": "Switch Patient",
+  "ui.provider.switch.add_patient": "+ Add Patient",
+  "ui.provider.switch.add_patient_disabled_hint": "Available in the next release.",
+  "ui.provider.switch.voice_captured": "Voice captured",
+  "ui.provider.switch.no_voice": "No voice",
+  "ui.provider.switch.last_active_just_now": "Just now",
+  "ui.provider.switch.last_active_minutes": "Last active {n}m ago",
+  "ui.provider.switch.last_active_hours": "Last active {n}h ago",
+  "ui.provider.switch.last_active_days": "Last active {n}d ago",
+  "ui.provider.switch.currently_active": "Currently active",
+  "ui.provider.switch.switched_announcement": "Switched to {name}. {count} conversation messages.",
 } as const;
 
 export type PhraseKey = keyof typeof en;
