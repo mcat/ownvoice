@@ -27,6 +27,7 @@ describe("useUIStore", () => {
       expect(s.settingsOpen).toBe(false);
       expect(s.pinEntryOpen).toBe(false);
       expect(s.switchSheetOpen).toBe(false);
+      expect(s.addPatientOpen).toBe(false);
     });
 
     it("has speaking=null", () => {
@@ -87,6 +88,7 @@ describe("useUIStore", () => {
       ["settings", "settingsOpen"],
       ["pinEntry", "pinEntryOpen"],
       ["switch", "switchSheetOpen"],
+      ["addPatient", "addPatientOpen"],
     ] as const;
 
     for (const [name, key] of overlays) {
@@ -112,6 +114,7 @@ describe("useUIStore", () => {
       openOverlay("settings");
       openOverlay("pinEntry");
       openOverlay("switch");
+      openOverlay("addPatient");
 
       closeAllOverlays();
 
@@ -122,6 +125,7 @@ describe("useUIStore", () => {
       expect(s.settingsOpen).toBe(false);
       expect(s.pinEntryOpen).toBe(false);
       expect(s.switchSheetOpen).toBe(false);
+      expect(s.addPatientOpen).toBe(false);
     });
   });
 
@@ -143,6 +147,48 @@ describe("useUIStore", () => {
       useUIStore.getState().setSpeaking({ text: "Hi", from: "provider" });
       useUIStore.getState().setSpeaking(null);
       expect(useUIStore.getState().speaking).toBeNull();
+    });
+  });
+
+  describe("staffAuthed state", () => {
+    it("staffAuthed starts false", () => {
+      expect(useUIStore.getState().staffAuthed).toBe(false);
+    });
+
+    it("staffAuthedAt starts null", () => {
+      expect(useUIStore.getState().staffAuthedAt).toBeNull();
+    });
+
+    it("setStaffAuthed(true) + bumpStaffAuthed updates timestamp", () => {
+      useUIStore.getState().setStaffAuthed(true);
+      expect(useUIStore.getState().staffAuthed).toBe(true);
+      expect(useUIStore.getState().staffAuthedAt).toBeNull(); // not set by setStaffAuthed
+
+      useUIStore.getState().bumpStaffAuthed();
+      expect(useUIStore.getState().staffAuthedAt).toBeTypeOf("number");
+      expect(useUIStore.getState().staffAuthedAt).toBeGreaterThan(0);
+    });
+
+    it("bumpStaffAuthed is a no-op when staffAuthed is false", () => {
+      expect(useUIStore.getState().staffAuthed).toBe(false);
+      expect(useUIStore.getState().staffAuthedAt).toBeNull();
+
+      useUIStore.getState().bumpStaffAuthed();
+
+      expect(useUIStore.getState().staffAuthed).toBe(false);
+      expect(useUIStore.getState().staffAuthedAt).toBeNull();
+    });
+
+    it("endStaffSession sets both to false/null", () => {
+      useUIStore.getState().setStaffAuthed(true);
+      useUIStore.getState().bumpStaffAuthed();
+      expect(useUIStore.getState().staffAuthed).toBe(true);
+      expect(useUIStore.getState().staffAuthedAt).not.toBeNull();
+
+      useUIStore.getState().endStaffSession();
+
+      expect(useUIStore.getState().staffAuthed).toBe(false);
+      expect(useUIStore.getState().staffAuthedAt).toBeNull();
     });
   });
 
@@ -171,8 +217,19 @@ describe("useUIStore", () => {
       expect(after.settingsOpen).toBe(false);
       expect(after.pinEntryOpen).toBe(false);
       expect(after.switchSheetOpen).toBe(false);
+      expect(after.addPatientOpen).toBe(false);
       expect(after.activeProvIdx).toBe(0);
       expect(after.speaking).toBeNull();
+    });
+
+    it("clears staffAuthed and staffAuthedAt", () => {
+      useUIStore.getState().setStaffAuthed(true);
+      useUIStore.getState().bumpStaffAuthed();
+
+      useUIStore.getState().resetUI();
+
+      expect(useUIStore.getState().staffAuthed).toBe(false);
+      expect(useUIStore.getState().staffAuthedAt).toBeNull();
     });
   });
 });

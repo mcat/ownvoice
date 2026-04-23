@@ -8,7 +8,8 @@ export type OverlayName =
   | "listen"
   | "settings"
   | "pinEntry"
-  | "switch";
+  | "switch"
+  | "addPatient";
 
 interface UIState {
   tab: string;
@@ -20,12 +21,18 @@ interface UIState {
   settingsOpen: boolean;
   pinEntryOpen: boolean;
   switchSheetOpen: boolean;
+  addPatientOpen: boolean;
   activeProvIdx: number;
   speaking: SpeakingState | null;
 
   /** null = auto (follow system), "light" | "dark" = manual override */
   themeOverride: ThemeName | null;
   systemDark: boolean;
+
+  /** Staff authentication — transient, clears on page reload. */
+  staffAuthed: boolean;
+  /** Unix ms timestamp of the last staff-auth bump. */
+  staffAuthedAt: number | null;
 
   setTab: (tab: string) => void;
   setSub: (sub: number) => void;
@@ -38,6 +45,9 @@ interface UIState {
   setSpeaking: (state: SpeakingState | null) => void;
   setSystemDark: (dark: boolean) => void;
   toggleTheme: () => void;
+  setStaffAuthed: (v: boolean) => void;
+  bumpStaffAuthed: () => void;
+  endStaffSession: () => void;
   resetUI: () => void;
 }
 
@@ -48,6 +58,7 @@ const OVERLAY_KEYS: Record<OverlayName, keyof UIState> = {
   settings: "settingsOpen",
   pinEntry: "pinEntryOpen",
   switch: "switchSheetOpen",
+  addPatient: "addPatientOpen",
 };
 
 function getInitialThemeOverride(): ThemeName | null {
@@ -67,10 +78,13 @@ const INITIAL: Pick<
   | "settingsOpen"
   | "pinEntryOpen"
   | "switchSheetOpen"
+  | "addPatientOpen"
   | "activeProvIdx"
   | "speaking"
   | "themeOverride"
   | "systemDark"
+  | "staffAuthed"
+  | "staffAuthedAt"
 > = {
   tab: "quick",
   sub: 0,
@@ -81,12 +95,15 @@ const INITIAL: Pick<
   settingsOpen: false,
   pinEntryOpen: false,
   switchSheetOpen: false,
+  addPatientOpen: false,
   activeProvIdx: 0,
   speaking: null,
   themeOverride: getInitialThemeOverride(),
   systemDark: typeof window !== "undefined"
     ? window.matchMedia("(prefers-color-scheme: dark)").matches
     : false,
+  staffAuthed: false,
+  staffAuthedAt: null,
 };
 
 export const useUIStore = create<UIState>((set) => ({
@@ -107,6 +124,7 @@ export const useUIStore = create<UIState>((set) => ({
       settingsOpen: false,
       pinEntryOpen: false,
       switchSheetOpen: false,
+      addPatientOpen: false,
     }),
 
   setActiveProvIdx: (idx) => set({ activeProvIdx: idx }),
@@ -125,5 +143,9 @@ export const useUIStore = create<UIState>((set) => ({
       localStorage.removeItem("ov-theme");
       return { themeOverride: null };
     }),
+  setStaffAuthed: (v) => set({ staffAuthed: v }),
+  bumpStaffAuthed: () =>
+    set((s) => (s.staffAuthed ? { staffAuthedAt: Date.now() } : {})),
+  endStaffSession: () => set({ staffAuthed: false, staffAuthedAt: null }),
   resetUI: () => set(INITIAL),
 }));

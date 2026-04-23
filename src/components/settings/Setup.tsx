@@ -9,6 +9,7 @@ import { useSettingsStore } from "../../stores/settingsStore";
 import { t as resolvePhrase } from "../../data/phraseRegistry";
 import type { PhraseKey } from "../../data/phraseRegistry";
 import { confirm } from "../shared/ConfirmDialog";
+import * as audioCacheRunner from "../../models/audioCacheRunner";
 
 const EMOJIS = [
   "\uD83D\uDC69\u200D\u2695\uFE0F", // woman health worker
@@ -25,13 +26,20 @@ const EMOJIS = [
   "\u2B50",                            // star
 ];
 
-const STEP_LABEL_KEYS: PhraseKey[] = [
+const FIRST_RUN_STEP_KEYS: PhraseKey[] = [
   "ui.provider.setup.steps.patient",
   "ui.provider.setup.steps.voice",
   "ui.provider.setup.steps.care_team",
   "ui.provider.setup.steps.confirm",
 ];
-const STEP_COLORS = ["#2563EB", "#7C3AED", "#059669", "#D97706"];
+const FIRST_RUN_STEP_COLORS = ["#2563EB", "#7C3AED", "#059669", "#D97706"];
+
+const ADD_PATIENT_STEP_KEYS: PhraseKey[] = [
+  "ui.provider.setup.steps.patient",
+  "ui.provider.setup.steps.voice",
+  "ui.provider.setup.steps.confirm",
+];
+const ADD_PATIENT_STEP_COLORS = ["#2563EB", "#7C3AED", "#D97706"];
 
 function defaults(): AppSettings {
   const now = Date.now();
@@ -55,20 +63,30 @@ function defaults(): AppSettings {
 }
 
 interface SetupProps {
-  onDone: (settings: AppSettings) => void;
   /** Controls which Setup flow to show. "first-run" is the default full
-   *  wizard; "add-patient" (PR B) shows only the patient-specific steps.
-   *  Ignored until the add-patient flow is implemented. */
+   *  wizard; "add-patient" shows only the patient-specific steps. */
   mode?: "first-run" | "add-patient";
+  /** Called when the first-run wizard completes with a full AppSettings. */
+  onFirstRunDone?: (cfg: AppSettings) => void;
+  /** Called when the add-patient flow completes with the new Patient. */
+  onAddPatientDone?: (patient: Patient) => void;
+  /** Called when the user cancels the add-patient flow (via Skip). */
+  onCancel?: () => void;
 }
 
-export function Setup({ onDone, mode: _mode }: SetupProps) {
+export function Setup({ mode = "first-run", onFirstRunDone, onAddPatientDone, onCancel }: SetupProps) {
+  const isAddPatient = mode === "add-patient";
+  const stepLabelKeys = isAddPatient ? ADD_PATIENT_STEP_KEYS : FIRST_RUN_STEP_KEYS;
+  const stepColors = isAddPatient ? ADD_PATIENT_STEP_COLORS : FIRST_RUN_STEP_COLORS;
+  const maxStep = stepLabelKeys.length - 1;
+
   const caregiverLang = useSettingsStore((s) => s.cfg?.caregiverLang ?? "en");
   const [step, setStep] = useState(0);
   const [name, setName] = useState("");
   const [bed, setBed] = useState("");
   const [lang, setLang] = useState("en");
   const [patientVoice, setPatientVoice] = useState(false);
+  const [speakerData, setSpeakerData] = useState<unknown>(null);
   const [fallbackVoice, setFallbackVoice] = useState<FallbackVoice | null>(null);
   const [pin, setPin] = useState("");
   const [providers, setProviders] = useState<Provider[]>([]);
@@ -78,30 +96,60 @@ export function Setup({ onDone, mode: _mode }: SetupProps) {
   const [newProvEmoji, setNewProvEmoji] = useState(EMOJIS[0]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
+  /**
+   * Maps a logical step index to the content to render.
+   * first-run: 0=Patient, 1=Voice, 2=CareTeam, 3=Confirm
+   * add-patient: 0=Patient, 1=Voice, 2=Confirm (Care Team skipped)
+   */
+  function stepContent(s: number): "patient" | "voice" | "careTeam" | "confirm" {
+    if (isAddPatient) {
+      if (s === 0) return "patient";
+      if (s === 1) return "voice";
+      return "confirm";
+    }
+    if (s === 0) return "patient";
+    if (s === 1) return "voice";
+    if (s === 2) return "careTeam";
+    return "confirm";
+  }
+
   function finish() {
-    const now = Date.now();
-    const patient: Patient = {
-      id: crypto.randomUUID(),
-      name,
-      bed,
-      patientLang: lang,
-      hasVoice: patientVoice,
-      speakerData: null,
-      fallbackVoice,
-      addedAt: now,
-      lastActiveAt: now,
-    };
-    onDone({
-      caregiverLang: "en",
-      pin,
-      providers,
-      patients: [patient],
-      activePatientId: patient.id,
-    });
+    if (isAddPatient) {
+      audioCacheRunner.pauseAll();
+      const patient = useSettingsStore.getState().addPatient({
+        name,
+        bed,
+        patientLang: lang,
+        hasVoice: patientVoice,
+        speakerData: speakerData ?? null,
+        fallbackVoice,
+      });
+      onAddPatientDone?.(patient);
+    } else {
+      const now = Date.now();
+      const patient: Patient = {
+        id: crypto.randomUUID(),
+        name,
+        bed,
+        patientLang: lang,
+        hasVoice: patientVoice,
+        speakerData: speakerData ?? null,
+        fallbackVoice,
+        addedAt: now,
+        lastActiveAt: now,
+      };
+      onFirstRunDone?.({
+        caregiverLang: "en",
+        pin,
+        providers,
+        patients: [patient],
+        activePatientId: patient.id,
+      });
+    }
   }
 
   function next() {
-    if (step < 3) setStep(step + 1);
+    if (step < maxStep) setStep(step + 1);
     else finish();
   }
 
@@ -182,13 +230,22 @@ export function Setup({ onDone, mode: _mode }: SetupProps) {
           onClick={async () => {
             // Confirm before discarding setup — otherwise a tremor-tap loses
             // everything (WCAG 3.3.6 AAA Error Prevention).
+            const bodyKey = isAddPatient
+              ? "ui.provider.setup.skip_dialog.body_add_patient" as const
+              : "ui.provider.setup.skip_dialog.body" as const;
             const ok = await confirm({
               title: resolvePhrase("ui.provider.setup.skip_dialog.title", caregiverLang),
-              body: resolvePhrase("ui.provider.setup.skip_dialog.body", caregiverLang),
+              body: resolvePhrase(bodyKey, caregiverLang),
               confirmLabel: resolvePhrase("ui.provider.setup.skip_dialog.confirm", caregiverLang),
               cancelLabel: resolvePhrase("ui.provider.setup.skip_dialog.cancel", caregiverLang),
             });
-            if (ok) finish();
+            if (ok) {
+              if (isAddPatient) {
+                onCancel?.();
+              } else {
+                finish();
+              }
+            }
           }}
           aria-label={resolvePhrase("ui.provider.setup.skip_aria", caregiverLang)}
           style={{
@@ -216,20 +273,20 @@ export function Setup({ onDone, mode: _mode }: SetupProps) {
           gap: 6,
         }}
       >
-        {STEP_LABEL_KEYS.map((key, i) => (
+        {stepLabelKeys.map((key, i) => (
           <div key={i} style={{ flex: 1 }} aria-current={i === step ? "step" : undefined}>
             <div
               style={{
                 height: 4,
                 borderRadius: 2,
-                background: i <= step ? STEP_COLORS[i] : "#6B7280",
+                background: i <= step ? stepColors[i] : "#6B7280",
                 transition: "background 0.2s",
               }}
             />
             <div
               style={{
                 fontSize: 13,
-                color: i === step ? STEP_COLORS[i] : "#4B5563",
+                color: i === step ? stepColors[i] : "#4B5563",
                 marginTop: 4,
                 fontWeight: i === step ? 600 : 400,
                 textAlign: "center",
@@ -254,7 +311,7 @@ export function Setup({ onDone, mode: _mode }: SetupProps) {
           scrollPaddingBottom: 120,
         }}
       >
-        {step === 0 && (
+        {stepContent(step) === "patient" && (
           <StepPatient
             name={name}
             setName={setName}
@@ -265,18 +322,19 @@ export function Setup({ onDone, mode: _mode }: SetupProps) {
             caregiverLang={caregiverLang}
           />
         )}
-        {step === 1 && (
+        {stepContent(step) === "voice" && (
           <StepVoice
             patientName={name}
             patientVoice={patientVoice}
             setPatientVoice={setPatientVoice}
+            setSpeakerData={setSpeakerData}
             fallbackVoice={fallbackVoice}
             setFallbackVoice={setFallbackVoice}
             lang={lang}
             caregiverLang={caregiverLang}
           />
         )}
-        {step === 2 && (
+        {stepContent(step) === "careTeam" && (
           <StepCareTeam
             providers={providers}
             newProvName={newProvName}
@@ -293,7 +351,7 @@ export function Setup({ onDone, mode: _mode }: SetupProps) {
             caregiverLang={caregiverLang}
           />
         )}
-        {step === 3 && (
+        {stepContent(step) === "confirm" && (
           <StepConfirm
             name={name}
             bed={bed}
@@ -303,6 +361,7 @@ export function Setup({ onDone, mode: _mode }: SetupProps) {
             pin={pin}
             setPin={setPin}
             caregiverLang={caregiverLang}
+            hidePin={isAddPatient}
           />
         )}
       </div>
@@ -348,7 +407,7 @@ export function Setup({ onDone, mode: _mode }: SetupProps) {
             padding: "16px 24px",
             borderRadius: 14,
             border: "none",
-            background: STEP_COLORS[step],
+            background: stepColors[step],
             color: "#FFFFFF",
             fontSize: 18,
             fontWeight: 600,
@@ -356,7 +415,7 @@ export function Setup({ onDone, mode: _mode }: SetupProps) {
             minHeight: 56,
           }}
         >
-          {step === 3 ? resolvePhrase("ui.provider.setup.start", caregiverLang) : resolvePhrase("ui.provider.setup.continue", caregiverLang)}
+          {step === maxStep ? resolvePhrase("ui.provider.setup.start", caregiverLang) : resolvePhrase("ui.provider.setup.continue", caregiverLang)}
         </Btn>
       </div>
     </div>
@@ -458,6 +517,7 @@ function StepVoice({
   patientName,
   patientVoice,
   setPatientVoice,
+  setSpeakerData,
   fallbackVoice,
   setFallbackVoice,
   lang,
@@ -466,6 +526,7 @@ function StepVoice({
   patientName: string;
   patientVoice: boolean;
   setPatientVoice: (v: boolean) => void;
+  setSpeakerData: (data: unknown) => void;
   fallbackVoice: FallbackVoice | null;
   setFallbackVoice: (v: FallbackVoice | null) => void;
   lang: string;
@@ -488,7 +549,7 @@ function StepVoice({
         hasVoice={patientVoice}
         onCapture={(_blob, embedding) => {
           setPatientVoice(true);
-          if (embedding) useSettingsStore.getState().setSpeakerData(embedding);
+          if (embedding) setSpeakerData(embedding);
         }}
         onRemove={() => setPatientVoice(false)}
         locale={lang}
@@ -742,6 +803,7 @@ function StepConfirm({
   pin,
   setPin,
   caregiverLang,
+  hidePin,
 }: {
   name: string;
   bed: string;
@@ -751,6 +813,7 @@ function StepConfirm({
   pin: string;
   setPin: (v: string) => void;
   caregiverLang: string;
+  hidePin?: boolean;
 }) {
   return (
     <div>
@@ -801,38 +864,40 @@ function StepConfirm({
         />
       </div>
 
-      {/* PIN */}
-      <div style={{ marginTop: 28 }}>
-        <label htmlFor="setup-pin" style={labelStyle}>{resolvePhrase("ui.provider.setup.step3.pin_label", caregiverLang)}</label>
-        <p
-          style={{
-            fontSize: 14,
-            color: "#4B5563",
-            margin: "4px 0 12px",
-          }}
-        >
-          {resolvePhrase("ui.provider.setup.step3.pin_body", caregiverLang)}
-        </p>
-        <input
-          id="setup-pin"
-          type="text"
-          inputMode="numeric"
-          maxLength={4}
-          value={pin}
-          onInput={(e) => {
-            const v = (e.target as HTMLInputElement).value.replace(/\D/g, "");
-            setPin(v.slice(0, 4));
-          }}
-          placeholder={resolvePhrase("ui.provider.setup.step3.pin_placeholder", caregiverLang)}
-          style={{
-            ...inputStyle,
-            maxWidth: 160,
-            textAlign: "center",
-            letterSpacing: "0.3em",
-            fontSize: 24,
-          }}
-        />
-      </div>
+      {/* PIN — hidden in add-patient mode (device PIN already set) */}
+      {!hidePin && (
+        <div style={{ marginTop: 28 }}>
+          <label htmlFor="setup-pin" style={labelStyle}>{resolvePhrase("ui.provider.setup.step3.pin_label", caregiverLang)}</label>
+          <p
+            style={{
+              fontSize: 14,
+              color: "#4B5563",
+              margin: "4px 0 12px",
+            }}
+          >
+            {resolvePhrase("ui.provider.setup.step3.pin_body", caregiverLang)}
+          </p>
+          <input
+            id="setup-pin"
+            type="text"
+            inputMode="numeric"
+            maxLength={4}
+            value={pin}
+            onInput={(e) => {
+              const v = (e.target as HTMLInputElement).value.replace(/\D/g, "");
+              setPin(v.slice(0, 4));
+            }}
+            placeholder={resolvePhrase("ui.provider.setup.step3.pin_placeholder", caregiverLang)}
+            style={{
+              ...inputStyle,
+              maxWidth: 160,
+              textAlign: "center",
+              letterSpacing: "0.3em",
+              fontSize: 24,
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }

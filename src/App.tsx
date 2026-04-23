@@ -24,6 +24,7 @@ import { SettingsPanel } from "./components/settings/SettingsPanel";
 import { SwitchSheet } from "./components/switch/SwitchSheet";
 import { PinGate } from "./components/shared/PinGate";
 import { ConfirmDialogHost } from "./components/shared/ConfirmDialog";
+import { StaffSessionTimer } from "./components/shared/StaffSessionTimer";
 import { Setup } from "./components/settings/Setup";
 import { getModelManager } from "./models/modelManager";
 import { bootModels, verifyAllOnBoot } from "./models/bootModels";
@@ -73,6 +74,7 @@ export function App() {
   const settingsOpen = useUIStore((s) => s.settingsOpen);
   const pinEntryOpen = useUIStore((s) => s.pinEntryOpen);
   const switchSheetOpen = useUIStore((s) => s.switchSheetOpen);
+  const addPatientOpen = useUIStore((s) => s.addPatientOpen);
   const activeProvIdx = useUIStore((s) => s.activeProvIdx);
   const speaking = useUIStore((s) => s.speaking);
   const setSpeaking = useUIStore((s) => s.setSpeaking);
@@ -90,26 +92,33 @@ export function App() {
   // pinIntent tracks which action to perform after a successful PIN.
   const [pinIntent, setPinIntent] = useState<"settings" | "switch" | null>(null);
 
+  // Read staffAuthed reactively for the header's End Staff Session button.
+  const staffAuthed = useUIStore((s) => s.staffAuthed);
+
   const handleOpenSettings = useCallback(() => {
-    if (cfg?.pin) {
+    if (useUIStore.getState().staffAuthed || !cfg?.pin) {
+      useUIStore.getState().bumpStaffAuthed();
+      openOverlay("settings");
+    } else {
       setPinIntent("settings");
       openOverlay("pinEntry");
-    } else {
-      openOverlay("settings");
     }
   }, [cfg?.pin, openOverlay]);
 
   const handleOpenSwitch = useCallback(() => {
-    if (cfg?.pin) {
+    if (useUIStore.getState().staffAuthed || !cfg?.pin) {
+      useUIStore.getState().bumpStaffAuthed();
+      openOverlay("switch");
+    } else {
       setPinIntent("switch");
       openOverlay("pinEntry");
-    } else {
-      openOverlay("switch");
     }
   }, [cfg?.pin, openOverlay]);
 
   const handlePinSuccess = useCallback(() => {
     closeOverlay("pinEntry");
+    useUIStore.getState().setStaffAuthed(true);
+    useUIStore.getState().bumpStaffAuthed();
     if (pinIntent === "switch") {
       openOverlay("switch");
     } else {
@@ -239,7 +248,7 @@ export function App() {
   // Wait for IndexedDB hydration before deciding setup vs main app
   if (!hasHydrated) return null;
   if (!cfg || cfg.patients.length === 0 || cfg.activePatientId === null) {
-    return <Setup onDone={setCfg} mode="first-run" />;
+    return <Setup onFirstRunDone={setCfg} mode="first-run" />;
   }
 
   // After the gate above, active is guaranteed non-null.
@@ -297,7 +306,13 @@ export function App() {
       class="font-sans flex flex-col relative"
       style={{ background: t.bg, color: t.text, height: "100dvh", overflow: "hidden" }}
     >
-      <Header cfg={cfg} onSettings={handleOpenSettings} onSwitchPatient={handleOpenSwitch} />
+      <Header
+        cfg={cfg}
+        onSettings={handleOpenSettings}
+        onSwitchPatient={handleOpenSwitch}
+        staffAuthed={staffAuthed}
+        onEndStaffSession={() => useUIStore.getState().endStaffSession()}
+      />
 
       {/* Main content area. Thread is pinned at the top; the region below
           scrolls independently so the conversation never scrolls out of view. */}
@@ -464,6 +479,17 @@ export function App() {
         />
       )}
 
+      {addPatientOpen && (
+        <Setup
+          mode="add-patient"
+          onAddPatientDone={() => {
+            closeOverlay("addPatient");
+          }}
+          onCancel={() => closeOverlay("addPatient")}
+        />
+      )}
+
+      <StaffSessionTimer />
       <ConfirmDialogHost />
     </div>
   );

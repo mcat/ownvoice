@@ -628,6 +628,7 @@ const en = {
   "ui.provider.setup.skip_aria": "Skip setup",
   "ui.provider.setup.skip_dialog.title": "Skip setup?",
   "ui.provider.setup.skip_dialog.body": "You can finish this later in Settings.",
+  "ui.provider.setup.skip_dialog.body_add_patient": "No patient will be added.",
   "ui.provider.setup.skip_dialog.confirm": "Skip setup",
   "ui.provider.setup.skip_dialog.cancel": "Keep going",
 
@@ -730,7 +731,6 @@ const en = {
   "ui.provider.settings.patients.active_remove_hint": "Switch to another patient before removing this one.",
   "ui.provider.settings.patients.remove_button": "Remove",
   "ui.provider.settings.patients.add_patient": "+ Add Patient",
-  "ui.provider.settings.patients.add_patient_disabled_hint": "Available in the next release.",
   "ui.provider.settings.patients.remove_dialog.title": "Remove {name}?",
   "ui.provider.settings.patients.remove_dialog.body": "This will delete their voice sample, conversation history, and cached audio for their voice clone. Care-team voice clones are kept for other patients. This cannot be undone.",
   "ui.provider.settings.patients.remove_dialog.confirm": "Remove",
@@ -779,7 +779,6 @@ const en = {
   // ── UI chrome: SwitchSheet ────────────────────────────────────
   "ui.provider.switch.title": "Switch Patient",
   "ui.provider.switch.add_patient": "+ Add Patient",
-  "ui.provider.switch.add_patient_disabled_hint": "Available in the next release.",
   "ui.provider.switch.voice_captured": "Voice captured",
   "ui.provider.switch.no_voice": "No voice",
   "ui.provider.switch.last_active_just_now": "Just now",
@@ -788,6 +787,13 @@ const en = {
   "ui.provider.switch.last_active_days": "Last active {n}d ago",
   "ui.provider.switch.currently_active": "Currently active",
   "ui.provider.switch.switched_announcement": "Switched to {name}. {count} conversation messages.",
+
+  // ── UI chrome: Staff session warning toast ────────────────────
+  "ui.provider.staff_session.warning_title": "Staff session ending",
+  "ui.provider.staff_session.warning_body": "Your staff access will lock in {n} seconds.",
+  "ui.provider.staff_session.extend": "Extend session",
+  "ui.provider.staff_session.end_now": "End now",
+  "ui.provider.nav.end_staff_session": "End staff session",
 } as const;
 
 export type PhraseKey = keyof typeof en;

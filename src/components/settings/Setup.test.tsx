@@ -1,6 +1,15 @@
 import { render, screen, fireEvent, waitFor, act } from "@testing-library/preact";
 import { Setup } from "./Setup";
 import { ConfirmDialogHost } from "../shared/ConfirmDialog";
+import { useSettingsStore } from "../../stores/settingsStore";
+import * as audioCacheRunner from "../../models/audioCacheRunner";
+
+vi.mock("../../models/audioCacheRunner", () => ({
+  pauseAll: vi.fn(),
+  runPreGeneration: vi.fn(),
+  retryFailed: vi.fn(),
+  abort: vi.fn(),
+}));
 
 // Mock getModelManager to avoid model init side effects
 vi.mock("../../models/modelManager", () => ({
@@ -16,11 +25,29 @@ vi.mock("../../models/modelManager", () => ({
   }),
 }));
 
-/** Render Setup with ConfirmDialogHost so confirm() works. */
+/** Render Setup in first-run mode with ConfirmDialogHost so confirm() works. */
 function renderSetup(onDone: ReturnType<typeof vi.fn>) {
   return render(
     <>
-      <Setup onDone={onDone} />
+      <Setup onFirstRunDone={onDone} />
+      <ConfirmDialogHost />
+    </>,
+  );
+}
+
+/** Render Setup in add-patient mode. */
+function renderAddPatient(
+  onAddPatientDone: ReturnType<typeof vi.fn>,
+  opts?: { onFirstRunDone?: ReturnType<typeof vi.fn>; onCancel?: ReturnType<typeof vi.fn> },
+) {
+  return render(
+    <>
+      <Setup
+        mode="add-patient"
+        onAddPatientDone={onAddPatientDone}
+        onFirstRunDone={opts?.onFirstRunDone}
+        onCancel={opts?.onCancel}
+      />
       <ConfirmDialogHost />
     </>,
   );
@@ -716,7 +743,7 @@ describe("Setup", () => {
       );
     });
 
-    it("PIN entered is sent to onDone", () => {
+    it("PIN entered is sent to onFirstRunDone", () => {
       renderSetup(onDone);
       // Navigate to step 3
       fireEvent.click(screen.getByText("Continue")); // → Step 1
@@ -737,6 +764,182 @@ describe("Setup", () => {
           pin: "9876",
         }),
       );
+    });
+  });
+
+  /* ---------- add-patient mode ---------- */
+  describe('mode="add-patient"', () => {
+    const onAddDone = vi.fn();
+
+    beforeEach(() => {
+      onAddDone.mockClear();
+      // Seed the store with an existing device configuration so addPatient works
+      useSettingsStore.setState({
+        cfg: {
+          pin: "1234",
+          caregiverLang: "en",
+          providers: [],
+          patients: [{
+            id: "existing-1",
+            name: "Existing",
+            bed: "1A",
+            patientLang: "en",
+            hasVoice: false,
+            speakerData: null,
+            addedAt: 1000,
+            lastActiveAt: 1000,
+          }],
+          activePatientId: "existing-1",
+        },
+        _hasHydrated: true,
+      });
+    });
+
+    afterEach(() => {
+      useSettingsStore.setState({ cfg: null, _hasHydrated: false });
+    });
+
+    it("Care Team step is skipped — progress shows 3 steps", () => {
+      renderAddPatient(onAddDone);
+      // Progress bar should have Patient, Voice, Confirm — but NOT Care Team
+      expect(screen.getByText("Patient")).toBeInTheDocument();
+      expect(screen.getByText("Voice")).toBeInTheDocument();
+      expect(screen.getByText("Confirm")).toBeInTheDocument();
+      expect(screen.queryByText("Care Team")).not.toBeInTheDocument();
+    });
+
+    it("navigating through steps does not show Care Team step heading", () => {
+      renderAddPatient(onAddDone);
+      // Step 0 — Patient
+      expect(screen.getByText("Welcome to OwnVoice")).toBeInTheDocument();
+
+      // Step 1 — Voice (skip Care Team)
+      fireEvent.click(screen.getByText("Continue"));
+      vi.advanceTimersByTime(300);
+      expect(screen.getByText("Voice sample")).toBeInTheDocument();
+
+      // Step 2 — Confirm (no Care Team in between)
+      fireEvent.click(screen.getByText("Continue"));
+      vi.advanceTimersByTime(300);
+      expect(screen.getByText("Ready to go")).toBeInTheDocument();
+
+      // The Care team step heading (<h2>) should not be present.
+      // Note: "Care team" does appear as a summary row label on confirm,
+      // so we check for the heading specifically via the role.
+      const careTeamHeadings = screen.queryAllByRole("heading").filter(
+        (h) => h.textContent === "Care team",
+      );
+      expect(careTeamHeadings).toHaveLength(0);
+    });
+
+    it("PIN input is hidden on the confirm step", () => {
+      renderAddPatient(onAddDone);
+      // Navigate to confirm step
+      fireEvent.click(screen.getByText("Continue")); // → Voice
+      vi.advanceTimersByTime(300);
+      fireEvent.click(screen.getByText("Continue")); // → Confirm
+      vi.advanceTimersByTime(300);
+
+      expect(screen.getByText("Ready to go")).toBeInTheDocument();
+      expect(screen.queryByPlaceholderText("1234")).not.toBeInTheDocument();
+      expect(screen.queryByText(/Staff PIN/)).not.toBeInTheDocument();
+    });
+
+    it("onAddPatientDone called on finish with a Patient object", () => {
+      renderAddPatient(onAddDone);
+
+      // Enter patient info
+      fireEvent.input(screen.getByPlaceholderText("First name or preferred name"), {
+        target: { value: "New Patient" },
+      });
+      fireEvent.input(screen.getByPlaceholderText("e.g. 4B-12"), {
+        target: { value: "3C-07" },
+      });
+
+      // Navigate to confirm
+      fireEvent.click(screen.getByText("Continue")); // → Voice
+      vi.advanceTimersByTime(300);
+      fireEvent.click(screen.getByText("Continue")); // → Confirm
+      vi.advanceTimersByTime(300);
+
+      // Finish
+      fireEvent.click(screen.getByText("Start OwnVoice"));
+
+      expect(onAddDone).toHaveBeenCalledOnce();
+      const patient = onAddDone.mock.calls[0][0];
+      expect(patient).toEqual(
+        expect.objectContaining({
+          name: "New Patient",
+          bed: "3C-07",
+          patientLang: "en",
+          hasVoice: false,
+        }),
+      );
+      // Should have generated id, addedAt, lastActiveAt
+      expect(patient.id).toBeTypeOf("string");
+      expect(patient.addedAt).toBeTypeOf("number");
+      expect(patient.lastActiveAt).toBeTypeOf("number");
+    });
+
+    it("onFirstRunDone is NOT called in add-patient mode", () => {
+      const onFirstRun = vi.fn();
+      renderAddPatient(onAddDone, { onFirstRunDone: onFirstRun });
+
+      // Navigate to confirm and finish
+      fireEvent.click(screen.getByText("Continue")); // → Voice
+      vi.advanceTimersByTime(300);
+      fireEvent.click(screen.getByText("Continue")); // → Confirm
+      vi.advanceTimersByTime(300);
+      fireEvent.click(screen.getByText("Start OwnVoice"));
+
+      expect(onFirstRun).not.toHaveBeenCalled();
+      expect(onAddDone).toHaveBeenCalledOnce();
+    });
+
+    it("finish calls pauseAll before addPatient", () => {
+      vi.mocked(audioCacheRunner.pauseAll).mockReset();
+      renderAddPatient(onAddDone);
+
+      // Navigate through and finish
+      fireEvent.click(screen.getByText("Continue")); // → Voice
+      vi.advanceTimersByTime(300);
+      fireEvent.click(screen.getByText("Continue")); // → Confirm
+      vi.advanceTimersByTime(300);
+      fireEvent.click(screen.getByText("Start OwnVoice"));
+
+      expect(audioCacheRunner.pauseAll).toHaveBeenCalledOnce();
+      expect(onAddDone).toHaveBeenCalledOnce();
+    });
+
+    it("Skip in add-patient mode calls onCancel (not onAddPatientDone)", async () => {
+      vi.useRealTimers();
+      const onCancel = vi.fn();
+      vi.mocked(audioCacheRunner.pauseAll).mockReset();
+      renderAddPatient(onAddDone, { onCancel });
+
+      // Click Skip
+      fireEvent.click(screen.getByText(/Skip/));
+
+      // Confirm dialog appears with add-patient body text
+      await waitFor(() => {
+        expect(screen.getByRole("dialog")).toBeInTheDocument();
+      });
+      expect(screen.getByText("No patient will be added.")).toBeInTheDocument();
+
+      // Confirm skip
+      const dialog = screen.getByRole("dialog");
+      const dialogConfirmBtns = dialog.querySelectorAll("button");
+      const dialogConfirm = Array.from(dialogConfirmBtns).find(
+        (btn) => btn.textContent === "Skip setup",
+      )!;
+      fireEvent.click(dialogConfirm);
+
+      await waitFor(() => {
+        expect(onCancel).toHaveBeenCalledOnce();
+      });
+      expect(onAddDone).not.toHaveBeenCalled();
+      // pauseAll should NOT be called on skip — no patient is being added
+      expect(audioCacheRunner.pauseAll).not.toHaveBeenCalled();
     });
   });
 });

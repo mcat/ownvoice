@@ -15,6 +15,7 @@ export const z = {
   sheetStacked: 1100,
   pin: 1200,
   speaking: 1250,
+  toast: 1275,
   setup: 1300,
 } as const;
 

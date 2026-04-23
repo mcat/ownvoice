@@ -1,8 +1,10 @@
 import { render, screen, fireEvent } from "@testing-library/preact";
+import { axe } from "vitest-axe";
 import { SwitchSheet } from "./SwitchSheet";
 import { light } from "../../theme/tokens";
 import { useSettingsStore } from "../../stores/settingsStore";
 import { useConversationStore } from "../../stores/conversationStore";
+import { useUIStore } from "../../stores/uiStore";
 import { makeTestCfg } from "../../test/makeCfg";
 import type { Patient } from "../../types";
 import * as audioCacheRunner from "../../models/audioCacheRunner";
@@ -75,6 +77,7 @@ function flushMicrotask(): Promise<void> {
 
 beforeEach(() => {
   setupStore();
+  useUIStore.getState().resetUI();
   vi.mocked(audioCacheRunner.pauseAll).mockReset();
 });
 
@@ -136,16 +139,16 @@ describe("SwitchSheet", () => {
     expect(onClose).not.toHaveBeenCalled();
   });
 
-  it("+ Add Patient card is disabled", () => {
-    render(<SwitchSheet open onClose={() => {}} t={light} theme="light" />);
+  it("+ Add Patient tap closes SwitchSheet and opens addPatient overlay", () => {
+    const onClose = vi.fn();
+    render(<SwitchSheet open onClose={onClose} t={light} theme="light" />);
     const addBtn = screen.getByRole("button", { name: /\+ Add Patient/i });
-    expect(addBtn).toBeDisabled();
-    // Check aria-describedby hint is in the DOM
-    const hintId = addBtn.getAttribute("aria-describedby");
-    expect(hintId).toBeTruthy();
-    const hintEl = document.getElementById(hintId!);
-    expect(hintEl).toBeInTheDocument();
-    expect(hintEl!.textContent).toMatch(/Available in the next release/);
+    expect(addBtn).not.toBeDisabled();
+
+    fireEvent.click(addBtn);
+
+    expect(onClose).toHaveBeenCalledOnce();
+    expect(useUIStore.getState().addPatientOpen).toBe(true);
   });
 
   it("shows voice-readiness chip", () => {
@@ -256,5 +259,17 @@ describe("SwitchSheet keyboard navigation", () => {
     expect(useSettingsStore.getState().cfg?.activePatientId).toBe("patient-b");
     await flushMicrotask();
     expect(onClose).toHaveBeenCalledOnce();
+  });
+});
+
+describe("SwitchSheet accessibility", () => {
+  it("has no WCAG AA a11y violations", async () => {
+    const { container } = render(
+      <SwitchSheet open onClose={() => {}} t={light} theme="light" />,
+    );
+    const results = await axe(container, {
+      rules: { "color-contrast": { enabled: false } },
+    });
+    expect(results).toHaveNoViolations();
   });
 });
