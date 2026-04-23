@@ -1,6 +1,7 @@
 import { getModelManager } from "./modelManager";
 import { isGPUReady, synthesizeGPU } from "./ttsEngine";
 import { postProcessAudio } from "../speak";
+import { recordHash } from "../stores/patientIndex";
 
 // Bumped to v3 to orphan audio generated under the pre-sampling worker:
 // the earlier `USE_GREEDY=true` code path produced stuttered audio for
@@ -176,6 +177,9 @@ export async function putCachedAudio(
   phrase: string,
   speakerData: unknown,
   audio: Float32Array,
+  /** The patient this clip belongs to — required for index maintenance.
+   *  null for provider clips (no index tracking). */
+  patientId: string | null = null,
 ): Promise<void> {
   const fp = embeddingFingerprint(speakerData);
   if (fp === "none") return;
@@ -187,6 +191,9 @@ export async function putCachedAudio(
     const pcm = float32ToInt16(audio);
     await writable.write(pcm.buffer as ArrayBuffer);
     await writable.close();
+    if (patientId) {
+      await recordHash(patientId, key);
+    }
   } catch (err) {
     console.error("[OwnVoice:Cache] Failed to store audio:", err);
   }
@@ -227,12 +234,13 @@ export async function* generateAllPhrases(
   phrases: string[],
   speakerData: unknown,
   signal?: AbortSignal,
-  opts?: { gpuOnly?: boolean },
+  opts?: { gpuOnly?: boolean; patientId?: string | null },
 ): AsyncGenerator<GenerateProgress> {
   const mgr = getModelManager();
   const worker = mgr.getWorker("tts");
   const gpuAvailable = isGPUReady();
   const gpuOnly = opts?.gpuOnly === true;
+  const patientId = opts?.patientId ?? null;
 
   // GPU-only mode is used for the large pain-sentence matrix where WASM
   // would take hours. If there is no GPU, skip the whole pass — don't
@@ -277,7 +285,7 @@ export async function* generateAllPhrases(
       // Post-process once here, at cache-write time, so playback in
       // speak.ts skips the ~10-50ms FFT pipeline on every tap.
       const processed = postProcessAudio(audio, SAMPLE_RATE);
-      await putCachedAudio(phrase, speakerData, processed);
+      await putCachedAudio(phrase, speakerData, processed, patientId);
       consecutiveFailures = 0;
     } catch (err) {
       if (signal?.aborted) return;
@@ -318,7 +326,7 @@ export async function* retryFailed(
   phrases: string[],
   speakerData: unknown,
   signal?: AbortSignal,
-  opts?: { gpuOnly?: boolean },
+  opts?: { gpuOnly?: boolean; patientId?: string | null },
 ): AsyncGenerator<GenerateProgress> {
   yield* generateAllPhrases(phrases, speakerData, signal, opts);
 }
