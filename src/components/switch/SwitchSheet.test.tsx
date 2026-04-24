@@ -151,12 +151,17 @@ describe("SwitchSheet", () => {
     expect(useUIStore.getState().addPatientOpen).toBe(true);
   });
 
-  it("shows voice-readiness chip", () => {
+  it("does NOT show voice-readiness chip on switch cards", () => {
+    // Voice-capture status is staff-facing and belongs in Settings →
+    // Patients, not in the high-frequency Switch flow. Keeping the
+    // Switch card focused on name + bed + locale + last-active time.
     render(<SwitchSheet open onClose={() => {}} t={light} theme="light" />);
     const aliceOption = screen.getAllByRole("option").find((o) => o.textContent?.includes("Alice"))!;
-    expect(aliceOption).toHaveTextContent("Voice captured");
+    expect(aliceOption).not.toHaveTextContent("Voice captured");
+    expect(aliceOption).not.toHaveTextContent("No voice");
     const bobOption = screen.getAllByRole("option").find((o) => o.textContent?.includes("Bob"))!;
-    expect(bobOption).toHaveTextContent("No voice");
+    expect(bobOption).not.toHaveTextContent("Voice captured");
+    expect(bobOption).not.toHaveTextContent("No voice");
   });
 
   it("shows locale flag and label", () => {
