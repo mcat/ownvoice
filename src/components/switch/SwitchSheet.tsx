@@ -229,7 +229,12 @@ export function SwitchSheet({ open, onClose, t: tokens, theme }: SwitchSheetProp
                 </div>
                 <div style={metaStyle}>
                   {patient.bed && <span>Bed {patient.bed}</span>}
-                  {lang && <span>{lang.flag} {lang.label}</span>}
+                  {lang && (
+                    <span>
+                      {lang.flag} {lang.label}
+                      {lang.englishLabel !== lang.label && ` / ${lang.englishLabel}`}
+                    </span>
+                  )}
                 </div>
               </li>
             );

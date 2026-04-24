@@ -139,6 +139,9 @@ export function PatientInfoSection({
             >
               <span style={{ fontSize: 22 }}>{l.flag}</span>
               <span style={{ fontWeight: selected ? 600 : 400 }}>{l.label}</span>
+              {l.englishLabel !== l.label && (
+                <span style={{ fontWeight: 400, color: t.muted, fontSize: 12 }}>/ {l.englishLabel}</span>
+              )}
               {isDraft && <span style={draftBadgeStyle}>draft</span>}
             </button>
           );
@@ -171,6 +174,9 @@ export function PatientInfoSection({
             >
               <span style={{ fontSize: 22 }}>{l.flag}</span>
               <span style={{ fontWeight: selected ? 600 : 400 }}>{l.label}</span>
+              {l.englishLabel !== l.label && (
+                <span style={{ fontWeight: 400, color: t.muted, fontSize: 12 }}>/ {l.englishLabel}</span>
+              )}
               {isDraft && <span style={draftBadgeStyle}>draft</span>}
             </button>
           );

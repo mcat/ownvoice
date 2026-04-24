@@ -504,6 +504,9 @@ function StepPatient({
             <span style={{ fontWeight: lang === l.code ? 600 : 400 }}>
               {l.label}
             </span>
+            {l.englishLabel !== l.label && (
+              <span style={{ fontWeight: 400, color: "#6B7280", fontSize: 12 }}>/ {l.englishLabel}</span>
+            )}
           </button>
         ))}
       </div>
@@ -807,7 +810,7 @@ function StepConfirm({
 }: {
   name: string;
   bed: string;
-  lang: { code: string; label: string; flag: string } | undefined;
+  lang: { code: string; label: string; englishLabel: string; flag: string } | undefined;
   patientVoice: boolean;
   providers: Provider[];
   pin: string;
@@ -845,7 +848,7 @@ function StepConfirm({
         />
         <SummaryRow
           label={resolvePhrase("ui.provider.setup.step3.summary.language", caregiverLang)}
-          value={lang ? `${lang.flag} ${lang.label}` : resolvePhrase("ui.provider.setup.step3.summary.language_default", caregiverLang)}
+          value={lang ? `${lang.flag} ${lang.label}${lang.englishLabel !== lang.label ? ` / ${lang.englishLabel}` : ""}` : resolvePhrase("ui.provider.setup.step3.summary.language_default", caregiverLang)}
         />
         <SummaryRow
           label={resolvePhrase("ui.provider.setup.step3.summary.voice", caregiverLang)}

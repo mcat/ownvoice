@@ -137,7 +137,12 @@ export function PatientsSection({ t, theme }: Props) {
                 }}
               >
                 {patient.bed && <span>Bed {patient.bed}</span>}
-                {lang && <span>{lang.flag} {lang.label}</span>}
+                {lang && (
+                  <span>
+                    {lang.flag} {lang.label}
+                    {lang.englishLabel !== lang.label && ` / ${lang.englishLabel}`}
+                  </span>
+                )}
                 <span style={voiceChipStyle}>
                   {patient.hasVoice
                     ? resolvePhrase("ui.provider.switch.voice_captured", caregiverLang)

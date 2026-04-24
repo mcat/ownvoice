@@ -124,6 +124,9 @@ export interface SpeakingState {
 
 export interface Language {
   code: string;
+  /** Native-script name (e.g. "Français") */
   label: string;
+  /** English name (e.g. "French") — shown alongside native label in pickers */
+  englishLabel: string;
   flag: string;
 }
