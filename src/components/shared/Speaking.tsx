@@ -31,11 +31,12 @@ export function Speaking({
   const activeProvIdx = useUIStore((s) => s.activeProvIdx);
   const activeProv = cfg?.providers?.[activeProvIdx] ?? cfg?.providers?.[0];
 
-  const subLabel = isProvider
-    ? activeProv
-      ? `${activeProv.emoji ? activeProv.emoji + " " : ""}${activeProv.name}`
-      : resolvePhrase("ui.dual.speaking.patient_voice", patientLang)
-    : resolvePhrase("ui.dual.speaking.patient_voice", patientLang);
+  // For provider voice, label the speaking caregiver by name/emoji so the
+  // patient can see who's talking. For patient voice the label was
+  // "Your Voice" — self-evident on a patient-tapped utterance, so omit.
+  const subLabel = isProvider && activeProv
+    ? `${activeProv.emoji ? activeProv.emoji + " " : ""}${activeProv.name}`
+    : null;
 
   // onDone is typically an inline arrow from the parent — a new reference
   // every render. Tracking it via a ref keeps the animation effect from
@@ -118,19 +119,21 @@ export function Speaking({
         {"\uD83D\uDD0A"}
       </div>
       <div style={{ minWidth: 0, flex: 1 }}>
-        <div
-          class="font-sans"
-          style={{
-            fontSize: 13,
-            color: "rgba(245,245,245,0.7)",
-            letterSpacing: 1.5,
-            textTransform: "uppercase",
-            lineHeight: 1,
-            marginBottom: 4,
-          }}
-        >
-          {subLabel}
-        </div>
+        {subLabel && (
+          <div
+            class="font-sans"
+            style={{
+              fontSize: 13,
+              color: "rgba(245,245,245,0.7)",
+              letterSpacing: 1.5,
+              textTransform: "uppercase",
+              lineHeight: 1,
+              marginBottom: 4,
+            }}
+          >
+            {subLabel}
+          </div>
+        )}
         {(() => {
           // The Speaking bar is primarily read by the care team, so the
           // caregiverLang string is the one that should be prominent
