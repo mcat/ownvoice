@@ -429,3 +429,87 @@ describe("settingsStore persist middleware wiring", () => {
     expect(persist.getOptions().version).toBe(2);
   });
 });
+
+describe("settingsStore action branch coverage (mutation-targeted)", () => {
+  beforeEach(() => {
+    useSettingsStore.setState({ cfg: null, speakerData: null, _hasHydrated: false });
+  });
+
+  it("switchPatient is a no-op when cfg is null (null-guard)", () => {
+    useSettingsStore.setState({ cfg: null });
+    expect(() => useSettingsStore.getState().switchPatient("any-id")).not.toThrow();
+    expect(useSettingsStore.getState().cfg).toBeNull();
+  });
+
+  it("switchPatient logs a warning with the specific id when patient not found", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    useSettingsStore.setState({
+      cfg: { pin: "", caregiverLang: "en", providers: [], patients: [
+        { id: "a", name: "A", bed: "", patientLang: "en", hasVoice: false, speakerData: null, addedAt: 0, lastActiveAt: 0 },
+      ], activePatientId: "a" },
+    });
+    useSettingsStore.getState().switchPatient("unknown-xyz");
+    expect(warn).toHaveBeenCalled();
+    const firstCallArg = warn.mock.calls[0]?.[0];
+    // StringLiteral mutation on the warning message would lose "unknown-xyz"
+    // or the "[settingsStore]" prefix
+    expect(firstCallArg).toContain("unknown-xyz");
+    expect(firstCallArg).toContain("settingsStore");
+    expect(firstCallArg).toContain("switchPatient");
+    expect(useSettingsStore.getState().cfg!.activePatientId).toBe("a");
+    warn.mockRestore();
+  });
+
+  it("switchPatient bumps lastActiveAt ONLY on the target patient, not others", () => {
+    const now0 = 1000;
+    const a: Patient = { id: "a", name: "A", bed: "", patientLang: "en", hasVoice: false, speakerData: null, addedAt: 0, lastActiveAt: now0 };
+    const b: Patient = { id: "b", name: "B", bed: "", patientLang: "en", hasVoice: false, speakerData: null, addedAt: 0, lastActiveAt: now0 };
+    const c: Patient = { id: "c", name: "C", bed: "", patientLang: "en", hasVoice: false, speakerData: null, addedAt: 0, lastActiveAt: now0 };
+    useSettingsStore.setState({
+      cfg: { pin: "", caregiverLang: "en", providers: [], patients: [a, b, c], activePatientId: "a" },
+    });
+    const before = Date.now();
+    useSettingsStore.getState().switchPatient("b");
+    const after = Date.now();
+    const cfg = useSettingsStore.getState().cfg!;
+    expect(cfg.patients[0].lastActiveAt).toBe(now0);
+    expect(cfg.patients[1].lastActiveAt).toBeGreaterThanOrEqual(before);
+    expect(cfg.patients[1].lastActiveAt).toBeLessThanOrEqual(after);
+    expect(cfg.patients[2].lastActiveAt).toBe(now0);
+  });
+
+  it("removePatient is a no-op when cfg is null", () => {
+    useSettingsStore.setState({ cfg: null });
+    expect(() => useSettingsStore.getState().removePatient("any")).not.toThrow();
+    expect(useSettingsStore.getState().cfg).toBeNull();
+  });
+
+  it("addPatient sets activePatientId to the new patient's id even when a previous active existed", () => {
+    const existing: Patient = { id: "existing", name: "Old", bed: "", patientLang: "en", hasVoice: false, speakerData: null, addedAt: 0, lastActiveAt: 0 };
+    useSettingsStore.setState({
+      cfg: { pin: "", caregiverLang: "en", providers: [], patients: [existing], activePatientId: "existing" },
+    });
+    const p = useSettingsStore.getState().addPatient({
+      name: "New", bed: "", patientLang: "en",
+      hasVoice: false, speakerData: null, fallbackVoice: null,
+    });
+    const cfg = useSettingsStore.getState().cfg!;
+    expect(cfg.activePatientId).toBe(p.id);
+    expect(cfg.activePatientId).not.toBe("existing");
+    expect(cfg.patients).toHaveLength(2);
+  });
+
+  it("updateCfg merges partial fields without wiping existing ones", () => {
+    const before: Patient = { id: "a", name: "A", bed: "1", patientLang: "en", hasVoice: false, speakerData: null, addedAt: 0, lastActiveAt: 0 };
+    useSettingsStore.setState({
+      cfg: { pin: "1234", caregiverLang: "en", providers: [{ name: "Dr. X", hasVoice: false }], patients: [before], activePatientId: "a" },
+    });
+    useSettingsStore.getState().updateCfg({ caregiverLang: "es" });
+    const cfg = useSettingsStore.getState().cfg!;
+    expect(cfg.caregiverLang).toBe("es");
+    expect(cfg.pin).toBe("1234");
+    expect(cfg.providers).toHaveLength(1);
+    expect(cfg.patients[0].id).toBe("a");
+    expect(cfg.activePatientId).toBe("a");
+  });
+});
