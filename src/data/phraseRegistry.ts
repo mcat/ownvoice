@@ -33,13 +33,38 @@ import type {
 } from "../types";
 
 // ── Locale registry ──────────────────────────────────────────────
-// All locales are imported statically. Add new locales here.
+// All locales are imported statically so language switching works offline.
+//
+// Registered-but-DRAFT locales (see DRAFT_LOCALES below) serve machine-
+// translated content that is CLINICALLY UNREVIEWED. They're registered so
+// the language picker exercises the bilingual code paths at test time;
+// the clinical-review gate is enforced by DRAFT_LOCALES (surfaced to
+// clinicians via a "draft" badge in the Settings picker) rather than by
+// absence from this map.
+import es from "./locales/es";
+import zh from "./locales/zh";
+import vi from "./locales/vi";
+import tl from "./locales/tl";
+
 const LOCALES: Record<string, LocaleStrings> = {
   en,
-  // es: es,
-  // zh: zh,
-  // ... add as translated
+  es,
+  zh,
+  vi,
+  tl,
 };
+
+/** Locales whose content is machine-translated and pending native-speaker
+ *  + clinical review. The UI marks these as "draft" so staff see the
+ *  review gate visually. Do NOT use for production patient care. */
+export const DRAFT_LOCALES: ReadonlySet<string> = new Set([
+  "es", "zh", "vi", "tl",
+]);
+
+/** True when the given locale is registered but not yet clinically reviewed. */
+export function isDraftLocale(locale: string): boolean {
+  return DRAFT_LOCALES.has(locale);
+}
 
 /** Resolve a phrase key for a locale, falling back to English. */
 export function t(key: PhraseKey, locale: string = "en"): string {
@@ -60,7 +85,7 @@ export interface SuggestionItem {
 // ── Patient categories ───────────────────────────────────────────
 
 function phrase(key: PhraseKey, icon: string, locale: string): Phrase {
-  return { text: t(key, locale), icon };
+  return { text: t(key, locale), icon, key };
 }
 
 export function getCategories(locale: string = "en"): Category[] {
@@ -213,6 +238,55 @@ export function getProviderCategories(locale: string = "en"): Record<string, str
       t("provider.goals_of_care.joy", locale),
       t("provider.goals_of_care.wishes", locale),
       t("provider.goals_of_care.hopes", locale),
+    ],
+  };
+}
+
+/** Keyed variant of {@link getProviderCategories}. Each phrase carries its
+ *  PhraseKey so `speakAsProvider` can resolve patientLang for speech
+ *  (provider voice speaks patient's language per the voice-direction
+ *  model). Section labels remain display-locale strings so the existing
+ *  `activeSection` state, which stores the resolved label, still works. */
+export function getKeyedProviderCategories(
+  locale: string = "en",
+): Record<string, SuggestionItem[]> {
+  return {
+    [t("provider.cat.responses", locale).toLowerCase()]: [
+      si("provider.responses.help", locale),
+      si("provider.responses.interpreter", locale),
+      si("provider.responses.family", locale),
+      si("provider.responses.get_that", locale),
+      si("provider.responses.doctor_know", locale),
+      si("provider.responses.medication", locale),
+      si("provider.responses.family_coming", locale),
+      si("provider.responses.doctor_soon", locale),
+      si("provider.responses.doing_well", locale),
+      si("provider.responses.rest", locale),
+    ],
+    [t("provider.cat.questions", locale).toLowerCase()]: [
+      si("provider.questions.feeling", locale),
+      si("provider.questions.need", locale),
+      si("provider.questions.where_hurts", locale),
+      si("provider.questions.rate_pain", locale),
+      si("provider.questions.sleep", locale),
+      si("provider.questions.comfortable", locale),
+    ],
+    [t("provider.cat.directions", locale).toLowerCase()]: [
+      si("provider.directions.procedure", locale),
+      si("provider.directions.stay_in_bed", locale),
+      si("provider.directions.vitals", locale),
+      si("provider.directions.medication_time", locale),
+      si("provider.directions.breathe", locale),
+      si("provider.directions.call_button", locale),
+    ],
+    [t("provider.cat.goals_of_care", locale).toLowerCase()]: [
+      si("provider.goals_of_care.matters_most", locale),
+      si("provider.goals_of_care.goals", locale),
+      si("provider.goals_of_care.worries", locale),
+      si("provider.goals_of_care.strength", locale),
+      si("provider.goals_of_care.joy", locale),
+      si("provider.goals_of_care.wishes", locale),
+      si("provider.goals_of_care.hopes", locale),
     ],
   };
 }
@@ -376,6 +450,34 @@ export function getTimeSuggestionsForPeriod(
       t("time.evening.medication", locale),
       t("time.evening.call_family", locale),
       t("time.evening.pain", locale),
+    ],
+  };
+}
+
+/** Keyed variant of {@link getTimeSuggestionsForPeriod}. Each item carries
+ *  its phrase-registry key so the speak path can resolve the caregiverLang
+ *  text for the patient voice (voice-direction model). */
+export function getKeyedTimeSuggestionsForPeriod(
+  locale: string = "en",
+): { morning: SuggestionItem[]; afternoon: SuggestionItem[]; evening: SuggestionItem[] } {
+  return {
+    morning: [
+      si("time.morning.slept_well", locale),
+      si("time.morning.didnt_sleep", locale),
+      si("time.morning.breakfast", locale),
+      si("time.morning.doctor_coming", locale),
+    ],
+    afternoon: [
+      si("time.afternoon.tired", locale),
+      si("time.afternoon.lunch", locale),
+      si("time.afternoon.see_family", locale),
+      si("time.afternoon.rest", locale),
+    ],
+    evening: [
+      si("time.evening.cant_sleep", locale),
+      si("time.evening.medication", locale),
+      si("time.evening.call_family", locale),
+      si("time.evening.pain", locale),
     ],
   };
 }

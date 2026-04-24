@@ -6,7 +6,7 @@ import { useConversationStore } from "./stores/conversationStore";
 import { useUIStore } from "./stores/uiStore";
 import { useSettingsStore, useActivePatient } from "./stores/settingsStore";
 import { resetAll } from "./stores/resetAll";
-import { t as resolvePhrase, getCategories, getTimeSuggestionsForPeriod } from "./data/phraseRegistry";
+import { t as resolvePhrase, getCategories, getKeyedTimeSuggestionsForPeriod } from "./data/phraseRegistry";
 import { Header } from "./components/layout/Header";
 import { TabBar } from "./components/layout/TabBar";
 
@@ -256,7 +256,7 @@ export function App() {
 
   const cats = getCategories(patientLang);
   const cat = cats.find((c) => c.id === tab);
-  const timeSugs = getTimeSuggestionsForPeriod(patientLang);
+  const timeSugs = getKeyedTimeSuggestionsForPeriod(patientLang);
   const hr = new Date().getHours();
   const sug = hr < 12 ? timeSugs.morning : hr < 17 ? timeSugs.afternoon : timeSugs.evening;
 
@@ -375,8 +375,9 @@ export function App() {
               >
                 {sug.map((s) => (
                   <SuggestionChip
-                    key={s}
-                    text={s}
+                    key={s.key ?? s.text}
+                    text={s.text}
+                    phraseKey={s.key}
                     onTap={speakAsPatient}
                     t={t}
                     theme={theme}
@@ -396,6 +397,7 @@ export function App() {
       {speaking && (
         <Speaking
           text={speaking.text}
+          gloss={speaking.gloss}
           isProvider={speaking.from === "provider"}
           onDone={() => setSpeaking(null)}
           t={t}
@@ -415,8 +417,8 @@ export function App() {
 
       {providerOpen && (
         <ProviderPanel
-          onSend={(text) => {
-            speakAsProvider(text);
+          onSend={(text, opts) => {
+            speakAsProvider(text, opts);
             closeOverlay("provider");
           }}
           onClose={() => closeOverlay("provider")}

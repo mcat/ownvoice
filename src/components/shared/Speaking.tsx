@@ -7,6 +7,9 @@ import { z } from "../../theme/z";
 
 interface SpeakingProps {
   text: string;
+  /** Opposite-locale gloss for co-read display. When present and distinct
+   *  from `text`, rendered as a second muted line under the primary. */
+  gloss?: string;
   isProvider: boolean;
   onDone: () => void;
   t: ThemeTokens;
@@ -15,6 +18,7 @@ interface SpeakingProps {
 /** Full-width overlay bar showing speech progress. Not a modal — no dead ends. */
 export function Speaking({
   text,
+  gloss,
   isProvider,
   onDone,
   t,
@@ -27,11 +31,12 @@ export function Speaking({
   const activeProvIdx = useUIStore((s) => s.activeProvIdx);
   const activeProv = cfg?.providers?.[activeProvIdx] ?? cfg?.providers?.[0];
 
-  const subLabel = isProvider
-    ? activeProv
-      ? `${activeProv.emoji ? activeProv.emoji + " " : ""}${activeProv.name}`
-      : resolvePhrase("ui.dual.speaking.patient_voice", patientLang)
-    : resolvePhrase("ui.dual.speaking.patient_voice", patientLang);
+  // For provider voice, label the speaking caregiver by name/emoji so the
+  // patient can see who's talking. For patient voice the label was
+  // "Your Voice" — self-evident on a patient-tapped utterance, so omit.
+  const subLabel = isProvider && activeProv
+    ? `${activeProv.emoji ? activeProv.emoji + " " : ""}${activeProv.name}`
+    : null;
 
   // onDone is typically an inline arrow from the parent — a new reference
   // every render. Tracking it via a ref keeps the animation effect from
@@ -114,32 +119,69 @@ export function Speaking({
         {"\uD83D\uDD0A"}
       </div>
       <div style={{ minWidth: 0, flex: 1 }}>
-        <div
-          class="font-sans"
-          style={{
-            fontSize: 13,
-            color: "rgba(245,245,245,0.7)",
-            letterSpacing: 1.5,
-            textTransform: "uppercase",
-            lineHeight: 1,
-            marginBottom: 4,
-          }}
-        >
-          {subLabel}
-        </div>
-        <div
-          class="font-sans"
-          style={{
-            fontSize: 20,
-            fontWeight: 600,
-            lineHeight: 1.3,
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-          }}
-        >
-          {text}
-        </div>
+        {subLabel && (
+          <div
+            class="font-sans"
+            style={{
+              fontSize: 13,
+              color: "rgba(245,245,245,0.7)",
+              letterSpacing: 1.5,
+              textTransform: "uppercase",
+              lineHeight: 1,
+              marginBottom: 4,
+            }}
+          >
+            {subLabel}
+          </div>
+        )}
+        {(() => {
+          // The Speaking bar is primarily read by the care team, so the
+          // caregiverLang string is the one that should be prominent
+          // regardless of which voice is speaking. For patient messages
+          // text = patientLang and gloss = caregiverLang, so we swap;
+          // for provider messages text is already caregiverLang.
+          const hasGloss = gloss !== undefined && gloss !== text;
+          const primary = !isProvider && hasGloss ? gloss! : text;
+          const secondary = !isProvider && hasGloss
+            ? text
+            : hasGloss
+              ? gloss
+              : undefined;
+          return (
+            <>
+              <div
+                class="font-sans"
+                style={{
+                  fontSize: 20,
+                  fontWeight: 600,
+                  lineHeight: 1.3,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+              >
+                {primary}
+              </div>
+              {secondary && (
+                <div
+                  class="font-sans"
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 400,
+                    color: "rgba(245,245,245,0.7)",
+                    lineHeight: 1.3,
+                    marginTop: 2,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {secondary}
+                </div>
+              )}
+            </>
+          );
+        })()}
       </div>
       <div
         style={{

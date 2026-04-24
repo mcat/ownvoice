@@ -54,12 +54,13 @@ describe("ProviderPanel", () => {
     expect(screen.getByText(responses[0])).toBeInTheDocument();
   });
 
-  it("tapping a phrase calls onSend with that phrase text", () => {
+  it("tapping a phrase calls onSend with phrase text and its registry key", () => {
     const onSend = vi.fn();
     render(<ProviderPanel {...baseProps} onSend={onSend} />);
     const firstPhrase = PROVIDER_CATEGORIES["responses"][0];
     fireEvent.click(screen.getByRole("button", { name: `Speak: ${firstPhrase}` }));
-    expect(onSend).toHaveBeenCalledWith(firstPhrase);
+    // Key forwards so speakAsProvider can resolve patientLang for speech.
+    expect(onSend).toHaveBeenCalledWith(firstPhrase, { key: "provider.responses.help" });
   });
 
   it("switching sections shows different phrases", () => {

@@ -44,9 +44,9 @@ describe("Speaking", () => {
     expect(screen.getByText("I need water")).toBeInTheDocument();
   });
 
-  it("shows 'Your voice' sub-label for patient speech", () => {
+  it("omits the sub-label for patient speech (self-evident when patient-tapped)", () => {
     render(<Speaking {...baseProps} />);
-    expect(screen.getByText("Your voice")).toBeInTheDocument();
+    expect(screen.queryByText("Your voice")).toBeNull();
   });
 
   it("shows active provider name + emoji when isProvider is true", () => {
