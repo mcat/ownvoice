@@ -122,7 +122,6 @@ export function SwitchSheet({ open, onClose, t: tokens, theme }: SwitchSheetProp
   if (!open) return null;
 
   const patientColor = theme === "dark" ? colors.patient.dark : colors.patient.light;
-  const providerColor = theme === "dark" ? colors.provider.dark : colors.provider.light;
 
   const addCardStyle: JSX.CSSProperties = {
     minHeight: 64,
@@ -219,20 +218,6 @@ export function SwitchSheet({ open, onClose, t: tokens, theme }: SwitchSheetProp
               gap: 8,
             };
 
-            const chipBase: JSX.CSSProperties = {
-              fontSize: 12,
-              fontWeight: 600,
-              padding: "2px 8px",
-              borderRadius: 8,
-              display: "inline-block",
-            };
-
-            const voiceChipStyle: JSX.CSSProperties = {
-              ...chipBase,
-              background: patient.hasVoice ? providerColor : tokens.activeBg,
-              color: patient.hasVoice ? "#FFFFFF" : tokens.muted,
-            };
-
             return (
               <li
                 key={patient.id}
@@ -261,11 +246,6 @@ export function SwitchSheet({ open, onClose, t: tokens, theme }: SwitchSheetProp
                 <div style={metaStyle}>
                   {patient.bed && <span>Bed {patient.bed}</span>}
                   {lang && <span>{lang.flag} {lang.label}</span>}
-                  <span style={voiceChipStyle}>
-                    {patient.hasVoice
-                      ? resolvePhrase("ui.provider.switch.voice_captured", caregiverLang)
-                      : resolvePhrase("ui.provider.switch.no_voice", caregiverLang)}
-                  </span>
                   <span style={{ fontSize: 12, color: tokens.muted }}>
                     {formatLastActive(patient.lastActiveAt, caregiverLang)}
                   </span>
