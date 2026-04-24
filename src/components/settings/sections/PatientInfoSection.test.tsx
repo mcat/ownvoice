@@ -103,8 +103,9 @@ describe("PatientInfoSection", () => {
     await waitFor(() => {
       expect(screen.getByRole("dialog")).toBeTruthy();
     });
-    // Title should contain the destination language name
-    expect(screen.getByText(/Change patient language to Español/)).toBeTruthy();
+    // Title is resolved in the destination locale (es). Assert both the
+    // Spanish phrasing and the destination language name appear.
+    expect(screen.getByText(/Cambiar idioma del paciente a Español/)).toBeTruthy();
   });
 
   it("confirming patient-language dialog calls updateActivePatient with new lang", async () => {
@@ -116,8 +117,8 @@ describe("PatientInfoSection", () => {
       expect(screen.getByRole("dialog")).toBeTruthy();
     });
 
-    // Click the confirm button (labeled "Change language")
-    fireEvent.click(screen.getByText("Change language"));
+    // Confirm button label is also in destination locale (es)
+    fireEvent.click(screen.getByText("Cambiar idioma"));
 
     await waitFor(() => {
       const active = useSettingsStore.getState().cfg?.patients.find(

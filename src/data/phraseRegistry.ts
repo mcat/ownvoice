@@ -33,13 +33,38 @@ import type {
 } from "../types";
 
 // ── Locale registry ──────────────────────────────────────────────
-// All locales are imported statically. Add new locales here.
+// All locales are imported statically so language switching works offline.
+//
+// Registered-but-DRAFT locales (see DRAFT_LOCALES below) serve machine-
+// translated content that is CLINICALLY UNREVIEWED. They're registered so
+// the language picker exercises the bilingual code paths at test time;
+// the clinical-review gate is enforced by DRAFT_LOCALES (surfaced to
+// clinicians via a "draft" badge in the Settings picker) rather than by
+// absence from this map.
+import es from "./locales/es";
+import zh from "./locales/zh";
+import vi from "./locales/vi";
+import tl from "./locales/tl";
+
 const LOCALES: Record<string, LocaleStrings> = {
   en,
-  // es: es,
-  // zh: zh,
-  // ... add as translated
+  es,
+  zh,
+  vi,
+  tl,
 };
+
+/** Locales whose content is machine-translated and pending native-speaker
+ *  + clinical review. The UI marks these as "draft" so staff see the
+ *  review gate visually. Do NOT use for production patient care. */
+export const DRAFT_LOCALES: ReadonlySet<string> = new Set([
+  "es", "zh", "vi", "tl",
+]);
+
+/** True when the given locale is registered but not yet clinically reviewed. */
+export function isDraftLocale(locale: string): boolean {
+  return DRAFT_LOCALES.has(locale);
+}
 
 /** Resolve a phrase key for a locale, falling back to English. */
 export function t(key: PhraseKey, locale: string = "en"): string {

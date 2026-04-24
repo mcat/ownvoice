@@ -6,7 +6,7 @@ import { VoiceCapture } from "../../shared/VoiceCapture";
 import { FallbackVoicePicker } from "../../shared/FallbackVoicePicker";
 import { VoiceCacheProgress } from "../VoiceCacheProgress";
 import { useSettingsStore, useActivePatient } from "../../../stores/settingsStore";
-import { t as resolvePhrase } from "../../../data/phraseRegistry";
+import { t as resolvePhrase, isDraftLocale } from "../../../data/phraseRegistry";
 import { confirm } from "../../shared/ConfirmDialog";
 import { canCloneForLocale } from "../../../data/chatterboxLocales";
 import { isGPUReady } from "../../../models/ttsEngine";
@@ -127,6 +127,7 @@ export function PatientInfoSection({
       >
         {LANGS.map((l) => {
           const selected = l.code === (active?.patientLang ?? "en");
+          const isDraft = isDraftLocale(l.code);
           return (
             <button
               key={l.code}
@@ -134,9 +135,11 @@ export function PatientInfoSection({
               aria-checked={selected}
               onClick={() => handlePatientLangChange(l.code)}
               style={chipStyle(selected, isDark)}
+              title={isDraft ? "DRAFT — machine translation pending clinical review" : undefined}
             >
               <span style={{ fontSize: 22 }}>{l.flag}</span>
               <span style={{ fontWeight: selected ? 600 : 400 }}>{l.label}</span>
+              {isDraft && <span style={draftBadgeStyle}>draft</span>}
             </button>
           );
         })}
@@ -156,6 +159,7 @@ export function PatientInfoSection({
       >
         {LANGS.map((l) => {
           const selected = l.code === cfg.caregiverLang;
+          const isDraft = isDraftLocale(l.code);
           return (
             <button
               key={l.code}
@@ -163,9 +167,11 @@ export function PatientInfoSection({
               aria-checked={selected}
               onClick={() => handleCaregiverLangChange(l.code)}
               style={chipStyle(selected, isDark)}
+              title={isDraft ? "DRAFT — machine translation pending clinical review" : undefined}
             >
               <span style={{ fontSize: 22 }}>{l.flag}</span>
               <span style={{ fontWeight: selected ? 600 : 400 }}>{l.label}</span>
+              {isDraft && <span style={draftBadgeStyle}>draft</span>}
             </button>
           );
         })}
@@ -275,6 +281,21 @@ const chipGridStyle: JSX.CSSProperties = {
   gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
   gap: 8,
   marginTop: 8,
+};
+
+/** Small pill on a language chip whose content is machine-translated and
+ *  not yet clinically reviewed. Surfaces the review gate visibly so
+ *  clinicians don't mistake DRAFT content for validated translations. */
+const draftBadgeStyle: JSX.CSSProperties = {
+  marginLeft: "auto",
+  fontSize: 11,
+  fontWeight: 600,
+  textTransform: "uppercase",
+  letterSpacing: "0.04em",
+  color: "#92400E",
+  background: "#FEF3C7",
+  padding: "2px 6px",
+  borderRadius: 6,
 };
 
 function chipStyle(selected: boolean, isDark: boolean): JSX.CSSProperties {
