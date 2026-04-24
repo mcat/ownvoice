@@ -131,36 +131,54 @@ export function Speaking({
         >
           {subLabel}
         </div>
-        <div
-          class="font-sans"
-          style={{
-            fontSize: 20,
-            fontWeight: 600,
-            lineHeight: 1.3,
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-          }}
-        >
-          {text}
-        </div>
-        {gloss && gloss !== text && (
-          <div
-            class="font-sans"
-            style={{
-              fontSize: 14,
-              fontWeight: 400,
-              color: "rgba(245,245,245,0.7)",
-              lineHeight: 1.3,
-              marginTop: 2,
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-            }}
-          >
-            {gloss}
-          </div>
-        )}
+        {(() => {
+          // The Speaking bar is primarily read by the care team, so the
+          // caregiverLang string is the one that should be prominent
+          // regardless of which voice is speaking. For patient messages
+          // text = patientLang and gloss = caregiverLang, so we swap;
+          // for provider messages text is already caregiverLang.
+          const hasGloss = gloss !== undefined && gloss !== text;
+          const primary = !isProvider && hasGloss ? gloss! : text;
+          const secondary = !isProvider && hasGloss
+            ? text
+            : hasGloss
+              ? gloss
+              : undefined;
+          return (
+            <>
+              <div
+                class="font-sans"
+                style={{
+                  fontSize: 20,
+                  fontWeight: 600,
+                  lineHeight: 1.3,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+              >
+                {primary}
+              </div>
+              {secondary && (
+                <div
+                  class="font-sans"
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 400,
+                    color: "rgba(245,245,245,0.7)",
+                    lineHeight: 1.3,
+                    marginTop: 2,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {secondary}
+                </div>
+              )}
+            </>
+          );
+        })()}
       </div>
       <div
         style={{
