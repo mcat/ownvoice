@@ -486,7 +486,7 @@ function StepPatient({
             onClick={() => setLang(l.code)}
             style={{
               display: "flex",
-              alignItems: "center",
+              alignItems: "flex-start",
               gap: 8,
               padding: "12px 14px",
               borderRadius: 12,

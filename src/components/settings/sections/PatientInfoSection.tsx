@@ -320,7 +320,7 @@ const draftBadgeStyle: JSX.CSSProperties = {
 function chipStyle(selected: boolean, isDark: boolean): JSX.CSSProperties {
   return {
     display: "flex",
-    alignItems: "center",
+    alignItems: "flex-start",
     gap: 8,
     padding: "12px 14px",
     borderRadius: 12,
