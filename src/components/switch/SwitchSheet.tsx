@@ -19,22 +19,6 @@ export interface SwitchSheetProps {
   theme: ThemeName;
 }
 
-/** Format a relative-time label from a Unix-ms timestamp. */
-function formatLastActive(ts: number, lang: string): string {
-  const diff = Date.now() - ts;
-  const mins = Math.floor(diff / 60_000);
-  if (mins < 1) return resolvePhrase("ui.provider.switch.last_active_just_now", lang);
-  if (mins < 60) {
-    return resolvePhrase("ui.provider.switch.last_active_minutes", lang).replace("{n}", String(mins));
-  }
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) {
-    return resolvePhrase("ui.provider.switch.last_active_hours", lang).replace("{n}", String(hours));
-  }
-  const days = Math.floor(hours / 24);
-  return resolvePhrase("ui.provider.switch.last_active_days", lang).replace("{n}", String(days));
-}
-
 /** Find the LANGS entry for a BCP 47 code. */
 function langInfo(code: string) {
   return LANGS.find((l) => l.code === code);
@@ -246,9 +230,6 @@ export function SwitchSheet({ open, onClose, t: tokens, theme }: SwitchSheetProp
                 <div style={metaStyle}>
                   {patient.bed && <span>Bed {patient.bed}</span>}
                   {lang && <span>{lang.flag} {lang.label}</span>}
-                  <span style={{ fontSize: 12, color: tokens.muted }}>
-                    {formatLastActive(patient.lastActiveAt, caregiverLang)}
-                  </span>
                 </div>
               </li>
             );
