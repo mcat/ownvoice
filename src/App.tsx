@@ -266,8 +266,8 @@ export function App() {
       return (
         <SentenceBuilder
           key="builder"
-          onSend={(text) => {
-            speakAsPatient(text);
+          onSend={(text, opts) => {
+            speakAsPatient(text, opts);
           }}
           t={t}
           theme={theme}

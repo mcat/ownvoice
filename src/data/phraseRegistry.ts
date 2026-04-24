@@ -49,6 +49,14 @@ export function t(key: PhraseKey, locale: string = "en"): string {
 // Re-export types for consumers
 export type { PhraseKey, LocaleStrings };
 
+/** A suggestion chip that may carry a phrase-registry key for bilingual
+ *  resolution. Curated suggestions carry `key`; keyword/generic/LLM
+ *  suggestions omit it (they are display-locale-only free text). */
+export interface SuggestionItem {
+  text: string;
+  key?: PhraseKey;
+}
+
 // ── Patient categories ───────────────────────────────────────────
 
 function phrase(key: PhraseKey, icon: string, locale: string): Phrase {
@@ -483,6 +491,133 @@ export function getSuggestionTree(locale: string = "en"): Record<string, string[
     "i feel worse": [
       t("suggest.i_feel_worse.than_before", locale), t("suggest.i_feel_worse.need_doctor", locale),
       t("suggest.i_feel_worse.help", locale), t("suggest.i_feel_worse.medication", locale),
+    ],
+  };
+}
+
+/** Helper: build a SuggestionItem from a PhraseKey. */
+function si(key: PhraseKey, locale: string): SuggestionItem {
+  return { text: t(key, locale), key };
+}
+
+/**
+ * Keyed version of the suggestion tree — each entry carries both the
+ * resolved display text AND the original PhraseKey.  Used by
+ * SentenceBuilder to produce bilingual token arrays.
+ *
+ * Tree keys (the `Record` keys) remain resolved patientLang strings so
+ * existing tree-traversal logic doesn't need changes — only the leaf
+ * values gain the extra `.key` field.
+ */
+export function getKeyedSuggestionTree(locale: string = "en"): Record<string, SuggestionItem[]> {
+  return {
+    "": [
+      si("suggest.start.i_am", locale), si("suggest.start.i_feel", locale),
+      si("suggest.start.i_want", locale), si("suggest.start.i_need", locale),
+      si("suggest.start.please", locale), si("suggest.start.when", locale),
+      si("suggest.start.can_you", locale), si("suggest.start.tell_me", locale),
+    ],
+    "i am": [
+      si("suggest.i_am.in_pain", locale), si("suggest.i_am.cold", locale),
+      si("suggest.i_am.hot", locale), si("suggest.i_am.hungry", locale),
+      si("suggest.i_am.thirsty", locale), si("suggest.i_am.tired", locale),
+      si("suggest.i_am.uncomfortable", locale), si("suggest.i_am.okay", locale),
+      si("suggest.i_am.not_okay", locale), si("suggest.i_am.ready", locale),
+    ],
+    "i feel": [
+      si("suggest.i_feel.scared", locale), si("suggest.i_feel.sick", locale),
+      si("suggest.i_feel.dizzy", locale), si("suggest.i_feel.weak", locale),
+      si("suggest.i_feel.better", locale), si("suggest.i_feel.worse", locale),
+      si("suggest.i_feel.nauseous", locale), si("suggest.i_feel.lonely", locale),
+      si("suggest.i_feel.confused", locale), si("suggest.i_feel.safe", locale),
+    ],
+    "i feel scared": [
+      si("suggest.i_feel_scared.procedure", locale), si("suggest.i_feel_scared.happening", locale),
+      si("suggest.i_feel_scared.alone", locale), si("suggest.i_feel_scared.need_someone", locale),
+    ],
+    "i feel sick": [
+      si("suggest.i_feel_sick.stomach", locale), si("suggest.i_feel_sick.dizzy", locale),
+      si("suggest.i_feel_sick.help", locale),
+    ],
+    "i want": [
+      si("suggest.i_want.water", locale), si("suggest.i_want.family", locale),
+      si("suggest.i_want.go_home", locale), si("suggest.i_want.sleep", locale),
+      si("suggest.i_want.medication", locale), si("suggest.i_want.blanket", locale),
+      si("suggest.i_want.talk", locale), si("suggest.i_want.nurse", locale),
+    ],
+    "i want to go": [
+      si("suggest.i_want_to_go.home", locale), si("suggest.i_want_to_go.sleep", locale),
+      si("suggest.i_want_to_go.bathroom", locale),
+    ],
+    "i want my": [
+      si("suggest.i_want_my.family", locale), si("suggest.i_want_my.medication", locale),
+      si("suggest.i_want_my.phone", locale), si("suggest.i_want_my.glasses", locale),
+      si("suggest.i_want_my.blanket", locale),
+    ],
+    "i need": [
+      si("suggest.i_need.help", locale), si("suggest.i_need.water", locale),
+      si("suggest.i_need.bathroom", locale), si("suggest.i_need.medication", locale),
+      si("suggest.i_need.nurse", locale), si("suggest.i_need.doctor", locale),
+      si("suggest.i_need.rest", locale), si("suggest.i_need.blanket", locale),
+      si("suggest.i_need.suction", locale),
+    ],
+    "i need the": [
+      si("suggest.i_need_the.nurse", locale), si("suggest.i_need_the.doctor", locale),
+      si("suggest.i_need_the.bathroom", locale), si("suggest.i_need_the.light_off", locale),
+      si("suggest.i_need_the.light_on", locale),
+    ],
+    "i need my": [
+      si("suggest.i_need_my.medication", locale), si("suggest.i_need_my.family", locale),
+      si("suggest.i_need_my.glasses", locale), si("suggest.i_need_my.phone", locale),
+    ],
+    "please": [
+      si("suggest.please.help_me", locale), si("suggest.please.call_family", locale),
+      si("suggest.please.light_off", locale), si("suggest.please.adjust_bed", locale),
+      si("suggest.please.give_me", locale), si("suggest.please.explain", locale),
+      si("suggest.please.come_back", locale), si("suggest.please.stay", locale),
+      si("suggest.please.dont_leave", locale),
+    ],
+    "please help me": [
+      si("suggest.please_help_me.pain", locale), si("suggest.please_help_me.breathe", locale),
+      si("suggest.please_help_me.sick", locale), si("suggest.please_help_me.scared", locale),
+    ],
+    "please give me": [
+      si("suggest.please_give_me.water", locale), si("suggest.please_give_me.medication", locale),
+      si("suggest.please_give_me.blanket", locale), si("suggest.please_give_me.pain_relief", locale),
+    ],
+    "when": [
+      si("suggest.when.go_home", locale), si("suggest.when.family", locale),
+      si("suggest.when.medication", locale), si("suggest.when.doctor", locale),
+      si("suggest.when.eat", locale), si("suggest.when.over", locale),
+    ],
+    "can you": [
+      si("suggest.can_you.help", locale), si("suggest.can_you.call_family", locale),
+      si("suggest.can_you.get_nurse", locale), si("suggest.can_you.explain", locale),
+      si("suggest.can_you.light_off", locale), si("suggest.can_you.adjust_bed", locale),
+      si("suggest.can_you.stay", locale),
+    ],
+    "tell me": [
+      si("suggest.tell_me.happening", locale), si("suggest.tell_me.time", locale),
+      si("suggest.tell_me.go_home", locale), si("suggest.tell_me.day", locale),
+      si("suggest.tell_me.treatment", locale),
+    ],
+    "i am in pain": [
+      si("suggest.i_am_in_pain.help", locale), si("suggest.i_am_in_pain.worse", locale),
+      si("suggest.i_am_in_pain.medication", locale), si("suggest.i_am_in_pain.back", locale),
+      si("suggest.i_am_in_pain.chest", locale), si("suggest.i_am_in_pain.stomach", locale),
+    ],
+    "i need help": [
+      si("suggest.i_need_help.up", locale), si("suggest.i_need_help.breathing", locale),
+      si("suggest.i_need_help.pain", locale), si("suggest.i_need_help.now", locale),
+      si("suggest.i_need_help.please", locale),
+    ],
+    "i feel better": [
+      si("suggest.i_feel_better.than_before", locale), si("suggest.i_feel_better.now", locale),
+      si("suggest.i_feel_better.thanks", locale),
+    ],
+    "i feel worse": [
+      si("suggest.i_feel_worse.than_before", locale), si("suggest.i_feel_worse.need_doctor", locale),
+      si("suggest.i_feel_worse.help", locale), si("suggest.i_feel_worse.medication", locale),
     ],
   };
 }
