@@ -1,12 +1,10 @@
 /**
  * ⚠ DRAFT — MACHINE TRANSLATION PENDING CLINICAL REVIEW ⚠
  *
- * Not registered in the LOCALES map — this file exists as a starting
- * point for professional translators and native-speaking clinicians.
- * Do NOT expose to users until:
+ * Registered in the LOCALES map (PR #98) but NOT clinically validated.
+ * Do NOT use in patient-facing settings until:
  *   1. Native-speaker translator review
  *   2. Clinical review (ICU / AAC-familiar clinician)
- *   3. Registration in src/data/phraseRegistry.ts LOCALES
  *
  * Language: Tagalog (Filipino, Manila register)
  * Locale: tl
@@ -321,7 +319,7 @@ const tl: LocaleStrings = {
   "suggest.i_am.thirsty": "uhaw",
   "suggest.i_am.tired": "pagod",
   "suggest.i_am.uncomfortable": "hindi komportable",
-  "suggest.i_am.okay": "okay",
+  "suggest.i_am.okay": "ayos",
   "suggest.i_am.not_okay": "hindi okay",
   "suggest.i_am.ready": "handa na",
 
@@ -331,7 +329,7 @@ const tl: LocaleStrings = {
   "suggest.i_feel.weak": "mahina",
   "suggest.i_feel.better": "mas maganda",
   "suggest.i_feel.worse": "mas masama",
-  "suggest.i_feel.nauseous": "nauseous",
+  "suggest.i_feel.nauseous": "naduduwal",
   "suggest.i_feel.lonely": "malungkot",
   "suggest.i_feel.confused": "nalilito",
   "suggest.i_feel.safe": "ligtas",
@@ -534,10 +532,10 @@ const tl: LocaleStrings = {
   "ui.patient.header.bed_prefix": "Kama ",
   "ui.dual.nav.wishes": "Mga gusto",
   "ui.provider.nav.listen": "Makinig",
-  "ui.provider.nav.staff": "Staff",
+  "ui.provider.nav.staff": "Kawani",
   "ui.provider.nav.switch_patient": "Palitan ang pasyente",
   "ui.provider.nav.settings": "Mga Setting",
-  "ui.provider.nav.theme.auto": "Auto",
+  "ui.provider.nav.theme.auto": "Awtomatiko",
   "ui.provider.nav.theme.light": "Maliwanag",
   "ui.provider.nav.theme.dark": "Madilim",
   "ui.patient.tabbar.say_more": "Magsalita pa",
@@ -583,7 +581,7 @@ const tl: LocaleStrings = {
 
   // ── UI chrome: ProviderPanel ───────────────────────────────────
   "ui.provider.care_team.title": "Care team",
-  "ui.provider.fallback_name": "Provider",
+  "ui.provider.fallback_name": "Tagapag-alaga",
   "ui.provider.speaking_to":
     "Nakikipag-usap kay {name} bilang {prov}",
   "ui.provider.patient_fallback": "pasyente",
@@ -605,7 +603,7 @@ const tl: LocaleStrings = {
     "Nagta-transcribe ng pagsasalita...",
   "ui.provider.listen.type_placeholder":
     "O i-type ang sinabi...",
-  "ui.provider.listen.transcript_aria": "Transcript",
+  "ui.provider.listen.transcript_aria": "Transkripsyon",
   "ui.provider.listen.add_as":
     "Idagdag sa usapan bilang {prov}",
   "ui.provider.listen.privacy_notice":
@@ -621,7 +619,7 @@ const tl: LocaleStrings = {
     "Para sa staff lamang",
   "ui.provider.pin_gate.incorrect": "Maling PIN",
   "ui.provider.pin_gate.delete_aria": "Burahin",
-  "ui.provider.pin_gate.digit_aria": "Digit {n}",
+  "ui.provider.pin_gate.digit_aria": "Numero {n}",
   "ui.provider.pin_gate.cancel": "Kanselahin",
 
   // ── UI chrome: VoiceCapture ────────────────────────────────────
@@ -695,7 +693,7 @@ const tl: LocaleStrings = {
     "Hindi ma-play ang audio.",
 
   // ── UI chrome: FallbackVoicePicker ─────────────────────────────
-  "ui.provider.fallback_voice.enhanced_badge": "Enhanced",
+  "ui.provider.fallback_voice.enhanced_badge": "Pinahusay",
   "ui.provider.fallback_voice.enhanced_aria":
     "Enhanced neural na boses",
   "ui.provider.fallback_voice.on_device_badge": "Sa device",
@@ -739,7 +737,7 @@ const tl: LocaleStrings = {
   "ui.provider.setup.step0.bed_placeholder": "hal. 4B-12",
   "ui.provider.setup.step0.language_label": "Wika",
 
-  "ui.provider.setup.step1.heading": "Voice sample",
+  "ui.provider.setup.step1.heading": "Sample ng boses",
   "ui.provider.setup.step1.body1":
     "Kumuha ng voice sample para magsalita ang OwnVoice sa sariling boses ng pasyente. Opsyonal lang ang hakbang na ito.",
   "ui.provider.setup.step1.body2":
@@ -752,10 +750,10 @@ const tl: LocaleStrings = {
   "ui.provider.setup.step1.backup_voice_body2":
     "Ginagamit nito ang built-in na text-to-speech ng device mo.",
 
-  "ui.provider.setup.step2.heading": "Care team",
+  "ui.provider.setup.step2.heading": "Pangkat ng pangangalaga",
   "ui.provider.setup.step2.body":
     "Idagdag ang mga provider na mag-aalaga sa pasyente.",
-  "ui.provider.setup.step2.icon_label": "Icon",
+  "ui.provider.setup.step2.icon_label": "Larawan",
   "ui.provider.setup.step2.name_label": "Pangalan",
   "ui.provider.setup.step2.name_placeholder":
     "Dr. Santos, Nurse Maria...",
@@ -767,9 +765,9 @@ const tl: LocaleStrings = {
   "ui.provider.setup.step3.summary.patient": "Pasyente",
   "ui.provider.setup.step3.summary.bed": "Kama / Kuwarto",
   "ui.provider.setup.step3.summary.language": "Wika",
-  "ui.provider.setup.step3.summary.language_default": "English",
+  "ui.provider.setup.step3.summary.language_default": "Ingles",
   "ui.provider.setup.step3.summary.voice": "Boses",
-  "ui.provider.setup.step3.summary.care_team": "Care team",
+  "ui.provider.setup.step3.summary.care_team": "Pangkat ng pangangalaga",
   "ui.provider.setup.step3.summary.not_set": "Hindi pa naka-set",
   "ui.provider.setup.step3.summary.captured": "Na-capture",
   "ui.provider.setup.step3.summary.not_captured":
@@ -843,9 +841,9 @@ const tl: LocaleStrings = {
     "I-reset lahat",
 
   // ── UI chrome: Settings — Accessibility section ───────────────
-  "ui.provider.settings.accessibility.heading": "Accessibility",
+  "ui.provider.settings.accessibility.heading": "Accessibility (Kakayahang magamit)",
   "ui.provider.settings.accessibility.toggle_label":
-    "Assistive Input Mode",
+    "Assistive Input Mode (Pantulong na input)",
   "ui.provider.settings.accessibility.toggle_description":
     "Pinapalakas ang focus rings, pinapahaba ang tap debounce, at pinapalakas ang hover feedback para sa mga pasyenteng gumagamit ng trackball, joystick, AssistiveTouch cursor, o switch.",
   "ui.provider.settings.accessibility.pointer_hint_strong":

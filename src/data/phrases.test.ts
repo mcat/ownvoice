@@ -10,8 +10,8 @@ import {
 const CATS = getCategories("en");
 
 describe("LANGS", () => {
-  it("has 13 language entries", () => {
-    expect(LANGS).toHaveLength(13);
+  it("has 24 language entries", () => {
+    expect(LANGS).toHaveLength(24);
   });
 
   it("each entry has code, label, and flag", () => {

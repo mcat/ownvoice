@@ -41,24 +41,41 @@ import type {
 // the clinical-review gate is enforced by DRAFT_LOCALES (surfaced to
 // clinicians via a "draft" badge in the Settings picker) rather than by
 // absence from this map.
+import ar from "./locales/ar";
+import da from "./locales/da";
+import de from "./locales/de";
+import el from "./locales/el";
 import es from "./locales/es";
-import zh from "./locales/zh";
-import vi from "./locales/vi";
+import fi from "./locales/fi";
+import fr from "./locales/fr";
+import he from "./locales/he";
+import hi from "./locales/hi";
+import it from "./locales/it";
+import ja from "./locales/ja";
+import ko from "./locales/ko";
+import ms from "./locales/ms";
+import nl from "./locales/nl";
+import no from "./locales/no";
+import pl from "./locales/pl";
+import pt from "./locales/pt";
+import ru from "./locales/ru";
+import sw from "./locales/sw";
 import tl from "./locales/tl";
+import tr from "./locales/tr";
+import vi from "./locales/vi";
+import zh from "./locales/zh";
 
 const LOCALES: Record<string, LocaleStrings> = {
   en,
-  es,
-  zh,
-  vi,
-  tl,
+  ar, da, de, el, es, fi, fr, he, hi, it, ja, ko, ms, nl, no, pl, pt, ru, sw, tl, tr, vi, zh,
 };
 
 /** Locales whose content is machine-translated and pending native-speaker
  *  + clinical review. The UI marks these as "draft" so staff see the
  *  review gate visually. Do NOT use for production patient care. */
 export const DRAFT_LOCALES: ReadonlySet<string> = new Set([
-  "es", "zh", "vi", "tl",
+  "ar", "da", "de", "el", "es", "fi", "fr", "he", "hi", "it",
+  "ja", "ko", "ms", "nl", "no", "pl", "pt", "ru", "sw", "tl", "tr", "vi", "zh",
 ]);
 
 /** True when the given locale is registered but not yet clinically reviewed. */
