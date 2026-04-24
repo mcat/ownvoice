@@ -508,6 +508,86 @@ describe("useSpeakActions", () => {
       }));
     });
 
+    it("speakAsPatient with key speaks the caregiverLang-resolved text, not the patientLang display text", () => {
+      // Voice-direction: patient sees Spanish, care team + voice clone speak English.
+      // Regression guard for the bug where the display text leaked into the
+      // speech path (Spanish-accented Spanish instead of Spanish-accented English).
+      const cfg = makeTestCfg({
+        patient: { name: "Alice", bed: "B-102", patientLang: "es", hasVoice: true },
+        cfg: {
+          pin: "0000",
+          caregiverLang: "en",
+          providers: [{ name: "Dr. Jones", hasVoice: false }],
+        },
+      });
+      useSettingsStore.setState({ cfg });
+
+      const { result } = renderHook(() => useSpeakActions());
+
+      act(() => {
+        // "Sí" is the patientLang display text for `quick.yes` in Spanish.
+        result.current.speakAsPatient("Sí", { key: "quick.yes" });
+      });
+
+      // Speech must be in caregiverLang (English "Yes"), regardless of
+      // what the UI rendered.
+      expect(speak).toHaveBeenCalledWith("Yes", expect.objectContaining({
+        lang: "en",
+        type: "patient",
+      }));
+    });
+
+    it("speakAsProvider with key speaks the patientLang-resolved text, not the caregiverLang UI text", () => {
+      const cfg = makeTestCfg({
+        patient: { name: "Alice", bed: "B-102", patientLang: "es", hasVoice: true },
+        cfg: {
+          pin: "0000",
+          caregiverLang: "en",
+          providers: [{ name: "Dr. Jones", hasVoice: false }],
+        },
+      });
+      useSettingsStore.setState({ cfg });
+
+      const { result } = renderHook(() => useSpeakActions());
+
+      act(() => {
+        result.current.speakAsProvider("Yes", { key: "quick.yes" });
+      });
+
+      expect(speak).toHaveBeenCalledWith("Sí", expect.objectContaining({
+        lang: "es",
+        type: "provider",
+      }));
+    });
+
+    it("speakAsPatient with explicit gloss speaks the gloss (already caregiverLang)", () => {
+      // Composed-sentence path (PainFlow, MyWishes, SentenceBuilder) pre-
+      // resolves the caregiverLang sentence as gloss and it must be what
+      // gets spoken.
+      const cfg = makeTestCfg({
+        patient: { name: "Alice", bed: "B-102", patientLang: "es", hasVoice: true },
+        cfg: {
+          pin: "0000",
+          caregiverLang: "en",
+          providers: [{ name: "Dr. Jones", hasVoice: false }],
+        },
+      });
+      useSettingsStore.setState({ cfg });
+
+      const { result } = renderHook(() => useSpeakActions());
+
+      act(() => {
+        result.current.speakAsPatient("Tengo dolor agudo en mi cabeza, nivel 8 de 10", {
+          gloss: "I have sharp pain in my Head, level 8 out of 10",
+        });
+      });
+
+      expect(speak).toHaveBeenCalledWith(
+        "I have sharp pain in my Head, level 8 out of 10",
+        expect.objectContaining({ lang: "en", type: "patient" }),
+      );
+    });
+
     it("speakAsProvider sets speaker.lang to patientLang (provider voice speaks patient's language)", () => {
       const cfg = makeTestCfg({
         patient: { name: "Alice", bed: "B-102", patientLang: "es", hasVoice: true },

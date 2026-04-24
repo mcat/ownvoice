@@ -1,10 +1,11 @@
 import { PhraseButton } from "./PhraseButton";
 import type { Phrase } from "../../types";
+import type { PhraseKey } from "../../data/locales/en";
 import type { ThemeTokens } from "../../theme/tokens";
 
 interface PhraseGridProps {
   phrases: Phrase[];
-  onTap: (text: string) => void;
+  onTap: (text: string, opts?: { key?: PhraseKey }) => void;
   t: ThemeTokens;
 }
 

@@ -3,6 +3,10 @@ import type { PhraseKey } from "./data/locales/en";
 export interface Phrase {
   text: string;
   icon: string;
+  /** Registry key for bilingual resolution. Carried so the speak path can
+   *  resolve caregiverLang text for patient voice (and patientLang for
+   *  provider voice) without the UI having to do the lookup. */
+  key?: PhraseKey;
 }
 
 export interface SubCategory {

@@ -3,10 +3,14 @@ import type { JSX } from "preact";
 import { Btn } from "../shared/Btn";
 import { useSettingsStore } from "../../stores/settingsStore";
 import type { ThemeTokens, ThemeName } from "../../theme/tokens";
+import type { PhraseKey } from "../../data/locales/en";
 
 interface SuggestionChipProps {
   text: string;
-  onTap: (text: string) => void;
+  /** Optional registry key. When present, speak path uses it to resolve the
+   *  caregiverLang text (voice-direction model). Omit for free-text chips. */
+  phraseKey?: PhraseKey;
+  onTap: (text: string, opts?: { key?: PhraseKey }) => void;
   t: ThemeTokens;
   theme: ThemeName;
 }
@@ -17,7 +21,7 @@ interface SuggestionChipProps {
  * assistive-mode debounce extension) and gains hover feedback gated on
  * pointerType === "mouse". Amplified hover/border in assistive mode.
  */
-export function SuggestionChip({ text, onTap, t, theme }: SuggestionChipProps) {
+export function SuggestionChip({ text, phraseKey, onTap, t, theme }: SuggestionChipProps) {
   const [hover, setHover] = useState(false);
   const assistive = useSettingsStore((s) => s.cfg?.assistiveInput === true);
   const isDark = theme === "dark";
@@ -37,7 +41,7 @@ export function SuggestionChip({ text, onTap, t, theme }: SuggestionChipProps) {
 
   return (
     <Btn
-      onClick={() => onTap(text)}
+      onClick={() => (phraseKey ? onTap(text, { key: phraseKey }) : onTap(text))}
       onPointerEnter={onPointerEnter}
       onPointerLeave={onPointerLeave}
       class="font-sans"

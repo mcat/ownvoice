@@ -85,7 +85,7 @@ export interface SuggestionItem {
 // ── Patient categories ───────────────────────────────────────────
 
 function phrase(key: PhraseKey, icon: string, locale: string): Phrase {
-  return { text: t(key, locale), icon };
+  return { text: t(key, locale), icon, key };
 }
 
 export function getCategories(locale: string = "en"): Category[] {
@@ -401,6 +401,34 @@ export function getTimeSuggestionsForPeriod(
       t("time.evening.medication", locale),
       t("time.evening.call_family", locale),
       t("time.evening.pain", locale),
+    ],
+  };
+}
+
+/** Keyed variant of {@link getTimeSuggestionsForPeriod}. Each item carries
+ *  its phrase-registry key so the speak path can resolve the caregiverLang
+ *  text for the patient voice (voice-direction model). */
+export function getKeyedTimeSuggestionsForPeriod(
+  locale: string = "en",
+): { morning: SuggestionItem[]; afternoon: SuggestionItem[]; evening: SuggestionItem[] } {
+  return {
+    morning: [
+      si("time.morning.slept_well", locale),
+      si("time.morning.didnt_sleep", locale),
+      si("time.morning.breakfast", locale),
+      si("time.morning.doctor_coming", locale),
+    ],
+    afternoon: [
+      si("time.afternoon.tired", locale),
+      si("time.afternoon.lunch", locale),
+      si("time.afternoon.see_family", locale),
+      si("time.afternoon.rest", locale),
+    ],
+    evening: [
+      si("time.evening.cant_sleep", locale),
+      si("time.evening.medication", locale),
+      si("time.evening.call_family", locale),
+      si("time.evening.pain", locale),
     ],
   };
 }

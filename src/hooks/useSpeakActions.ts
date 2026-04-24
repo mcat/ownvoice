@@ -42,13 +42,17 @@ export function useSpeakActions() {
         lang: caregiverLang,
       };
 
-      // Resolve gloss: explicit > key-based > undefined
+      // Resolve gloss: explicit > key-based > undefined.
+      //
+      // Voice-direction model: patient voice speaks caregiverLang, so the
+      // gloss (caregiverLang rendering) IS the speech text. When present,
+      // speak the gloss; otherwise fall back to the display text.
       const gloss = opts?.gloss
         ?? (opts?.key ? resolvePhrase(opts.key, caregiverLang) : undefined);
 
       addMessage(text, "patient", active.name, gloss);
       setSpeaking({ text, from: "patient" });
-      speak(text, speaker);
+      speak(gloss ?? text, speaker);
     },
     [cfg, active, addMessage, setSpeaking],
   );
@@ -65,13 +69,14 @@ export function useSpeakActions() {
         lang: patientLang,
       };
 
-      // Resolve gloss: explicit > key-based > undefined
+      // Voice-direction model: provider voice speaks patientLang, so gloss
+      // IS the speech text. Speak gloss when present; fall back to text.
       const gloss = opts?.gloss
         ?? (opts?.key ? resolvePhrase(opts.key, patientLang) : undefined);
 
       addMessage(text, "provider", provName, gloss);
       setSpeaking({ text, from: "provider" });
-      speak(text, speaker);
+      speak(gloss ?? text, speaker);
     },
     [cfg, active, activeProv, addMessage, setSpeaking],
   );

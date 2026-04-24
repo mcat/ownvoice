@@ -32,6 +32,17 @@ describe("PhraseButton", () => {
     expect(onTap).toHaveBeenCalledWith("I need water");
   });
 
+  it("forwards the phrase.key so the speak path can resolve caregiverLang", () => {
+    // Voice-direction model: without the key, speak() falls back to the
+    // display-locale text and the Spanish patient hears Spanish. With the
+    // key, the hook re-resolves in caregiverLang.
+    const onTap = vi.fn();
+    const keyed: Phrase = { text: "Sí", icon: "👍", key: "quick.yes" };
+    render(<PhraseButton phrase={keyed} onTap={onTap} t={light} />);
+    fireEvent.click(screen.getByRole("button"));
+    expect(onTap).toHaveBeenCalledWith("Sí", { key: "quick.yes" });
+  });
+
   it("mouse hover tints border; leaving clears it", () => {
     render(<PhraseButton phrase={phrase} onTap={vi.fn()} t={light} />);
     const btn = screen.getByRole("button");

@@ -3,11 +3,12 @@ import type { JSX } from "preact";
 import { Btn } from "../shared/Btn";
 import { useSettingsStore } from "../../stores/settingsStore";
 import type { Phrase } from "../../types";
+import type { PhraseKey } from "../../data/locales/en";
 import type { ThemeTokens } from "../../theme/tokens";
 
 interface PhraseButtonProps {
   phrase: Phrase;
-  onTap: (text: string) => void;
+  onTap: (text: string, opts?: { key?: PhraseKey }) => void;
   t: ThemeTokens;
 }
 
@@ -30,7 +31,8 @@ export function PhraseButton({ phrase, onTap, t }: PhraseButtonProps) {
 
   const handle = () => {
     setLit(true);
-    onTap(phrase.text);
+    if (phrase.key) onTap(phrase.text, { key: phrase.key });
+    else onTap(phrase.text);
     setTimeout(() => setLit(false), litMs);
   };
 
