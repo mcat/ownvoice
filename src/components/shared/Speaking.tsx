@@ -7,6 +7,9 @@ import { z } from "../../theme/z";
 
 interface SpeakingProps {
   text: string;
+  /** Opposite-locale gloss for co-read display. When present and distinct
+   *  from `text`, rendered as a second muted line under the primary. */
+  gloss?: string;
   isProvider: boolean;
   onDone: () => void;
   t: ThemeTokens;
@@ -15,6 +18,7 @@ interface SpeakingProps {
 /** Full-width overlay bar showing speech progress. Not a modal — no dead ends. */
 export function Speaking({
   text,
+  gloss,
   isProvider,
   onDone,
   t,
@@ -140,6 +144,23 @@ export function Speaking({
         >
           {text}
         </div>
+        {gloss && gloss !== text && (
+          <div
+            class="font-sans"
+            style={{
+              fontSize: 14,
+              fontWeight: 400,
+              color: "rgba(245,245,245,0.7)",
+              lineHeight: 1.3,
+              marginTop: 2,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
+            {gloss}
+          </div>
+        )}
       </div>
       <div
         style={{

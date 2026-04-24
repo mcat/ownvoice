@@ -51,7 +51,7 @@ export function useSpeakActions() {
         ?? (opts?.key ? resolvePhrase(opts.key, caregiverLang) : undefined);
 
       addMessage(text, "patient", active.name, gloss);
-      setSpeaking({ text, from: "patient" });
+      setSpeaking({ text, from: "patient", gloss });
       speak(gloss ?? text, speaker);
     },
     [cfg, active, addMessage, setSpeaking],
@@ -75,7 +75,7 @@ export function useSpeakActions() {
         ?? (opts?.key ? resolvePhrase(opts.key, patientLang) : undefined);
 
       addMessage(text, "provider", provName, gloss);
-      setSpeaking({ text, from: "provider" });
+      setSpeaking({ text, from: "provider", gloss });
       speak(gloss ?? text, speaker);
     },
     [cfg, active, activeProv, addMessage, setSpeaking],

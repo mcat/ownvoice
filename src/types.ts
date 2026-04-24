@@ -117,6 +117,9 @@ export interface AppSettings {
 export interface SpeakingState {
   text: string;
   from: "patient" | "provider";
+  /** Opposite-locale rendering for the Speaking overlay's co-read gloss.
+   *  Populated by useSpeakActions when patientLang ≠ caregiverLang. */
+  gloss?: string;
 }
 
 export interface Language {

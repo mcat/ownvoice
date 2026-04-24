@@ -397,6 +397,7 @@ export function App() {
       {speaking && (
         <Speaking
           text={speaking.text}
+          gloss={speaking.gloss}
           isProvider={speaking.from === "provider"}
           onDone={() => setSpeaking(null)}
           t={t}
