@@ -248,4 +248,143 @@ describe("conversationStore — multi-patient partitioning", () => {
       expect(state.messagesByPatientId).toEqual({});
     }, { timeout: 2000 });
   });
+
+  // --- Mutation-killing tests (targeted at specific survivors) ---
+
+  it("addMessage does not throw when cfg is null (OptionalChaining survivor)", async () => {
+    const { useSettingsStore } = await import("./settingsStore");
+    // cfg is null — cfg?.activePatientId must gracefully short-circuit
+    useSettingsStore.setState({ cfg: null });
+    const { useConversationStore } = await import("./conversationStore");
+    useConversationStore.setState({ messagesByPatientId: {} });
+    // Without the optional chain, this throws. With it, it's a no-op.
+    expect(() => {
+      useConversationStore.getState().addMessage("x", "patient", "L");
+    }).not.toThrow();
+    expect(useConversationStore.getState().messagesByPatientId).toEqual({});
+  });
+
+  it("addMessage time field uses hour:minute format with 2-digit minutes", async () => {
+    const { useSettingsStore } = await import("./settingsStore");
+    useSettingsStore.setState({
+      cfg: {
+        pin: "", caregiverLang: "en", providers: [],
+        patients: [
+          { id: "a", name: "A", bed: "", patientLang: "en", hasVoice: false, speakerData: null, addedAt: 0, lastActiveAt: 0 },
+        ],
+        activePatientId: "a",
+      },
+    });
+    const { useConversationStore } = await import("./conversationStore");
+    useConversationStore.setState({ messagesByPatientId: {} });
+    // Spy on Date.prototype.toLocaleTimeString so we can assert the options are real
+    const spy = vi.spyOn(Date.prototype, "toLocaleTimeString");
+    useConversationStore.getState().addMessage("hello", "patient", "X");
+    expect(spy).toHaveBeenCalledWith([], {
+      hour: "numeric", minute: "2-digit",
+    });
+    // The actual formatted time has 2-digit minutes (e.g., "3:05 AM", not "3:5 AM")
+    const msg = useConversationStore.getState().messagesByPatientId["a"][0];
+    expect(msg.time).toMatch(/:\d{2}/);
+    spy.mockRestore();
+  });
+
+  it("clear() has distinct observable effects for active vs. non-active-patient paths", async () => {
+    const { useSettingsStore } = await import("./settingsStore");
+    const { useConversationStore } = await import("./conversationStore");
+
+    // Branch A: with active patient — clear MUST delete the active patient's thread
+    useSettingsStore.setState({
+      cfg: {
+        pin: "", caregiverLang: "en", providers: [],
+        patients: [
+          { id: "a", name: "A", bed: "", patientLang: "en", hasVoice: false, speakerData: null, addedAt: 0, lastActiveAt: 0 },
+        ],
+        activePatientId: "a",
+      },
+    });
+    useConversationStore.setState({
+      messagesByPatientId: {
+        a: [{ from: "patient", text: "pre-clear", time: "10:00", label: "A" }],
+        b: [{ from: "patient", text: "keep-b", time: "10:00", label: "B" }],
+      },
+    });
+    useConversationStore.getState().clear();
+    const afterActive = useConversationStore.getState().messagesByPatientId;
+    expect(afterActive["a"]).toBeUndefined();
+    expect(afterActive["b"]).toHaveLength(1); // b unaffected
+
+    // Branch B: no active patient — clear MUST be a no-op
+    useSettingsStore.setState({ cfg: null });
+    useConversationStore.setState({
+      messagesByPatientId: {
+        c: [{ from: "patient", text: "should-survive", time: "10:00", label: "C" }],
+      },
+    });
+    useConversationStore.getState().clear();
+    expect(useConversationStore.getState().messagesByPatientId["c"]).toHaveLength(1);
+    expect(useConversationStore.getState().messagesByPatientId["c"][0].text).toBe("should-survive");
+  });
+
+  it("migrate returns { messagesByPatientId: {} } when persisted state is null (null guard)", async () => {
+    vi.resetModules();
+    indexedDB.deleteDatabase("keyval-store");
+    // Don't seed anything — persisted will be null
+    const { useConversationStore } = await import("./conversationStore");
+    await vi.waitFor(() => {
+      expect(useConversationStore.getState().messagesByPatientId).toEqual({});
+    }, { timeout: 2000 });
+  });
+
+  it("migrate from v2 (not v1) preserves existing messagesByPatientId (LogicalOperator/EqualityOperator survivor)", async () => {
+    vi.resetModules();
+    indexedDB.deleteDatabase("keyval-store");
+    // A v2-shape blob that already has messagesByPatientId — migrate must not rewrite it
+    const v2Blob = {
+      state: {
+        messagesByPatientId: {
+          "existing-patient-id": [
+            { from: "patient", text: "preserved", time: "10:00", label: "P" },
+          ],
+        },
+      },
+      version: 2,
+    };
+    const { createDebouncedIDBStorage } = await import("./idbStorage");
+    await createDebouncedIDBStorage(0).setItem("ov-conversation", JSON.stringify(v2Blob));
+    const { useConversationStore } = await import("./conversationStore");
+    await vi.waitFor(() => {
+      const state = useConversationStore.getState();
+      // If migrate mutated `fromVersion < 2` boolean, v2 data would be lost
+      expect(state.messagesByPatientId["existing-patient-id"]).toBeDefined();
+      expect(state.messagesByPatientId["existing-patient-id"]).toHaveLength(1);
+      expect(state.messagesByPatientId["existing-patient-id"][0].text).toBe("preserved");
+    }, { timeout: 2000 });
+  });
+
+  it("migrate from v1 with ALREADY-PARTITIONED messagesByPatientId takes the v2-pass-through branch", async () => {
+    vi.resetModules();
+    indexedDB.deleteDatabase("keyval-store");
+    // Inconsistent v1 blob: has BOTH messages AND messagesByPatientId. Migration's
+    // `!typed.messagesByPatientId` branch must take the pass-through path, not the
+    // v1-reattach path.
+    const v1MixedBlob = {
+      state: {
+        messages: [{ from: "patient", text: "should be ignored", time: "10:00", label: "X" }],
+        messagesByPatientId: {
+          "foo": [{ from: "patient", text: "take this", time: "10:00", label: "Y" }],
+        },
+      },
+      version: 1,
+    };
+    const { createDebouncedIDBStorage } = await import("./idbStorage");
+    await createDebouncedIDBStorage(0).setItem("ov-conversation", JSON.stringify(v1MixedBlob));
+    const { useConversationStore } = await import("./conversationStore");
+    await vi.waitFor(() => {
+      const state = useConversationStore.getState();
+      // messagesByPatientId present → skip the v1-reattach branch → preserve as-is
+      expect(state.messagesByPatientId["foo"]).toHaveLength(1);
+      expect(state.messagesByPatientId["foo"][0].text).toBe("take this");
+    }, { timeout: 2000 });
+  });
 });
