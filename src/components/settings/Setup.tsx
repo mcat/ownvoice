@@ -486,7 +486,7 @@ function StepPatient({
             onClick={() => setLang(l.code)}
             style={{
               display: "flex",
-              alignItems: "center",
+              alignItems: "flex-start",
               gap: 8,
               padding: "12px 14px",
               borderRadius: 12,
@@ -494,15 +494,17 @@ function StepPatient({
                 lang === l.code ? "2px solid #2563EB" : "1px solid #E5E7EB",
               background: lang === l.code ? "#EFF6FF" : "#FFFFFF",
               cursor: "pointer",
-              fontSize: 16,
               color: "#1A1A1A",
               fontFamily: "inherit",
-              minHeight: 48,
+              minHeight: 64,
             }}
           >
-            <span style={{ fontSize: 22 }}>{l.flag}</span>
-            <span style={{ fontWeight: lang === l.code ? 600 : 400 }}>
-              {l.label}
+            <span style={{ fontSize: 22, flexShrink: 0 }}>{l.flag}</span>
+            <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", flex: 1, minWidth: 0, overflow: "hidden" }}>
+              <span style={{ fontWeight: lang === l.code ? 600 : 500, fontSize: 14 }}>{l.englishLabel}</span>
+              {l.englishLabel !== l.label && (
+                <span style={{ fontWeight: 400, color: "#6B7280", fontSize: 11 }}>{l.label}</span>
+              )}
             </span>
           </button>
         ))}
@@ -807,7 +809,7 @@ function StepConfirm({
 }: {
   name: string;
   bed: string;
-  lang: { code: string; label: string; flag: string } | undefined;
+  lang: { code: string; label: string; englishLabel: string; flag: string } | undefined;
   patientVoice: boolean;
   providers: Provider[];
   pin: string;
@@ -845,7 +847,7 @@ function StepConfirm({
         />
         <SummaryRow
           label={resolvePhrase("ui.provider.setup.step3.summary.language", caregiverLang)}
-          value={lang ? `${lang.flag} ${lang.label}` : resolvePhrase("ui.provider.setup.step3.summary.language_default", caregiverLang)}
+          value={lang ? `${lang.flag} ${lang.label}${lang.englishLabel !== lang.label ? ` / ${lang.englishLabel}` : ""}` : resolvePhrase("ui.provider.setup.step3.summary.language_default", caregiverLang)}
         />
         <SummaryRow
           label={resolvePhrase("ui.provider.setup.step3.summary.voice", caregiverLang)}

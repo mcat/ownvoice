@@ -1,12 +1,10 @@
 /**
  * ⚠ DRAFT — MACHINE TRANSLATION PENDING CLINICAL REVIEW ⚠
  *
- * Not registered in the LOCALES map — this file exists as a starting
- * point for professional translators and native-speaking clinicians.
- * Do NOT expose to users until:
+ * Registered in the LOCALES map (PR #98) and active in the app.
+ * Do NOT consider production-ready until:
  *   1. Native-speaker translator review
  *   2. Clinical review (ICU / AAC-familiar clinician)
- *   3. Registration in src/data/phraseRegistry.ts LOCALES
  *
  * Language: Spanish (Latin American neutral)
  * Locale: es
@@ -502,7 +500,7 @@ const es: LocaleStrings = {
   "ui.provider.nav.staff": "Personal",
   "ui.provider.nav.switch_patient": "Cambiar paciente",
   "ui.provider.nav.settings": "Ajustes",
-  "ui.provider.nav.theme.auto": "Auto",
+  "ui.provider.nav.theme.auto": "Automático",
   "ui.provider.nav.theme.light": "Claro",
   "ui.provider.nav.theme.dark": "Oscuro",
   "ui.patient.tabbar.say_more": "Decir más",

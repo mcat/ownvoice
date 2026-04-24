@@ -1,12 +1,10 @@
 /**
  * ⚠ DRAFT — MACHINE TRANSLATION PENDING CLINICAL REVIEW ⚠
  *
- * Not registered in the LOCALES map — this file exists as a starting
- * point for professional translators and native-speaking clinicians.
- * Do NOT expose to users until:
+ * Registered in the LOCALES map (PR #98) but NOT yet clinically approved.
+ * Before use with patients, this file requires:
  *   1. Native-speaker translator review
- *   2. Clinical review (ICU / AAC-familiar clinician)
- *   3. Registration in src/data/phraseRegistry.ts LOCALES
+ *   2. Clinical review (ICU / AAC-familiar Vietnamese-speaking clinician)
  *
  * Language: Vietnamese
  * Locale: vi

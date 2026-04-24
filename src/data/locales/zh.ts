@@ -1,12 +1,10 @@
 /**
  * ⚠ DRAFT — MACHINE TRANSLATION PENDING CLINICAL REVIEW ⚠
  *
- * Not registered in the LOCALES map — this file exists as a starting
- * point for professional translators and native-speaking clinicians.
- * Do NOT expose to users until:
+ * Registered in the LOCALES map (PR #98) but NOT yet vetted.
+ * Do NOT treat as production-ready until:
  *   1. Native-speaker translator review
  *   2. Clinical review (ICU / AAC-familiar clinician)
- *   3. Registration in src/data/phraseRegistry.ts LOCALES
  *
  * Language: Mandarin Chinese (Simplified)
  * Locale: zh
@@ -687,7 +685,7 @@ const zh: LocaleStrings = {
   "ui.provider.setup.step3.pin_label": "工作人员PIN码（可选）",
   "ui.provider.setup.step3.pin_body":
     "设置一个4位PIN码来保护医护人员设置。",
-  "ui.provider.setup.step3.pin_placeholder": "1234",
+  "ui.provider.setup.step3.pin_placeholder": "如 1234",
 
   // ── UI chrome: Settings panel ─────────────────────────────────
   "ui.provider.settings.title": "设置",

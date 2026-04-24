@@ -137,8 +137,13 @@ export function PatientInfoSection({
               style={chipStyle(selected, isDark)}
               title={isDraft ? "DRAFT — machine translation pending clinical review" : undefined}
             >
-              <span style={{ fontSize: 22 }}>{l.flag}</span>
-              <span style={{ fontWeight: selected ? 600 : 400 }}>{l.label}</span>
+              <span style={{ fontSize: 22, flexShrink: 0 }}>{l.flag}</span>
+              <span style={chipTextStyle}>
+                <span style={{ fontWeight: selected ? 600 : 500, fontSize: 14 }}>{l.englishLabel}</span>
+                {l.englishLabel !== l.label && (
+                  <span style={{ fontSize: 11, color: t.muted }}>{l.label}</span>
+                )}
+              </span>
               {isDraft && <span style={draftBadgeStyle}>draft</span>}
             </button>
           );
@@ -169,8 +174,13 @@ export function PatientInfoSection({
               style={chipStyle(selected, isDark)}
               title={isDraft ? "DRAFT — machine translation pending clinical review" : undefined}
             >
-              <span style={{ fontSize: 22 }}>{l.flag}</span>
-              <span style={{ fontWeight: selected ? 600 : 400 }}>{l.label}</span>
+              <span style={{ fontSize: 22, flexShrink: 0 }}>{l.flag}</span>
+              <span style={chipTextStyle}>
+                <span style={{ fontWeight: selected ? 600 : 500, fontSize: 14 }}>{l.englishLabel}</span>
+                {l.englishLabel !== l.label && (
+                  <span style={{ fontSize: 11, color: t.muted }}>{l.label}</span>
+                )}
+              </span>
               {isDraft && <span style={draftBadgeStyle}>draft</span>}
             </button>
           );
@@ -283,6 +293,15 @@ const chipGridStyle: JSX.CSSProperties = {
   marginTop: 8,
 };
 
+const chipTextStyle: JSX.CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "flex-start",
+  flex: 1,
+  minWidth: 0,
+  overflow: "hidden",
+};
+
 /** Small pill on a language chip whose content is machine-translated and
  *  not yet clinically reviewed. Surfaces the review gate visibly so
  *  clinicians don't mistake DRAFT content for validated translations. */
@@ -301,7 +320,7 @@ const draftBadgeStyle: JSX.CSSProperties = {
 function chipStyle(selected: boolean, isDark: boolean): JSX.CSSProperties {
   return {
     display: "flex",
-    alignItems: "center",
+    alignItems: "flex-start",
     gap: 8,
     padding: "12px 14px",
     borderRadius: 12,

@@ -78,11 +78,11 @@ describe("PatientInfoSection", () => {
 
   // ── Patient language picker ────────────────────────────────────
 
-  it("renders patient language chip grid with all 13 languages", () => {
+  it("renders patient language chip grid with all 24 languages", () => {
     renderWithHost();
     const group = screen.getAllByRole("radiogroup")[0];
     const radios = group.querySelectorAll("[role=radio]");
-    expect(radios.length).toBe(13);
+    expect(radios.length).toBe(24);
   });
 
   it("tapping the current patient-language chip is a no-op (no confirm dialog)", () => {
@@ -136,7 +136,7 @@ describe("PatientInfoSection", () => {
     expect(groups.length).toBe(2);
     const caregiverGroup = groups[1];
     const radios = caregiverGroup.querySelectorAll("[role=radio]");
-    expect(radios.length).toBe(13);
+    expect(radios.length).toBe(24);
   });
 
   it("tapping a different caregiver-language chip opens ConfirmDialog with caregiver copy", async () => {
@@ -149,7 +149,8 @@ describe("PatientInfoSection", () => {
     await waitFor(() => {
       expect(screen.getByRole("dialog")).toBeTruthy();
     });
-    expect(screen.getByText(/Change care team language to Français/)).toBeTruthy();
+    // Dialog title is resolved in the destination locale (fr) — French phrasing
+    expect(screen.getByText(/Changer la langue de l'équipe soignante en Français/)).toBeTruthy();
   });
 
   it("confirming caregiver-language dialog calls updateCfg with new caregiverLang", async () => {
@@ -161,7 +162,8 @@ describe("PatientInfoSection", () => {
       expect(screen.getByRole("dialog")).toBeTruthy();
     });
 
-    fireEvent.click(screen.getByText("Change language"));
+    // Confirm button label is in destination locale (fr)
+    fireEvent.click(screen.getByText("Changer la langue"));
 
     await waitFor(() => {
       expect(useSettingsStore.getState().cfg?.caregiverLang).toBe("fr");
