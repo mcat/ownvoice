@@ -231,8 +231,8 @@ export function SwitchSheet({ open, onClose, t: tokens, theme }: SwitchSheetProp
                   {patient.bed && <span>Bed {patient.bed}</span>}
                   {lang && (
                     <span>
-                      {lang.flag} {lang.label}
-                      {lang.englishLabel !== lang.label && ` / ${lang.englishLabel}`}
+                      {lang.flag} {lang.englishLabel}
+                      {lang.englishLabel !== lang.label && ` (${lang.label})`}
                     </span>
                   )}
                 </div>

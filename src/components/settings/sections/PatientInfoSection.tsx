@@ -137,11 +137,13 @@ export function PatientInfoSection({
               style={chipStyle(selected, isDark)}
               title={isDraft ? "DRAFT — machine translation pending clinical review" : undefined}
             >
-              <span style={{ fontSize: 22 }}>{l.flag}</span>
-              <span style={{ fontWeight: selected ? 600 : 400 }}>{l.label}</span>
-              {l.englishLabel !== l.label && (
-                <span style={{ fontWeight: 400, color: t.muted, fontSize: 12 }}>/ {l.englishLabel}</span>
-              )}
+              <span style={{ fontSize: 22, flexShrink: 0 }}>{l.flag}</span>
+              <span style={chipTextStyle}>
+                <span style={{ fontWeight: selected ? 600 : 500, fontSize: 14 }}>{l.englishLabel}</span>
+                {l.englishLabel !== l.label && (
+                  <span style={{ fontSize: 11, color: t.muted }}>{l.label}</span>
+                )}
+              </span>
               {isDraft && <span style={draftBadgeStyle}>draft</span>}
             </button>
           );
@@ -172,11 +174,13 @@ export function PatientInfoSection({
               style={chipStyle(selected, isDark)}
               title={isDraft ? "DRAFT — machine translation pending clinical review" : undefined}
             >
-              <span style={{ fontSize: 22 }}>{l.flag}</span>
-              <span style={{ fontWeight: selected ? 600 : 400 }}>{l.label}</span>
-              {l.englishLabel !== l.label && (
-                <span style={{ fontWeight: 400, color: t.muted, fontSize: 12 }}>/ {l.englishLabel}</span>
-              )}
+              <span style={{ fontSize: 22, flexShrink: 0 }}>{l.flag}</span>
+              <span style={chipTextStyle}>
+                <span style={{ fontWeight: selected ? 600 : 500, fontSize: 14 }}>{l.englishLabel}</span>
+                {l.englishLabel !== l.label && (
+                  <span style={{ fontSize: 11, color: t.muted }}>{l.label}</span>
+                )}
+              </span>
               {isDraft && <span style={draftBadgeStyle}>draft</span>}
             </button>
           );
@@ -287,6 +291,15 @@ const chipGridStyle: JSX.CSSProperties = {
   gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
   gap: 8,
   marginTop: 8,
+};
+
+const chipTextStyle: JSX.CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "flex-start",
+  flex: 1,
+  minWidth: 0,
+  overflow: "hidden",
 };
 
 /** Small pill on a language chip whose content is machine-translated and

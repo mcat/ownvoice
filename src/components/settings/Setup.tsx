@@ -494,19 +494,18 @@ function StepPatient({
                 lang === l.code ? "2px solid #2563EB" : "1px solid #E5E7EB",
               background: lang === l.code ? "#EFF6FF" : "#FFFFFF",
               cursor: "pointer",
-              fontSize: 16,
               color: "#1A1A1A",
               fontFamily: "inherit",
-              minHeight: 48,
+              minHeight: 64,
             }}
           >
-            <span style={{ fontSize: 22 }}>{l.flag}</span>
-            <span style={{ fontWeight: lang === l.code ? 600 : 400 }}>
-              {l.label}
+            <span style={{ fontSize: 22, flexShrink: 0 }}>{l.flag}</span>
+            <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", flex: 1, minWidth: 0, overflow: "hidden" }}>
+              <span style={{ fontWeight: lang === l.code ? 600 : 500, fontSize: 14 }}>{l.englishLabel}</span>
+              {l.englishLabel !== l.label && (
+                <span style={{ fontWeight: 400, color: "#6B7280", fontSize: 11 }}>{l.label}</span>
+              )}
             </span>
-            {l.englishLabel !== l.label && (
-              <span style={{ fontWeight: 400, color: "#6B7280", fontSize: 12 }}>/ {l.englishLabel}</span>
-            )}
           </button>
         ))}
       </div>

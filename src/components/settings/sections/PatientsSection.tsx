@@ -139,8 +139,8 @@ export function PatientsSection({ t, theme }: Props) {
                 {patient.bed && <span>Bed {patient.bed}</span>}
                 {lang && (
                   <span>
-                    {lang.flag} {lang.label}
-                    {lang.englishLabel !== lang.label && ` / ${lang.englishLabel}`}
+                    {lang.flag} {lang.englishLabel}
+                    {lang.englishLabel !== lang.label && ` (${lang.label})`}
                   </span>
                 )}
                 <span style={voiceChipStyle}>
