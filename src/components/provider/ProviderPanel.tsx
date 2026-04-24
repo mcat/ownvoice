@@ -2,13 +2,14 @@ import { useState } from "preact/hooks";
 import type { JSX } from "preact";
 import type { AppSettings } from "../../types";
 import type { ThemeTokens, ThemeName } from "../../theme/tokens";
-import { t as resolvePhrase, getProviderCategories } from "../../data/phraseRegistry";
+import { t as resolvePhrase, getKeyedProviderCategories } from "../../data/phraseRegistry";
+import type { PhraseKey } from "../../data/locales/en";
 import { useSettingsStore, useActivePatient } from "../../stores/settingsStore";
 import { Btn } from "../shared/Btn";
 import { BottomSheet } from "../shared/BottomSheet";
 
 interface ProviderPanelProps {
-  onSend: (text: string) => void;
+  onSend: (text: string, opts?: { key?: PhraseKey }) => void;
   onClose: () => void;
   cfg: AppSettings;
   t: ThemeTokens;
@@ -60,7 +61,7 @@ export function ProviderPanel({
 }: ProviderPanelProps) {
   const caregiverLang = useSettingsStore((s) => s.cfg?.caregiverLang ?? "en");
   const active = useActivePatient();
-  const PROVIDER_CATEGORIES = getProviderCategories(caregiverLang);
+  const PROVIDER_CATEGORIES = getKeyedProviderCategories(caregiverLang);
   const SECTION_KEYS = Object.keys(PROVIDER_CATEGORIES);
 
   const [activeSection, setActiveSection] = useState(SECTION_KEYS[0]);
@@ -161,14 +162,14 @@ export function ProviderPanel({
         </div>
 
         <div>
-          {phrases.map((phrase, idx) => (
+          {phrases.map((item, idx) => (
             <Btn
               key={idx}
-              onClick={() => onSend(phrase)}
+              onClick={() => (item.key ? onSend(item.text, { key: item.key }) : onSend(item.text))}
               style={phraseBtnStyle}
-              aria-label={resolvePhrase("ui.provider.speak_phrase", caregiverLang).replace("{phrase}", phrase)}
+              aria-label={resolvePhrase("ui.provider.speak_phrase", caregiverLang).replace("{phrase}", item.text)}
             >
-              {phrase}
+              {item.text}
             </Btn>
           ))}
         </div>

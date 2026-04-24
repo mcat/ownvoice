@@ -242,6 +242,55 @@ export function getProviderCategories(locale: string = "en"): Record<string, str
   };
 }
 
+/** Keyed variant of {@link getProviderCategories}. Each phrase carries its
+ *  PhraseKey so `speakAsProvider` can resolve patientLang for speech
+ *  (provider voice speaks patient's language per the voice-direction
+ *  model). Section labels remain display-locale strings so the existing
+ *  `activeSection` state, which stores the resolved label, still works. */
+export function getKeyedProviderCategories(
+  locale: string = "en",
+): Record<string, SuggestionItem[]> {
+  return {
+    [t("provider.cat.responses", locale).toLowerCase()]: [
+      si("provider.responses.help", locale),
+      si("provider.responses.interpreter", locale),
+      si("provider.responses.family", locale),
+      si("provider.responses.get_that", locale),
+      si("provider.responses.doctor_know", locale),
+      si("provider.responses.medication", locale),
+      si("provider.responses.family_coming", locale),
+      si("provider.responses.doctor_soon", locale),
+      si("provider.responses.doing_well", locale),
+      si("provider.responses.rest", locale),
+    ],
+    [t("provider.cat.questions", locale).toLowerCase()]: [
+      si("provider.questions.feeling", locale),
+      si("provider.questions.need", locale),
+      si("provider.questions.where_hurts", locale),
+      si("provider.questions.rate_pain", locale),
+      si("provider.questions.sleep", locale),
+      si("provider.questions.comfortable", locale),
+    ],
+    [t("provider.cat.directions", locale).toLowerCase()]: [
+      si("provider.directions.procedure", locale),
+      si("provider.directions.stay_in_bed", locale),
+      si("provider.directions.vitals", locale),
+      si("provider.directions.medication_time", locale),
+      si("provider.directions.breathe", locale),
+      si("provider.directions.call_button", locale),
+    ],
+    [t("provider.cat.goals_of_care", locale).toLowerCase()]: [
+      si("provider.goals_of_care.matters_most", locale),
+      si("provider.goals_of_care.goals", locale),
+      si("provider.goals_of_care.worries", locale),
+      si("provider.goals_of_care.strength", locale),
+      si("provider.goals_of_care.joy", locale),
+      si("provider.goals_of_care.wishes", locale),
+      si("provider.goals_of_care.hopes", locale),
+    ],
+  };
+}
+
 // ── Pain data ────────────────────────────────────────────────────
 
 export function getEmojiFPS(): PainFace[] {

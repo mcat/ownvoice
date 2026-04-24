@@ -54,7 +54,15 @@ export function SentenceBuilder({ onSend, t, theme, messages }: SentenceBuilderP
     [tokens, pendingFree, patientLang],
   );
 
-  const key = displaySentence.toLowerCase().trim();
+  // The curated suggestion tree is keyed in English (the tree data is
+  // deliberately hardcoded-English so the structure is reviewable; text
+  // is localized at render time via each item's PhraseKey). Build the
+  // lookup key in English from the same tokens so traversal works when
+  // patientLang ≠ en.
+  const key = useMemo(
+    () => resolveTokens(tokens, pendingFree, "en").toLowerCase().trim(),
+    [tokens, pendingFree],
+  );
   const hour = new Date().getHours();
   const hasText = displaySentence.length > 0;
   const shownSuggestions = suggestions.slice(0, 8);
@@ -213,7 +221,7 @@ export function SentenceBuilder({ onSend, t, theme, messages }: SentenceBuilderP
           <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 8 }}>
             {shownSuggestions.map((item) => (
               <Btn key={item.text} onClick={() => addKeyedChip(item)} style={pillStyle}>
-                {item.text}
+                {item.key ? resolvePhrase(item.key, patientLang) : item.text}
               </Btn>
             ))}
           </div>

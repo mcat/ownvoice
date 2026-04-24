@@ -14,7 +14,6 @@ interface PainFlowProps {
   onSelect: (text: string, opts?: { gloss?: string }) => void;
   t: ThemeTokens;
   theme: ThemeName;
-  locale?: string;
 }
 
 const STEPS: Step[] = ["severity", "location", "descriptor"];
@@ -31,7 +30,7 @@ const STEP_HEADING_KEYS: Record<Step, PhraseKey> = {
   descriptor: "ui.dual.pain.heading.descriptor",
 };
 
-export function PainFlow({ onSelect, t, theme, locale = "en" }: PainFlowProps) {
+export function PainFlow({ onSelect, t, theme }: PainFlowProps) {
   const [step, setStep] = useState<Step>("severity");
   const [severity, setSeverity] = useState<number | null>(null);
   const [location, setLocation] = useState<PhraseKey | null>(null);
@@ -152,7 +151,7 @@ export function PainFlow({ onSelect, t, theme, locale = "en" }: PainFlowProps) {
                   textAlign: "center",
                 }}
               >
-                {resolvePhrase(STEP_LABEL_KEYS[s], locale)}
+                {resolvePhrase(STEP_LABEL_KEYS[s], patientLang)}
               </div>
             </>
           );
@@ -273,7 +272,7 @@ export function PainFlow({ onSelect, t, theme, locale = "en" }: PainFlowProps) {
                   textAlign: "center",
                 }}
               >
-                {resolvePhrase(face.labelKey, locale)}
+                {resolvePhrase(face.labelKey, patientLang)}
               </span>
             </Btn>
             );
@@ -346,7 +345,7 @@ export function PainFlow({ onSelect, t, theme, locale = "en" }: PainFlowProps) {
                   fontWeight: 500,
                 }}
               >
-                {resolvePhrase(region.key, locale)}
+                {resolvePhrase(region.key, patientLang)}
               </span>
             </Btn>
             );
@@ -419,7 +418,7 @@ export function PainFlow({ onSelect, t, theme, locale = "en" }: PainFlowProps) {
                 fontWeight: 500,
               }}
             >
-              {resolvePhrase(desc.key, locale)}
+              {resolvePhrase(desc.key, patientLang)}
             </span>
           </Btn>
           );
