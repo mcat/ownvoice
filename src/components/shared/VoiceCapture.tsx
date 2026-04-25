@@ -694,6 +694,7 @@ export function VoiceCapture({
     // whole Settings sheet below it) to jump. 220px comfortably fits the
     // peak-scale breath circle (~160px) and the 112px countdown numeral.
     const contentHeight = compact ? 180 : 220;
+    const countdownScript = getRecordingScript(locale);
 
     return (
       <div
@@ -712,6 +713,21 @@ export function VoiceCapture({
         }}
       >
         {fileInput}
+        {/* Persistent tone hint above the breathing/countdown content so the
+            user sees it during their preparation window — that's when they
+            can actually adjust their delivery, not after recording starts. */}
+        <p
+          style={{
+            margin: 0,
+            fontSize: compact ? 13 : 14,
+            lineHeight: 1.4,
+            color: "#92400E", // amber-900
+            fontWeight: 500,
+            maxWidth: compact ? 280 : 360,
+          }}
+        >
+          {countdownScript.toneHint}
+        </p>
         <div
           style={{
             height: contentHeight,
@@ -873,6 +889,22 @@ export function VoiceCapture({
         }}
       >
         {fileInput}
+        {/* Tone hint — visible at the top of the recording card so the user
+            can adjust delivery while they speak. Shown to passage AND
+            free-speak modes uniformly. The clone copies their delivery, so
+            a calm/even reference produces a calm/even clone. */}
+        <p
+          style={{
+            margin: 0,
+            marginBottom: compact ? 10 : 12,
+            fontSize: compact ? 13 : 14,
+            lineHeight: 1.4,
+            color: "#92400E", // amber-900
+            fontWeight: 500,
+          }}
+        >
+          {script.toneHint}
+        </p>
         <div style={{ display: "flex", alignItems: "center", gap: compact ? 8 : 12 }}>
           <span
             aria-hidden="true"

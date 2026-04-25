@@ -33,6 +33,13 @@ export interface RecordingScript {
   passage?: string;
   /** Gentle subtitle under the passage offering an escape hatch. */
   subtitle?: string;
+  /**
+   * Delivery guidance shown above the recording controls. Read-aloud
+   * style transfers strongly through Chatterbox's speaker encoder, so
+   * a calm/even reference produces a clone that sounds calm/even —
+   * which is what clinical communication wants.
+   */
+  toneHint: string;
   /** Coaching text shown at t=0 before the reader begins. */
   openingHint: string;
   /** Coaching text shown in the final ~3 seconds. */
@@ -46,6 +53,7 @@ const english: RecordingScript = {
   passage:
     "When the sunlight strikes raindrops in the air, they act like a prism and form a rainbow. The rainbow is a division of white light into many beautiful colors.",
   subtitle: "Or speak naturally — anything works.",
+  toneHint: "Use a calm, even tone — the clone will copy how you sound.",
   openingHint: "Take a breath, then begin.",
   closingHint: "Nice — almost done.",
   freeSpeakTemplate: "Speak naturally for {remaining} more seconds…",
@@ -53,6 +61,7 @@ const english: RecordingScript = {
 
 const freeSpeakFallback: RecordingScript = {
   prompt: "",
+  toneHint: "Use a calm, even tone — the clone will copy how you sound.",
   openingHint: "Take a breath, then begin.",
   closingHint: "Nice — almost done.",
   freeSpeakTemplate: "Speak naturally for {remaining} more seconds…",
