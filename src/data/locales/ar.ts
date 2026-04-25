@@ -725,6 +725,10 @@ const ar: LocaleStrings = {
   "ui.provider.settings.done": "تم",
   "ui.provider.settings.close_aria": "إغلاق الإعدادات",
 
+  "ui.provider.patient_edit.title": "تعديل {name}",
+  "ui.provider.patient_edit.title_default": "تعديل المريض",
+  "ui.provider.patient_edit.close_aria": "إغلاق محرر المريض",
+  "ui.provider.patient_pill.aria": "تعديل المريض: {name}",
   // ── UI chrome: VoiceCacheProgress ─────────────────────────────
   "ui.provider.settings.voice_cache.discard_title":
     "تجاهل إعداد صوت {label}؟",
@@ -822,6 +826,7 @@ const ar: LocaleStrings = {
     "اللغة التي يفهمها فريق الرعاية. تُضبط عادةً مرة واحدة لكل جهاز.",
   "ui.provider.settings.lang.change": "تغيير اللغة",
 
+  "ui.provider.settings.lang.picker_title": "اختر اللغة",
   "ui.provider.settings.lang.patient_dialog.title":
     "تغيير لغة المريض إلى {lang}؟",
   "ui.provider.settings.lang.patient_dialog.body":
@@ -893,6 +898,10 @@ const ar: LocaleStrings = {
   // ── UI chrome: SwitchSheet ────────────────────────────────────
   "ui.provider.switch.title": "تبديل المريض",
   "ui.provider.switch.add_patient": "+ إضافة مريض",
+  "ui.provider.patients.title": "المرضى",
+  "ui.provider.patients.actions_aria": "إجراءات لـ {name}",
+  "ui.provider.patients.action_edit": "تعديل",
+  "ui.provider.patients.action_remove": "إزالة",
   "ui.provider.switch.voice_captured": "تم التقاط الصوت",
   "ui.provider.switch.no_voice": "بدون صوت",
   "ui.provider.switch.last_active_just_now": "الآن",

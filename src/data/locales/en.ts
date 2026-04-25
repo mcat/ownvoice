@@ -685,6 +685,12 @@ const en = {
   "ui.provider.settings.done": "Done",
   "ui.provider.settings.close_aria": "Close settings",
 
+  // ── UI chrome: PatientEditSheet ───────────────────────────────
+  "ui.provider.patient_edit.title": "Edit {name}",
+  "ui.provider.patient_edit.title_default": "Edit patient",
+  "ui.provider.patient_edit.close_aria": "Close patient editor",
+  "ui.provider.patient_pill.aria": "Edit patient: {name}",
+
   // ── UI chrome: VoiceCacheProgress ─────────────────────────────
   "ui.provider.settings.voice_cache.discard_title": "Discard {label}'s voice preparation?",
   "ui.provider.settings.voice_cache.discard_body": "Progress ({current} / {total} phrases) will be lost. The recorded voice sample itself is kept — you can restart preparation later.",
@@ -750,6 +756,7 @@ const en = {
   "ui.provider.settings.lang.caregiver_section": "Care team language",
   "ui.provider.settings.lang.caregiver_helper": "The language your care team understands. Usually set once per device.",
   "ui.provider.settings.lang.change": "Change language",
+  "ui.provider.settings.lang.picker_title": "Choose language",
 
   "ui.provider.settings.lang.patient_dialog.title": "Change patient language to {lang}?",
   "ui.provider.settings.lang.patient_dialog.body": "Your voice clone stays ready — the phrases you tap will still sound the same. We'll prepare audio for {providerCount} care-team voices (~{estimatedMinutes} min). You can keep using the app while this happens.",
@@ -795,6 +802,10 @@ const en = {
   // ── UI chrome: SwitchSheet ────────────────────────────────────
   "ui.provider.switch.title": "Switch Patient",
   "ui.provider.switch.add_patient": "+ Add Patient",
+  "ui.provider.patients.title": "Patients",
+  "ui.provider.patients.actions_aria": "Actions for {name}",
+  "ui.provider.patients.action_edit": "Edit",
+  "ui.provider.patients.action_remove": "Remove",
   "ui.provider.switch.voice_captured": "Voice captured",
   "ui.provider.switch.no_voice": "No voice",
   "ui.provider.switch.last_active_just_now": "Just now",

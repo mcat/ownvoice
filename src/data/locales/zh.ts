@@ -692,6 +692,10 @@ const zh: LocaleStrings = {
   "ui.provider.settings.done": "完成",
   "ui.provider.settings.close_aria": "关闭设置",
 
+  "ui.provider.patient_edit.title": "编辑 {name}",
+  "ui.provider.patient_edit.title_default": "编辑患者",
+  "ui.provider.patient_edit.close_aria": "关闭患者编辑器",
+  "ui.provider.patient_pill.aria": "编辑患者: {name}",
   // ── UI chrome: VoiceCacheProgress ─────────────────────────────
   "ui.provider.settings.voice_cache.discard_title":
     "丢弃{label}的语音准备？",
@@ -784,6 +788,7 @@ const zh: LocaleStrings = {
     "医疗团队使用的语言。通常每台设备只需设置一次。",
   "ui.provider.settings.lang.change": "更改语言",
 
+  "ui.provider.settings.lang.picker_title": "选择语言",
   "ui.provider.settings.lang.patient_dialog.title":
     "将患者语言更改为{lang}？",
   "ui.provider.settings.lang.patient_dialog.body":
@@ -846,6 +851,10 @@ const zh: LocaleStrings = {
   // ── UI chrome: SwitchSheet ────────────────────────────────────
   "ui.provider.switch.title": "切换患者",
   "ui.provider.switch.add_patient": "+ 添加患者",
+  "ui.provider.patients.title": "患者",
+  "ui.provider.patients.actions_aria": "{name} 的操作",
+  "ui.provider.patients.action_edit": "编辑",
+  "ui.provider.patients.action_remove": "移除",
   "ui.provider.switch.voice_captured": "声音已采集",
   "ui.provider.switch.no_voice": "无声音",
   "ui.provider.switch.last_active_just_now": "刚刚",

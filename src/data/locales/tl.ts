@@ -784,6 +784,10 @@ const tl: LocaleStrings = {
   "ui.provider.settings.done": "Tapos na",
   "ui.provider.settings.close_aria": "Isara ang settings",
 
+  "ui.provider.patient_edit.title": "I-edit si {name}",
+  "ui.provider.patient_edit.title_default": "I-edit ang pasyente",
+  "ui.provider.patient_edit.close_aria": "Isara ang patient editor",
+  "ui.provider.patient_pill.aria": "I-edit ang pasyente: {name}",
   // ── UI chrome: VoiceCacheProgress ─────────────────────────────
   "ui.provider.settings.voice_cache.discard_title":
     "Itapon ang paghahanda ng boses ni {label}?",
@@ -887,6 +891,7 @@ const tl: LocaleStrings = {
     "Ang wikang naiintindihan ng care team mo. Karaniwan isang beses lang ise-set bawat device.",
   "ui.provider.settings.lang.change": "Palitan ang wika",
 
+  "ui.provider.settings.lang.picker_title": "Pumili ng wika",
   "ui.provider.settings.lang.patient_dialog.title":
     "Palitan ang wika ng pasyente sa {lang}?",
   "ui.provider.settings.lang.patient_dialog.body":
@@ -960,6 +965,10 @@ const tl: LocaleStrings = {
   // ── UI chrome: SwitchSheet ────────────────────────────────────
   "ui.provider.switch.title": "Palitan ang pasyente",
   "ui.provider.switch.add_patient": "+ Magdagdag ng pasyente",
+  "ui.provider.patients.title": "Mga pasyente",
+  "ui.provider.patients.actions_aria": "Mga aksyon para kay {name}",
+  "ui.provider.patients.action_edit": "I-edit",
+  "ui.provider.patients.action_remove": "Tanggalin",
   "ui.provider.switch.voice_captured": "Na-capture ang boses",
   "ui.provider.switch.no_voice": "Walang boses",
   "ui.provider.switch.last_active_just_now": "Ngayon lang",

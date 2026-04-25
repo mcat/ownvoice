@@ -729,6 +729,10 @@ const ru: LocaleStrings = {
   "ui.provider.settings.done": "Готово",
   "ui.provider.settings.close_aria": "Закрыть настройки",
 
+  "ui.provider.patient_edit.title": "Редактировать {name}",
+  "ui.provider.patient_edit.title_default": "Редактировать пациента",
+  "ui.provider.patient_edit.close_aria": "Закрыть редактор пациента",
+  "ui.provider.patient_pill.aria": "Редактировать пациента: {name}",
   // ── UI chrome: VoiceCacheProgress ─────────────────────────────
   "ui.provider.settings.voice_cache.discard_title":
     "Отменить подготовку голоса для {label}?",
@@ -826,6 +830,7 @@ const ru: LocaleStrings = {
     "Язык, понятный вашей медицинской команде. Обычно настраивается один раз для устройства.",
   "ui.provider.settings.lang.change": "Сменить язык",
 
+  "ui.provider.settings.lang.picker_title": "Выбрать язык",
   "ui.provider.settings.lang.patient_dialog.title":
     "Сменить язык пациента на {lang}?",
   "ui.provider.settings.lang.patient_dialog.body":
@@ -897,6 +902,10 @@ const ru: LocaleStrings = {
   // ── UI chrome: SwitchSheet ────────────────────────────────────
   "ui.provider.switch.title": "Сменить пациента",
   "ui.provider.switch.add_patient": "+ Добавить пациента",
+  "ui.provider.patients.title": "Пациенты",
+  "ui.provider.patients.actions_aria": "Действия для {name}",
+  "ui.provider.patients.action_edit": "Редактировать",
+  "ui.provider.patients.action_remove": "Удалить",
   "ui.provider.switch.voice_captured": "Голос записан",
   "ui.provider.switch.no_voice": "Нет голоса",
   "ui.provider.switch.last_active_just_now": "Только что",

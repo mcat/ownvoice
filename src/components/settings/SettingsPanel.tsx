@@ -4,8 +4,6 @@ import { z } from "../../theme/z";
 import { BottomSheet } from "../shared/BottomSheet";
 import { t as resolvePhrase } from "../../data/phraseRegistry";
 import { useSettingsStore } from "../../stores/settingsStore";
-import { PatientInfoSection } from "./sections/PatientInfoSection";
-import { PatientsSection } from "./sections/PatientsSection";
 import { AccessibilitySection } from "./sections/AccessibilitySection";
 import { CareTeamSection } from "./sections/CareTeamSection";
 import { AboutSection } from "./sections/AboutSection";
@@ -72,22 +70,18 @@ export function SettingsPanel({
         </BottomSheet.Header>
 
         <BottomSheet.Body>
+          {/* Settings now scopes to device + care team. Per-patient editing
+              lives in PatientEditSheet (opened from the header pill or the
+              Patients screen). */}
           <div style={{ padding: "0 4px" }}>
-            <PatientInfoSection
-              cfg={cfg}
-              updateCfg={updateCfg}
-              t={t}
-              theme={theme}
-            />
-            <AccessibilitySection cfg={cfg} updateCfg={updateCfg} t={t} />
             <CareTeamSection
               cfg={cfg}
               t={t}
               theme={theme}
             />
-            <PatientsSection t={t} theme={theme} />
-            <AboutSection t={t} />
+            <AccessibilitySection cfg={cfg} updateCfg={updateCfg} t={t} />
             <OfflineReadinessSection t={t} />
+            <AboutSection t={t} />
             <ResetSection onReset={onReset} t={t} theme={theme} />
           </div>
         </BottomSheet.Body>

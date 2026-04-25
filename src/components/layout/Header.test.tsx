@@ -36,11 +36,13 @@ const makeCfg = (overrides?: { patient?: Record<string, unknown>; cfg?: Partial<
 describe("Header", () => {
   const onSettings = vi.fn();
   const onSwitchPatient = vi.fn();
+  const onEditPatient = vi.fn();
   const onEndStaffSession = vi.fn();
 
   beforeEach(() => {
     onSettings.mockReset();
     onSwitchPatient.mockReset();
+    onEditPatient.mockReset();
     onEndStaffSession.mockReset();
     useUIStore.setState({
       builderOpen: false,
@@ -63,6 +65,7 @@ describe("Header", () => {
         cfg={cfg}
         onSettings={onSettings}
         onSwitchPatient={onSwitchPatient}
+        onEditPatient={onEditPatient}
         staffAuthed={false}
         onEndStaffSession={onEndStaffSession}
       />,

@@ -752,6 +752,10 @@ const el: LocaleStrings = {
   "ui.provider.settings.done": "Τέλος",
   "ui.provider.settings.close_aria": "Κλείσιμο ρυθμίσεων",
 
+  "ui.provider.patient_edit.title": "Επεξεργασία {name}",
+  "ui.provider.patient_edit.title_default": "Επεξεργασία ασθενούς",
+  "ui.provider.patient_edit.close_aria": "Κλείσιμο επεξεργασίας ασθενούς",
+  "ui.provider.patient_pill.aria": "Επεξεργασία ασθενούς: {name}",
   // ── UI chrome: VoiceCacheProgress ─────────────────────────────
   "ui.provider.settings.voice_cache.discard_title":
     "Απόρριψη προετοιμασίας φωνής {label};",
@@ -847,6 +851,7 @@ const el: LocaleStrings = {
     "Η γλώσσα που κατανοεί η ομάδα φροντίδας σας. Συνήθως ρυθμίζεται μία φορά ανά συσκευή.",
   "ui.provider.settings.lang.change": "Αλλαγή γλώσσας",
 
+  "ui.provider.settings.lang.picker_title": "Επιλογή γλώσσας",
   "ui.provider.settings.lang.patient_dialog.title":
     "Αλλαγή γλώσσας ασθενούς σε {lang};",
   "ui.provider.settings.lang.patient_dialog.body":
@@ -909,6 +914,10 @@ const el: LocaleStrings = {
   // ── UI chrome: SwitchSheet ────────────────────────────────────
   "ui.provider.switch.title": "Αλλαγή ασθενούς",
   "ui.provider.switch.add_patient": "+ Προσθήκη ασθενούς",
+  "ui.provider.patients.title": "Ασθενείς",
+  "ui.provider.patients.actions_aria": "Ενέργειες για {name}",
+  "ui.provider.patients.action_edit": "Επεξεργασία",
+  "ui.provider.patients.action_remove": "Αφαίρεση",
   "ui.provider.switch.voice_captured": "Φωνή καταγράφηκε",
   "ui.provider.switch.no_voice": "Χωρίς φωνή",
   "ui.provider.switch.last_active_just_now": "Μόλις τώρα",

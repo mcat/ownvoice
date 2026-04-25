@@ -139,9 +139,17 @@ describe("CareTeamSection", () => {
   });
 
   // ── Care team language picker ──────────────────────────────────
+  //
+  // The picker is now collapsed by default — clicking the field opens a
+  // BottomSheet that holds the radiogroup.
+
+  function openCaregiverLangSheet() {
+    fireEvent.click(screen.getByRole("button", { name: /Care team language/ }));
+  }
 
   it("renders care team language chip grid with all 24 languages", () => {
     renderWithHost();
+    openCaregiverLangSheet();
     const group = screen.getByRole("radiogroup");
     const radios = group.querySelectorAll("[role=radio]");
     expect(radios.length).toBe(24);
@@ -149,10 +157,12 @@ describe("CareTeamSection", () => {
 
   it("tapping a different care-team language chip opens ConfirmDialog", async () => {
     renderWithHost();
+    openCaregiverLangSheet();
     const frButton = screen.getAllByText("Français").map((el) => el.closest("button")!)[0];
     fireEvent.click(frButton);
 
     await waitFor(() => {
+      expect(screen.queryByRole("radiogroup")).toBeNull();
       expect(screen.getByRole("dialog")).toBeTruthy();
     });
     expect(screen.getByText(/Changer la langue de l'équipe soignante en Français/)).toBeTruthy();
@@ -160,6 +170,7 @@ describe("CareTeamSection", () => {
 
   it("confirming care-team language dialog updates caregiverLang in the store", async () => {
     renderWithHost();
+    openCaregiverLangSheet();
     const frButton = screen.getAllByText("Français").map((el) => el.closest("button")!)[0];
     fireEvent.click(frButton);
 

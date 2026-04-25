@@ -741,6 +741,10 @@ const ms: LocaleStrings = {
   "ui.provider.settings.done": "Selesai",
   "ui.provider.settings.close_aria": "Tutup tetapan",
 
+  "ui.provider.patient_edit.title": "Edit {name}",
+  "ui.provider.patient_edit.title_default": "Edit pesakit",
+  "ui.provider.patient_edit.close_aria": "Tutup penyunting pesakit",
+  "ui.provider.patient_pill.aria": "Edit pesakit: {name}",
   // ── UI chrome: VoiceCacheProgress ─────────────────────────────
   "ui.provider.settings.voice_cache.discard_title":
     "Buang penyediaan suara {label}?",
@@ -836,6 +840,7 @@ const ms: LocaleStrings = {
     "Bahasa yang difahami oleh pasukan penjagaan anda. Biasanya ditetapkan sekali bagi setiap peranti.",
   "ui.provider.settings.lang.change": "Tukar bahasa",
 
+  "ui.provider.settings.lang.picker_title": "Pilih bahasa",
   "ui.provider.settings.lang.patient_dialog.title":
     "Tukar bahasa pesakit kepada {lang}?",
   "ui.provider.settings.lang.patient_dialog.body":
@@ -907,6 +912,10 @@ const ms: LocaleStrings = {
   // ── UI chrome: SwitchSheet ────────────────────────────────────
   "ui.provider.switch.title": "Tukar Pesakit",
   "ui.provider.switch.add_patient": "+ Tambah Pesakit",
+  "ui.provider.patients.title": "Pesakit",
+  "ui.provider.patients.actions_aria": "Tindakan untuk {name}",
+  "ui.provider.patients.action_edit": "Edit",
+  "ui.provider.patients.action_remove": "Buang",
   "ui.provider.switch.voice_captured": "Suara ditangkap",
   "ui.provider.switch.no_voice": "Tiada suara",
   "ui.provider.switch.last_active_just_now": "Baru sahaja",

@@ -756,6 +756,10 @@ const vi: LocaleStrings = {
   "ui.provider.settings.done": "Xong",
   "ui.provider.settings.close_aria": "Đóng cài đặt",
 
+  "ui.provider.patient_edit.title": "Chỉnh sửa {name}",
+  "ui.provider.patient_edit.title_default": "Chỉnh sửa bệnh nhân",
+  "ui.provider.patient_edit.close_aria": "Đóng trình chỉnh sửa bệnh nhân",
+  "ui.provider.patient_pill.aria": "Chỉnh sửa bệnh nhân: {name}",
   // ── UI chrome: VoiceCacheProgress ─────────────────────────────
   "ui.provider.settings.voice_cache.discard_title":
     "Bỏ chuẩn bị giọng nói của {label}?",
@@ -856,6 +860,7 @@ const vi: LocaleStrings = {
     "Ngôn ngữ mà đội ngũ y tế hiểu. Thường chỉ đặt một lần cho mỗi thiết bị.",
   "ui.provider.settings.lang.change": "Đổi ngôn ngữ",
 
+  "ui.provider.settings.lang.picker_title": "Chọn ngôn ngữ",
   "ui.provider.settings.lang.patient_dialog.title":
     "Đổi ngôn ngữ bệnh nhân sang {lang}?",
   "ui.provider.settings.lang.patient_dialog.body":
@@ -927,6 +932,10 @@ const vi: LocaleStrings = {
   // ── UI chrome: SwitchSheet ────────────────────────────────────
   "ui.provider.switch.title": "Đổi bệnh nhân",
   "ui.provider.switch.add_patient": "+ Thêm bệnh nhân",
+  "ui.provider.patients.title": "Bệnh nhân",
+  "ui.provider.patients.actions_aria": "Hành động cho {name}",
+  "ui.provider.patients.action_edit": "Chỉnh sửa",
+  "ui.provider.patients.action_remove": "Xóa",
   "ui.provider.switch.voice_captured": "Đã thu giọng nói",
   "ui.provider.switch.no_voice": "Chưa có giọng nói",
   "ui.provider.switch.last_active_just_now": "Vừa xong",

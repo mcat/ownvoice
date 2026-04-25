@@ -728,6 +728,10 @@ const ja: LocaleStrings = {
   "ui.provider.settings.done": "完了",
   "ui.provider.settings.close_aria": "設定を閉じる",
 
+  "ui.provider.patient_edit.title": "{name} を編集",
+  "ui.provider.patient_edit.title_default": "患者を編集",
+  "ui.provider.patient_edit.close_aria": "患者エディタを閉じる",
+  "ui.provider.patient_pill.aria": "患者を編集: {name}",
   // ── UI chrome: VoiceCacheProgress ─────────────────────────────
   "ui.provider.settings.voice_cache.discard_title":
     "{label}の音声準備を破棄しますか？",
@@ -825,6 +829,7 @@ const ja: LocaleStrings = {
     "ケアチームが理解する言語です。通常、デバイスごとに1回設定します。",
   "ui.provider.settings.lang.change": "言語を変更",
 
+  "ui.provider.settings.lang.picker_title": "言語を選択",
   "ui.provider.settings.lang.patient_dialog.title":
     "患者の言語を{lang}に変更しますか？",
   "ui.provider.settings.lang.patient_dialog.body":
@@ -896,6 +901,10 @@ const ja: LocaleStrings = {
   // ── UI chrome: SwitchSheet ────────────────────────────────────
   "ui.provider.switch.title": "患者を切り替える",
   "ui.provider.switch.add_patient": "+ 患者を追加",
+  "ui.provider.patients.title": "患者",
+  "ui.provider.patients.actions_aria": "{name} のアクション",
+  "ui.provider.patients.action_edit": "編集",
+  "ui.provider.patients.action_remove": "削除",
   "ui.provider.switch.voice_captured": "音声取得済み",
   "ui.provider.switch.no_voice": "音声なし",
   "ui.provider.switch.last_active_just_now": "今さっき",

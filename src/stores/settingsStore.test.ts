@@ -323,6 +323,35 @@ describe("multi-patient actions", () => {
     expect(cfg.patients[1].bed).toBe("2");
   });
 
+  it("updatePatient patches a non-active patient by id", async () => {
+    const { useSettingsStore } = await import("./settingsStore");
+    const a: Patient = { id: "a", name: "A", bed: "1", patientLang: "en", hasVoice: false, speakerData: null, addedAt: 0, lastActiveAt: 0 };
+    const b: Patient = { id: "b", name: "B", bed: "2", patientLang: "en", hasVoice: false, speakerData: null, addedAt: 0, lastActiveAt: 0 };
+    useSettingsStore.setState({
+      cfg: { pin: "", caregiverLang: "en", providers: [], patients: [a, b], activePatientId: "a" },
+    });
+    // Patch B even though A is active — proves edit-non-active works.
+    useSettingsStore.getState().updatePatient("b", { name: "B-Updated", bed: "9C" });
+    const cfg = useSettingsStore.getState().cfg!;
+    expect(cfg.patients[1].name).toBe("B-Updated");
+    expect(cfg.patients[1].bed).toBe("9C");
+    // Active patient A is untouched.
+    expect(cfg.patients[0].name).toBe("A");
+    expect(cfg.patients[0].bed).toBe("1");
+    // activePatientId is also untouched.
+    expect(cfg.activePatientId).toBe("a");
+  });
+
+  it("updatePatient with unknown id is a no-op (no throw, no mutation)", () => {
+    const a: Patient = { id: "a", name: "A", bed: "1", patientLang: "en", hasVoice: false, speakerData: null, addedAt: 0, lastActiveAt: 0 };
+    useSettingsStore.setState({
+      cfg: { pin: "", caregiverLang: "en", providers: [], patients: [a], activePatientId: "a" },
+    });
+    const before = useSettingsStore.getState().cfg;
+    useSettingsStore.getState().updatePatient("nonexistent", { name: "X" });
+    expect(useSettingsStore.getState().cfg).toBe(before);
+  });
+
   it("switchPatient to unknown id is a no-op", () => {
     const a: Patient = { id: "a", name: "A", bed: "", patientLang: "en", hasVoice: false, speakerData: null, addedAt: 0, lastActiveAt: 0 };
     useSettingsStore.setState({
