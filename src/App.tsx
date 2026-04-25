@@ -419,7 +419,6 @@ export function App() {
         <ProviderPanel
           onSend={(text, opts) => {
             speakAsProvider(text, opts);
-            closeOverlay("provider");
           }}
           onClose={() => closeOverlay("provider")}
           cfg={cfg}
