@@ -954,6 +954,8 @@ const tr: LocaleStrings = {
   "ui.provider.staff_session.extend": "Oturumu uzat",
   "ui.provider.staff_session.end_now": "Şimdi bitir",
   "ui.provider.nav.end_staff_session": "Personel oturumunu bitir",
+  "ui.provider.nav.lock_now": "Lock",
+  "ui.provider.nav.lock_now_aria": "Lock staff session now",
 };
 
 export default tr;

@@ -929,6 +929,8 @@ const fi: LocaleStrings = {
   "ui.provider.staff_session.extend": "Jatka istuntoa",
   "ui.provider.staff_session.end_now": "Lopeta nyt",
   "ui.provider.nav.end_staff_session": "Lopeta henkilökunnan istunto",
+  "ui.provider.nav.lock_now": "Lock",
+  "ui.provider.nav.lock_now_aria": "Lock staff session now",
 };
 
 export default fi;

@@ -5,6 +5,7 @@ import { useTheme } from "../../hooks/useTheme";
 import { t as resolvePhrase } from "../../data/phraseRegistry";
 import type { PhraseKey } from "../../data/phraseRegistry";
 import type { ThemeTokens } from "../../theme/tokens";
+import { HeaderLockButton } from "./HeaderLockButton";
 
 const ICONS = {
   auto: "🌓",
@@ -101,6 +102,10 @@ export function HeaderNav({ onOpenSettings }: HeaderNavProps) {
         <span>{ICONS.staff}</span>
         <span style={labelStyle(t)}>{resolvePhrase("ui.provider.nav.staff_menu", caregiverLang)}</span>
       </Btn>
+      {/* HeaderLockButton renders only when staffAuthed — sits at the
+          trailing edge of the nav with a live countdown to the
+          auto-lock. Click to lock immediately. */}
+      <HeaderLockButton t={t} />
     </div>
   );
 }

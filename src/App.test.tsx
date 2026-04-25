@@ -484,7 +484,7 @@ describe("App", () => {
       expect(useUIStore.getState().pinEntryOpen).toBe(false);
     });
 
-    it("End Session lock in the Settings panel header clears staffAuthed", () => {
+    it("HeaderLockButton clears staffAuthed when tapped", () => {
       useSettingsStore.setState({
         _hasHydrated: true,
         cfg: makeCfg({ pin: "1234" }),
@@ -492,12 +492,11 @@ describe("App", () => {
       useUIStore.setState({
         staffAuthed: true,
         staffAuthedAt: Date.now(),
-        settingsOpen: true,
       });
       render(<App />);
-      // End Staff Session is now a small lock affordance in the settings
-      // sheet header (visible only when authed).
-      fireEvent.click(screen.getByRole("button", { name: /End staff session/i }));
+      // The lock button now lives in the global header nav with a live
+      // countdown to auto-lock — visible only when staffAuthed.
+      fireEvent.click(screen.getByRole("button", { name: /Lock staff session now/i }));
       expect(useUIStore.getState().staffAuthed).toBe(false);
       expect(useUIStore.getState().staffAuthedAt).toBeNull();
     });

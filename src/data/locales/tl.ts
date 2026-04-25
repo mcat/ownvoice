@@ -1009,6 +1009,8 @@ const tl: LocaleStrings = {
   "ui.provider.staff_session.extend": "Pahabain ang session",
   "ui.provider.staff_session.end_now": "Tapusin na",
   "ui.provider.nav.end_staff_session": "Tapusin ang staff session",
+  "ui.provider.nav.lock_now": "Lock",
+  "ui.provider.nav.lock_now_aria": "Lock staff session now",
 };
 
 export default tl;

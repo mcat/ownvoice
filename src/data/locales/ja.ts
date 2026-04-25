@@ -943,6 +943,8 @@ const ja: LocaleStrings = {
   "ui.provider.staff_session.extend": "セッションを延長",
   "ui.provider.staff_session.end_now": "今すぐ終了",
   "ui.provider.nav.end_staff_session": "スタッフセッションを終了",
+  "ui.provider.nav.lock_now": "Lock",
+  "ui.provider.nav.lock_now_aria": "Lock staff session now",
 };
 
 export default ja;

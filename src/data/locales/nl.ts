@@ -956,6 +956,8 @@ const nl: LocaleStrings = {
   "ui.provider.staff_session.extend": "Sessie verlengen",
   "ui.provider.staff_session.end_now": "Nu beëindigen",
   "ui.provider.nav.end_staff_session": "Personeelssessie beëindigen",
+  "ui.provider.nav.lock_now": "Lock",
+  "ui.provider.nav.lock_now_aria": "Lock staff session now",
 };
 
 export default nl;

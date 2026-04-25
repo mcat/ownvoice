@@ -976,6 +976,8 @@ const vi: LocaleStrings = {
   "ui.provider.staff_session.extend": "Gia hạn phiên",
   "ui.provider.staff_session.end_now": "Kết thúc ngay",
   "ui.provider.nav.end_staff_session": "Kết thúc phiên nhân viên",
+  "ui.provider.nav.lock_now": "Lock",
+  "ui.provider.nav.lock_now_aria": "Lock staff session now",
 };
 
 export default vi;

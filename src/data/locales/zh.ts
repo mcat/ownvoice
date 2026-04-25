@@ -894,6 +894,8 @@ const zh: LocaleStrings = {
   "ui.provider.staff_session.extend": "延长会话",
   "ui.provider.staff_session.end_now": "立即结束",
   "ui.provider.nav.end_staff_session": "结束工作人员会话",
+  "ui.provider.nav.lock_now": "Lock",
+  "ui.provider.nav.lock_now_aria": "Lock staff session now",
 };
 
 export default zh;

@@ -37,17 +37,11 @@ export function SettingsPanel({
   const caregiverLang = useSettingsStore((s) => s.cfg?.caregiverLang ?? "en");
   const patientCount = useSettingsStore((s) => s.cfg?.patients.length ?? 0);
   const providerCount = useSettingsStore((s) => s.cfg?.providers.length ?? 0);
-  const staffAuthed = useUIStore((s) => s.staffAuthed);
   const bump = useStaffActivityBump();
 
   function pushTo(overlay: Extract<OverlayName, "switch" | "careTeam" | "accessibility" | "diagnostics" | "about" | "reset">) {
     useUIStore.getState().closeOverlay("settings");
     useUIStore.getState().openOverlay(overlay);
-  }
-
-  function handleEndSession() {
-    onClose();
-    useUIStore.getState().endStaffSession();
   }
 
   return (
@@ -56,27 +50,9 @@ export function SettingsPanel({
       <BottomSheet onClose={onClose} t={t} zIndex={z.sheetStacked}>
         <BottomSheet.Header>
           <BottomSheet.Title>{resolvePhrase("ui.provider.settings.title", caregiverLang)}</BottomSheet.Title>
-          {staffAuthed && (
-            <button
-              type="button"
-              onClick={handleEndSession}
-              aria-label={resolvePhrase("ui.provider.nav.end_staff_session", caregiverLang)}
-              style={{
-                background: "none",
-                border: "none",
-                fontSize: 22,
-                padding: 8,
-                minWidth: 64,
-                minHeight: 64,
-                cursor: "pointer",
-                color: t.muted,
-                fontFamily: "inherit",
-                lineHeight: 1,
-              }}
-            >
-              {"\u{1F512}"}
-            </button>
-          )}
+          {/* End-session lives in the global header (HeaderLockButton)
+              with a live countdown — no need for a duplicate inline
+              affordance here. */}
           <BottomSheet.CloseButton
             aria-label={resolvePhrase("ui.provider.settings.close_aria", caregiverLang)}
             style={{

@@ -965,6 +965,8 @@ const he: LocaleStrings = {
   "ui.provider.staff_session.extend": "הארך הפעלה",
   "ui.provider.staff_session.end_now": "סיים עכשיו",
   "ui.provider.nav.end_staff_session": "סיים הפעלת צוות",
+  "ui.provider.nav.lock_now": "Lock",
+  "ui.provider.nav.lock_now_aria": "Lock staff session now",
 };
 
 export default he;

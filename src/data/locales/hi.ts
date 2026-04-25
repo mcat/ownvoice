@@ -939,6 +939,8 @@ const hi: LocaleStrings = {
   "ui.provider.staff_session.extend": "सेशन बढ़ाएँ",
   "ui.provider.staff_session.end_now": "अभी समाप्त करें",
   "ui.provider.nav.end_staff_session": "स्टाफ़ सेशन समाप्त करें",
+  "ui.provider.nav.lock_now": "Lock",
+  "ui.provider.nav.lock_now_aria": "Lock staff session now",
 };
 
 export default hi;

@@ -959,6 +959,8 @@ const da: LocaleStrings = {
   "ui.provider.staff_session.extend": "Forlæng session",
   "ui.provider.staff_session.end_now": "Afslut nu",
   "ui.provider.nav.end_staff_session": "Afslut personalets session",
+  "ui.provider.nav.lock_now": "Lock",
+  "ui.provider.nav.lock_now_aria": "Lock staff session now",
 };
 
 export default da;

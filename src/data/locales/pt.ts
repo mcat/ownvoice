@@ -944,6 +944,8 @@ const pt: LocaleStrings = {
   "ui.provider.staff_session.extend": "Estender sessão",
   "ui.provider.staff_session.end_now": "Encerrar agora",
   "ui.provider.nav.end_staff_session": "Encerrar sessão da equipe",
+  "ui.provider.nav.lock_now": "Lock",
+  "ui.provider.nav.lock_now_aria": "Lock staff session now",
 };
 
 export default pt;

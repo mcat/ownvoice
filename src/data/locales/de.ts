@@ -965,6 +965,8 @@ const de: LocaleStrings = {
   "ui.provider.staff_session.extend": "Sitzung verlängern",
   "ui.provider.staff_session.end_now": "Jetzt beenden",
   "ui.provider.nav.end_staff_session": "Personalsitzung beenden",
+  "ui.provider.nav.lock_now": "Lock",
+  "ui.provider.nav.lock_now_aria": "Lock staff session now",
 };
 
 export default de;

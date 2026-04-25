@@ -960,6 +960,8 @@ const sw: LocaleStrings = {
   "ui.provider.staff_session.extend": "Ongeza kipindi",
   "ui.provider.staff_session.end_now": "Maliza sasa",
   "ui.provider.nav.end_staff_session": "Maliza kipindi cha wafanyakazi",
+  "ui.provider.nav.lock_now": "Lock",
+  "ui.provider.nav.lock_now_aria": "Lock staff session now",
 };
 
 export default sw;

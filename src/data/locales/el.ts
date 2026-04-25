@@ -958,6 +958,8 @@ const el: LocaleStrings = {
   "ui.provider.staff_session.extend": "Παράταση συνεδρίας",
   "ui.provider.staff_session.end_now": "Τερματισμός τώρα",
   "ui.provider.nav.end_staff_session": "Τερματισμός συνεδρίας προσωπικού",
+  "ui.provider.nav.lock_now": "Lock",
+  "ui.provider.nav.lock_now_aria": "Lock staff session now",
 };
 
 export default el;

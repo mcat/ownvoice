@@ -944,6 +944,8 @@ const ru: LocaleStrings = {
   "ui.provider.staff_session.extend": "Продлить сеанс",
   "ui.provider.staff_session.end_now": "Завершить сейчас",
   "ui.provider.nav.end_staff_session": "Завершить сеанс персонала",
+  "ui.provider.nav.lock_now": "Lock",
+  "ui.provider.nav.lock_now_aria": "Lock staff session now",
 };
 
 export default ru;

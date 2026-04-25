@@ -940,6 +940,8 @@ const ar: LocaleStrings = {
   "ui.provider.staff_session.extend": "تمديد الجلسة",
   "ui.provider.staff_session.end_now": "إنهاء الآن",
   "ui.provider.nav.end_staff_session": "إنهاء جلسة الطاقم",
+  "ui.provider.nav.lock_now": "Lock",
+  "ui.provider.nav.lock_now_aria": "Lock staff session now",
 };
 
 export default ar;

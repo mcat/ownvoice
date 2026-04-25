@@ -954,6 +954,8 @@ const ms: LocaleStrings = {
   "ui.provider.staff_session.extend": "Lanjutkan sesi",
   "ui.provider.staff_session.end_now": "Tamatkan sekarang",
   "ui.provider.nav.end_staff_session": "Tamatkan sesi kakitangan",
+  "ui.provider.nav.lock_now": "Lock",
+  "ui.provider.nav.lock_now_aria": "Lock staff session now",
 };
 
 export default ms;

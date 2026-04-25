@@ -959,6 +959,8 @@ const ko: LocaleStrings = {
   "ui.provider.staff_session.extend": "세션 연장",
   "ui.provider.staff_session.end_now": "지금 종료",
   "ui.provider.nav.end_staff_session": "직원 세션 종료",
+  "ui.provider.nav.lock_now": "Lock",
+  "ui.provider.nav.lock_now_aria": "Lock staff session now",
 };
 
 export default ko;

@@ -843,6 +843,8 @@ const en = {
   "ui.provider.staff_session.extend": "Extend session",
   "ui.provider.staff_session.end_now": "End now",
   "ui.provider.nav.end_staff_session": "End staff session",
+  "ui.provider.nav.lock_now": "Lock",
+  "ui.provider.nav.lock_now_aria": "Lock staff session now",
 } as const;
 
 export type PhraseKey = keyof typeof en;
