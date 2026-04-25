@@ -17,7 +17,8 @@ import { recordHash } from "../stores/patientIndex";
 //      of raw decoder output — playback skips the FFT pipeline.
 //   2. Stored bytes went Int16 PCM (scale 32767) instead of Float32,
 //      halving on-disk footprint.
-const CACHE_DIR = "audio-cache-v3";
+// v3 → v4: relaxed post-process LP from 2×7 kHz to 1×9 kHz to preserve sibilance.
+const CACHE_DIR = "audio-cache-v4";
 const SAMPLE_RATE = 24000; // Chatterbox Turbo output rate
 const INT16_SCALE = 32767;
 
