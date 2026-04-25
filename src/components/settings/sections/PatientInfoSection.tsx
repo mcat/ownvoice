@@ -6,7 +6,7 @@ import { VoiceCapture } from "../../shared/VoiceCapture";
 import { FallbackVoicePicker } from "../../shared/FallbackVoicePicker";
 import { VoiceCacheProgress } from "../VoiceCacheProgress";
 import { useSettingsStore, useActivePatient } from "../../../stores/settingsStore";
-import { t as resolvePhrase, isDraftLocale } from "../../../data/phraseRegistry";
+import { t as resolvePhrase } from "../../../data/phraseRegistry";
 import { confirm } from "../../shared/ConfirmDialog";
 import { canCloneForLocale } from "../../../data/chatterboxLocales";
 import { isGPUReady } from "../../../models/ttsEngine";
@@ -63,39 +63,6 @@ export function PatientInfoSection({
     }
   }
 
-  async function handleCaregiverLangChange(destLocale: string) {
-    if (destLocale === cfg.caregiverLang) return;
-
-    const destLangLabel = LANGS.find((l) => l.code === destLocale)?.label ?? destLocale;
-    const patientHasVoice = active?.hasVoice ?? false;
-    const supported = canCloneForLocale(destLocale);
-    // Patient cache = ~150 base phrases + ~700 pain matrix if GPU
-    const phraseCount = 150 + (isGPUReady() ? 700 : 0);
-    const estimatedMinutes = patientHasVoice
-      ? Math.max(1, Math.ceil(phraseCount / (isGPUReady() ? 60 : 5)))
-      : 1;
-
-    const body =
-      !patientHasVoice
-        ? resolvePhrase("ui.provider.settings.lang.caregiver_dialog.body_no_voice", destLocale)
-        : supported
-        ? resolvePhrase("ui.provider.settings.lang.caregiver_dialog.body", destLocale)
-            .replace("{estimatedMinutes}", String(estimatedMinutes))
-        : resolvePhrase("ui.provider.settings.lang.caregiver_dialog.body_unsupported", destLocale)
-            .replace("{lang}", destLangLabel);
-
-    const ok = await confirm({
-      title: resolvePhrase("ui.provider.settings.lang.caregiver_dialog.title", destLocale)
-        .replace("{lang}", destLangLabel),
-      body,
-      confirmLabel: resolvePhrase("ui.provider.settings.lang.change", destLocale),
-      cancelLabel: resolvePhrase("ui.provider.pin_gate.cancel", cfg.caregiverLang),
-    });
-    if (ok) {
-      useSettingsStore.getState().updateCfg({ caregiverLang: destLocale });
-    }
-  }
-
   return (
     <Section label={resolvePhrase("ui.provider.settings.patient_info.heading", caregiverLang)} t={t}>
       <label htmlFor="settings-name" style={labelStyle(t)}>{resolvePhrase("ui.provider.settings.patient_info.name_label", caregiverLang)}</label>
@@ -127,7 +94,6 @@ export function PatientInfoSection({
       >
         {LANGS.map((l) => {
           const selected = l.code === (active?.patientLang ?? "en");
-          const isDraft = isDraftLocale(l.code);
           return (
             <button
               key={l.code}
@@ -135,7 +101,6 @@ export function PatientInfoSection({
               aria-checked={selected}
               onClick={() => handlePatientLangChange(l.code)}
               style={chipStyle(selected, isDark)}
-              title={isDraft ? "DRAFT — machine translation pending clinical review" : undefined}
             >
               <span style={{ fontSize: 22, flexShrink: 0 }}>{l.flag}</span>
               <span style={chipTextStyle}>
@@ -144,44 +109,6 @@ export function PatientInfoSection({
                   <span style={{ fontSize: 11, color: t.muted }}>{l.label}</span>
                 )}
               </span>
-              {isDraft && <span style={draftBadgeStyle}>draft</span>}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* ── Caregiver language picker ──────────────────────────── */}
-      <div style={{ ...labelStyle(t), marginTop: 20 }}>
-        {resolvePhrase("ui.provider.settings.lang.caregiver_section", caregiverLang)}
-      </div>
-      <p style={{ fontSize: 13, color: t.muted, margin: "0 0 8px" }}>
-        {resolvePhrase("ui.provider.settings.lang.caregiver_helper", caregiverLang)}
-      </p>
-      <div
-        role="radiogroup"
-        aria-label={resolvePhrase("ui.provider.settings.lang.caregiver_section", caregiverLang)}
-        style={chipGridStyle}
-      >
-        {LANGS.map((l) => {
-          const selected = l.code === cfg.caregiverLang;
-          const isDraft = isDraftLocale(l.code);
-          return (
-            <button
-              key={l.code}
-              role="radio"
-              aria-checked={selected}
-              onClick={() => handleCaregiverLangChange(l.code)}
-              style={chipStyle(selected, isDark)}
-              title={isDraft ? "DRAFT — machine translation pending clinical review" : undefined}
-            >
-              <span style={{ fontSize: 22, flexShrink: 0 }}>{l.flag}</span>
-              <span style={chipTextStyle}>
-                <span style={{ fontWeight: selected ? 600 : 500, fontSize: 14 }}>{l.englishLabel}</span>
-                {l.englishLabel !== l.label && (
-                  <span style={{ fontSize: 11, color: t.muted }}>{l.label}</span>
-                )}
-              </span>
-              {isDraft && <span style={draftBadgeStyle}>draft</span>}
             </button>
           );
         })}
@@ -302,20 +229,6 @@ const chipTextStyle: JSX.CSSProperties = {
   overflow: "hidden",
 };
 
-/** Small pill on a language chip whose content is machine-translated and
- *  not yet clinically reviewed. Surfaces the review gate visibly so
- *  clinicians don't mistake DRAFT content for validated translations. */
-const draftBadgeStyle: JSX.CSSProperties = {
-  marginLeft: "auto",
-  fontSize: 11,
-  fontWeight: 600,
-  textTransform: "uppercase",
-  letterSpacing: "0.04em",
-  color: "#92400E",
-  background: "#FEF3C7",
-  padding: "2px 6px",
-  borderRadius: 6,
-};
 
 function chipStyle(selected: boolean, isDark: boolean): JSX.CSSProperties {
   return {

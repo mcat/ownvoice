@@ -96,7 +96,6 @@ describe("PatientInfoSection", () => {
 
   it("tapping a different patient-language chip opens ConfirmDialog", async () => {
     renderWithHost();
-    // Two "Español" buttons exist (patient grid + caregiver grid); first is patient
     const esChips = screen.getAllByText("Español").map((el) => el.closest("button")!);
     fireEvent.click(esChips[0]);
 
@@ -125,48 +124,6 @@ describe("PatientInfoSection", () => {
         (p) => p.id === useSettingsStore.getState().cfg?.activePatientId,
       );
       expect(active?.patientLang).toBe("es");
-    });
-  });
-
-  // ── Caregiver language picker ──────────────────────────────────
-
-  it("renders caregiver language chip grid", () => {
-    renderWithHost();
-    const groups = screen.getAllByRole("radiogroup");
-    expect(groups.length).toBe(2);
-    const caregiverGroup = groups[1];
-    const radios = caregiverGroup.querySelectorAll("[role=radio]");
-    expect(radios.length).toBe(24);
-  });
-
-  it("tapping a different caregiver-language chip opens ConfirmDialog with caregiver copy", async () => {
-    renderWithHost();
-    // Both chip grids have a Français button; pick the one in the caregiver grid
-    const frButtons = screen.getAllByText("Français").map((el) => el.closest("button")!);
-    // The second one is in the caregiver radiogroup
-    fireEvent.click(frButtons[1]);
-
-    await waitFor(() => {
-      expect(screen.getByRole("dialog")).toBeTruthy();
-    });
-    // Dialog title is resolved in the destination locale (fr) — French phrasing
-    expect(screen.getByText(/Changer la langue de l'équipe soignante en Français/)).toBeTruthy();
-  });
-
-  it("confirming caregiver-language dialog calls updateCfg with new caregiverLang", async () => {
-    renderWithHost();
-    const frButtons = screen.getAllByText("Français").map((el) => el.closest("button")!);
-    fireEvent.click(frButtons[1]);
-
-    await waitFor(() => {
-      expect(screen.getByRole("dialog")).toBeTruthy();
-    });
-
-    // Confirm button label is in destination locale (fr)
-    fireEvent.click(screen.getByText("Changer la langue"));
-
-    await waitFor(() => {
-      expect(useSettingsStore.getState().cfg?.caregiverLang).toBe("fr");
     });
   });
 

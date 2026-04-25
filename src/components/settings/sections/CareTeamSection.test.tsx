@@ -1,8 +1,13 @@
-import { render, screen, fireEvent } from "@testing-library/preact";
+import { render, screen, fireEvent, waitFor } from "@testing-library/preact";
 import { light } from "../../../theme/tokens";
 import { useSettingsStore } from "../../../stores/settingsStore";
 import { makeTestCfg } from "../../../test/makeCfg";
 import type { AppSettings } from "../../../types";
+import { ConfirmDialogHost } from "../../shared/ConfirmDialog";
+
+vi.mock("../../../models/ttsEngine", () => ({
+  isGPUReady: () => false,
+}));
 
 // VoiceCapture normally drives microphone + ONNX worker flows. Swap it for
 // a minimal stub that surfaces two buttons — one simulating a successful
@@ -54,6 +59,15 @@ const baseProps = {
   t: light,
   theme: "light" as const,
 };
+
+function renderWithHost(props = baseProps) {
+  return render(
+    <>
+      <CareTeamSection {...props} />
+      <ConfirmDialogHost />
+    </>,
+  );
+}
 
 describe("CareTeamSection", () => {
   beforeEach(() => {
@@ -122,5 +136,41 @@ describe("CareTeamSection", () => {
     const updated = useSettingsStore.getState().cfg?.providers?.[0];
     expect(updated?.hasVoice).toBe(false);
     expect(updated?.embedding).toBeUndefined();
+  });
+
+  // ── Care team language picker ──────────────────────────────────
+
+  it("renders care team language chip grid with all 24 languages", () => {
+    renderWithHost();
+    const group = screen.getByRole("radiogroup");
+    const radios = group.querySelectorAll("[role=radio]");
+    expect(radios.length).toBe(24);
+  });
+
+  it("tapping a different care-team language chip opens ConfirmDialog", async () => {
+    renderWithHost();
+    const frButton = screen.getAllByText("Français").map((el) => el.closest("button")!)[0];
+    fireEvent.click(frButton);
+
+    await waitFor(() => {
+      expect(screen.getByRole("dialog")).toBeTruthy();
+    });
+    expect(screen.getByText(/Changer la langue de l'équipe soignante en Français/)).toBeTruthy();
+  });
+
+  it("confirming care-team language dialog updates caregiverLang in the store", async () => {
+    renderWithHost();
+    const frButton = screen.getAllByText("Français").map((el) => el.closest("button")!)[0];
+    fireEvent.click(frButton);
+
+    await waitFor(() => {
+      expect(screen.getByRole("dialog")).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByText("Changer la langue"));
+
+    await waitFor(() => {
+      expect(useSettingsStore.getState().cfg?.caregiverLang).toBe("fr");
+    });
   });
 });
