@@ -500,7 +500,7 @@ const ru: LocaleStrings = {
   "ui.patient.header.name_fallback": "Пациент",
   "ui.patient.header.bed_prefix": "Кровать ",
   "ui.dual.nav.wishes": "Пожелания",
-  "ui.provider.nav.listen": "Слушать",
+  "ui.dual.nav.listen": "Слушать",
   "ui.provider.nav.staff": "Персонал",
   "ui.provider.nav.switch_patient": "Сменить пациента",
   "ui.provider.nav.settings": "Настройки",

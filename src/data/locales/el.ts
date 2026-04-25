@@ -517,7 +517,7 @@ const el: LocaleStrings = {
   "ui.patient.header.name_fallback": "Ασθενής",
   "ui.patient.header.bed_prefix": "Κρεβάτι ",
   "ui.dual.nav.wishes": "Επιθυμίες",
-  "ui.provider.nav.listen": "Ακρόαση",
+  "ui.dual.nav.listen": "Ακρόαση",
   "ui.provider.nav.staff": "Προσωπικό",
   "ui.provider.nav.switch_patient": "Αλλαγή ασθενούς",
   "ui.provider.nav.settings": "Ρυθμίσεις",

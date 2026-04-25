@@ -482,7 +482,7 @@ const zh: LocaleStrings = {
   "ui.patient.header.name_fallback": "患者",
   "ui.patient.header.bed_prefix": "床位 ",
   "ui.dual.nav.wishes": "心愿",
-  "ui.provider.nav.listen": "聆听",
+  "ui.dual.nav.listen": "聆听",
   "ui.provider.nav.staff": "工作人员",
   "ui.provider.nav.switch_patient": "切换患者",
   "ui.provider.nav.settings": "设置",

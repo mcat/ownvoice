@@ -510,7 +510,7 @@ const ms: LocaleStrings = {
   "ui.patient.header.name_fallback": "Pesakit",
   "ui.patient.header.bed_prefix": "Katil ",
   "ui.dual.nav.wishes": "Hasrat",
-  "ui.provider.nav.listen": "Dengar",
+  "ui.dual.nav.listen": "Dengar",
   "ui.provider.nav.staff": "Kakitangan",
   "ui.provider.nav.switch_patient": "Tukar Pesakit",
   "ui.provider.nav.settings": "Tetapan",

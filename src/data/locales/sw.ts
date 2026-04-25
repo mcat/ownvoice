@@ -509,7 +509,7 @@ const sw: LocaleStrings = {
   "ui.patient.header.name_fallback": "Mgonjwa",
   "ui.patient.header.bed_prefix": "Kitanda ",
   "ui.dual.nav.wishes": "Matakwa",
-  "ui.provider.nav.listen": "Sikiliza",
+  "ui.dual.nav.listen": "Sikiliza",
   "ui.provider.nav.staff": "Wafanyakazi",
   "ui.provider.nav.switch_patient": "Badili Mgonjwa",
   "ui.provider.nav.settings": "Mipangilio",

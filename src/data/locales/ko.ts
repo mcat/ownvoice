@@ -512,7 +512,7 @@ const ko: LocaleStrings = {
   "ui.patient.header.name_fallback": "환자",
   "ui.patient.header.bed_prefix": "침상 ",
   "ui.dual.nav.wishes": "바람",
-  "ui.provider.nav.listen": "듣기",
+  "ui.dual.nav.listen": "듣기",
   "ui.provider.nav.staff": "직원",
   "ui.provider.nav.switch_patient": "환자 전환",
   "ui.provider.nav.settings": "설정",

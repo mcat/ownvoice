@@ -495,7 +495,7 @@ const fi: LocaleStrings = {
   "ui.patient.header.name_fallback": "Potilas",
   "ui.patient.header.bed_prefix": "Vuode ",
   "ui.dual.nav.wishes": "Toiveet",
-  "ui.provider.nav.listen": "Kuuntele",
+  "ui.dual.nav.listen": "Kuuntele",
   "ui.provider.nav.staff": "Henkilökunta",
   "ui.provider.nav.switch_patient": "Vaihda potilasta",
   "ui.provider.nav.settings": "Asetukset",

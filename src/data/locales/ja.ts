@@ -501,7 +501,7 @@ const ja: LocaleStrings = {
   "ui.patient.header.name_fallback": "患者",
   "ui.patient.header.bed_prefix": "ベッド ",
   "ui.dual.nav.wishes": "わたしの望み",
-  "ui.provider.nav.listen": "聞く",
+  "ui.dual.nav.listen": "聞く",
   "ui.provider.nav.staff": "スタッフ",
   "ui.provider.nav.switch_patient": "患者を切り替える",
   "ui.provider.nav.settings": "設定",

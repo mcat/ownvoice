@@ -509,7 +509,7 @@ const da: LocaleStrings = {
   "ui.patient.header.name_fallback": "Patient",
   "ui.patient.header.bed_prefix": "Seng ",
   "ui.dual.nav.wishes": "Ønsker",
-  "ui.provider.nav.listen": "Lyt",
+  "ui.dual.nav.listen": "Lyt",
   "ui.provider.nav.staff": "Personale",
   "ui.provider.nav.switch_patient": "Skift patient",
   "ui.provider.nav.settings": "Indstillinger",
