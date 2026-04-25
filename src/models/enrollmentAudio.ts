@@ -16,7 +16,10 @@ const SILENCE_TRIM_DBFS = -40;
 const TARGET_PEAK = 0.95;
 const MAX_GAIN_DB = 20;
 const MIN_DURATION_SEC = 1.5;
-const MIN_SNR_DB = 15;
+// Calibrated for ICU permissiveness — vents/monitors push the noise floor
+// up, so a tighter gate would reject real recordings. 6 dB only catches the
+// degenerate cases (silence, pure noise, mic failure). Tighten with telemetry.
+const MIN_SNR_DB = 6;
 
 export interface EnrollmentResult {
   /** Processed audio ready for the speech encoder. */
