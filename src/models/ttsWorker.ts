@@ -50,7 +50,10 @@ const START_SPEECH_TOKEN = 6561;
 const STOP_SPEECH_TOKEN = 6562;
 const SILENCE_TOKEN = 4299;
 const EOT_TOKEN = 50256; // <|endoftext|> — appended to text tokens; embed_tokens converts to START via Where op
-const MAX_NEW_TOKENS = 300; // WASM fallback — slower than GPU, 300 is a practical ceiling
+// Match the GPU worker's cap. WASM is slower per token, but silent truncation
+// mid-sentence is a worse UX than a longer pre-gen latency on the rare phrase
+// that runs long. Pre-gen happens off the user's critical path.
+const MAX_NEW_TOKENS = 768;
 
 // GPT-2 LM dimensions (from config.json) — needed for KV cache initialization
 const NUM_LAYERS = 24;
