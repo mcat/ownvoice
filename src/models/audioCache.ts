@@ -18,7 +18,8 @@ import { recordHash } from "../stores/patientIndex";
 //   2. Stored bytes went Int16 PCM (scale 32767) instead of Float32,
 //      halving on-disk footprint.
 // v3 → v4: relaxed post-process LP from 2×7 kHz to 1×9 kHz to preserve sibilance.
-const CACHE_DIR = "audio-cache-v4";
+// v4 → v5: lowered TEMPERATURE 0.8 → 0.6 in both TTS workers to flatten prosody.
+const CACHE_DIR = "audio-cache-v5";
 const SAMPLE_RATE = 24000; // Chatterbox Turbo output rate
 const INT16_SCALE = 32767;
 

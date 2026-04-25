@@ -39,10 +39,13 @@ const NUM_LAYERS = 24;
 const NUM_HEADS = 16;
 const HEAD_DIM = 64;
 
-// Sampling parameters — must match the reference Chatterbox Turbo implementation
-// (resemble-ai/chatterbox tts_turbo.py + generation_config.json).
+// Sampling parameters — repetition_penalty matches the model's
+// generation_config.json. Temperature lowered from upstream's 0.8 to 0.6 to
+// tighten the output distribution: 0.8 was producing prosody that read as
+// theatrical/sarcastic on conversational phrases. 0.6 is still well within
+// the sampling regime (greedy is unsafe — see USE_GREEDY note below).
 // Processing order: repetition penalty → temperature → top-k → top-p → sample.
-const TEMPERATURE = 0.8;
+const TEMPERATURE = 0.6;
 const TOP_K = 1000;
 const TOP_P = 0.95;
 const REPETITION_PENALTY = 1.2;
