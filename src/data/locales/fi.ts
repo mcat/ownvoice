@@ -727,7 +727,7 @@ const fi: LocaleStrings = {
   "ui.provider.patient_edit.title_default": "Muokkaa potilasta",
   "ui.provider.patient_edit.close_aria": "Sulje potilaan muokkaus",
   "ui.provider.patient_pill.aria": "Muokkaa potilasta: {name}",
-  "ui.provider.nav.staff_menu": "Henkilökunta",
+  "ui.provider.nav.staff_menu": "Asetukset",
   "ui.provider.staff_sheet.title": "Henkilökunta",
   "ui.provider.staff_sheet.close_aria": "Sulje henkilökunnan valikko",
   "ui.provider.staff_sheet.patients_description": "Vaihda, lisää tai muokkaa potilaita",
@@ -786,6 +786,20 @@ const fi: LocaleStrings = {
   "ui.provider.settings.reset.confirm_body":
     "Tämä poistaa kaikki potilastiedot, ääninäytteet, keskusteluhistorian ja hoitajan asetukset. Tätä ei voi kumota.",
   "ui.provider.settings.reset.confirm_destructive": "Nollaa kaikki",
+  "ui.provider.settings.reset.row_label": "Reset",
+  "ui.provider.settings.reset.row_description": "Erase patient data, care team, or the whole device",
+  "ui.provider.settings.reset.confirm_action": "Erase",
+  "ui.provider.settings.reset.patients.label": "Erase and Reset All Patient Data",
+  "ui.provider.settings.reset.patients.description": "Remove patients, conversations, and patient voice clips. Keeps care team.",
+  "ui.provider.settings.reset.patients.confirm_title": "Erase all patient data?",
+  "ui.provider.settings.reset.patients.confirm_body": "All patients, their conversations, and their voice clips will be erased. Care team configuration is preserved. This cannot be undone.",
+  "ui.provider.settings.reset.care_team.label": "Erase and Reset All Care Team Data",
+  "ui.provider.settings.reset.care_team.description": "Remove care-team profiles and their voice clips. Keeps patients.",
+  "ui.provider.settings.reset.care_team.confirm_title": "Erase all care team data?",
+  "ui.provider.settings.reset.care_team.confirm_body": "All care-team profiles and their voice clips will be erased. Patient data is preserved. This cannot be undone.",
+  "ui.provider.settings.reset.everything.label": "Erase and Reset Everything",
+  "ui.provider.settings.reset.everything.description": "Wipe the device — patients, care team, voice models, and settings.",
+  "ui.provider.settings.reset.empty_hint": "No data to erase",
 
   // ── UI chrome: Settings — Accessibility section ───────────────
   "ui.provider.settings.accessibility.heading": "Esteettömyys",
@@ -852,7 +866,7 @@ const fi: LocaleStrings = {
     "Järjestelmäääni, jota käytetään äänikloonia ladattaessa. Napauta kuullaksesi.",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
-  "ui.provider.settings.offline.heading": "Offline-valmius",
+  "ui.provider.settings.offline.heading": "Sovellusdiagnostiikka",
   "ui.provider.settings.offline.status_description":
     "Tekoälymallien tila — sovellus käyttää niitä laitteella äänen luontiin, ehdotuksiin ja puheentunnistukseen.",
   "ui.provider.settings.offline.downloading": "Ladataan malleja…",
@@ -915,6 +929,8 @@ const fi: LocaleStrings = {
   "ui.provider.staff_session.extend": "Jatka istuntoa",
   "ui.provider.staff_session.end_now": "Lopeta nyt",
   "ui.provider.nav.end_staff_session": "Lopeta henkilökunnan istunto",
+  "ui.provider.nav.lock_now": "Lock",
+  "ui.provider.nav.lock_now_aria": "Lock staff session now",
 };
 
 export default fi;

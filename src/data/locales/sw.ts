@@ -748,7 +748,7 @@ const sw: LocaleStrings = {
   "ui.provider.patient_edit.title_default": "Hariri mgonjwa",
   "ui.provider.patient_edit.close_aria": "Funga kihariri cha mgonjwa",
   "ui.provider.patient_pill.aria": "Hariri mgonjwa: {name}",
-  "ui.provider.nav.staff_menu": "Wafanyakazi",
+  "ui.provider.nav.staff_menu": "Mipangilio",
   "ui.provider.staff_sheet.title": "Wafanyakazi",
   "ui.provider.staff_sheet.close_aria": "Funga menyu ya wafanyakazi",
   "ui.provider.staff_sheet.patients_description": "Badilisha, ongeza au hariri wagonjwa",
@@ -807,6 +807,20 @@ const sw: LocaleStrings = {
   "ui.provider.settings.reset.confirm_body":
     "Hii itafuta data zote za mgonjwa, sampuli za sauti, historia ya mazungumzo, na mipangilio ya mhudumu. Hii haiwezi kutendwa upya.",
   "ui.provider.settings.reset.confirm_destructive": "Weka upya kila kitu",
+  "ui.provider.settings.reset.row_label": "Reset",
+  "ui.provider.settings.reset.row_description": "Erase patient data, care team, or the whole device",
+  "ui.provider.settings.reset.confirm_action": "Erase",
+  "ui.provider.settings.reset.patients.label": "Erase and Reset All Patient Data",
+  "ui.provider.settings.reset.patients.description": "Remove patients, conversations, and patient voice clips. Keeps care team.",
+  "ui.provider.settings.reset.patients.confirm_title": "Erase all patient data?",
+  "ui.provider.settings.reset.patients.confirm_body": "All patients, their conversations, and their voice clips will be erased. Care team configuration is preserved. This cannot be undone.",
+  "ui.provider.settings.reset.care_team.label": "Erase and Reset All Care Team Data",
+  "ui.provider.settings.reset.care_team.description": "Remove care-team profiles and their voice clips. Keeps patients.",
+  "ui.provider.settings.reset.care_team.confirm_title": "Erase all care team data?",
+  "ui.provider.settings.reset.care_team.confirm_body": "All care-team profiles and their voice clips will be erased. Patient data is preserved. This cannot be undone.",
+  "ui.provider.settings.reset.everything.label": "Erase and Reset Everything",
+  "ui.provider.settings.reset.everything.description": "Wipe the device — patients, care team, voice models, and settings.",
+  "ui.provider.settings.reset.empty_hint": "No data to erase",
 
   // ── UI chrome: Settings — Accessibility section ───────────────
   "ui.provider.settings.accessibility.heading": "Ufikiaji",
@@ -876,7 +890,7 @@ const sw: LocaleStrings = {
     "Sauti ya mfumo inayotumika wakati nakala ya sauti inapakia. Gusa kusikiliza.",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
-  "ui.provider.settings.offline.heading": "Utayari wa nje ya mtandao",
+  "ui.provider.settings.offline.heading": "Uchunguzi wa programu",
   "ui.provider.settings.offline.status_description":
     "Hali ya modeli za AI ambazo programu inatumia kwenye kifaa kwa uzalishaji wa sauti, mapendekezo, na utambuzi wa usemi.",
   "ui.provider.settings.offline.downloading":
@@ -946,6 +960,8 @@ const sw: LocaleStrings = {
   "ui.provider.staff_session.extend": "Ongeza kipindi",
   "ui.provider.staff_session.end_now": "Maliza sasa",
   "ui.provider.nav.end_staff_session": "Maliza kipindi cha wafanyakazi",
+  "ui.provider.nav.lock_now": "Lock",
+  "ui.provider.nav.lock_now_aria": "Lock staff session now",
 };
 
 export default sw;

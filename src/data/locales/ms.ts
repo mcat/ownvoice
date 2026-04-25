@@ -744,7 +744,7 @@ const ms: LocaleStrings = {
   "ui.provider.patient_edit.title_default": "Edit pesakit",
   "ui.provider.patient_edit.close_aria": "Tutup penyunting pesakit",
   "ui.provider.patient_pill.aria": "Edit pesakit: {name}",
-  "ui.provider.nav.staff_menu": "Kakitangan",
+  "ui.provider.nav.staff_menu": "Tetapan",
   "ui.provider.staff_sheet.title": "Kakitangan",
   "ui.provider.staff_sheet.close_aria": "Tutup menu kakitangan",
   "ui.provider.staff_sheet.patients_description": "Tukar, tambah atau edit pesakit",
@@ -803,6 +803,20 @@ const ms: LocaleStrings = {
   "ui.provider.settings.reset.confirm_body":
     "Ini akan memadamkan semua data pesakit, sampel suara, sejarah perbualan, dan tetapan penyedia. Tindakan ini tidak boleh dibuat asal.",
   "ui.provider.settings.reset.confirm_destructive": "Set semula semua",
+  "ui.provider.settings.reset.row_label": "Reset",
+  "ui.provider.settings.reset.row_description": "Erase patient data, care team, or the whole device",
+  "ui.provider.settings.reset.confirm_action": "Erase",
+  "ui.provider.settings.reset.patients.label": "Erase and Reset All Patient Data",
+  "ui.provider.settings.reset.patients.description": "Remove patients, conversations, and patient voice clips. Keeps care team.",
+  "ui.provider.settings.reset.patients.confirm_title": "Erase all patient data?",
+  "ui.provider.settings.reset.patients.confirm_body": "All patients, their conversations, and their voice clips will be erased. Care team configuration is preserved. This cannot be undone.",
+  "ui.provider.settings.reset.care_team.label": "Erase and Reset All Care Team Data",
+  "ui.provider.settings.reset.care_team.description": "Remove care-team profiles and their voice clips. Keeps patients.",
+  "ui.provider.settings.reset.care_team.confirm_title": "Erase all care team data?",
+  "ui.provider.settings.reset.care_team.confirm_body": "All care-team profiles and their voice clips will be erased. Patient data is preserved. This cannot be undone.",
+  "ui.provider.settings.reset.everything.label": "Erase and Reset Everything",
+  "ui.provider.settings.reset.everything.description": "Wipe the device — patients, care team, voice models, and settings.",
+  "ui.provider.settings.reset.empty_hint": "No data to erase",
 
   // ── UI chrome: Settings — Accessibility section ───────────────
   "ui.provider.settings.accessibility.heading": "Kebolehcapaian",
@@ -870,7 +884,7 @@ const ms: LocaleStrings = {
     "Suara sistem digunakan semasa klon suara dimuatkan. Ketik untuk pratonton.",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
-  "ui.provider.settings.offline.heading": "Kesediaan luar talian",
+  "ui.provider.settings.offline.heading": "Diagnostik aplikasi",
   "ui.provider.settings.offline.status_description":
     "Status model AI yang digunakan app dalam peranti untuk penjanaan suara, cadangan, dan pengecaman pertuturan.",
   "ui.provider.settings.offline.downloading":
@@ -940,6 +954,8 @@ const ms: LocaleStrings = {
   "ui.provider.staff_session.extend": "Lanjutkan sesi",
   "ui.provider.staff_session.end_now": "Tamatkan sekarang",
   "ui.provider.nav.end_staff_session": "Tamatkan sesi kakitangan",
+  "ui.provider.nav.lock_now": "Lock",
+  "ui.provider.nav.lock_now_aria": "Lock staff session now",
 };
 
 export default ms;

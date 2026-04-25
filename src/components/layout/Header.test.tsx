@@ -34,11 +34,11 @@ const makeCfg = (overrides?: { patient?: Record<string, unknown>; cfg?: Partial<
   });
 
 describe("Header", () => {
-  const onOpenStaff = vi.fn();
+  const onOpenSettings = vi.fn();
   const onEditPatient = vi.fn();
 
   beforeEach(() => {
-    onOpenStaff.mockReset();
+    onOpenSettings.mockReset();
     onEditPatient.mockReset();
     useUIStore.getState().resetUI();
   });
@@ -49,7 +49,7 @@ describe("Header", () => {
     return render(
       <Header
         cfg={cfg}
-        onOpenStaff={onOpenStaff}
+        onOpenSettings={onOpenSettings}
         onEditPatient={onEditPatient}
       />,
     );
@@ -88,10 +88,10 @@ describe("Header", () => {
     expect(useUIStore.getState().providerOpen).toBe(true);
   });
 
-  it("staff button calls onOpenStaff callback", () => {
+  it("settings (PIN-gated) button calls onOpenSettings callback", () => {
     renderHeader({ cfg: { pin: "1234" } });
-    fireEvent.click(screen.getByRole("button", { name: "Staff" }));
-    expect(onOpenStaff).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+    expect(onOpenSettings).toHaveBeenCalledTimes(1);
   });
 
   it("tapping the patient pill calls onEditPatient", () => {

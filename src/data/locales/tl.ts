@@ -787,7 +787,7 @@ const tl: LocaleStrings = {
   "ui.provider.patient_edit.title_default": "I-edit ang pasyente",
   "ui.provider.patient_edit.close_aria": "Isara ang patient editor",
   "ui.provider.patient_pill.aria": "I-edit ang pasyente: {name}",
-  "ui.provider.nav.staff_menu": "Staff",
+  "ui.provider.nav.staff_menu": "Mga Setting",
   "ui.provider.staff_sheet.title": "Staff",
   "ui.provider.staff_sheet.close_aria": "Isara ang staff menu",
   "ui.provider.staff_sheet.patients_description": "Magpalit, magdagdag, o mag-edit ng pasyente",
@@ -848,6 +848,20 @@ const tl: LocaleStrings = {
     "Mabubura lahat ng datos ng pasyente, voice samples, conversation history, at provider settings. Hindi ito puwedeng i-undo.",
   "ui.provider.settings.reset.confirm_destructive":
     "I-reset lahat",
+  "ui.provider.settings.reset.row_label": "Reset",
+  "ui.provider.settings.reset.row_description": "Erase patient data, care team, or the whole device",
+  "ui.provider.settings.reset.confirm_action": "Erase",
+  "ui.provider.settings.reset.patients.label": "Erase and Reset All Patient Data",
+  "ui.provider.settings.reset.patients.description": "Remove patients, conversations, and patient voice clips. Keeps care team.",
+  "ui.provider.settings.reset.patients.confirm_title": "Erase all patient data?",
+  "ui.provider.settings.reset.patients.confirm_body": "All patients, their conversations, and their voice clips will be erased. Care team configuration is preserved. This cannot be undone.",
+  "ui.provider.settings.reset.care_team.label": "Erase and Reset All Care Team Data",
+  "ui.provider.settings.reset.care_team.description": "Remove care-team profiles and their voice clips. Keeps patients.",
+  "ui.provider.settings.reset.care_team.confirm_title": "Erase all care team data?",
+  "ui.provider.settings.reset.care_team.confirm_body": "All care-team profiles and their voice clips will be erased. Patient data is preserved. This cannot be undone.",
+  "ui.provider.settings.reset.everything.label": "Erase and Reset Everything",
+  "ui.provider.settings.reset.everything.description": "Wipe the device — patients, care team, voice models, and settings.",
+  "ui.provider.settings.reset.empty_hint": "No data to erase",
 
   // ── UI chrome: Settings — Accessibility section ───────────────
   "ui.provider.settings.accessibility.heading": "Accessibility (Kakayahang magamit)",
@@ -922,7 +936,7 @@ const tl: LocaleStrings = {
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
   "ui.provider.settings.offline.heading":
-    "Kahandaan para sa offline",
+    "Pagsusuri ng app",
   "ui.provider.settings.offline.status_description":
     "Status ng mga AI model na ginagamit ng app sa device para sa voice generation, mga suggestion, at speech recognition.",
   "ui.provider.settings.offline.downloading":
@@ -995,6 +1009,8 @@ const tl: LocaleStrings = {
   "ui.provider.staff_session.extend": "Pahabain ang session",
   "ui.provider.staff_session.end_now": "Tapusin na",
   "ui.provider.nav.end_staff_session": "Tapusin ang staff session",
+  "ui.provider.nav.lock_now": "Lock",
+  "ui.provider.nav.lock_now_aria": "Lock staff session now",
 };
 
 export default tl;

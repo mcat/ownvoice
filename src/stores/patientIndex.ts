@@ -125,6 +125,20 @@ export async function removePatientHashes(
   return hashes;
 }
 
+/**
+ * Union of every patient's tracked hashes — used by scoped resets to
+ * decide which audio entries belong to "patients" vs "everything else".
+ * Provider audio is intentionally never recorded in this index.
+ */
+export async function getAllPatientHashes(): Promise<Set<string>> {
+  await loadIndex();
+  const all = new Set<string>();
+  for (const entry of memIndex!.values()) {
+    for (const h of entry.hashes) all.add(h);
+  }
+  return all;
+}
+
 export async function clearIndex(): Promise<void> {
   memIndex = new Map();
   if (pendingWrite) {

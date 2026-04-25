@@ -28,34 +28,33 @@ vi.mock("../../hooks/useTheme", () => ({
 }));
 
 describe("HeaderNav", () => {
-  const onOpenStaff = vi.fn();
+  const onOpenSettings = vi.fn();
 
   beforeEach(() => {
-    onOpenStaff.mockReset();
+    onOpenSettings.mockReset();
     const cfg = makeTestCfg({ patient: { name: "Test" }, cfg: { pin: "" } });
     useSettingsStore.setState({ cfg, speakerData: null, _hasHydrated: true });
     useUIStore.getState().resetUI();
   });
 
   function renderNav() {
-    return render(<HeaderNav onOpenStaff={onOpenStaff} />);
+    return render(<HeaderNav onOpenSettings={onOpenSettings} />);
   }
 
-  it("renders the Staff button (single staff entry point)", () => {
+  it("renders the Settings (PIN-gated) button — single staff entry point", () => {
     renderNav();
-    expect(screen.getByRole("button", { name: "Staff" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Settings" })).toBeInTheDocument();
   });
 
-  it("fires onOpenStaff when the Staff button is clicked", () => {
+  it("fires onOpenSettings when the Settings button is clicked", () => {
     renderNav();
-    fireEvent.click(screen.getByRole("button", { name: "Staff" }));
-    expect(onOpenStaff).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+    expect(onOpenSettings).toHaveBeenCalledTimes(1);
   });
 
-  it("does NOT render Patients, Settings, or End Staff Session buttons in the nav (those moved into StaffSheet)", () => {
+  it("does NOT render Patients or End Staff Session buttons in the nav (those moved into the flat Settings panel)", () => {
     renderNav();
     expect(screen.queryByRole("button", { name: "Patients" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Settings" })).toBeNull();
     expect(screen.queryByRole("button", { name: "End staff session" })).toBeNull();
   });
 

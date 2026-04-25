@@ -5,6 +5,7 @@ import { useTheme } from "../../hooks/useTheme";
 import { t as resolvePhrase } from "../../data/phraseRegistry";
 import type { PhraseKey } from "../../data/phraseRegistry";
 import type { ThemeTokens } from "../../theme/tokens";
+import { SettingsLockPill } from "./SettingsLockPill";
 
 const ICONS = {
   auto: "🌓",
@@ -13,9 +14,6 @@ const ICONS = {
   wishes: "❤️",
   listen: "👂",
   provider: "👩‍⚕️",
-  // Locked-with-key — distinct from the provider 👩‍⚕️ used by the patient-
-  // facing Care Team button. Signals "behind PIN gate".
-  staff: "🔐",
 } as const;
 
 // Overlay button definitions live at module scope — identity never changes
@@ -56,15 +54,15 @@ function labelStyle(t: ThemeTokens) {
 
 interface HeaderNavProps {
   /**
-   * Single staff entry point. Replaces the previous trio (Patients,
-   * Settings, End Session) with a PIN-gated Staff button that opens the
-   * StaffSheet — keeps the patient-facing nav focused on Wishes / Listen /
-   * Care Team / Theme.
+   * Single PIN-gated entry point for staff workflows. Opens the flat
+   * Settings panel (Patients, Care Team, Accessibility, Diagnostics,
+   * About, Reset) — keeps the patient-facing nav focused on Wishes /
+   * Listen / Care Team / Theme.
    */
-  onOpenStaff: () => void;
+  onOpenSettings: () => void;
 }
 
-export function HeaderNav({ onOpenStaff }: HeaderNavProps) {
+export function HeaderNav({ onOpenSettings }: HeaderNavProps) {
   const { theme, toggle: onToggleTheme, isAuto, t } = useTheme();
   const openOverlay = useUIStore((s) => s.openOverlay);
   const cfg = useSettingsStore((s) => s.cfg);
@@ -91,15 +89,11 @@ export function HeaderNav({ onOpenStaff }: HeaderNavProps) {
           </Btn>
         );
       })}
-      <Btn
-        key="staff"
-        onClick={onOpenStaff}
-        aria-label={resolvePhrase("ui.provider.nav.staff_menu", caregiverLang)}
-        style={btnStyle(t, ICONS.staff)}
-      >
-        <span>{ICONS.staff}</span>
-        <span style={labelStyle(t)}>{resolvePhrase("ui.provider.nav.staff_menu", caregiverLang)}</span>
-      </Btn>
+      {/* Settings + (when authed) Lock countdown live in a single
+          compound pill — one chrome, two sibling tap targets, hairline
+          divider between. Authed state grows the pill; unauthed renders
+          identically to a standalone Settings button. */}
+      <SettingsLockPill onOpenSettings={onOpenSettings} t={t} />
     </div>
   );
 }

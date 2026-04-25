@@ -727,7 +727,7 @@ const hi: LocaleStrings = {
   "ui.provider.patient_edit.title_default": "रोगी संपादित करें",
   "ui.provider.patient_edit.close_aria": "रोगी संपादक बंद करें",
   "ui.provider.patient_pill.aria": "रोगी संपादित करें: {name}",
-  "ui.provider.nav.staff_menu": "स्टाफ",
+  "ui.provider.nav.staff_menu": "सेटिंग्स",
   "ui.provider.staff_sheet.title": "स्टाफ",
   "ui.provider.staff_sheet.close_aria": "स्टाफ मेनू बंद करें",
   "ui.provider.staff_sheet.patients_description": "रोगियों को बदलें, जोड़ें या संपादित करें",
@@ -786,6 +786,20 @@ const hi: LocaleStrings = {
   "ui.provider.settings.reset.confirm_body":
     "इससे सभी मरीज़ डेटा, वॉइस सैंपल, बातचीत इतिहास, और प्रदाता सेटिंग्स मिट जाएँगे। यह वापस नहीं किया जा सकता।",
   "ui.provider.settings.reset.confirm_destructive": "सब रीसेट करें",
+  "ui.provider.settings.reset.row_label": "Reset",
+  "ui.provider.settings.reset.row_description": "Erase patient data, care team, or the whole device",
+  "ui.provider.settings.reset.confirm_action": "Erase",
+  "ui.provider.settings.reset.patients.label": "Erase and Reset All Patient Data",
+  "ui.provider.settings.reset.patients.description": "Remove patients, conversations, and patient voice clips. Keeps care team.",
+  "ui.provider.settings.reset.patients.confirm_title": "Erase all patient data?",
+  "ui.provider.settings.reset.patients.confirm_body": "All patients, their conversations, and their voice clips will be erased. Care team configuration is preserved. This cannot be undone.",
+  "ui.provider.settings.reset.care_team.label": "Erase and Reset All Care Team Data",
+  "ui.provider.settings.reset.care_team.description": "Remove care-team profiles and their voice clips. Keeps patients.",
+  "ui.provider.settings.reset.care_team.confirm_title": "Erase all care team data?",
+  "ui.provider.settings.reset.care_team.confirm_body": "All care-team profiles and their voice clips will be erased. Patient data is preserved. This cannot be undone.",
+  "ui.provider.settings.reset.everything.label": "Erase and Reset Everything",
+  "ui.provider.settings.reset.everything.description": "Wipe the device — patients, care team, voice models, and settings.",
+  "ui.provider.settings.reset.empty_hint": "No data to erase",
 
   // ── UI chrome: Settings — Accessibility section ───────────────
   "ui.provider.settings.accessibility.heading": "सुगम्यता",
@@ -855,7 +869,7 @@ const hi: LocaleStrings = {
     "वॉइस क्लोन लोड होते समय इस्तेमाल होने वाली सिस्टम आवाज़। प्रीव्यू के लिए टैप करें।",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
-  "ui.provider.settings.offline.heading": "ऑफ़लाइन तैयारी",
+  "ui.provider.settings.offline.heading": "ऐप डायग्नोस्टिक्स",
   "ui.provider.settings.offline.status_description":
     "ऐप जिन AI मॉडल का इस्तेमाल डिवाइस पर आवाज़ बनाने, सुझाव और स्पीच पहचान के लिए करता है उनकी स्थिति।",
   "ui.provider.settings.offline.downloading":
@@ -925,6 +939,8 @@ const hi: LocaleStrings = {
   "ui.provider.staff_session.extend": "सेशन बढ़ाएँ",
   "ui.provider.staff_session.end_now": "अभी समाप्त करें",
   "ui.provider.nav.end_staff_session": "स्टाफ़ सेशन समाप्त करें",
+  "ui.provider.nav.lock_now": "Lock",
+  "ui.provider.nav.lock_now_aria": "Lock staff session now",
 };
 
 export default hi;

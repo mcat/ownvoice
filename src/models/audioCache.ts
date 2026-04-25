@@ -530,3 +530,47 @@ export async function clearAudioCache(): Promise<void> {
   }
 }
 
+/**
+ * Remove the audio-cache entries for a specific set of hashes. Used by
+ * scoped resets (e.g. "Erase All Patient Data") that need to drop only
+ * the patient-tracked clips without nuking provider/orphan audio.
+ */
+export async function clearAudioByHashes(hashes: Iterable<string>): Promise<void> {
+  let dir: FileSystemDirectoryHandle;
+  try {
+    dir = await getCacheDir();
+  } catch {
+    return; // OPFS unavailable (e.g. jsdom)
+  }
+  for (const h of hashes) {
+    try {
+      await dir.removeEntry(`${h}.raw`);
+    } catch {
+      // Entry may already be gone; safe to ignore.
+    }
+  }
+}
+
+/**
+ * Remove cached audio whose hash key is NOT in the supplied keep-set —
+ * used by "Erase All Care Team Data" to drop provider/orphan clips while
+ * preserving entries currently linked to a patient.
+ *
+ * Provider audio is intentionally never tracked in patientIndex (see
+ * audioCache.cachePhrase, patientId === null), so the natural definition
+ * of "non-patient audio" is the complement of the patient hash union.
+ */
+export async function clearAudioExcept(keepHashes: Set<string>): Promise<void> {
+  let cached: Set<string>;
+  try {
+    cached = await listCachedKeys();
+  } catch {
+    return;
+  }
+  const toRemove: string[] = [];
+  for (const h of cached) {
+    if (!keepHashes.has(h)) toRemove.push(h);
+  }
+  await clearAudioByHashes(toRemove);
+}
+

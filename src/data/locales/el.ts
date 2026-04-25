@@ -755,7 +755,7 @@ const el: LocaleStrings = {
   "ui.provider.patient_edit.title_default": "Επεξεργασία ασθενούς",
   "ui.provider.patient_edit.close_aria": "Κλείσιμο επεξεργασίας ασθενούς",
   "ui.provider.patient_pill.aria": "Επεξεργασία ασθενούς: {name}",
-  "ui.provider.nav.staff_menu": "Προσωπικό",
+  "ui.provider.nav.staff_menu": "Ρυθμίσεις",
   "ui.provider.staff_sheet.title": "Προσωπικό",
   "ui.provider.staff_sheet.close_aria": "Κλείσιμο μενού προσωπικού",
   "ui.provider.staff_sheet.patients_description": "Αλλαγή, προσθήκη ή επεξεργασία ασθενών",
@@ -814,6 +814,20 @@ const el: LocaleStrings = {
   "ui.provider.settings.reset.confirm_body":
     "Αυτό θα διαγράψει όλα τα δεδομένα ασθενούς, τα δείγματα φωνής, το ιστορικό συνομιλίας και τις ρυθμίσεις παρόχου. Δεν μπορεί να αναιρεθεί.",
   "ui.provider.settings.reset.confirm_destructive": "Επαναφορά όλων",
+  "ui.provider.settings.reset.row_label": "Reset",
+  "ui.provider.settings.reset.row_description": "Erase patient data, care team, or the whole device",
+  "ui.provider.settings.reset.confirm_action": "Erase",
+  "ui.provider.settings.reset.patients.label": "Erase and Reset All Patient Data",
+  "ui.provider.settings.reset.patients.description": "Remove patients, conversations, and patient voice clips. Keeps care team.",
+  "ui.provider.settings.reset.patients.confirm_title": "Erase all patient data?",
+  "ui.provider.settings.reset.patients.confirm_body": "All patients, their conversations, and their voice clips will be erased. Care team configuration is preserved. This cannot be undone.",
+  "ui.provider.settings.reset.care_team.label": "Erase and Reset All Care Team Data",
+  "ui.provider.settings.reset.care_team.description": "Remove care-team profiles and their voice clips. Keeps patients.",
+  "ui.provider.settings.reset.care_team.confirm_title": "Erase all care team data?",
+  "ui.provider.settings.reset.care_team.confirm_body": "All care-team profiles and their voice clips will be erased. Patient data is preserved. This cannot be undone.",
+  "ui.provider.settings.reset.everything.label": "Erase and Reset Everything",
+  "ui.provider.settings.reset.everything.description": "Wipe the device — patients, care team, voice models, and settings.",
+  "ui.provider.settings.reset.empty_hint": "No data to erase",
 
   // ── UI chrome: Settings — Accessibility section ───────────────
   "ui.provider.settings.accessibility.heading": "Προσβασιμότητα",
@@ -880,7 +894,7 @@ const el: LocaleStrings = {
     "Φωνή συστήματος κατά τη φόρτωση κλώνου φωνής. Πατήστε για ακρόαση.",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
-  "ui.provider.settings.offline.heading": "Ετοιμότητα εκτός σύνδεσης",
+  "ui.provider.settings.offline.heading": "Διαγνωστικά εφαρμογής",
   "ui.provider.settings.offline.status_description":
     "Κατάσταση των μοντέλων AI που χρησιμοποιεί η εφαρμογή στη συσκευή για δημιουργία φωνής, προτάσεις και αναγνώριση ομιλίας.",
   "ui.provider.settings.offline.downloading": "Λήψη μοντέλων…",
@@ -944,6 +958,8 @@ const el: LocaleStrings = {
   "ui.provider.staff_session.extend": "Παράταση συνεδρίας",
   "ui.provider.staff_session.end_now": "Τερματισμός τώρα",
   "ui.provider.nav.end_staff_session": "Τερματισμός συνεδρίας προσωπικού",
+  "ui.provider.nav.lock_now": "Lock",
+  "ui.provider.nav.lock_now_aria": "Lock staff session now",
 };
 
 export default el;

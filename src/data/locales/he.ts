@@ -755,7 +755,7 @@ const he: LocaleStrings = {
   "ui.provider.patient_edit.title_default": "עריכת מטופל",
   "ui.provider.patient_edit.close_aria": "סגירת עורך המטופל",
   "ui.provider.patient_pill.aria": "עריכת מטופל: {name}",
-  "ui.provider.nav.staff_menu": "צוות",
+  "ui.provider.nav.staff_menu": "הגדרות",
   "ui.provider.staff_sheet.title": "צוות",
   "ui.provider.staff_sheet.close_aria": "סגירת תפריט הצוות",
   "ui.provider.staff_sheet.patients_description": "החלפה, הוספה או עריכה של מטופלים",
@@ -814,6 +814,20 @@ const he: LocaleStrings = {
   "ui.provider.settings.reset.confirm_body":
     "פעולה זו תמחק את כל נתוני המטופל, דגימות הקול, היסטוריית השיחה והגדרות המטפל. לא ניתן לבטל פעולה זו.",
   "ui.provider.settings.reset.confirm_destructive": "אפס הכל",
+  "ui.provider.settings.reset.row_label": "Reset",
+  "ui.provider.settings.reset.row_description": "Erase patient data, care team, or the whole device",
+  "ui.provider.settings.reset.confirm_action": "Erase",
+  "ui.provider.settings.reset.patients.label": "Erase and Reset All Patient Data",
+  "ui.provider.settings.reset.patients.description": "Remove patients, conversations, and patient voice clips. Keeps care team.",
+  "ui.provider.settings.reset.patients.confirm_title": "Erase all patient data?",
+  "ui.provider.settings.reset.patients.confirm_body": "All patients, their conversations, and their voice clips will be erased. Care team configuration is preserved. This cannot be undone.",
+  "ui.provider.settings.reset.care_team.label": "Erase and Reset All Care Team Data",
+  "ui.provider.settings.reset.care_team.description": "Remove care-team profiles and their voice clips. Keeps patients.",
+  "ui.provider.settings.reset.care_team.confirm_title": "Erase all care team data?",
+  "ui.provider.settings.reset.care_team.confirm_body": "All care-team profiles and their voice clips will be erased. Patient data is preserved. This cannot be undone.",
+  "ui.provider.settings.reset.everything.label": "Erase and Reset Everything",
+  "ui.provider.settings.reset.everything.description": "Wipe the device — patients, care team, voice models, and settings.",
+  "ui.provider.settings.reset.empty_hint": "No data to erase",
 
   // ── UI chrome: Settings — Accessibility section ───────────────
   "ui.provider.settings.accessibility.heading": "נגישות",
@@ -881,7 +895,7 @@ const he: LocaleStrings = {
     "קול מערכת המשמש בזמן טעינת שיבוט הקול. הקש להאזנה.",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
-  "ui.provider.settings.offline.heading": "מוכנות לעבודה ללא חיבור",
+  "ui.provider.settings.offline.heading": "אבחון האפליקציה",
   "ui.provider.settings.offline.status_description":
     "מצב מודלי ה-AI שהאפליקציה משתמשת בהם על המכשיר ליצירת קול, הצעות וזיהוי דיבור.",
   "ui.provider.settings.offline.downloading":
@@ -951,6 +965,8 @@ const he: LocaleStrings = {
   "ui.provider.staff_session.extend": "הארך הפעלה",
   "ui.provider.staff_session.end_now": "סיים עכשיו",
   "ui.provider.nav.end_staff_session": "סיים הפעלת צוות",
+  "ui.provider.nav.lock_now": "Lock",
+  "ui.provider.nav.lock_now_aria": "Lock staff session now",
 };
 
 export default he;

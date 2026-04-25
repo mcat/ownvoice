@@ -32,8 +32,8 @@ const CTRL_BTN: JSX.CSSProperties = {
 };
 
 // Destructive-outline style for the initial Discard trigger — matches
-// the "Reset app for new patient" button in ResetSection so the visual
-// language for dangerous actions stays consistent.
+// the destructive rows in ResetSheet so the visual language for
+// dangerous actions stays consistent.
 const DISCARD_OUTLINE: JSX.CSSProperties = {
   ...CTRL_BTN,
   border: "1px solid #DC2626",

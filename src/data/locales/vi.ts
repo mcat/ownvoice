@@ -759,7 +759,7 @@ const vi: LocaleStrings = {
   "ui.provider.patient_edit.title_default": "Chỉnh sửa bệnh nhân",
   "ui.provider.patient_edit.close_aria": "Đóng trình chỉnh sửa bệnh nhân",
   "ui.provider.patient_pill.aria": "Chỉnh sửa bệnh nhân: {name}",
-  "ui.provider.nav.staff_menu": "Nhân viên",
+  "ui.provider.nav.staff_menu": "Cài đặt",
   "ui.provider.staff_sheet.title": "Nhân viên",
   "ui.provider.staff_sheet.close_aria": "Đóng menu nhân viên",
   "ui.provider.staff_sheet.patients_description": "Chuyển, thêm hoặc chỉnh sửa bệnh nhân",
@@ -819,6 +819,20 @@ const vi: LocaleStrings = {
     "Thao tác này sẽ xóa tất cả dữ liệu bệnh nhân, mẫu giọng nói, lịch sử trò chuyện và cài đặt nhân viên. Không thể hoàn tác.",
   "ui.provider.settings.reset.confirm_destructive":
     "Đặt lại tất cả",
+  "ui.provider.settings.reset.row_label": "Reset",
+  "ui.provider.settings.reset.row_description": "Erase patient data, care team, or the whole device",
+  "ui.provider.settings.reset.confirm_action": "Erase",
+  "ui.provider.settings.reset.patients.label": "Erase and Reset All Patient Data",
+  "ui.provider.settings.reset.patients.description": "Remove patients, conversations, and patient voice clips. Keeps care team.",
+  "ui.provider.settings.reset.patients.confirm_title": "Erase all patient data?",
+  "ui.provider.settings.reset.patients.confirm_body": "All patients, their conversations, and their voice clips will be erased. Care team configuration is preserved. This cannot be undone.",
+  "ui.provider.settings.reset.care_team.label": "Erase and Reset All Care Team Data",
+  "ui.provider.settings.reset.care_team.description": "Remove care-team profiles and their voice clips. Keeps patients.",
+  "ui.provider.settings.reset.care_team.confirm_title": "Erase all care team data?",
+  "ui.provider.settings.reset.care_team.confirm_body": "All care-team profiles and their voice clips will be erased. Patient data is preserved. This cannot be undone.",
+  "ui.provider.settings.reset.everything.label": "Erase and Reset Everything",
+  "ui.provider.settings.reset.everything.description": "Wipe the device — patients, care team, voice models, and settings.",
+  "ui.provider.settings.reset.empty_hint": "No data to erase",
 
   // ── UI chrome: Settings — Accessibility section ───────────────
   "ui.provider.settings.accessibility.heading": "Hỗ trợ tiếp cận",
@@ -890,7 +904,7 @@ const vi: LocaleStrings = {
     "Giọng hệ thống dùng khi giọng nhân bản đang tải. Chạm để nghe thử.",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
-  "ui.provider.settings.offline.heading": "Sẵn sàng ngoại tuyến",
+  "ui.provider.settings.offline.heading": "Chẩn đoán ứng dụng",
   "ui.provider.settings.offline.status_description":
     "Trạng thái các mô hình AI mà ứng dụng dùng trên thiết bị cho tạo giọng nói, gợi ý và nhận dạng giọng nói.",
   "ui.provider.settings.offline.downloading":
@@ -962,6 +976,8 @@ const vi: LocaleStrings = {
   "ui.provider.staff_session.extend": "Gia hạn phiên",
   "ui.provider.staff_session.end_now": "Kết thúc ngay",
   "ui.provider.nav.end_staff_session": "Kết thúc phiên nhân viên",
+  "ui.provider.nav.lock_now": "Lock",
+  "ui.provider.nav.lock_now_aria": "Lock staff session now",
 };
 
 export default vi;

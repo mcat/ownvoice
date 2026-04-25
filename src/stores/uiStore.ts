@@ -7,10 +7,14 @@ export type OverlayName =
   | "provider"
   | "listen"
   | "settings"
+  | "careTeam"
+  | "accessibility"
+  | "diagnostics"
+  | "about"
+  | "reset"
   | "pinEntry"
   | "switch"
-  | "addPatient"
-  | "staffSheet";
+  | "addPatient";
 
 interface UIState {
   tab: string;
@@ -20,10 +24,14 @@ interface UIState {
   providerOpen: boolean;
   listenOpen: boolean;
   settingsOpen: boolean;
+  careTeamOpen: boolean;
+  accessibilityOpen: boolean;
+  diagnosticsOpen: boolean;
+  aboutOpen: boolean;
+  resetOpen: boolean;
   pinEntryOpen: boolean;
   switchSheetOpen: boolean;
   addPatientOpen: boolean;
-  staffSheetOpen: boolean;
   /** Id of the patient being edited via PatientEditSheet, or null when closed.
    *  PatientEditSheet is overlay-shaped but carries a payload, so it doesn't
    *  use openOverlay/closeOverlay — call openPatientEdit(id)/closePatientEdit(). */
@@ -64,10 +72,14 @@ const OVERLAY_KEYS: Record<OverlayName, keyof UIState> = {
   provider: "providerOpen",
   listen: "listenOpen",
   settings: "settingsOpen",
+  careTeam: "careTeamOpen",
+  accessibility: "accessibilityOpen",
+  diagnostics: "diagnosticsOpen",
+  about: "aboutOpen",
+  reset: "resetOpen",
   pinEntry: "pinEntryOpen",
   switch: "switchSheetOpen",
   addPatient: "addPatientOpen",
-  staffSheet: "staffSheetOpen",
 };
 
 function getInitialThemeOverride(): ThemeName | null {
@@ -85,10 +97,14 @@ const INITIAL: Pick<
   | "providerOpen"
   | "listenOpen"
   | "settingsOpen"
+  | "careTeamOpen"
+  | "accessibilityOpen"
+  | "diagnosticsOpen"
+  | "aboutOpen"
+  | "resetOpen"
   | "pinEntryOpen"
   | "switchSheetOpen"
   | "addPatientOpen"
-  | "staffSheetOpen"
   | "patientEditId"
   | "activeProvIdx"
   | "speaking"
@@ -104,10 +120,14 @@ const INITIAL: Pick<
   providerOpen: false,
   listenOpen: false,
   settingsOpen: false,
+  careTeamOpen: false,
+  accessibilityOpen: false,
+  diagnosticsOpen: false,
+  aboutOpen: false,
+  resetOpen: false,
   pinEntryOpen: false,
   switchSheetOpen: false,
   addPatientOpen: false,
-  staffSheetOpen: false,
   patientEditId: null,
   activeProvIdx: 0,
   speaking: null,
@@ -135,10 +155,14 @@ export const useUIStore = create<UIState>((set) => ({
       providerOpen: false,
       listenOpen: false,
       settingsOpen: false,
+      careTeamOpen: false,
+      accessibilityOpen: false,
+      diagnosticsOpen: false,
+      aboutOpen: false,
+      resetOpen: false,
       pinEntryOpen: false,
       switchSheetOpen: false,
       addPatientOpen: false,
-      staffSheetOpen: false,
       patientEditId: null,
     }),
   openPatientEdit: (id) => set({ patientEditId: id }),

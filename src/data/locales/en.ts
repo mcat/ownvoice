@@ -692,7 +692,7 @@ const en = {
   "ui.provider.patient_pill.aria": "Edit patient: {name}",
 
   // ── UI chrome: Staff sheet ────────────────────────────────────
-  "ui.provider.nav.staff_menu": "Staff",
+  "ui.provider.nav.staff_menu": "Settings",
   "ui.provider.staff_sheet.title": "Staff",
   "ui.provider.staff_sheet.close_aria": "Close staff menu",
   "ui.provider.staff_sheet.patients_description": "Switch, add, or edit patients",
@@ -728,10 +728,24 @@ const en = {
 
   // ── UI chrome: Settings — Reset section ───────────────────────
   "ui.provider.settings.reset.heading": "Reset",
+  "ui.provider.settings.reset.row_label": "Reset",
+  "ui.provider.settings.reset.row_description": "Erase patient data, care team, or the whole device",
   "ui.provider.settings.reset.action_label": "Reset app for new patient",
   "ui.provider.settings.reset.confirm_title": "Are you sure?",
   "ui.provider.settings.reset.confirm_body": "This will erase all patient data, voice samples, conversation history, and provider settings. This cannot be undone.",
   "ui.provider.settings.reset.confirm_destructive": "Reset everything",
+  "ui.provider.settings.reset.confirm_action": "Erase",
+  "ui.provider.settings.reset.patients.label": "Erase and Reset All Patient Data",
+  "ui.provider.settings.reset.patients.description": "Remove patients, conversations, and patient voice clips. Keeps care team.",
+  "ui.provider.settings.reset.patients.confirm_title": "Erase all patient data?",
+  "ui.provider.settings.reset.patients.confirm_body": "All patients, their conversations, and their voice clips will be erased. Care team configuration is preserved. This cannot be undone.",
+  "ui.provider.settings.reset.care_team.label": "Erase and Reset All Care Team Data",
+  "ui.provider.settings.reset.care_team.description": "Remove care-team profiles and their voice clips. Keeps patients.",
+  "ui.provider.settings.reset.care_team.confirm_title": "Erase all care team data?",
+  "ui.provider.settings.reset.care_team.confirm_body": "All care-team profiles and their voice clips will be erased. Patient data is preserved. This cannot be undone.",
+  "ui.provider.settings.reset.everything.label": "Erase and Reset Everything",
+  "ui.provider.settings.reset.everything.description": "Wipe the device — patients, care team, voice models, and settings.",
+  "ui.provider.settings.reset.empty_hint": "No data to erase",
 
   // ── UI chrome: Settings — Accessibility section ───────────────
   "ui.provider.settings.accessibility.heading": "Accessibility",
@@ -780,7 +794,7 @@ const en = {
   "ui.provider.settings.patient_info.backup_voice_body": "System voice used while the voice clone loads. Tap to preview.",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
-  "ui.provider.settings.offline.heading": "Offline readiness",
+  "ui.provider.settings.offline.heading": "App Diagnostics",
   "ui.provider.settings.offline.status_description": "Status of the AI models the app uses on-device for voice generation, suggestions, and speech recognition.",
   "ui.provider.settings.offline.downloading": "Downloading models…",
   "ui.provider.settings.offline.download_progress_aria": "Model download progress",
@@ -829,6 +843,8 @@ const en = {
   "ui.provider.staff_session.extend": "Extend session",
   "ui.provider.staff_session.end_now": "End now",
   "ui.provider.nav.end_staff_session": "End staff session",
+  "ui.provider.nav.lock_now": "Lock",
+  "ui.provider.nav.lock_now_aria": "Lock staff session now",
 } as const;
 
 export type PhraseKey = keyof typeof en;

@@ -750,7 +750,7 @@ const nl: LocaleStrings = {
   "ui.provider.patient_edit.title_default": "Patiënt bewerken",
   "ui.provider.patient_edit.close_aria": "Patiënteditor sluiten",
   "ui.provider.patient_pill.aria": "Patiënt bewerken: {name}",
-  "ui.provider.nav.staff_menu": "Personeel",
+  "ui.provider.nav.staff_menu": "Instellingen",
   "ui.provider.staff_sheet.title": "Personeel",
   "ui.provider.staff_sheet.close_aria": "Personeelmenu sluiten",
   "ui.provider.staff_sheet.patients_description": "Patiënten wisselen, toevoegen of bewerken",
@@ -809,6 +809,20 @@ const nl: LocaleStrings = {
   "ui.provider.settings.reset.confirm_body":
     "Dit wist alle patiëntgegevens, stemfragmenten, gespreksgeschiedenis en instellingen voor zorgverleners. Dit kan niet ongedaan worden gemaakt.",
   "ui.provider.settings.reset.confirm_destructive": "Alles resetten",
+  "ui.provider.settings.reset.row_label": "Reset",
+  "ui.provider.settings.reset.row_description": "Erase patient data, care team, or the whole device",
+  "ui.provider.settings.reset.confirm_action": "Erase",
+  "ui.provider.settings.reset.patients.label": "Erase and Reset All Patient Data",
+  "ui.provider.settings.reset.patients.description": "Remove patients, conversations, and patient voice clips. Keeps care team.",
+  "ui.provider.settings.reset.patients.confirm_title": "Erase all patient data?",
+  "ui.provider.settings.reset.patients.confirm_body": "All patients, their conversations, and their voice clips will be erased. Care team configuration is preserved. This cannot be undone.",
+  "ui.provider.settings.reset.care_team.label": "Erase and Reset All Care Team Data",
+  "ui.provider.settings.reset.care_team.description": "Remove care-team profiles and their voice clips. Keeps patients.",
+  "ui.provider.settings.reset.care_team.confirm_title": "Erase all care team data?",
+  "ui.provider.settings.reset.care_team.confirm_body": "All care-team profiles and their voice clips will be erased. Patient data is preserved. This cannot be undone.",
+  "ui.provider.settings.reset.everything.label": "Erase and Reset Everything",
+  "ui.provider.settings.reset.everything.description": "Wipe the device — patients, care team, voice models, and settings.",
+  "ui.provider.settings.reset.empty_hint": "No data to erase",
 
   // ── UI chrome: Settings — Accessibility section ───────────────
   "ui.provider.settings.accessibility.heading": "Toegankelijkheid",
@@ -875,7 +889,7 @@ const nl: LocaleStrings = {
     "Systeemstem die wordt gebruikt terwijl de stemkloon wordt geladen. Tik om te beluisteren.",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
-  "ui.provider.settings.offline.heading": "Offlinegereedheid",
+  "ui.provider.settings.offline.heading": "App-diagnose",
   "ui.provider.settings.offline.status_description":
     "Status van de AI-modellen die de app op het apparaat gebruikt voor stemgeneratie, suggesties en spraakherkenning.",
   "ui.provider.settings.offline.downloading": "Modellen downloaden…",
@@ -942,6 +956,8 @@ const nl: LocaleStrings = {
   "ui.provider.staff_session.extend": "Sessie verlengen",
   "ui.provider.staff_session.end_now": "Nu beëindigen",
   "ui.provider.nav.end_staff_session": "Personeelssessie beëindigen",
+  "ui.provider.nav.lock_now": "Lock",
+  "ui.provider.nav.lock_now_aria": "Lock staff session now",
 };
 
 export default nl;

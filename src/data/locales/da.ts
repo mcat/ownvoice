@@ -747,7 +747,7 @@ const da: LocaleStrings = {
   "ui.provider.patient_edit.title_default": "Rediger patient",
   "ui.provider.patient_edit.close_aria": "Luk patientredigering",
   "ui.provider.patient_pill.aria": "Rediger patient: {name}",
-  "ui.provider.nav.staff_menu": "Personale",
+  "ui.provider.nav.staff_menu": "Indstillinger",
   "ui.provider.staff_sheet.title": "Personale",
   "ui.provider.staff_sheet.close_aria": "Luk personalemenu",
   "ui.provider.staff_sheet.patients_description": "Skift, tilføj eller rediger patienter",
@@ -806,6 +806,20 @@ const da: LocaleStrings = {
   "ui.provider.settings.reset.confirm_body":
     "Dette sletter alle patientdata, stemmeprøver, samtalehistorik og behandlerindstillinger. Dette kan ikke fortrydes.",
   "ui.provider.settings.reset.confirm_destructive": "Nulstil alt",
+  "ui.provider.settings.reset.row_label": "Reset",
+  "ui.provider.settings.reset.row_description": "Erase patient data, care team, or the whole device",
+  "ui.provider.settings.reset.confirm_action": "Erase",
+  "ui.provider.settings.reset.patients.label": "Erase and Reset All Patient Data",
+  "ui.provider.settings.reset.patients.description": "Remove patients, conversations, and patient voice clips. Keeps care team.",
+  "ui.provider.settings.reset.patients.confirm_title": "Erase all patient data?",
+  "ui.provider.settings.reset.patients.confirm_body": "All patients, their conversations, and their voice clips will be erased. Care team configuration is preserved. This cannot be undone.",
+  "ui.provider.settings.reset.care_team.label": "Erase and Reset All Care Team Data",
+  "ui.provider.settings.reset.care_team.description": "Remove care-team profiles and their voice clips. Keeps patients.",
+  "ui.provider.settings.reset.care_team.confirm_title": "Erase all care team data?",
+  "ui.provider.settings.reset.care_team.confirm_body": "All care-team profiles and their voice clips will be erased. Patient data is preserved. This cannot be undone.",
+  "ui.provider.settings.reset.everything.label": "Erase and Reset Everything",
+  "ui.provider.settings.reset.everything.description": "Wipe the device — patients, care team, voice models, and settings.",
+  "ui.provider.settings.reset.empty_hint": "No data to erase",
 
   // ── UI chrome: Settings — Accessibility section ───────────────
   "ui.provider.settings.accessibility.heading": "Tilgængelighed",
@@ -875,7 +889,7 @@ const da: LocaleStrings = {
     "Systemstemme, der bruges mens stemmeklonen indlæses. Tryk for at høre.",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
-  "ui.provider.settings.offline.heading": "Offlineparathed",
+  "ui.provider.settings.offline.heading": "App-diagnostik",
   "ui.provider.settings.offline.status_description":
     "Status for de AI-modeller, appen bruger på enheden til stemmegenerering, forslag og talegenkendelse.",
   "ui.provider.settings.offline.downloading":
@@ -945,6 +959,8 @@ const da: LocaleStrings = {
   "ui.provider.staff_session.extend": "Forlæng session",
   "ui.provider.staff_session.end_now": "Afslut nu",
   "ui.provider.nav.end_staff_session": "Afslut personalets session",
+  "ui.provider.nav.lock_now": "Lock",
+  "ui.provider.nav.lock_now_aria": "Lock staff session now",
 };
 
 export default da;

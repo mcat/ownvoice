@@ -157,10 +157,30 @@ export function PatientsScreen({ open, onClose, t: tokens, theme }: PatientsScre
     <div onMouseDown={bump} onKeyDown={bump}>
       <BottomSheet onClose={onClose} t={tokens} heightVh={88}>
         <BottomSheet.Header>
+          <BottomSheet.BackButton
+            parentLabel={resolvePhrase("ui.provider.settings.title", caregiverLang)}
+            onClick={() => {
+              onClose();
+              useUIStore.getState().openOverlay("settings");
+            }}
+          />
           <BottomSheet.Title>
             {resolvePhrase("ui.provider.patients.title", caregiverLang)}
           </BottomSheet.Title>
-          <BottomSheet.CloseButton aria-label="Close" />
+          <BottomSheet.CloseButton
+            aria-label={resolvePhrase("ui.provider.settings.close_aria", caregiverLang)}
+            style={{
+              fontSize: 16,
+              color: tokens.muted,
+              padding: "8px 12px",
+              minWidth: 64,
+              minHeight: 64,
+              fontFamily:
+                "'Atkinson Hyperlegible Next', system-ui, -apple-system, sans-serif",
+            }}
+          >
+            {resolvePhrase("ui.provider.settings.done", caregiverLang)}
+          </BottomSheet.CloseButton>
         </BottomSheet.Header>
         <BottomSheet.Body>
           {/* + Add Patient card */}

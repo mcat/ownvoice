@@ -219,6 +219,71 @@ function CloseButton({
   );
 }
 
+interface BackButtonProps extends Omit<JSX.HTMLAttributes<HTMLButtonElement>, "onClick" | "children"> {
+  /** Label of the parent screen \u2014 rendered next to the chevron, iPadOS style. */
+  parentLabel: string;
+  /** Click handler. Typical pattern: close this overlay and re-open the parent. */
+  onClick: () => void;
+}
+
+/**
+ * iPadOS-style back button: a chevron + the previous screen's title. Lives
+ * on the leading edge of `BottomSheet.Header`. Use instead of `CloseButton`
+ * on sub-panels where the user navigated in from a parent screen \u2014 pairing
+ * with a separate `Done` action (kept as the trailing element) preserves
+ * the "Done dismisses everything; Back returns one level" iPadOS contract.
+ */
+function BackButton({ parentLabel, onClick, ...rest }: BackButtonProps) {
+  const { t } = useBottomSheet();
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={`Back to ${parentLabel}`}
+      {...rest}
+      style={{
+        background: "none",
+        border: "none",
+        fontSize: 17,
+        padding: "8px 12px 8px 8px",
+        minWidth: 64,
+        minHeight: 64,
+        cursor: "pointer",
+        color: t.muted,
+        fontFamily: "inherit",
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 4,
+        fontWeight: 500,
+        ...(rest.style as JSX.CSSProperties | undefined),
+      }}
+    >
+      {/* SVG chevron \u2014 sized to match the label's cap height so it
+          sits on the same baseline. Stroke uses currentColor so it
+          tracks the button's text color in light/dark themes. The
+          Unicode `\u2039` glyph rendered at a larger fontSize put the
+          visual top of the chevron above the label's cap height. */}
+      <svg
+        aria-hidden="true"
+        width="9"
+        height="15"
+        viewBox="0 0 9 15"
+        fill="none"
+        style={{ flexShrink: 0 }}
+      >
+        <path
+          d="M7.5 1.5L1.5 7.5L7.5 13.5"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+      <span>{parentLabel}</span>
+    </button>
+  );
+}
+
 function Body({ children }: { children: ComponentChildren }) {
   const style: JSX.CSSProperties = {
     flex: 1,
@@ -247,5 +312,6 @@ function Actions({ children }: { children: ComponentChildren }) {
 BottomSheet.Header = Header;
 BottomSheet.Title = Title;
 BottomSheet.CloseButton = CloseButton;
+BottomSheet.BackButton = BackButton;
 BottomSheet.Body = Body;
 BottomSheet.Actions = Actions;

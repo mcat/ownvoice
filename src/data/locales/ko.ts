@@ -750,7 +750,7 @@ const ko: LocaleStrings = {
   "ui.provider.patient_edit.title_default": "환자 편집",
   "ui.provider.patient_edit.close_aria": "환자 편집기 닫기",
   "ui.provider.patient_pill.aria": "환자 편집: {name}",
-  "ui.provider.nav.staff_menu": "스태프",
+  "ui.provider.nav.staff_menu": "설정",
   "ui.provider.staff_sheet.title": "스태프",
   "ui.provider.staff_sheet.close_aria": "스태프 메뉴 닫기",
   "ui.provider.staff_sheet.patients_description": "환자 전환, 추가, 편집",
@@ -809,6 +809,20 @@ const ko: LocaleStrings = {
   "ui.provider.settings.reset.confirm_body":
     "모든 환자 데이터, 음성 샘플, 대화 기록 및 의료진 설정이 삭제됩니다. 이 작업은 되돌릴 수 없습니다.",
   "ui.provider.settings.reset.confirm_destructive": "모두 초기화",
+  "ui.provider.settings.reset.row_label": "Reset",
+  "ui.provider.settings.reset.row_description": "Erase patient data, care team, or the whole device",
+  "ui.provider.settings.reset.confirm_action": "Erase",
+  "ui.provider.settings.reset.patients.label": "Erase and Reset All Patient Data",
+  "ui.provider.settings.reset.patients.description": "Remove patients, conversations, and patient voice clips. Keeps care team.",
+  "ui.provider.settings.reset.patients.confirm_title": "Erase all patient data?",
+  "ui.provider.settings.reset.patients.confirm_body": "All patients, their conversations, and their voice clips will be erased. Care team configuration is preserved. This cannot be undone.",
+  "ui.provider.settings.reset.care_team.label": "Erase and Reset All Care Team Data",
+  "ui.provider.settings.reset.care_team.description": "Remove care-team profiles and their voice clips. Keeps patients.",
+  "ui.provider.settings.reset.care_team.confirm_title": "Erase all care team data?",
+  "ui.provider.settings.reset.care_team.confirm_body": "All care-team profiles and their voice clips will be erased. Patient data is preserved. This cannot be undone.",
+  "ui.provider.settings.reset.everything.label": "Erase and Reset Everything",
+  "ui.provider.settings.reset.everything.description": "Wipe the device — patients, care team, voice models, and settings.",
+  "ui.provider.settings.reset.empty_hint": "No data to erase",
 
   // ── UI chrome: Settings — Accessibility section ───────────────
   "ui.provider.settings.accessibility.heading": "접근성",
@@ -876,7 +890,7 @@ const ko: LocaleStrings = {
     "음성 클론이 로딩되는 동안 사용되는 시스템 음성입니다. 탭하여 미리 들으세요.",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
-  "ui.provider.settings.offline.heading": "오프라인 준비",
+  "ui.provider.settings.offline.heading": "앱 진단",
   "ui.provider.settings.offline.status_description":
     "앱이 기기 내에서 음성 생성, 추천 및 음성 인식에 사용하는 AI 모델 상태입니다.",
   "ui.provider.settings.offline.downloading":
@@ -945,6 +959,8 @@ const ko: LocaleStrings = {
   "ui.provider.staff_session.extend": "세션 연장",
   "ui.provider.staff_session.end_now": "지금 종료",
   "ui.provider.nav.end_staff_session": "직원 세션 종료",
+  "ui.provider.nav.lock_now": "Lock",
+  "ui.provider.nav.lock_now_aria": "Lock staff session now",
 };
 
 export default ko;

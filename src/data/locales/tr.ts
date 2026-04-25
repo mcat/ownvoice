@@ -744,7 +744,7 @@ const tr: LocaleStrings = {
   "ui.provider.patient_edit.title_default": "Hastayı düzenle",
   "ui.provider.patient_edit.close_aria": "Hasta düzenleyiciyi kapat",
   "ui.provider.patient_pill.aria": "Hastayı düzenle: {name}",
-  "ui.provider.nav.staff_menu": "Personel",
+  "ui.provider.nav.staff_menu": "Ayarlar",
   "ui.provider.staff_sheet.title": "Personel",
   "ui.provider.staff_sheet.close_aria": "Personel menüsünü kapat",
   "ui.provider.staff_sheet.patients_description": "Hasta değiştir, ekle veya düzenle",
@@ -803,6 +803,20 @@ const tr: LocaleStrings = {
   "ui.provider.settings.reset.confirm_body":
     "Bu işlem tüm hasta verilerini, ses örneklerini, görüşme geçmişini ve personel ayarlarını silecektir. Bu geri alınamaz.",
   "ui.provider.settings.reset.confirm_destructive": "Her şeyi sıfırla",
+  "ui.provider.settings.reset.row_label": "Reset",
+  "ui.provider.settings.reset.row_description": "Erase patient data, care team, or the whole device",
+  "ui.provider.settings.reset.confirm_action": "Erase",
+  "ui.provider.settings.reset.patients.label": "Erase and Reset All Patient Data",
+  "ui.provider.settings.reset.patients.description": "Remove patients, conversations, and patient voice clips. Keeps care team.",
+  "ui.provider.settings.reset.patients.confirm_title": "Erase all patient data?",
+  "ui.provider.settings.reset.patients.confirm_body": "All patients, their conversations, and their voice clips will be erased. Care team configuration is preserved. This cannot be undone.",
+  "ui.provider.settings.reset.care_team.label": "Erase and Reset All Care Team Data",
+  "ui.provider.settings.reset.care_team.description": "Remove care-team profiles and their voice clips. Keeps patients.",
+  "ui.provider.settings.reset.care_team.confirm_title": "Erase all care team data?",
+  "ui.provider.settings.reset.care_team.confirm_body": "All care-team profiles and their voice clips will be erased. Patient data is preserved. This cannot be undone.",
+  "ui.provider.settings.reset.everything.label": "Erase and Reset Everything",
+  "ui.provider.settings.reset.everything.description": "Wipe the device — patients, care team, voice models, and settings.",
+  "ui.provider.settings.reset.empty_hint": "No data to erase",
 
   // ── UI chrome: Settings — Accessibility section ───────────────
   "ui.provider.settings.accessibility.heading": "Erişilebilirlik",
@@ -872,7 +886,7 @@ const tr: LocaleStrings = {
     "Ses klonu yüklenirken kullanılan sistem sesi. Önizleme için dokunun.",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
-  "ui.provider.settings.offline.heading": "Çevrimdışı hazırlık",
+  "ui.provider.settings.offline.heading": "Uygulama Tanılama",
   "ui.provider.settings.offline.status_description":
     "Uygulamanın cihaz üzerinde ses üretimi, öneriler ve konuşma tanıma için kullandığı yapay zeka modellerinin durumu.",
   "ui.provider.settings.offline.downloading":
@@ -940,6 +954,8 @@ const tr: LocaleStrings = {
   "ui.provider.staff_session.extend": "Oturumu uzat",
   "ui.provider.staff_session.end_now": "Şimdi bitir",
   "ui.provider.nav.end_staff_session": "Personel oturumunu bitir",
+  "ui.provider.nav.lock_now": "Lock",
+  "ui.provider.nav.lock_now_aria": "Lock staff session now",
 };
 
 export default tr;

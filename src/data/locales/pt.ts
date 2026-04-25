@@ -732,7 +732,7 @@ const pt: LocaleStrings = {
   "ui.provider.patient_edit.title_default": "Editar paciente",
   "ui.provider.patient_edit.close_aria": "Fechar editor de paciente",
   "ui.provider.patient_pill.aria": "Editar paciente: {name}",
-  "ui.provider.nav.staff_menu": "Equipe",
+  "ui.provider.nav.staff_menu": "Configurações",
   "ui.provider.staff_sheet.title": "Equipe",
   "ui.provider.staff_sheet.close_aria": "Fechar menu da equipe",
   "ui.provider.staff_sheet.patients_description": "Trocar, adicionar ou editar pacientes",
@@ -791,6 +791,20 @@ const pt: LocaleStrings = {
   "ui.provider.settings.reset.confirm_body":
     "Isso apagará todos os dados do paciente, amostras de voz, histórico de conversa e configurações do profissional. Isso não pode ser desfeito.",
   "ui.provider.settings.reset.confirm_destructive": "Redefinir tudo",
+  "ui.provider.settings.reset.row_label": "Reset",
+  "ui.provider.settings.reset.row_description": "Erase patient data, care team, or the whole device",
+  "ui.provider.settings.reset.confirm_action": "Erase",
+  "ui.provider.settings.reset.patients.label": "Erase and Reset All Patient Data",
+  "ui.provider.settings.reset.patients.description": "Remove patients, conversations, and patient voice clips. Keeps care team.",
+  "ui.provider.settings.reset.patients.confirm_title": "Erase all patient data?",
+  "ui.provider.settings.reset.patients.confirm_body": "All patients, their conversations, and their voice clips will be erased. Care team configuration is preserved. This cannot be undone.",
+  "ui.provider.settings.reset.care_team.label": "Erase and Reset All Care Team Data",
+  "ui.provider.settings.reset.care_team.description": "Remove care-team profiles and their voice clips. Keeps patients.",
+  "ui.provider.settings.reset.care_team.confirm_title": "Erase all care team data?",
+  "ui.provider.settings.reset.care_team.confirm_body": "All care-team profiles and their voice clips will be erased. Patient data is preserved. This cannot be undone.",
+  "ui.provider.settings.reset.everything.label": "Erase and Reset Everything",
+  "ui.provider.settings.reset.everything.description": "Wipe the device — patients, care team, voice models, and settings.",
+  "ui.provider.settings.reset.empty_hint": "No data to erase",
 
   // ── UI chrome: Settings — Accessibility section ───────────────
   "ui.provider.settings.accessibility.heading": "Acessibilidade",
@@ -860,7 +874,7 @@ const pt: LocaleStrings = {
     "Voz do sistema usada enquanto o clone de voz carrega. Toque para ouvir.",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
-  "ui.provider.settings.offline.heading": "Prontidão offline",
+  "ui.provider.settings.offline.heading": "Diagnóstico do app",
   "ui.provider.settings.offline.status_description":
     "Status dos modelos de IA que o app usa no dispositivo para geração de voz, sugestões e reconhecimento de fala.",
   "ui.provider.settings.offline.downloading":
@@ -930,6 +944,8 @@ const pt: LocaleStrings = {
   "ui.provider.staff_session.extend": "Estender sessão",
   "ui.provider.staff_session.end_now": "Encerrar agora",
   "ui.provider.nav.end_staff_session": "Encerrar sessão da equipe",
+  "ui.provider.nav.lock_now": "Lock",
+  "ui.provider.nav.lock_now_aria": "Lock staff session now",
 };
 
 export default pt;

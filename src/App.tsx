@@ -21,9 +21,13 @@ import { ProviderPanel } from "./components/provider/ProviderPanel";
 import { ListenPanel } from "./components/provider/ListenPanel";
 import { SentenceBuilder } from "./components/builder/SentenceBuilder";
 import { SettingsPanel } from "./components/settings/SettingsPanel";
+import { CareTeamSheet } from "./components/settings/CareTeamSheet";
+import { AccessibilitySheet } from "./components/settings/AccessibilitySheet";
+import { DiagnosticsSheet } from "./components/settings/DiagnosticsSheet";
+import { AboutSheet } from "./components/settings/AboutSheet";
+import { ResetSheet } from "./components/settings/ResetSheet";
 import { PatientsScreen } from "./components/patients/PatientsScreen";
 import { PatientEditSheet } from "./components/patient/PatientEditSheet";
-import { StaffSheet } from "./components/staff/StaffSheet";
 import { PinGate } from "./components/shared/PinGate";
 import { ConfirmDialogHost } from "./components/shared/ConfirmDialog";
 import { StaffSessionTimer } from "./components/shared/StaffSessionTimer";
@@ -74,10 +78,14 @@ export function App() {
   const providerOpen = useUIStore((s) => s.providerOpen);
   const listenOpen = useUIStore((s) => s.listenOpen);
   const settingsOpen = useUIStore((s) => s.settingsOpen);
+  const careTeamOpen = useUIStore((s) => s.careTeamOpen);
+  const accessibilityOpen = useUIStore((s) => s.accessibilityOpen);
+  const diagnosticsOpen = useUIStore((s) => s.diagnosticsOpen);
+  const aboutOpen = useUIStore((s) => s.aboutOpen);
+  const resetOpen = useUIStore((s) => s.resetOpen);
   const pinEntryOpen = useUIStore((s) => s.pinEntryOpen);
   const switchSheetOpen = useUIStore((s) => s.switchSheetOpen);
   const addPatientOpen = useUIStore((s) => s.addPatientOpen);
-  const staffSheetOpen = useUIStore((s) => s.staffSheetOpen);
   const patientEditId = useUIStore((s) => s.patientEditId);
   const activeProvIdx = useUIStore((s) => s.activeProvIdx);
   const speaking = useUIStore((s) => s.speaking);
@@ -92,16 +100,17 @@ export function App() {
   const hasHydrated = useSettingsStore((s) => s._hasHydrated);
   const active = useActivePatient();
 
-  // PIN-gated intent: the Staff entry button and the patient pill may need
-  // PIN entry first. pinIntent tracks what to open after a successful PIN.
-  const [pinIntent, setPinIntent] = useState<"staff" | "patientEdit" | null>(null);
+  // PIN-gated intent: the Settings (🔐) header button and the patient pill
+  // may need PIN entry first. pinIntent tracks what to open after a
+  // successful PIN.
+  const [pinIntent, setPinIntent] = useState<"settings" | "patientEdit" | null>(null);
 
-  const handleOpenStaff = useCallback(() => {
+  const handleOpenSettings = useCallback(() => {
     if (useUIStore.getState().staffAuthed || !cfg?.pin) {
       useUIStore.getState().bumpStaffAuthed();
-      openOverlay("staffSheet");
+      openOverlay("settings");
     } else {
-      setPinIntent("staff");
+      setPinIntent("settings");
       openOverlay("pinEntry");
     }
   }, [cfg?.pin, openOverlay]);
@@ -128,8 +137,8 @@ export function App() {
         useUIStore.getState().openPatientEdit(activeId);
       }
     } else {
-      // "staff" or null fallback — open the staff sheet by default after auth.
-      openOverlay("staffSheet");
+      // "settings" or null fallback — open the settings panel by default after auth.
+      openOverlay("settings");
     }
     setPinIntent(null);
   }, [pinIntent, closeOverlay, openOverlay]);
@@ -325,7 +334,7 @@ export function App() {
     >
       <Header
         cfg={cfg}
-        onOpenStaff={handleOpenStaff}
+        onOpenSettings={handleOpenSettings}
         onEditPatient={handleOpenActivePatientEdit}
       />
 
@@ -469,12 +478,31 @@ export function App() {
             // instantly dismiss the panel.
             useSettingsStore.getState().setCfg(c);
           }}
-          onReset={resetAll}
           onClose={() => closeOverlay("settings")}
           t={t}
           theme={theme}
         />
       )}
+
+      {resetOpen && (
+        <ResetSheet onResetEverything={resetAll} t={t} />
+      )}
+
+      {careTeamOpen && (
+        <CareTeamSheet cfg={cfg} t={t} theme={theme} />
+      )}
+
+      {accessibilityOpen && (
+        <AccessibilitySheet
+          cfg={cfg}
+          onUpdate={(c) => useSettingsStore.getState().setCfg(c)}
+          t={t}
+        />
+      )}
+
+      {diagnosticsOpen && <DiagnosticsSheet t={t} />}
+
+      {aboutOpen && <AboutSheet t={t} />}
 
       {pinEntryOpen && (
         <PinGate
@@ -511,13 +539,6 @@ export function App() {
           onClose={() => useUIStore.getState().closePatientEdit()}
           t={t}
           theme={theme}
-        />
-      )}
-
-      {staffSheetOpen && (
-        <StaffSheet
-          onClose={() => closeOverlay("staffSheet")}
-          t={t}
         />
       )}
 

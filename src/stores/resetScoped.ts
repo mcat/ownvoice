@@ -1,0 +1,75 @@
+import { useSettingsStore } from "./settingsStore";
+import { useConversationStore } from "./conversationStore";
+import { useAudioCacheStore } from "./audioCacheStore";
+import { clearIndex, getAllPatientHashes } from "./patientIndex";
+import { clearAudioByHashes, clearAudioExcept } from "../models/audioCache";
+import * as audioCacheRunner from "../models/audioCacheRunner";
+
+/**
+ * Erase all patient data while preserving care-team configuration.
+ *
+ * Wiped:
+ *  - cfg.patients[] (cleared) and activePatientId (set to null)
+ *  - per-patient conversation threads (full messagesByPatientId map)
+ *  - patient-tracked OPFS audio entries
+ *  - patient hash index
+ *  - in-memory audio-cache run state for patient speakers
+ *
+ * Preserved: cfg.providers, caregiverLang, fallbackVoice settings, model
+ * weights in OPFS, service-worker caches, theme.
+ *
+ * After this runs, the user lands back in Setup (cfg.activePatientId is
+ * null and patients[] is empty — App.tsx's gate kicks in on next render).
+ */
+export async function resetPatients(): Promise<void> {
+  audioCacheRunner.abort();
+
+  const patientHashes = await getAllPatientHashes();
+  await clearAudioByHashes(patientHashes);
+  await clearIndex();
+
+  useConversationStore.setState({ messagesByPatientId: {} });
+  useAudioCacheStore.setState({ runs: {}, activeKey: null });
+
+  const cfg = useSettingsStore.getState().cfg;
+  if (cfg) {
+    useSettingsStore.getState().setCfg({
+      ...cfg,
+      patients: [],
+      activePatientId: null,
+    });
+  }
+}
+
+/**
+ * Erase all care-team data while preserving patients.
+ *
+ * Wiped:
+ *  - cfg.providers[] (cleared)
+ *  - non-patient OPFS audio entries (provider clips + orphans)
+ *  - in-memory audio-cache run state for provider speakers
+ *
+ * Preserved: cfg.patients, conversation threads, patient hash index,
+ * model weights, service-worker caches, theme, caregiverLang.
+ *
+ * Provider audio is intentionally never tracked in patientIndex, so the
+ * scope is defined as "any cached entry not in the patient hash union".
+ * This also sweeps orphan entries left behind by removed patients —
+ * acceptable: a clean reset is what the user just asked for.
+ */
+export async function resetCareTeam(): Promise<void> {
+  audioCacheRunner.abort();
+
+  const patientHashes = await getAllPatientHashes();
+  await clearAudioExcept(patientHashes);
+
+  // Clear any provider speaker run-state. Provider speaker keys are
+  // namespaced "provider:{idx}" — easiest to wipe runs entirely; the
+  // pre-gen runner will rebuild for active patient on next launch.
+  useAudioCacheStore.setState({ runs: {}, activeKey: null });
+
+  const cfg = useSettingsStore.getState().cfg;
+  if (cfg) {
+    useSettingsStore.getState().setCfg({ ...cfg, providers: [] });
+  }
+}

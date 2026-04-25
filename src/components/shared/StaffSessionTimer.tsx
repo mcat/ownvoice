@@ -3,6 +3,11 @@ import { useUIStore } from "../../stores/uiStore";
 import { useTheme } from "../../hooks/useTheme";
 import { WarningToast } from "./WarningToast";
 
+/** Total staff-session lifetime, including the final 60s warning toast. */
+export const STAFF_SESSION_TIMEOUT_MS = 5 * 60 * 1000;
+/** Warning toast appears this many ms before auto-lock. */
+export const STAFF_SESSION_WARNING_MS = 60 * 1000;
+
 /**
  * StaffSessionTimer — mounts once in App.tsx alongside ConfirmDialogHost.
  *
@@ -23,8 +28,10 @@ export function StaffSessionTimer() {
       return;
     }
 
-    // Warning fires 4:00 after staffAuthedAt (60s before auto-lock at 5:00)
-    const WARNING_AT = staffAuthedAt + 4 * 60 * 1000;
+    // Warning fires (timeout − warning) after staffAuthedAt; the toast
+    // then runs its own 60s countdown before calling endStaffSession.
+    const WARNING_AT =
+      staffAuthedAt + (STAFF_SESSION_TIMEOUT_MS - STAFF_SESSION_WARNING_MS);
     const now = Date.now();
     const delay = Math.max(0, WARNING_AT - now);
 
