@@ -741,6 +741,10 @@ const tr: LocaleStrings = {
   "ui.provider.settings.done": "Tamam",
   "ui.provider.settings.close_aria": "Ayarları kapat",
 
+  "ui.provider.patient_edit.title": "{name} düzenle",
+  "ui.provider.patient_edit.title_default": "Hastayı düzenle",
+  "ui.provider.patient_edit.close_aria": "Hasta düzenleyiciyi kapat",
+  "ui.provider.patient_pill.aria": "Hastayı düzenle: {name}",
   // ── UI chrome: VoiceCacheProgress ─────────────────────────────
   "ui.provider.settings.voice_cache.discard_title":
     "{label} ses hazırlığı iptal edilsin mi?",
@@ -838,6 +842,7 @@ const tr: LocaleStrings = {
     "Bakım ekibinizin anladığı dil. Genellikle cihaz başına bir kez ayarlanır.",
   "ui.provider.settings.lang.change": "Dili değiştir",
 
+  "ui.provider.settings.lang.picker_title": "Dil seçin",
   "ui.provider.settings.lang.patient_dialog.title":
     "Hasta dili {lang} olarak değiştirilsin mi?",
   "ui.provider.settings.lang.patient_dialog.body":
@@ -909,6 +914,10 @@ const tr: LocaleStrings = {
   // ── UI chrome: SwitchSheet ────────────────────────────────────
   "ui.provider.switch.title": "Hasta Değiştir",
   "ui.provider.switch.add_patient": "+ Hasta Ekle",
+  "ui.provider.patients.title": "Hastalar",
+  "ui.provider.patients.actions_aria": "{name} için işlemler",
+  "ui.provider.patients.action_edit": "Düzenle",
+  "ui.provider.patients.action_remove": "Kaldır",
   "ui.provider.switch.voice_captured": "Ses kaydedildi",
   "ui.provider.switch.no_voice": "Ses yok",
   "ui.provider.switch.last_active_just_now": "Az önce",

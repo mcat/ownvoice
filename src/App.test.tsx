@@ -232,8 +232,9 @@ describe("App", () => {
     });
     useUIStore.setState({ providerOpen: true });
     render(<App />);
-    // ProviderPanel has a "Care Team" title
-    expect(screen.getByText("Care Team")).toBeInTheDocument();
+    // ProviderPanel has a "Care Team" title — narrow to the heading because
+    // the HeaderNav also renders a "Care Team" button label.
+    expect(screen.getByRole("heading", { name: "Care Team" })).toBeInTheDocument();
   });
 
   it("listenOpen overlay renders ListenPanel", () => {
@@ -256,26 +257,23 @@ describe("App", () => {
   it("auto-saving a Settings field does NOT dismiss the Settings sheet", () => {
     // Regression guard: in the original Save-button flow, App's onUpdate
     // handler persisted AND called closeOverlay("settings"). When Settings
-    // switched to auto-save (onUpdate fires on every keystroke), the
-    // close-on-update behaviour silently survived, making every text-field
-    // edit instantly dismiss the panel.
+    // switched to auto-save (onUpdate fires on every change), the
+    // close-on-update behaviour silently survived, making every edit
+    // instantly dismiss the panel.
+    //
+    // After the patient-IA refactor, per-patient text fields moved out of
+    // Settings (they live in PatientEditSheet). The remaining auto-save
+    // surfaces in Settings are device-scoped: we exercise the Assistive
+    // Input toggle in AccessibilitySection.
     useSettingsStore.setState({ _hasHydrated: true, cfg: makeCfg() });
     useUIStore.setState({ settingsOpen: true });
     render(<App />);
 
-    // There are two "Name" labels in the panel (patient + CareTeam's add-
-    // provider input). The patient-name field is seeded with "Maria"
-    // above, so getByDisplayValue disambiguates.
-    const nameInput = screen.getByDisplayValue("Maria");
-    fireEvent.input(nameInput, { target: { value: "Ana" } });
+    const toggle = screen.getByRole("switch", { name: /Assistive Input Mode/i });
+    fireEvent.click(toggle);
 
-    // The edit should have persisted AND the sheet should still be open.
-    // In multi-patient shape, patientName lives on the active patient.
-    const state = useSettingsStore.getState();
-    const activePatient = state.cfg?.patients.find(
-      (p) => p.id === state.cfg?.activePatientId,
-    );
-    expect(activePatient?.name).toBe("Ana");
+    // The toggle should have flipped AND the sheet should still be open.
+    expect(useSettingsStore.getState().cfg?.assistiveInput).toBe(true);
     expect(useUIStore.getState().settingsOpen).toBe(true);
     expect(screen.getByRole("heading", { name: "Settings" })).toBeInTheDocument();
   });

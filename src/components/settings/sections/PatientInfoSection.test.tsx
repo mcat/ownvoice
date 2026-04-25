@@ -20,9 +20,15 @@ const cfg = makeTestCfg({
   },
 });
 
+function activePatientFromCfg() {
+  const p = cfg.patients.find((x) => x.id === cfg.activePatientId);
+  if (!p) throw new Error("test fixture missing active patient");
+  return p;
+}
+
 const baseProps = {
+  patient: activePatientFromCfg(),
   cfg,
-  updateCfg: vi.fn(),
   t: light,
   theme: "light" as const,
 };
@@ -77,29 +83,46 @@ describe("PatientInfoSection", () => {
   });
 
   // ── Patient language picker ────────────────────────────────────
+  //
+  // The picker is now collapsed by default — clicking the field opens a
+  // BottomSheet that holds the radiogroup. Each test below opens the sheet
+  // before exercising the chips.
+
+  function openPatientLangSheet() {
+    fireEvent.click(screen.getByRole("button", { name: /Patient language/ }));
+  }
 
   it("renders patient language chip grid with all 24 languages", () => {
     renderWithHost();
-    const group = screen.getAllByRole("radiogroup")[0];
+    openPatientLangSheet();
+    const group = screen.getByRole("radiogroup");
     const radios = group.querySelectorAll("[role=radio]");
     expect(radios.length).toBe(24);
   });
 
-  it("tapping the current patient-language chip is a no-op (no confirm dialog)", () => {
+  it("tapping the current patient-language chip is a no-op (no confirm dialog)", async () => {
     renderWithHost();
+    openPatientLangSheet();
     // English is already selected
     const enChip = screen.getAllByRole("radio", { checked: true })[0];
     fireEvent.click(enChip);
-    // No dialog should appear
+    // The sheet's role=dialog (the one that *was* open) collapses, but no
+    // confirm dialog should ever appear. Wait a tick to make sure.
+    await waitFor(() => {
+      expect(screen.queryByRole("radiogroup")).toBeNull();
+    });
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
   it("tapping a different patient-language chip opens ConfirmDialog", async () => {
     renderWithHost();
+    openPatientLangSheet();
     const esChips = screen.getAllByText("Español").map((el) => el.closest("button")!);
     fireEvent.click(esChips[0]);
 
     await waitFor(() => {
+      // After the picker sheet closes the only remaining dialog is the confirm.
+      expect(screen.queryByRole("radiogroup")).toBeNull();
       expect(screen.getByRole("dialog")).toBeTruthy();
     });
     // Title is resolved in the destination locale (es). Assert both the
@@ -109,6 +132,7 @@ describe("PatientInfoSection", () => {
 
   it("confirming patient-language dialog calls updateActivePatient with new lang", async () => {
     renderWithHost();
+    openPatientLangSheet();
     const esChips = screen.getAllByText("Español").map((el) => el.closest("button")!);
     fireEvent.click(esChips[0]);
 
@@ -131,6 +155,7 @@ describe("PatientInfoSection", () => {
 
   it("uses unsupported-locale body when tapping an unsupported Chatterbox locale (vi)", async () => {
     renderWithHost();
+    openPatientLangSheet();
     // Vietnamese is not in CHATTERBOX_LOCALES — tap in patient grid
     const viChip = screen.getAllByText("Tiếng Việt").map((el) => el.closest("button")!)[0];
     fireEvent.click(viChip);

@@ -726,6 +726,10 @@ const it: LocaleStrings = {
   "ui.provider.settings.done": "Fatto",
   "ui.provider.settings.close_aria": "Chiudi impostazioni",
 
+  "ui.provider.patient_edit.title": "Modifica {name}",
+  "ui.provider.patient_edit.title_default": "Modifica paziente",
+  "ui.provider.patient_edit.close_aria": "Chiudi editor paziente",
+  "ui.provider.patient_pill.aria": "Modifica paziente: {name}",
   // ── UI chrome: VoiceCacheProgress ─────────────────────────────
   "ui.provider.settings.voice_cache.discard_title":
     "Scartare la preparazione vocale di {label}?",
@@ -823,6 +827,7 @@ const it: LocaleStrings = {
     "La lingua compresa dal team di cura. Di solito si imposta una sola volta per dispositivo.",
   "ui.provider.settings.lang.change": "Cambia lingua",
 
+  "ui.provider.settings.lang.picker_title": "Scegli lingua",
   "ui.provider.settings.lang.patient_dialog.title":
     "Cambiare la lingua del paziente in {lang}?",
   "ui.provider.settings.lang.patient_dialog.body":
@@ -894,6 +899,10 @@ const it: LocaleStrings = {
   // ── UI chrome: SwitchSheet ────────────────────────────────────
   "ui.provider.switch.title": "Cambia paziente",
   "ui.provider.switch.add_patient": "+ Aggiungi paziente",
+  "ui.provider.patients.title": "Pazienti",
+  "ui.provider.patients.actions_aria": "Azioni per {name}",
+  "ui.provider.patients.action_edit": "Modifica",
+  "ui.provider.patients.action_remove": "Rimuovi",
   "ui.provider.switch.voice_captured": "Voce acquisita",
   "ui.provider.switch.no_voice": "Nessuna voce",
   "ui.provider.switch.last_active_just_now": "Adesso",

@@ -747,6 +747,10 @@ const nl: LocaleStrings = {
   "ui.provider.settings.done": "Klaar",
   "ui.provider.settings.close_aria": "Instellingen sluiten",
 
+  "ui.provider.patient_edit.title": "{name} bewerken",
+  "ui.provider.patient_edit.title_default": "Patiënt bewerken",
+  "ui.provider.patient_edit.close_aria": "Patiënteditor sluiten",
+  "ui.provider.patient_pill.aria": "Patiënt bewerken: {name}",
   // ── UI chrome: VoiceCacheProgress ─────────────────────────────
   "ui.provider.settings.voice_cache.discard_title":
     "Stemvoorbereiding van {label} verwijderen?",
@@ -842,6 +846,7 @@ const nl: LocaleStrings = {
     "De taal die uw zorgteam begrijpt. Wordt meestal eenmalig per apparaat ingesteld.",
   "ui.provider.settings.lang.change": "Taal wijzigen",
 
+  "ui.provider.settings.lang.picker_title": "Kies taal",
   "ui.provider.settings.lang.patient_dialog.title":
     "Patiënttaal wijzigen naar {lang}?",
   "ui.provider.settings.lang.patient_dialog.body":
@@ -907,6 +912,10 @@ const nl: LocaleStrings = {
   // ── UI chrome: SwitchSheet ────────────────────────────────────
   "ui.provider.switch.title": "Andere patiënt",
   "ui.provider.switch.add_patient": "+ Patiënt toevoegen",
+  "ui.provider.patients.title": "Patiënten",
+  "ui.provider.patients.actions_aria": "Acties voor {name}",
+  "ui.provider.patients.action_edit": "Bewerken",
+  "ui.provider.patients.action_remove": "Verwijderen",
   "ui.provider.switch.voice_captured": "Stem vastgelegd",
   "ui.provider.switch.no_voice": "Geen stem",
   "ui.provider.switch.last_active_just_now": "Zojuist",

@@ -30,6 +30,7 @@ interface SettingsState extends SettingsPersistedState {
   addPatient: (data: Omit<Patient, "id" | "addedAt" | "lastActiveAt">) => Patient;
   switchPatient: (id: string) => void;
   removePatient: (id: string) => void;
+  updatePatient: (id: string, partial: Partial<Omit<Patient, "id">>) => void;
   updateActivePatient: (partial: Partial<Omit<Patient, "id">>) => void;
 }
 
@@ -116,18 +117,27 @@ export const useSettingsStore = create<SettingsState>()(
         });
       },
 
-      updateActivePatient: (partial) => {
+      updatePatient: (id, partial) => {
         const s = get();
-        if (!s.cfg || !s.cfg.activePatientId) return;
-        const activeId = s.cfg.activePatientId;
+        if (!s.cfg) return;
+        if (!s.cfg.patients.some((p) => p.id === id)) {
+          console.warn(`[settingsStore] updatePatient: id ${id} not found`);
+          return;
+        }
         set({
           cfg: {
             ...s.cfg,
             patients: s.cfg.patients.map((p) =>
-              p.id === activeId ? { ...p, ...partial } : p,
+              p.id === id ? { ...p, ...partial } : p,
             ),
           },
         });
+      },
+
+      updateActivePatient: (partial) => {
+        const s = get();
+        if (!s.cfg || !s.cfg.activePatientId) return;
+        get().updatePatient(s.cfg.activePatientId, partial);
       },
     }),
     {

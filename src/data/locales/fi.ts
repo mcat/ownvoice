@@ -724,6 +724,10 @@ const fi: LocaleStrings = {
   "ui.provider.settings.done": "Valmis",
   "ui.provider.settings.close_aria": "Sulje asetukset",
 
+  "ui.provider.patient_edit.title": "Muokkaa {name}",
+  "ui.provider.patient_edit.title_default": "Muokkaa potilasta",
+  "ui.provider.patient_edit.close_aria": "Sulje potilaan muokkaus",
+  "ui.provider.patient_pill.aria": "Muokkaa potilasta: {name}",
   // ── UI chrome: VoiceCacheProgress ─────────────────────────────
   "ui.provider.settings.voice_cache.discard_title":
     "Hylätäänkö äänen valmistelu: {label}?",
@@ -819,6 +823,7 @@ const fi: LocaleStrings = {
     "Kieli, jota hoitotiimisi ymmärtää. Asetetaan yleensä kerran laitetta kohden.",
   "ui.provider.settings.lang.change": "Vaihda kieli",
 
+  "ui.provider.settings.lang.picker_title": "Valitse kieli",
   "ui.provider.settings.lang.patient_dialog.title":
     "Vaihdetaanko potilaan kieleksi {lang}?",
   "ui.provider.settings.lang.patient_dialog.body":
@@ -882,6 +887,10 @@ const fi: LocaleStrings = {
   // ── UI chrome: SwitchSheet ────────────────────────────────────
   "ui.provider.switch.title": "Vaihda potilasta",
   "ui.provider.switch.add_patient": "+ Lisää potilas",
+  "ui.provider.patients.title": "Potilaat",
+  "ui.provider.patients.actions_aria": "Toiminnot: {name}",
+  "ui.provider.patients.action_edit": "Muokkaa",
+  "ui.provider.patients.action_remove": "Poista",
   "ui.provider.switch.voice_captured": "Ääni tallennettu",
   "ui.provider.switch.no_voice": "Ei ääntä",
   "ui.provider.switch.last_active_just_now": "Juuri äsken",

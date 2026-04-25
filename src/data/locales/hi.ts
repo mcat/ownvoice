@@ -724,6 +724,10 @@ const hi: LocaleStrings = {
   "ui.provider.settings.done": "हो गया",
   "ui.provider.settings.close_aria": "सेटिंग्स बंद करें",
 
+  "ui.provider.patient_edit.title": "{name} संपादित करें",
+  "ui.provider.patient_edit.title_default": "रोगी संपादित करें",
+  "ui.provider.patient_edit.close_aria": "रोगी संपादक बंद करें",
+  "ui.provider.patient_pill.aria": "रोगी संपादित करें: {name}",
   // ── UI chrome: VoiceCacheProgress ─────────────────────────────
   "ui.provider.settings.voice_cache.discard_title":
     "{label} की आवाज़ तैयारी हटाएँ?",
@@ -821,6 +825,7 @@ const hi: LocaleStrings = {
     "वह भाषा जो आपकी देखभाल टीम समझती है। आमतौर पर प्रति डिवाइस एक बार सेट होती है।",
   "ui.provider.settings.lang.change": "भाषा बदलें",
 
+  "ui.provider.settings.lang.picker_title": "भाषा चुनें",
   "ui.provider.settings.lang.patient_dialog.title":
     "मरीज़ की भाषा {lang} में बदलें?",
   "ui.provider.settings.lang.patient_dialog.body":
@@ -892,6 +897,10 @@ const hi: LocaleStrings = {
   // ── UI chrome: SwitchSheet ────────────────────────────────────
   "ui.provider.switch.title": "मरीज़ बदलें",
   "ui.provider.switch.add_patient": "+ मरीज़ जोड़ें",
+  "ui.provider.patients.title": "रोगी",
+  "ui.provider.patients.actions_aria": "{name} के लिए क्रियाएँ",
+  "ui.provider.patients.action_edit": "संपादित करें",
+  "ui.provider.patients.action_remove": "हटाएँ",
   "ui.provider.switch.voice_captured": "आवाज़ कैप्चर हुई",
   "ui.provider.switch.no_voice": "कोई आवाज़ नहीं",
   "ui.provider.switch.last_active_just_now": "अभी",

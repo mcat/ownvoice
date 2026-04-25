@@ -21,7 +21,8 @@ import { ProviderPanel } from "./components/provider/ProviderPanel";
 import { ListenPanel } from "./components/provider/ListenPanel";
 import { SentenceBuilder } from "./components/builder/SentenceBuilder";
 import { SettingsPanel } from "./components/settings/SettingsPanel";
-import { SwitchSheet } from "./components/switch/SwitchSheet";
+import { PatientsScreen } from "./components/patients/PatientsScreen";
+import { PatientEditSheet } from "./components/patient/PatientEditSheet";
 import { PinGate } from "./components/shared/PinGate";
 import { ConfirmDialogHost } from "./components/shared/ConfirmDialog";
 import { StaffSessionTimer } from "./components/shared/StaffSessionTimer";
@@ -75,6 +76,7 @@ export function App() {
   const pinEntryOpen = useUIStore((s) => s.pinEntryOpen);
   const switchSheetOpen = useUIStore((s) => s.switchSheetOpen);
   const addPatientOpen = useUIStore((s) => s.addPatientOpen);
+  const patientEditId = useUIStore((s) => s.patientEditId);
   const activeProvIdx = useUIStore((s) => s.activeProvIdx);
   const speaking = useUIStore((s) => s.speaking);
   const setSpeaking = useUIStore((s) => s.setSpeaking);
@@ -90,7 +92,7 @@ export function App() {
 
   // PIN-gated intent: both Settings and Switch Patient may require PIN entry.
   // pinIntent tracks which action to perform after a successful PIN.
-  const [pinIntent, setPinIntent] = useState<"settings" | "switch" | null>(null);
+  const [pinIntent, setPinIntent] = useState<"settings" | "switch" | "patientEdit" | null>(null);
 
   // Read staffAuthed reactively for the header's End Staff Session button.
   const staffAuthed = useUIStore((s) => s.staffAuthed);
@@ -115,12 +117,29 @@ export function App() {
     }
   }, [cfg?.pin, openOverlay]);
 
+  const handleOpenActivePatientEdit = useCallback(() => {
+    const activeId = useSettingsStore.getState().cfg?.activePatientId;
+    if (!activeId) return;
+    if (useUIStore.getState().staffAuthed || !cfg?.pin) {
+      useUIStore.getState().bumpStaffAuthed();
+      useUIStore.getState().openPatientEdit(activeId);
+    } else {
+      setPinIntent("patientEdit");
+      openOverlay("pinEntry");
+    }
+  }, [cfg?.pin, openOverlay]);
+
   const handlePinSuccess = useCallback(() => {
     closeOverlay("pinEntry");
     useUIStore.getState().setStaffAuthed(true);
     useUIStore.getState().bumpStaffAuthed();
     if (pinIntent === "switch") {
       openOverlay("switch");
+    } else if (pinIntent === "patientEdit") {
+      const activeId = useSettingsStore.getState().cfg?.activePatientId;
+      if (activeId) {
+        useUIStore.getState().openPatientEdit(activeId);
+      }
     } else {
       openOverlay("settings");
     }
@@ -310,6 +329,7 @@ export function App() {
         cfg={cfg}
         onSettings={handleOpenSettings}
         onSwitchPatient={handleOpenSwitch}
+        onEditPatient={handleOpenActivePatientEdit}
         staffAuthed={staffAuthed}
         onEndStaffSession={() => useUIStore.getState().endStaffSession()}
       />
@@ -472,7 +492,7 @@ export function App() {
       )}
 
       {switchSheetOpen && (
-        <SwitchSheet
+        <PatientsScreen
           open={switchSheetOpen}
           onClose={() => closeOverlay("switch")}
           t={t}
@@ -487,6 +507,15 @@ export function App() {
             closeOverlay("addPatient");
           }}
           onCancel={() => closeOverlay("addPatient")}
+        />
+      )}
+
+      {patientEditId && (
+        <PatientEditSheet
+          patientId={patientEditId}
+          onClose={() => useUIStore.getState().closePatientEdit()}
+          t={t}
+          theme={theme}
         />
       )}
 

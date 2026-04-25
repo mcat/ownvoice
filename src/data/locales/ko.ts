@@ -747,6 +747,10 @@ const ko: LocaleStrings = {
   "ui.provider.settings.done": "완료",
   "ui.provider.settings.close_aria": "설정 닫기",
 
+  "ui.provider.patient_edit.title": "{name} 편집",
+  "ui.provider.patient_edit.title_default": "환자 편집",
+  "ui.provider.patient_edit.close_aria": "환자 편집기 닫기",
+  "ui.provider.patient_pill.aria": "환자 편집: {name}",
   // ── UI chrome: VoiceCacheProgress ─────────────────────────────
   "ui.provider.settings.voice_cache.discard_title":
     "{label}의 음성 준비를 삭제하시겠습니까?",
@@ -842,6 +846,7 @@ const ko: LocaleStrings = {
     "의료진이 이해하는 언어입니다. 일반적으로 기기당 한 번 설정합니다.",
   "ui.provider.settings.lang.change": "언어 변경",
 
+  "ui.provider.settings.lang.picker_title": "언어 선택",
   "ui.provider.settings.lang.patient_dialog.title":
     "환자 언어를 {lang}(으)로 변경하시겠습니까?",
   "ui.provider.settings.lang.patient_dialog.body":
@@ -913,6 +918,10 @@ const ko: LocaleStrings = {
   // ── UI chrome: SwitchSheet ────────────────────────────────────
   "ui.provider.switch.title": "환자 전환",
   "ui.provider.switch.add_patient": "+ 환자 추가",
+  "ui.provider.patients.title": "환자",
+  "ui.provider.patients.actions_aria": "{name} 작업",
+  "ui.provider.patients.action_edit": "편집",
+  "ui.provider.patients.action_remove": "제거",
   "ui.provider.switch.voice_captured": "음성 캡처 완료",
   "ui.provider.switch.no_voice": "음성 없음",
   "ui.provider.switch.last_active_just_now": "방금",

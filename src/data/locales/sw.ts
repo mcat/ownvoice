@@ -745,6 +745,10 @@ const sw: LocaleStrings = {
   "ui.provider.settings.done": "Tayari",
   "ui.provider.settings.close_aria": "Funga mipangilio",
 
+  "ui.provider.patient_edit.title": "Hariri {name}",
+  "ui.provider.patient_edit.title_default": "Hariri mgonjwa",
+  "ui.provider.patient_edit.close_aria": "Funga kihariri cha mgonjwa",
+  "ui.provider.patient_pill.aria": "Hariri mgonjwa: {name}",
   // ── UI chrome: VoiceCacheProgress ─────────────────────────────
   "ui.provider.settings.voice_cache.discard_title":
     "Tupa maandalizi ya sauti ya {label}?",
@@ -842,6 +846,7 @@ const sw: LocaleStrings = {
     "Lugha ambayo timu yako ya huduma inaielewa. Kawaida huwekwa mara moja kwa kila kifaa.",
   "ui.provider.settings.lang.change": "Badili lugha",
 
+  "ui.provider.settings.lang.picker_title": "Chagua lugha",
   "ui.provider.settings.lang.patient_dialog.title":
     "Badili lugha ya mgonjwa kuwa {lang}?",
   "ui.provider.settings.lang.patient_dialog.body":
@@ -913,6 +918,10 @@ const sw: LocaleStrings = {
   // ── UI chrome: SwitchSheet ────────────────────────────────────
   "ui.provider.switch.title": "Badili Mgonjwa",
   "ui.provider.switch.add_patient": "+ Ongeza Mgonjwa",
+  "ui.provider.patients.title": "Wagonjwa",
+  "ui.provider.patients.actions_aria": "Vitendo kwa {name}",
+  "ui.provider.patients.action_edit": "Hariri",
+  "ui.provider.patients.action_remove": "Ondoa",
   "ui.provider.switch.voice_captured": "Sauti imenaswa",
   "ui.provider.switch.no_voice": "Hakuna sauti",
   "ui.provider.switch.last_active_just_now": "Sasa hivi",

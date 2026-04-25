@@ -752,6 +752,10 @@ const he: LocaleStrings = {
   "ui.provider.settings.done": "סיום",
   "ui.provider.settings.close_aria": "סגור הגדרות",
 
+  "ui.provider.patient_edit.title": "עריכת {name}",
+  "ui.provider.patient_edit.title_default": "עריכת מטופל",
+  "ui.provider.patient_edit.close_aria": "סגירת עורך המטופל",
+  "ui.provider.patient_pill.aria": "עריכת מטופל: {name}",
   // ── UI chrome: VoiceCacheProgress ─────────────────────────────
   "ui.provider.settings.voice_cache.discard_title":
     "לבטל את הכנת הקול של {label}?",
@@ -847,6 +851,7 @@ const he: LocaleStrings = {
     "השפה שצוות הטיפול מבין. בדרך כלל מוגדרת פעם אחת למכשיר.",
   "ui.provider.settings.lang.change": "שנה שפה",
 
+  "ui.provider.settings.lang.picker_title": "בחר שפה",
   "ui.provider.settings.lang.patient_dialog.title":
     "לשנות את שפת המטופל ל-{lang}?",
   "ui.provider.settings.lang.patient_dialog.body":
@@ -918,6 +923,10 @@ const he: LocaleStrings = {
   // ── UI chrome: SwitchSheet ────────────────────────────────────
   "ui.provider.switch.title": "החלף מטופל",
   "ui.provider.switch.add_patient": "+ הוסף מטופל",
+  "ui.provider.patients.title": "מטופלים",
+  "ui.provider.patients.actions_aria": "פעולות עבור {name}",
+  "ui.provider.patients.action_edit": "עריכה",
+  "ui.provider.patients.action_remove": "הסרה",
   "ui.provider.switch.voice_captured": "קול נקלט",
   "ui.provider.switch.no_voice": "ללא קול",
   "ui.provider.switch.last_active_just_now": "הרגע",

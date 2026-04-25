@@ -744,6 +744,10 @@ const da: LocaleStrings = {
   "ui.provider.settings.done": "Færdig",
   "ui.provider.settings.close_aria": "Luk indstillinger",
 
+  "ui.provider.patient_edit.title": "Rediger {name}",
+  "ui.provider.patient_edit.title_default": "Rediger patient",
+  "ui.provider.patient_edit.close_aria": "Luk patientredigering",
+  "ui.provider.patient_pill.aria": "Rediger patient: {name}",
   // ── UI chrome: VoiceCacheProgress ─────────────────────────────
   "ui.provider.settings.voice_cache.discard_title":
     "Kassér stemmeforberedelse for {label}?",
@@ -841,6 +845,7 @@ const da: LocaleStrings = {
     "Det sprog, dit behandlingsteam forstår. Indstilles normalt én gang per enhed.",
   "ui.provider.settings.lang.change": "Skift sprog",
 
+  "ui.provider.settings.lang.picker_title": "Vælg sprog",
   "ui.provider.settings.lang.patient_dialog.title":
     "Skift patientsprog til {lang}?",
   "ui.provider.settings.lang.patient_dialog.body":
@@ -912,6 +917,10 @@ const da: LocaleStrings = {
   // ── UI chrome: SwitchSheet ────────────────────────────────────
   "ui.provider.switch.title": "Skift patient",
   "ui.provider.switch.add_patient": "+ Tilføj patient",
+  "ui.provider.patients.title": "Patienter",
+  "ui.provider.patients.actions_aria": "Handlinger for {name}",
+  "ui.provider.patients.action_edit": "Rediger",
+  "ui.provider.patients.action_remove": "Fjern",
   "ui.provider.switch.voice_captured": "Stemme optaget",
   "ui.provider.switch.no_voice": "Ingen stemme",
   "ui.provider.switch.last_active_just_now": "Lige nu",

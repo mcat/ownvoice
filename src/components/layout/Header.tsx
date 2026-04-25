@@ -1,23 +1,28 @@
 import { useTheme } from "../../hooks/useTheme";
-import { useActivePatient } from "../../stores/settingsStore";
-import { t as resolvePhrase } from "../../data/phraseRegistry";
+import { useActivePatient, useSettingsStore } from "../../stores/settingsStore";
 import { HeaderNav } from "./HeaderNav";
+import { PatientPill } from "./PatientPill";
 import type { AppSettings } from "../../types";
 
 interface HeaderProps {
   cfg: AppSettings;
   onSettings: () => void;
   onSwitchPatient: () => void;
+  onEditPatient: () => void;
   staffAuthed: boolean;
   onEndStaffSession: () => void;
 }
 
-export function Header({ cfg, onSettings, onSwitchPatient, staffAuthed, onEndStaffSession }: HeaderProps) {
+export function Header({
+  onSettings,
+  onSwitchPatient,
+  onEditPatient,
+  staffAuthed,
+  onEndStaffSession,
+}: HeaderProps) {
   const { theme, t } = useTheme();
   const active = useActivePatient();
-
-  const blue = theme === "dark" ? "#60A5FA" : "#2563EB";
-  const patientLang = active?.patientLang ?? "en";
+  const caregiverLang = useSettingsStore((s) => s.cfg?.caregiverLang ?? "en");
 
   return (
     <header
@@ -31,30 +36,22 @@ export function Header({ cfg, onSettings, onSwitchPatient, staffAuthed, onEndSta
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <span class="font-sans" style={{ fontSize: 17, fontWeight: 700, color: t.text }}>
-          {active?.name || resolvePhrase("ui.patient.header.name_fallback", patientLang)}
-        </span>
-        {active?.bed && (
-          <span style={{ fontSize: 13, fontWeight: 600, color: t.muted }}>
-            {"\u00B7"} {resolvePhrase("ui.patient.header.bed_prefix", patientLang)}{active.bed}
-          </span>
-        )}
-        {active?.hasVoice && (
-          <span
-            style={{
-              fontSize: 11,
-              fontWeight: 700,
-              color: blue,
-              background: theme === "dark" ? "#1E3A5F" : "#EFF6FF",
-              borderRadius: 6,
-              padding: "2px 7px",
-            }}
-          >
-            {"\uD83C\uDFA4"}
-          </span>
+        {active && (
+          <PatientPill
+            patient={active}
+            caregiverLang={caregiverLang}
+            onEditPatient={onEditPatient}
+            t={t}
+            theme={theme}
+          />
         )}
       </div>
-      <HeaderNav onSettings={onSettings} onSwitchPatient={onSwitchPatient} staffAuthed={staffAuthed} onEndStaffSession={onEndStaffSession} />
+      <HeaderNav
+        onSettings={onSettings}
+        onSwitchPatient={onSwitchPatient}
+        staffAuthed={staffAuthed}
+        onEndStaffSession={onEndStaffSession}
+      />
     </header>
   );
 }
