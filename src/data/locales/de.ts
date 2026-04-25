@@ -680,8 +680,7 @@ const de: LocaleStrings = {
   "ui.provider.setup.skip": "Überspringen →",
   "ui.provider.setup.skip_aria": "Einrichtung überspringen",
   "ui.provider.setup.skip_dialog.title": "Einrichtung überspringen?",
-  "ui.provider.setup.skip_dialog.body":
-    "Sie können dies später in den Einstellungen abschließen.",
+  "ui.provider.setup.skip_dialog.body": "OwnVoice jetzt verwenden. Sie können die Einrichtung später abschließen, indem Sie oben auf den Patientennamen tippen.",
   "ui.provider.setup.skip_dialog.body_add_patient":
     "Es wird kein Patient hinzugefügt.",
   "ui.provider.setup.skip_dialog.confirm": "Einrichtung überspringen",

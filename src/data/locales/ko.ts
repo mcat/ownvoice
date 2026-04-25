@@ -678,8 +678,7 @@ const ko: LocaleStrings = {
   "ui.provider.setup.skip": "건너뛰기 →",
   "ui.provider.setup.skip_aria": "설정 건너뛰기",
   "ui.provider.setup.skip_dialog.title": "설정을 건너뛰시겠습니까?",
-  "ui.provider.setup.skip_dialog.body":
-    "나중에 설정에서 완료할 수 있습니다.",
+  "ui.provider.setup.skip_dialog.body": "지금 OwnVoice 사용을 시작하세요. 헤더의 환자 이름을 탭하여 나중에 설정을 완료할 수 있습니다.",
   "ui.provider.setup.skip_dialog.body_add_patient":
     "환자가 추가되지 않습니다.",
   "ui.provider.setup.skip_dialog.confirm": "설정 건너뛰기",

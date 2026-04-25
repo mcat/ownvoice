@@ -683,8 +683,7 @@ const he: LocaleStrings = {
   "ui.provider.setup.skip": "דלג →",
   "ui.provider.setup.skip_aria": "דלג על ההגדרה",
   "ui.provider.setup.skip_dialog.title": "לדלג על ההגדרה?",
-  "ui.provider.setup.skip_dialog.body":
-    "אפשר לסיים את זה מאוחר יותר בהגדרות.",
+  "ui.provider.setup.skip_dialog.body": "התחל להשתמש ב-OwnVoice עכשיו. תוכל להשלים את ההגדרה מאוחר יותר בלחיצה על שם המטופל בכותרת.",
   "ui.provider.setup.skip_dialog.body_add_patient":
     "לא יתווסף מטופל.",
   "ui.provider.setup.skip_dialog.confirm": "דלג על ההגדרה",

@@ -676,8 +676,7 @@ const ms: LocaleStrings = {
   "ui.provider.setup.skip": "Langkau →",
   "ui.provider.setup.skip_aria": "Langkau persediaan",
   "ui.provider.setup.skip_dialog.title": "Langkau persediaan?",
-  "ui.provider.setup.skip_dialog.body":
-    "Anda boleh selesaikan nanti dalam Tetapan.",
+  "ui.provider.setup.skip_dialog.body": "Mula menggunakan OwnVoice sekarang. Anda boleh menyelesaikan persediaan kemudian dengan mengetuk nama pesakit di pengepala.",
   "ui.provider.setup.skip_dialog.body_add_patient":
     "Tiada pesakit akan ditambah.",
   "ui.provider.setup.skip_dialog.confirm": "Langkau persediaan",

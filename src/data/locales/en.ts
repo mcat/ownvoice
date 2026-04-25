@@ -627,7 +627,7 @@ const en = {
   "ui.provider.setup.skip": "Skip →",
   "ui.provider.setup.skip_aria": "Skip setup",
   "ui.provider.setup.skip_dialog.title": "Skip setup?",
-  "ui.provider.setup.skip_dialog.body": "You can finish this later in Settings.",
+  "ui.provider.setup.skip_dialog.body": "Start using OwnVoice now. You can finish setup later by tapping the patient name in the header.",
   "ui.provider.setup.skip_dialog.body_add_patient": "No patient will be added.",
   "ui.provider.setup.skip_dialog.confirm": "Skip setup",
   "ui.provider.setup.skip_dialog.cancel": "Keep going",

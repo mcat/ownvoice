@@ -100,7 +100,11 @@ describe("Setup", () => {
       expect(screen.getByRole("dialog")).toBeInTheDocument();
     });
     expect(screen.getByText("Skip setup?")).toBeInTheDocument();
-    expect(screen.getByText("You can finish this later in Settings.")).toBeInTheDocument();
+    // Body reframes Skip as the rapid-deploy path: "use OwnVoice now,
+    // finish setup later via the patient name in the header."
+    expect(
+      screen.getByText(/Start using OwnVoice now\. You can finish setup later/),
+    ).toBeInTheDocument();
 
     // Click the confirm button in the dialog
     fireEvent.click(screen.getByText("Skip setup"));
@@ -119,6 +123,43 @@ describe("Setup", () => {
         hasVoice: false,
       }),
     );
+  });
+
+  it("'Skip' from a completely empty form lands on a usable minimal cfg (rapid-deploy path)", async () => {
+    // Caregiver wants the phrase grid NOW — they tap Skip without filling
+    // anything in. Result must be a fully-functional minimal state:
+    // - exactly one active patient (so the App gate falls through to main)
+    // - empty name (header pill renders the localized "Patient" fallback)
+    // - default English locale (built-in phrases work)
+    // - no voice clone (Web Speech fallback handles tapped phrases)
+    // - no providers, empty PIN (no friction; staff can lock down later)
+    vi.useRealTimers();
+    renderSetup(onDone);
+
+    fireEvent.click(screen.getByText(/Skip/));
+
+    await waitFor(() => {
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText("Skip setup"));
+
+    await waitFor(() => {
+      expect(onDone).toHaveBeenCalledOnce();
+    });
+    const cfg = onDone.mock.calls[0][0];
+    expect(cfg.patients).toHaveLength(1);
+    expect(cfg.activePatientId).toBe(cfg.patients[0].id);
+    expect(cfg.patients[0]).toEqual(
+      expect.objectContaining({
+        name: "",
+        bed: "",
+        patientLang: "en",
+        hasVoice: false,
+        speakerData: null,
+      }),
+    );
+    expect(cfg.pin).toBe("");
+    expect(cfg.providers).toEqual([]);
   });
 
   it("'Skip' dialog cancel keeps setup open", async () => {

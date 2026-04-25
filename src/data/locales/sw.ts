@@ -675,8 +675,7 @@ const sw: LocaleStrings = {
   "ui.provider.setup.skip": "Ruka →",
   "ui.provider.setup.skip_aria": "Ruka usanidi",
   "ui.provider.setup.skip_dialog.title": "Ruka usanidi?",
-  "ui.provider.setup.skip_dialog.body":
-    "Unaweza kumaliza hii baadaye katika Mipangilio.",
+  "ui.provider.setup.skip_dialog.body": "Anza kutumia OwnVoice sasa. Unaweza kumaliza usanidi baadaye kwa kugusa jina la mgonjwa kwenye kichwa.",
   "ui.provider.setup.skip_dialog.body_add_patient":
     "Hakuna mgonjwa atakayeongezwa.",
   "ui.provider.setup.skip_dialog.confirm": "Ruka usanidi",

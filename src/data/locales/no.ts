@@ -661,8 +661,7 @@ const no: LocaleStrings = {
   "ui.provider.setup.skip": "Hopp over →",
   "ui.provider.setup.skip_aria": "Hopp over oppsett",
   "ui.provider.setup.skip_dialog.title": "Hoppe over oppsettet?",
-  "ui.provider.setup.skip_dialog.body":
-    "Du kan fullføre dette senere i Innstillinger.",
+  "ui.provider.setup.skip_dialog.body": "Begynn å bruke OwnVoice nå. Du kan fullføre oppsettet senere ved å trykke på pasientnavnet i toppen.",
   "ui.provider.setup.skip_dialog.body_add_patient":
     "Ingen pasient vil bli lagt til.",
   "ui.provider.setup.skip_dialog.confirm": "Hopp over oppsett",

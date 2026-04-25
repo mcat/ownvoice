@@ -664,8 +664,7 @@ const pt: LocaleStrings = {
   "ui.provider.setup.skip": "Pular →",
   "ui.provider.setup.skip_aria": "Pular configuração",
   "ui.provider.setup.skip_dialog.title": "Pular configuração?",
-  "ui.provider.setup.skip_dialog.body":
-    "Você pode concluir isso depois em Configurações.",
+  "ui.provider.setup.skip_dialog.body": "Comece a usar o OwnVoice agora. Você pode concluir a configuração depois tocando no nome do paciente no cabeçalho.",
   "ui.provider.setup.skip_dialog.body_add_patient":
     "Nenhum paciente será adicionado.",
   "ui.provider.setup.skip_dialog.confirm": "Pular configuração",

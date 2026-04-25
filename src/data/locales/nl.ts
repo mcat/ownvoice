@@ -677,8 +677,7 @@ const nl: LocaleStrings = {
   "ui.provider.setup.skip": "Overslaan →",
   "ui.provider.setup.skip_aria": "Instellen overslaan",
   "ui.provider.setup.skip_dialog.title": "Instellen overslaan?",
-  "ui.provider.setup.skip_dialog.body":
-    "U kunt dit later voltooien in Instellingen.",
+  "ui.provider.setup.skip_dialog.body": "Begin nu met OwnVoice. U kunt de installatie later afronden door op de patiëntnaam in de kop te tikken.",
   "ui.provider.setup.skip_dialog.body_add_patient":
     "Er wordt geen patiënt toegevoegd.",
   "ui.provider.setup.skip_dialog.confirm": "Overslaan",

@@ -660,8 +660,7 @@ const ar: LocaleStrings = {
   "ui.provider.setup.skip": "تخطي →",
   "ui.provider.setup.skip_aria": "تخطي الإعداد",
   "ui.provider.setup.skip_dialog.title": "تخطي الإعداد؟",
-  "ui.provider.setup.skip_dialog.body":
-    "يمكنك إكمال ذلك لاحقاً من الإعدادات.",
+  "ui.provider.setup.skip_dialog.body": "ابدأ في استخدام OwnVoice الآن. يمكنك إكمال الإعداد لاحقًا بالنقر على اسم المريض في الرأس.",
   "ui.provider.setup.skip_dialog.body_add_patient":
     "لن يُضاف أي مريض.",
   "ui.provider.setup.skip_dialog.confirm": "تخطي الإعداد",
