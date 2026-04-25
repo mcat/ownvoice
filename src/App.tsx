@@ -23,6 +23,7 @@ import { SentenceBuilder } from "./components/builder/SentenceBuilder";
 import { SettingsPanel } from "./components/settings/SettingsPanel";
 import { PatientsScreen } from "./components/patients/PatientsScreen";
 import { PatientEditSheet } from "./components/patient/PatientEditSheet";
+import { StaffSheet } from "./components/staff/StaffSheet";
 import { PinGate } from "./components/shared/PinGate";
 import { ConfirmDialogHost } from "./components/shared/ConfirmDialog";
 import { StaffSessionTimer } from "./components/shared/StaffSessionTimer";
@@ -76,6 +77,7 @@ export function App() {
   const pinEntryOpen = useUIStore((s) => s.pinEntryOpen);
   const switchSheetOpen = useUIStore((s) => s.switchSheetOpen);
   const addPatientOpen = useUIStore((s) => s.addPatientOpen);
+  const staffSheetOpen = useUIStore((s) => s.staffSheetOpen);
   const patientEditId = useUIStore((s) => s.patientEditId);
   const activeProvIdx = useUIStore((s) => s.activeProvIdx);
   const speaking = useUIStore((s) => s.speaking);
@@ -90,29 +92,16 @@ export function App() {
   const hasHydrated = useSettingsStore((s) => s._hasHydrated);
   const active = useActivePatient();
 
-  // PIN-gated intent: both Settings and Switch Patient may require PIN entry.
-  // pinIntent tracks which action to perform after a successful PIN.
-  const [pinIntent, setPinIntent] = useState<"settings" | "switch" | "patientEdit" | null>(null);
+  // PIN-gated intent: the Staff entry button and the patient pill may need
+  // PIN entry first. pinIntent tracks what to open after a successful PIN.
+  const [pinIntent, setPinIntent] = useState<"staff" | "patientEdit" | null>(null);
 
-  // Read staffAuthed reactively for the header's End Staff Session button.
-  const staffAuthed = useUIStore((s) => s.staffAuthed);
-
-  const handleOpenSettings = useCallback(() => {
+  const handleOpenStaff = useCallback(() => {
     if (useUIStore.getState().staffAuthed || !cfg?.pin) {
       useUIStore.getState().bumpStaffAuthed();
-      openOverlay("settings");
+      openOverlay("staffSheet");
     } else {
-      setPinIntent("settings");
-      openOverlay("pinEntry");
-    }
-  }, [cfg?.pin, openOverlay]);
-
-  const handleOpenSwitch = useCallback(() => {
-    if (useUIStore.getState().staffAuthed || !cfg?.pin) {
-      useUIStore.getState().bumpStaffAuthed();
-      openOverlay("switch");
-    } else {
-      setPinIntent("switch");
+      setPinIntent("staff");
       openOverlay("pinEntry");
     }
   }, [cfg?.pin, openOverlay]);
@@ -133,15 +122,14 @@ export function App() {
     closeOverlay("pinEntry");
     useUIStore.getState().setStaffAuthed(true);
     useUIStore.getState().bumpStaffAuthed();
-    if (pinIntent === "switch") {
-      openOverlay("switch");
-    } else if (pinIntent === "patientEdit") {
+    if (pinIntent === "patientEdit") {
       const activeId = useSettingsStore.getState().cfg?.activePatientId;
       if (activeId) {
         useUIStore.getState().openPatientEdit(activeId);
       }
     } else {
-      openOverlay("settings");
+      // "staff" or null fallback — open the staff sheet by default after auth.
+      openOverlay("staffSheet");
     }
     setPinIntent(null);
   }, [pinIntent, closeOverlay, openOverlay]);
@@ -327,11 +315,8 @@ export function App() {
     >
       <Header
         cfg={cfg}
-        onSettings={handleOpenSettings}
-        onSwitchPatient={handleOpenSwitch}
+        onOpenStaff={handleOpenStaff}
         onEditPatient={handleOpenActivePatientEdit}
-        staffAuthed={staffAuthed}
-        onEndStaffSession={() => useUIStore.getState().endStaffSession()}
       />
 
       {/* Main content area. Thread is pinned at the top; the region below
@@ -516,6 +501,13 @@ export function App() {
           onClose={() => useUIStore.getState().closePatientEdit()}
           t={t}
           theme={theme}
+        />
+      )}
+
+      {staffSheetOpen && (
+        <StaffSheet
+          onClose={() => closeOverlay("staffSheet")}
+          t={t}
         />
       )}
 

@@ -778,6 +778,12 @@ const pl: LocaleStrings = {
   "ui.provider.patient_edit.title_default": "Edytuj pacjenta",
   "ui.provider.patient_edit.close_aria": "Zamknij edytor pacjenta",
   "ui.provider.patient_pill.aria": "Edytuj pacjenta: {name}",
+  "ui.provider.nav.staff_menu": "Personel",
+  "ui.provider.staff_sheet.title": "Personel",
+  "ui.provider.staff_sheet.close_aria": "Zamknij menu personelu",
+  "ui.provider.staff_sheet.patients_description": "Zmień, dodaj lub edytuj pacjentów",
+  "ui.provider.staff_sheet.settings_description": "Zespół opiekuńczy, dostępność, offline",
+  "ui.provider.staff_sheet.end_session_description": "Wyjdź z trybu personelu",
   // ── UI chrome: VoiceCacheProgress ─────────────────────────────
   "ui.provider.settings.voice_cache.discard_title":
     "Odrzucić przygotowanie głosu {label}?",

@@ -756,6 +756,12 @@ const el: LocaleStrings = {
   "ui.provider.patient_edit.title_default": "Επεξεργασία ασθενούς",
   "ui.provider.patient_edit.close_aria": "Κλείσιμο επεξεργασίας ασθενούς",
   "ui.provider.patient_pill.aria": "Επεξεργασία ασθενούς: {name}",
+  "ui.provider.nav.staff_menu": "Προσωπικό",
+  "ui.provider.staff_sheet.title": "Προσωπικό",
+  "ui.provider.staff_sheet.close_aria": "Κλείσιμο μενού προσωπικού",
+  "ui.provider.staff_sheet.patients_description": "Αλλαγή, προσθήκη ή επεξεργασία ασθενών",
+  "ui.provider.staff_sheet.settings_description": "Ομάδα φροντίδας, προσβασιμότητα, εκτός σύνδεσης",
+  "ui.provider.staff_sheet.end_session_description": "Έξοδος από τη λειτουργία προσωπικού",
   // ── UI chrome: VoiceCacheProgress ─────────────────────────────
   "ui.provider.settings.voice_cache.discard_title":
     "Απόρριψη προετοιμασίας φωνής {label};",

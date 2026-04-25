@@ -1,7 +1,12 @@
 import { render, screen, fireEvent } from "@testing-library/preact";
 import { PatientPill } from "./PatientPill";
 import { light } from "../../theme/tokens";
+import { useUIStore } from "../../stores/uiStore";
 import type { Patient } from "../../types";
+
+beforeEach(() => {
+  useUIStore.getState().resetUI();
+});
 
 const maria: Patient = {
   id: "p1",
@@ -71,5 +76,37 @@ describe("PatientPill", () => {
     );
     expect(screen.queryByText(/4A/)).toBeNull();
     expect(screen.getByText("Maria")).toBeInTheDocument();
+  });
+
+  it("hides the trailing chevron when staff is not authenticated", () => {
+    useUIStore.setState({ staffAuthed: false });
+    render(
+      <PatientPill
+        patient={maria}
+        caregiverLang="en"
+        onEditPatient={() => {}}
+        t={light}
+        theme="light"
+      />,
+    );
+    // The chevron is the only "›" character in the pill — search the trigger
+    // button for it.
+    const trigger = screen.getByRole("button", { name: /Edit patient: Maria/ });
+    expect(trigger.textContent).not.toContain("›");
+  });
+
+  it("shows the trailing chevron when staff is authenticated", () => {
+    useUIStore.setState({ staffAuthed: true });
+    render(
+      <PatientPill
+        patient={maria}
+        caregiverLang="en"
+        onEditPatient={() => {}}
+        t={light}
+        theme="light"
+      />,
+    );
+    const trigger = screen.getByRole("button", { name: /Edit patient: Maria/ });
+    expect(trigger.textContent).toContain("›");
   });
 });

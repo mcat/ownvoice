@@ -7,15 +7,15 @@ import type { PhraseKey } from "../../data/phraseRegistry";
 import type { ThemeTokens } from "../../theme/tokens";
 
 const ICONS = {
-  auto: "\uD83C\uDF13",
-  light: "\uD83C\uDF19",
-  dark: "\u2600\uFE0F",
-  wishes: "\u2764\uFE0F",
-  listen: "\uD83D\uDC42",
-  provider: "\uD83D\uDC69\u200D\u2695\uFE0F",
-  switchPatient: "\uD83D\uDD04",
-  settings: "\u2699\uFE0F",
-  endSession: "\uD83D\uDD12",
+  auto: "🌓",
+  light: "🌙",
+  dark: "☀️",
+  wishes: "❤️",
+  listen: "👂",
+  provider: "👩‍⚕️",
+  // Locked-with-key — distinct from the provider 👩‍⚕️ used by the patient-
+  // facing Care Team button. Signals "behind PIN gate".
+  staff: "🔐",
 } as const;
 
 // Overlay button definitions live at module scope — identity never changes
@@ -55,13 +55,16 @@ function labelStyle(t: ThemeTokens) {
 }
 
 interface HeaderNavProps {
-  onSettings: () => void;
-  onSwitchPatient: () => void;
-  staffAuthed: boolean;
-  onEndStaffSession: () => void;
+  /**
+   * Single staff entry point. Replaces the previous trio (Patients,
+   * Settings, End Session) with a PIN-gated Staff button that opens the
+   * StaffSheet — keeps the patient-facing nav focused on Wishes / Listen /
+   * Care Team / Theme.
+   */
+  onOpenStaff: () => void;
 }
 
-export function HeaderNav({ onSettings, onSwitchPatient, staffAuthed, onEndStaffSession }: HeaderNavProps) {
+export function HeaderNav({ onOpenStaff }: HeaderNavProps) {
   const { theme, toggle: onToggleTheme, isAuto, t } = useTheme();
   const openOverlay = useUIStore((s) => s.openOverlay);
   const cfg = useSettingsStore((s) => s.cfg);
@@ -88,20 +91,15 @@ export function HeaderNav({ onSettings, onSwitchPatient, staffAuthed, onEndStaff
           </Btn>
         );
       })}
-      <Btn key="switchPatient" onClick={onSwitchPatient} aria-label={resolvePhrase("ui.provider.nav.switch_patient", caregiverLang)} style={btnStyle(t, ICONS.switchPatient)}>
-        <span>{ICONS.switchPatient}</span>
-        <span style={labelStyle(t)}>{resolvePhrase("ui.provider.nav.switch_patient", caregiverLang)}</span>
+      <Btn
+        key="staff"
+        onClick={onOpenStaff}
+        aria-label={resolvePhrase("ui.provider.nav.staff_menu", caregiverLang)}
+        style={btnStyle(t, ICONS.staff)}
+      >
+        <span>{ICONS.staff}</span>
+        <span style={labelStyle(t)}>{resolvePhrase("ui.provider.nav.staff_menu", caregiverLang)}</span>
       </Btn>
-      <Btn key="settings" onClick={onSettings} aria-label={resolvePhrase("ui.provider.nav.settings", caregiverLang)} style={btnStyle(t, ICONS.settings)}>
-        <span>{ICONS.settings}</span>
-        <span style={labelStyle(t)}>{resolvePhrase("ui.provider.nav.settings", caregiverLang)}</span>
-      </Btn>
-      {staffAuthed && (
-        <Btn key="endSession" onClick={onEndStaffSession} aria-label={resolvePhrase("ui.provider.nav.end_staff_session", caregiverLang)} style={btnStyle(t, ICONS.endSession)}>
-          <span>{ICONS.endSession}</span>
-          <span style={labelStyle(t)}>{resolvePhrase("ui.provider.nav.end_staff_session", caregiverLang)}</span>
-        </Btn>
-      )}
     </div>
   );
 }

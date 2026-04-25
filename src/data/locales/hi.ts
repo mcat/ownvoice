@@ -728,6 +728,12 @@ const hi: LocaleStrings = {
   "ui.provider.patient_edit.title_default": "रोगी संपादित करें",
   "ui.provider.patient_edit.close_aria": "रोगी संपादक बंद करें",
   "ui.provider.patient_pill.aria": "रोगी संपादित करें: {name}",
+  "ui.provider.nav.staff_menu": "स्टाफ",
+  "ui.provider.staff_sheet.title": "स्टाफ",
+  "ui.provider.staff_sheet.close_aria": "स्टाफ मेनू बंद करें",
+  "ui.provider.staff_sheet.patients_description": "रोगियों को बदलें, जोड़ें या संपादित करें",
+  "ui.provider.staff_sheet.settings_description": "देखभाल टीम, सुलभता, ऑफ़लाइन",
+  "ui.provider.staff_sheet.end_session_description": "स्टाफ मोड से बाहर निकलें",
   // ── UI chrome: VoiceCacheProgress ─────────────────────────────
   "ui.provider.settings.voice_cache.discard_title":
     "{label} की आवाज़ तैयारी हटाएँ?",
