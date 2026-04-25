@@ -1,5 +1,6 @@
 /**
- * TTS Web Worker — Chatterbox Turbo (350M, Resemble AI, MIT, 23 languages)
+ * TTS Web Worker — Chatterbox Turbo (350M, Resemble AI, MIT, English only).
+ * Multilingual support requires switching to ChatterboxMultilingualTTS (separate model).
  *
  * 4-component ONNX pipeline:
  *   1. Speech Encoder:      audio_values → cond_emb, prompt_token, speaker_embeddings, speaker_features
