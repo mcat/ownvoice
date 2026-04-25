@@ -7,6 +7,10 @@ export type OverlayName =
   | "provider"
   | "listen"
   | "settings"
+  | "careTeam"
+  | "accessibility"
+  | "diagnostics"
+  | "about"
   | "pinEntry"
   | "switch"
   | "addPatient";
@@ -19,6 +23,10 @@ interface UIState {
   providerOpen: boolean;
   listenOpen: boolean;
   settingsOpen: boolean;
+  careTeamOpen: boolean;
+  accessibilityOpen: boolean;
+  diagnosticsOpen: boolean;
+  aboutOpen: boolean;
   pinEntryOpen: boolean;
   switchSheetOpen: boolean;
   addPatientOpen: boolean;
@@ -62,6 +70,10 @@ const OVERLAY_KEYS: Record<OverlayName, keyof UIState> = {
   provider: "providerOpen",
   listen: "listenOpen",
   settings: "settingsOpen",
+  careTeam: "careTeamOpen",
+  accessibility: "accessibilityOpen",
+  diagnostics: "diagnosticsOpen",
+  about: "aboutOpen",
   pinEntry: "pinEntryOpen",
   switch: "switchSheetOpen",
   addPatient: "addPatientOpen",
@@ -82,6 +94,10 @@ const INITIAL: Pick<
   | "providerOpen"
   | "listenOpen"
   | "settingsOpen"
+  | "careTeamOpen"
+  | "accessibilityOpen"
+  | "diagnosticsOpen"
+  | "aboutOpen"
   | "pinEntryOpen"
   | "switchSheetOpen"
   | "addPatientOpen"
@@ -100,6 +116,10 @@ const INITIAL: Pick<
   providerOpen: false,
   listenOpen: false,
   settingsOpen: false,
+  careTeamOpen: false,
+  accessibilityOpen: false,
+  diagnosticsOpen: false,
+  aboutOpen: false,
   pinEntryOpen: false,
   switchSheetOpen: false,
   addPatientOpen: false,
@@ -130,6 +150,10 @@ export const useUIStore = create<UIState>((set) => ({
       providerOpen: false,
       listenOpen: false,
       settingsOpen: false,
+      careTeamOpen: false,
+      accessibilityOpen: false,
+      diagnosticsOpen: false,
+      aboutOpen: false,
       pinEntryOpen: false,
       switchSheetOpen: false,
       addPatientOpen: false,

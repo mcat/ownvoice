@@ -2,10 +2,9 @@ import { render, screen, fireEvent } from "@testing-library/preact";
 import { SettingsPanel } from "./SettingsPanel";
 import { light } from "../../theme/tokens";
 import { useSettingsStore } from "../../stores/settingsStore";
+import { useUIStore } from "../../stores/uiStore";
 import { makeTestCfg } from "../../test/makeCfg";
 
-// CareTeamSection reads providers directly from the settings store. Tests
-// that render provider rows or mutate them must seed the store to match.
 function seedStore(cfg: ReturnType<typeof makeTestCfg>) {
   useSettingsStore.setState({ cfg, speakerData: null, _hasHydrated: true });
 }
@@ -19,6 +18,7 @@ describe("SettingsPanel", () => {
     onUpdate.mockClear();
     onReset.mockClear();
     onClose.mockClear();
+    useUIStore.getState().resetUI();
     vi.useFakeTimers();
   });
 
@@ -44,27 +44,63 @@ describe("SettingsPanel", () => {
     );
   }
 
-  // Per-patient inputs (Name, Bed, Patient language, Voice, Backup voice)
-  // moved out of Settings — those are now exercised in PatientEditSheet.test
-  // and PatientInfoSection.test. Settings is device + care-team scoped here.
+  /* ---------- Flat nav-row layout ---------- */
 
-  it("does NOT render the patient's name input (per-patient editing has moved out)", () => {
+  it("renders a Patients nav row that pushes into PatientsScreen", () => {
+    renderPanel();
+    useUIStore.setState({ settingsOpen: true });
+    fireEvent.click(screen.getByRole("button", { name: /Patients/ }));
+    expect(useUIStore.getState().settingsOpen).toBe(false);
+    expect(useUIStore.getState().switchSheetOpen).toBe(true);
+  });
+
+  it("renders a Care Team nav row that pushes into the Care Team sub-panel", () => {
+    renderPanel();
+    useUIStore.setState({ settingsOpen: true });
+    fireEvent.click(screen.getByRole("button", { name: /Care Team/ }));
+    expect(useUIStore.getState().settingsOpen).toBe(false);
+    expect(useUIStore.getState().careTeamOpen).toBe(true);
+  });
+
+  it("renders an Accessibility nav row that pushes into the Accessibility sub-panel", () => {
+    renderPanel();
+    useUIStore.setState({ settingsOpen: true });
+    fireEvent.click(screen.getByRole("button", { name: /Accessibility/ }));
+    expect(useUIStore.getState().settingsOpen).toBe(false);
+    expect(useUIStore.getState().accessibilityOpen).toBe(true);
+  });
+
+  it("renders an Offline readiness nav row that pushes into the Diagnostics sub-panel", () => {
+    renderPanel();
+    useUIStore.setState({ settingsOpen: true });
+    fireEvent.click(screen.getByRole("button", { name: /Offline readiness/ }));
+    expect(useUIStore.getState().settingsOpen).toBe(false);
+    expect(useUIStore.getState().diagnosticsOpen).toBe(true);
+  });
+
+  it("renders an About nav row that pushes into the About sub-panel", () => {
+    renderPanel();
+    useUIStore.setState({ settingsOpen: true });
+    fireEvent.click(screen.getByRole("button", { name: /^About/ }));
+    expect(useUIStore.getState().settingsOpen).toBe(false);
+    expect(useUIStore.getState().aboutOpen).toBe(true);
+  });
+
+  it("does NOT render inline Care Team management UI (provider list, Add button)", () => {
+    renderPanel({}, {
+      providers: [{ name: "Dr. Smith", hasVoice: false, emoji: "👩‍⚕️" }],
+    });
+    expect(screen.queryByText("Dr. Smith")).toBeNull();
+    expect(screen.queryByPlaceholderText("Dr. Smith, Nurse Jay...")).toBeNull();
+  });
+
+  it("does NOT render the patient's name input (per-patient editing is in PatientEditSheet)", () => {
     renderPanel();
     expect(screen.queryByDisplayValue("Maria")).toBeNull();
     expect(screen.queryByDisplayValue("4A")).toBeNull();
   });
 
-  it("renders a Patients nav row that pushes into PatientsScreen (the roster lives there, not inline)", () => {
-    renderPanel();
-    // The row uses "Patients" as its label — the roster (kebab menus, Add
-    // Patient card, voice badges) is NOT rendered inline. Tapping the row
-    // opens the "switch" overlay.
-    const patientsButton = screen.getByRole("button", { name: /Patients/ });
-    expect(patientsButton).toBeInTheDocument();
-    // The kebab "⋯" buttons (rendered per-patient inside PatientsScreen)
-    // must NOT appear inline.
-    expect(screen.queryByRole("button", { name: /Actions for/i })).toBeNull();
-  });
+  /* ---------- Reset (inline destructive footer) ---------- */
 
   it("'Reset app' shows confirmation, and confirm calls onReset", () => {
     renderPanel();
@@ -94,6 +130,8 @@ describe("SettingsPanel", () => {
     expect(screen.getByText("Reset app for new patient")).toBeInTheDocument();
   });
 
+  /* ---------- Sheet chrome ---------- */
+
   it("'Done' button calls onClose (after exit transition)", () => {
     renderPanel();
     fireEvent.click(screen.getByText("Done"));
@@ -112,60 +150,5 @@ describe("SettingsPanel", () => {
     (evt as unknown as { propertyName: string }).propertyName = "transform";
     screen.getByRole("dialog").dispatchEvent(evt);
     expect(onClose).toHaveBeenCalledOnce();
-  });
-
-  it("displays OwnVoice version in About section", () => {
-    renderPanel();
-    expect(screen.getByText("OwnVoice v0.1")).toBeInTheDocument();
-  });
-
-  /* ---------- Care Team (the surviving in-Settings provider section) ---------- */
-  describe("Care Team", () => {
-    it("shows provider list when providers are configured", () => {
-      renderPanel({}, {
-        providers: [
-          { name: "Dr. Smith", hasVoice: false, emoji: "👩‍⚕️" },
-          { name: "Nurse Jay", hasVoice: true, emoji: "🧑‍⚕️" },
-        ],
-      });
-      expect(screen.getByText("Dr. Smith")).toBeInTheDocument();
-      expect(screen.getByText("Nurse Jay")).toBeInTheDocument();
-    });
-
-    it("shows 'No providers added yet' when list is empty", () => {
-      renderPanel({}, { providers: [] });
-      expect(
-        screen.getByText(/No providers added yet/),
-      ).toBeInTheDocument();
-    });
-
-    it("typing a name and clicking Add commits to the store and renders the provider", () => {
-      renderPanel({}, { providers: [] });
-
-      const nameInput = screen.getByPlaceholderText("Dr. Smith, Nurse Jay...");
-      fireEvent.input(nameInput, { target: { value: "Dr. New" } });
-      fireEvent.click(screen.getByText("Add"));
-      vi.advanceTimersByTime(300);
-
-      expect(screen.getByText("Dr. New")).toBeInTheDocument();
-      const stored = useSettingsStore.getState().cfg?.providers ?? [];
-      expect(stored.map((p) => p.name)).toEqual(["Dr. New"]);
-      expect(onUpdate).not.toHaveBeenCalled();
-    });
-
-    it("clicking remove wipes the provider from the store without needing Save", () => {
-      renderPanel({}, {
-        providers: [
-          { name: "Dr. Smith", hasVoice: false, emoji: "👩‍⚕️" },
-        ],
-      });
-
-      expect(screen.getByText("Dr. Smith")).toBeInTheDocument();
-      fireEvent.click(screen.getByText("✕"));
-
-      expect(screen.queryByText("Dr. Smith")).not.toBeInTheDocument();
-      expect(useSettingsStore.getState().cfg?.providers).toEqual([]);
-      expect(onUpdate).not.toHaveBeenCalled();
-    });
   });
 });

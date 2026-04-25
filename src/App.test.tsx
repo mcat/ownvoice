@@ -103,6 +103,10 @@ describe("App", () => {
       providerOpen: false,
       listenOpen: false,
       settingsOpen: false,
+      careTeamOpen: false,
+      accessibilityOpen: false,
+      diagnosticsOpen: false,
+      aboutOpen: false,
       pinEntryOpen: false,
       switchSheetOpen: false,
       activeProvIdx: 0,
@@ -290,28 +294,28 @@ describe("App", () => {
     expect(screen.getByRole("heading", { name: "Settings" })).toBeInTheDocument();
   });
 
-  it("auto-saving a Settings field does NOT dismiss the Settings sheet", () => {
+  it("auto-saving a setting from a sub-panel does NOT dismiss the sub-panel", () => {
     // Regression guard: in the original Save-button flow, App's onUpdate
     // handler persisted AND called closeOverlay("settings"). When Settings
     // switched to auto-save (onUpdate fires on every change), the
     // close-on-update behaviour silently survived, making every edit
     // instantly dismiss the panel.
     //
-    // After the patient-IA refactor, per-patient text fields moved out of
-    // Settings (they live in PatientEditSheet). The remaining auto-save
-    // surfaces in Settings are device-scoped: we exercise the Assistive
-    // Input toggle in AccessibilitySection.
+    // After the iPadOS push-nav refactor, the Accessibility toggle lives
+    // in its own sub-panel (accessibilityOpen). Auto-save must not
+    // collapse the sub-panel back to Settings.
     useSettingsStore.setState({ _hasHydrated: true, cfg: makeCfg() });
-    useUIStore.setState({ settingsOpen: true });
+    useUIStore.setState({ accessibilityOpen: true });
     render(<App />);
 
     const toggle = screen.getByRole("switch", { name: /Assistive Input Mode/i });
     fireEvent.click(toggle);
 
-    // The toggle should have flipped AND the sheet should still be open.
     expect(useSettingsStore.getState().cfg?.assistiveInput).toBe(true);
-    expect(useUIStore.getState().settingsOpen).toBe(true);
-    expect(screen.getByRole("heading", { name: "Settings" })).toBeInTheDocument();
+    expect(useUIStore.getState().accessibilityOpen).toBe(true);
+    // Sub-panel sheet title (h2). The section also renders an h3 with the
+    // same text, so we scope to level: 2.
+    expect(screen.getByRole("heading", { level: 2, name: "Accessibility" })).toBeInTheDocument();
   });
 
   it("pinEntryOpen overlay renders PinGate", () => {

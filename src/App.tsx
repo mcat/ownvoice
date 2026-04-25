@@ -21,6 +21,10 @@ import { ProviderPanel } from "./components/provider/ProviderPanel";
 import { ListenPanel } from "./components/provider/ListenPanel";
 import { SentenceBuilder } from "./components/builder/SentenceBuilder";
 import { SettingsPanel } from "./components/settings/SettingsPanel";
+import { CareTeamSheet } from "./components/settings/CareTeamSheet";
+import { AccessibilitySheet } from "./components/settings/AccessibilitySheet";
+import { DiagnosticsSheet } from "./components/settings/DiagnosticsSheet";
+import { AboutSheet } from "./components/settings/AboutSheet";
 import { PatientsScreen } from "./components/patients/PatientsScreen";
 import { PatientEditSheet } from "./components/patient/PatientEditSheet";
 import { PinGate } from "./components/shared/PinGate";
@@ -73,6 +77,10 @@ export function App() {
   const providerOpen = useUIStore((s) => s.providerOpen);
   const listenOpen = useUIStore((s) => s.listenOpen);
   const settingsOpen = useUIStore((s) => s.settingsOpen);
+  const careTeamOpen = useUIStore((s) => s.careTeamOpen);
+  const accessibilityOpen = useUIStore((s) => s.accessibilityOpen);
+  const diagnosticsOpen = useUIStore((s) => s.diagnosticsOpen);
+  const aboutOpen = useUIStore((s) => s.aboutOpen);
   const pinEntryOpen = useUIStore((s) => s.pinEntryOpen);
   const switchSheetOpen = useUIStore((s) => s.switchSheetOpen);
   const addPatientOpen = useUIStore((s) => s.addPatientOpen);
@@ -474,6 +482,22 @@ export function App() {
           theme={theme}
         />
       )}
+
+      {careTeamOpen && (
+        <CareTeamSheet cfg={cfg} t={t} theme={theme} />
+      )}
+
+      {accessibilityOpen && (
+        <AccessibilitySheet
+          cfg={cfg}
+          onUpdate={(c) => useSettingsStore.getState().setCfg(c)}
+          t={t}
+        />
+      )}
+
+      {diagnosticsOpen && <DiagnosticsSheet t={t} />}
+
+      {aboutOpen && <AboutSheet t={t} />}
 
       {pinEntryOpen && (
         <PinGate

@@ -219,6 +219,53 @@ function CloseButton({
   );
 }
 
+interface BackButtonProps extends Omit<JSX.HTMLAttributes<HTMLButtonElement>, "onClick" | "children"> {
+  /** Label of the parent screen \u2014 rendered next to the chevron, iPadOS style. */
+  parentLabel: string;
+  /** Click handler. Typical pattern: close this overlay and re-open the parent. */
+  onClick: () => void;
+}
+
+/**
+ * iPadOS-style back button: a chevron + the previous screen's title. Lives
+ * on the leading edge of `BottomSheet.Header`. Use instead of `CloseButton`
+ * on sub-panels where the user navigated in from a parent screen \u2014 pairing
+ * with a separate `Done` action (kept as the trailing element) preserves
+ * the "Done dismisses everything; Back returns one level" iPadOS contract.
+ */
+function BackButton({ parentLabel, onClick, ...rest }: BackButtonProps) {
+  const { t } = useBottomSheet();
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={`Back to ${parentLabel}`}
+      {...rest}
+      style={{
+        background: "none",
+        border: "none",
+        fontSize: 17,
+        padding: "8px 12px 8px 8px",
+        minWidth: 64,
+        minHeight: 64,
+        cursor: "pointer",
+        color: t.muted,
+        fontFamily: "inherit",
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 4,
+        fontWeight: 500,
+        ...(rest.style as JSX.CSSProperties | undefined),
+      }}
+    >
+      <span aria-hidden="true" style={{ fontSize: 24, lineHeight: 1, fontWeight: 400 }}>
+        {"\u2039"}
+      </span>
+      <span>{parentLabel}</span>
+    </button>
+  );
+}
+
 function Body({ children }: { children: ComponentChildren }) {
   const style: JSX.CSSProperties = {
     flex: 1,
@@ -247,5 +294,6 @@ function Actions({ children }: { children: ComponentChildren }) {
 BottomSheet.Header = Header;
 BottomSheet.Title = Title;
 BottomSheet.CloseButton = CloseButton;
+BottomSheet.BackButton = BackButton;
 BottomSheet.Body = Body;
 BottomSheet.Actions = Actions;
