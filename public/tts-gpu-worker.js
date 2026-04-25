@@ -51,14 +51,6 @@ const TOP_P = 0.95;
 const REPETITION_PENALTY = 1.2;
 const MIN_NEW_TOKENS = 10; // Don't allow STOP before this many speech tokens
 
-// Prepended to every text input before tokenization. The tokenizer recognizes
-// [narration] (id 50263) as a special token that biases the LM toward
-// audiobook-style read-aloud delivery — even-keeled, articulate, low affect.
-// Suits an ICU AAC use case where phrases are clinical communication, not
-// performance. Cache must invalidate (bumped v5 → v6) for the change to take
-// effect on existing pre-gen audio.
-const PROSODY_PREFIX = "[narration] ";
-
 // Use the full Chatterbox Turbo sampling pipeline
 // (rep_penalty → temperature → top-k → top-p → nucleus sample) instead
 // of plain argmax. An earlier version of this worker set `USE_GREEDY =
@@ -495,7 +487,7 @@ async function handleSynthesize(text, speakerData, id) {
 
   // Step 1: Tokenize via GPT-2 BPE.
   // Post-processor appends [50256, 50256]; embed_tokens routes last 2 to speech_emb.
-  const inputIds = tokenizer.encode(PROSODY_PREFIX + text);
+  const inputIds = tokenizer.encode(text);
 
   // embed_tokens runs on WASM with the int64 model variant
   const embedIdsTensor = new ort.Tensor("int64", BigInt64Array.from(inputIds.map(BigInt)), [1, inputIds.length]);

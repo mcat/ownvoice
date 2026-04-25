@@ -72,14 +72,6 @@ const TOP_P = 0.95;
 const REPETITION_PENALTY = 1.2;
 const MIN_NEW_TOKENS = 10; // Don't allow STOP before this many speech tokens
 
-// Prepended to every text input before tokenization. The tokenizer recognizes
-// [narration] (id 50263) as a special token that biases the LM toward
-// audiobook-style read-aloud delivery — even-keeled, articulate, low affect.
-// Suits an ICU AAC use case where phrases are clinical communication, not
-// performance. Cache must invalidate (bumped v5 → v6) for the change to take
-// effect on existing pre-gen audio.
-const PROSODY_PREFIX = "[narration] ";
-
 /** Outputs from the speech encoder, stored and reused for all synthesis calls.
  *  All arrays use JSON-safe types (number[]) so the data can be persisted
  *  via zustand's JSON storage. BigInt64Array values from ONNX are converted
@@ -435,7 +427,7 @@ async function handleSynthesize(text: string, speakerData: SpeakerData): Promise
   // The tokenizer's post-processor appends [50256, 50256] (<|endoftext|> × 2).
   // embed_tokens slices input_ids[:-2] → text_emb, input_ids[-2:] → speech_emb,
   // with a Where op that converts 50256 to START_SPEECH_TOKEN (6561) for speech_emb.
-  const inputIds = tokenizer.encode(PROSODY_PREFIX + text);
+  const inputIds = tokenizer.encode(text);
   const inputIdsTensor = intTensor(inputIds, [1, inputIds.length]);
 
   // Step 2: Get text + start-of-speech embeddings via embed_tokens
