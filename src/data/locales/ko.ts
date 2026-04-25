@@ -890,7 +890,7 @@ const ko: LocaleStrings = {
     "음성 클론이 로딩되는 동안 사용되는 시스템 음성입니다. 탭하여 미리 들으세요.",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
-  "ui.provider.settings.offline.heading": "오프라인 준비",
+  "ui.provider.settings.offline.heading": "앱 진단",
   "ui.provider.settings.offline.status_description":
     "앱이 기기 내에서 음성 생성, 추천 및 음성 인식에 사용하는 AI 모델 상태입니다.",
   "ui.provider.settings.offline.downloading":

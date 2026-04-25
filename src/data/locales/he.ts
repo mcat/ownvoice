@@ -895,7 +895,7 @@ const he: LocaleStrings = {
     "קול מערכת המשמש בזמן טעינת שיבוט הקול. הקש להאזנה.",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
-  "ui.provider.settings.offline.heading": "מוכנות לעבודה ללא חיבור",
+  "ui.provider.settings.offline.heading": "אבחון האפליקציה",
   "ui.provider.settings.offline.status_description":
     "מצב מודלי ה-AI שהאפליקציה משתמשת בהם על המכשיר ליצירת קול, הצעות וזיהוי דיבור.",
   "ui.provider.settings.offline.downloading":

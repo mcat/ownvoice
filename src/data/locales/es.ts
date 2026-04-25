@@ -870,7 +870,7 @@ const es: LocaleStrings = {
     "Voz del sistema usada mientras se carga el clon de voz. Toque para escuchar.",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
-  "ui.provider.settings.offline.heading": "Preparación sin conexión",
+  "ui.provider.settings.offline.heading": "Diagnóstico de la app",
   "ui.provider.settings.offline.status_description":
     "Estado de los modelos de IA que la app usa en el dispositivo para generación de voz, sugerencias y reconocimiento de habla.",
   "ui.provider.settings.offline.downloading":

@@ -866,7 +866,7 @@ const fi: LocaleStrings = {
     "Järjestelmäääni, jota käytetään äänikloonia ladattaessa. Napauta kuullaksesi.",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
-  "ui.provider.settings.offline.heading": "Offline-valmius",
+  "ui.provider.settings.offline.heading": "Sovellusdiagnostiikka",
   "ui.provider.settings.offline.status_description":
     "Tekoälymallien tila — sovellus käyttää niitä laitteella äänen luontiin, ehdotuksiin ja puheentunnistukseen.",
   "ui.provider.settings.offline.downloading": "Ladataan malleja…",

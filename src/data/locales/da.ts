@@ -889,7 +889,7 @@ const da: LocaleStrings = {
     "Systemstemme, der bruges mens stemmeklonen indlæses. Tryk for at høre.",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
-  "ui.provider.settings.offline.heading": "Offlineparathed",
+  "ui.provider.settings.offline.heading": "App-diagnostik",
   "ui.provider.settings.offline.status_description":
     "Status for de AI-modeller, appen bruger på enheden til stemmegenerering, forslag og talegenkendelse.",
   "ui.provider.settings.offline.downloading":

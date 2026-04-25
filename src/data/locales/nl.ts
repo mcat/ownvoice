@@ -889,7 +889,7 @@ const nl: LocaleStrings = {
     "Systeemstem die wordt gebruikt terwijl de stemkloon wordt geladen. Tik om te beluisteren.",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
-  "ui.provider.settings.offline.heading": "Offlinegereedheid",
+  "ui.provider.settings.offline.heading": "App-diagnose",
   "ui.provider.settings.offline.status_description":
     "Status van de AI-modellen die de app op het apparaat gebruikt voor stemgeneratie, suggesties en spraakherkenning.",
   "ui.provider.settings.offline.downloading": "Modellen downloaden…",

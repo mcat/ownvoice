@@ -919,7 +919,7 @@ const pl: LocaleStrings = {
     "Głos systemowy używany podczas ładowania klonu głosu. Dotknij, aby odsłuchać.",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
-  "ui.provider.settings.offline.heading": "Gotowość offline",
+  "ui.provider.settings.offline.heading": "Diagnostyka aplikacji",
   "ui.provider.settings.offline.status_description":
     "Stan modeli AI używanych lokalnie na urządzeniu do generowania głosu, sugestii i rozpoznawania mowy.",
   "ui.provider.settings.offline.downloading":

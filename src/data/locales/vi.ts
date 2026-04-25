@@ -904,7 +904,7 @@ const vi: LocaleStrings = {
     "Giọng hệ thống dùng khi giọng nhân bản đang tải. Chạm để nghe thử.",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
-  "ui.provider.settings.offline.heading": "Sẵn sàng ngoại tuyến",
+  "ui.provider.settings.offline.heading": "Chẩn đoán ứng dụng",
   "ui.provider.settings.offline.status_description":
     "Trạng thái các mô hình AI mà ứng dụng dùng trên thiết bị cho tạo giọng nói, gợi ý và nhận dạng giọng nói.",
   "ui.provider.settings.offline.downloading":

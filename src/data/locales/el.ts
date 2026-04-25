@@ -894,7 +894,7 @@ const el: LocaleStrings = {
     "Φωνή συστήματος κατά τη φόρτωση κλώνου φωνής. Πατήστε για ακρόαση.",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
-  "ui.provider.settings.offline.heading": "Ετοιμότητα εκτός σύνδεσης",
+  "ui.provider.settings.offline.heading": "Διαγνωστικά εφαρμογής",
   "ui.provider.settings.offline.status_description":
     "Κατάσταση των μοντέλων AI που χρησιμοποιεί η εφαρμογή στη συσκευή για δημιουργία φωνής, προτάσεις και αναγνώριση ομιλίας.",
   "ui.provider.settings.offline.downloading": "Λήψη μοντέλων…",

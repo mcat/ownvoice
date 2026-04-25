@@ -832,7 +832,7 @@ const zh: LocaleStrings = {
     "语音克隆加载时使用的系统声音。点击可试听。",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
-  "ui.provider.settings.offline.heading": "离线准备",
+  "ui.provider.settings.offline.heading": "应用诊断",
   "ui.provider.settings.offline.status_description":
     "应用在设备端使用的AI模型状态，用于语音生成、建议和语音识别。",
   "ui.provider.settings.offline.downloading": "正在下载模型…",

@@ -67,10 +67,10 @@ describe("SettingsPanel", () => {
     expect(useUIStore.getState().accessibilityOpen).toBe(true);
   });
 
-  it("renders an Offline readiness nav row that pushes into the Diagnostics sub-panel", () => {
+  it("renders an App Diagnostics nav row that pushes into the Diagnostics sub-panel", () => {
     renderPanel();
     useUIStore.setState({ settingsOpen: true });
-    fireEvent.click(screen.getByRole("button", { name: /Offline readiness/ }));
+    fireEvent.click(screen.getByRole("button", { name: /App Diagnostics/ }));
     expect(useUIStore.getState().settingsOpen).toBe(false);
     expect(useUIStore.getState().diagnosticsOpen).toBe(true);
   });

@@ -794,7 +794,7 @@ const en = {
   "ui.provider.settings.patient_info.backup_voice_body": "System voice used while the voice clone loads. Tap to preview.",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
-  "ui.provider.settings.offline.heading": "Offline readiness",
+  "ui.provider.settings.offline.heading": "App Diagnostics",
   "ui.provider.settings.offline.status_description": "Status of the AI models the app uses on-device for voice generation, suggestions, and speech recognition.",
   "ui.provider.settings.offline.downloading": "Downloading models…",
   "ui.provider.settings.offline.download_progress_aria": "Model download progress",

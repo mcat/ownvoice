@@ -936,7 +936,7 @@ const tl: LocaleStrings = {
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
   "ui.provider.settings.offline.heading":
-    "Kahandaan para sa offline",
+    "Pagsusuri ng app",
   "ui.provider.settings.offline.status_description":
     "Status ng mga AI model na ginagamit ng app sa device para sa voice generation, mga suggestion, at speech recognition.",
   "ui.provider.settings.offline.downloading":

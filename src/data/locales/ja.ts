@@ -873,7 +873,7 @@ const ja: LocaleStrings = {
     "ボイスクローンの読み込み中に使用するシステム音声です。タップするとプレビューが再生されます。",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
-  "ui.provider.settings.offline.heading": "オフライン準備",
+  "ui.provider.settings.offline.heading": "アプリ診断",
   "ui.provider.settings.offline.status_description":
     "音声生成、提案、音声認識のためにデバイス上で使用するAIモデルの状態です。",
   "ui.provider.settings.offline.downloading":

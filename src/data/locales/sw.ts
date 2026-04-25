@@ -890,7 +890,7 @@ const sw: LocaleStrings = {
     "Sauti ya mfumo inayotumika wakati nakala ya sauti inapakia. Gusa kusikiliza.",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
-  "ui.provider.settings.offline.heading": "Utayari wa nje ya mtandao",
+  "ui.provider.settings.offline.heading": "Uchunguzi wa programu",
   "ui.provider.settings.offline.status_description":
     "Hali ya modeli za AI ambazo programu inatumia kwenye kifaa kwa uzalishaji wa sauti, mapendekezo, na utambuzi wa usemi.",
   "ui.provider.settings.offline.downloading":

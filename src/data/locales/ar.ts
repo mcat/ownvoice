@@ -870,7 +870,7 @@ const ar: LocaleStrings = {
     "صوت النظام المستخدم أثناء تحميل نسخة الصوت. اضغط للمعاينة.",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
-  "ui.provider.settings.offline.heading": "الجاهزية بدون اتصال",
+  "ui.provider.settings.offline.heading": "تشخيص التطبيق",
   "ui.provider.settings.offline.status_description":
     "حالة نماذج الذكاء الاصطناعي التي يستخدمها التطبيق على الجهاز لتوليد الصوت والاقتراحات والتعرف على الكلام.",
   "ui.provider.settings.offline.downloading":

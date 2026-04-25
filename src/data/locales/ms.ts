@@ -884,7 +884,7 @@ const ms: LocaleStrings = {
     "Suara sistem digunakan semasa klon suara dimuatkan. Ketik untuk pratonton.",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
-  "ui.provider.settings.offline.heading": "Kesediaan luar talian",
+  "ui.provider.settings.offline.heading": "Diagnostik aplikasi",
   "ui.provider.settings.offline.status_description":
     "Status model AI yang digunakan app dalam peranti untuk penjanaan suara, cadangan, dan pengecaman pertuturan.",
   "ui.provider.settings.offline.downloading":

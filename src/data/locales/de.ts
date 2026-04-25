@@ -895,7 +895,7 @@ const de: LocaleStrings = {
     "Systemstimme, die verwendet wird, während der Stimmklon lädt. Tippen Sie zum Vorhören.",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
-  "ui.provider.settings.offline.heading": "Offline-Bereitschaft",
+  "ui.provider.settings.offline.heading": "App-Diagnose",
   "ui.provider.settings.offline.status_description":
     "Status der KI-Modelle, die die App auf dem Gerät für Sprachgenerierung, Vorschläge und Spracherkennung verwendet.",
   "ui.provider.settings.offline.downloading":

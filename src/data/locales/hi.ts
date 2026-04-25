@@ -869,7 +869,7 @@ const hi: LocaleStrings = {
     "वॉइस क्लोन लोड होते समय इस्तेमाल होने वाली सिस्टम आवाज़। प्रीव्यू के लिए टैप करें।",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
-  "ui.provider.settings.offline.heading": "ऑफ़लाइन तैयारी",
+  "ui.provider.settings.offline.heading": "ऐप डायग्नोस्टिक्स",
   "ui.provider.settings.offline.status_description":
     "ऐप जिन AI मॉडल का इस्तेमाल डिवाइस पर आवाज़ बनाने, सुझाव और स्पीच पहचान के लिए करता है उनकी स्थिति।",
   "ui.provider.settings.offline.downloading":

@@ -886,7 +886,7 @@ const tr: LocaleStrings = {
     "Ses klonu yüklenirken kullanılan sistem sesi. Önizleme için dokunun.",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
-  "ui.provider.settings.offline.heading": "Çevrimdışı hazırlık",
+  "ui.provider.settings.offline.heading": "Uygulama Tanılama",
   "ui.provider.settings.offline.status_description":
     "Uygulamanın cihaz üzerinde ses üretimi, öneriler ve konuşma tanıma için kullandığı yapay zeka modellerinin durumu.",
   "ui.provider.settings.offline.downloading":

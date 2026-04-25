@@ -874,7 +874,7 @@ const ru: LocaleStrings = {
     "Системный голос, пока загружается клон. Нажмите для прослушивания.",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
-  "ui.provider.settings.offline.heading": "Готовность к работе без сети",
+  "ui.provider.settings.offline.heading": "Диагностика приложения",
   "ui.provider.settings.offline.status_description":
     "Статус моделей ИИ, используемых на устройстве для генерации речи, предложений и распознавания речи.",
   "ui.provider.settings.offline.downloading":

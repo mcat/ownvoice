@@ -871,7 +871,7 @@ const no: LocaleStrings = {
     "Systemstemme som brukes mens stemmeklonen lastes. Trykk for å forhåndsvise.",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
-  "ui.provider.settings.offline.heading": "Frakoblet beredskap",
+  "ui.provider.settings.offline.heading": "Appdiagnostikk",
   "ui.provider.settings.offline.status_description":
     "Status for AI-modellene appen bruker på enheten for stemmegenerering, forslag og talegjenkjenning.",
   "ui.provider.settings.offline.downloading":
