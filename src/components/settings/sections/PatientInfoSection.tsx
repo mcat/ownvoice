@@ -1,5 +1,5 @@
 import type { JSX, ComponentChildren } from "preact";
-import type { AppSettings, Patient } from "../../../types";
+import type { AppSettings, Patient, Speaker } from "../../../types";
 import type { ThemeTokens, ThemeName } from "../../../theme/tokens";
 import { LANGS } from "../../../data/phrases";
 import { VoiceCapture } from "../../shared/VoiceCapture";
@@ -11,6 +11,7 @@ import { t as resolvePhrase } from "../../../data/phraseRegistry";
 import { confirm } from "../../shared/ConfirmDialog";
 import { canCloneForLocale } from "../../../data/chatterboxLocales";
 import { isGPUReady } from "../../../models/ttsEngine";
+import { speak } from "../../../speak";
 
 interface Props {
   /** The patient being edited. Caller passes the active patient (Settings) or any patient (PatientEditSheet). */
@@ -145,6 +146,60 @@ export function PatientInfoSection({
           patientSpeakerData={patient.speakerData ?? null}
         />
       </div>
+
+      {/* TEMPORARY: paralinguistic-tag test row. Validates whether the model
+          honors special-token tags like [chuckle] (a Resemble-documented
+          paralinguistic marker) by producing a chuckle sound — or speaks the
+          word like it did with [narration]. Remove this block once the
+          mechanism is validated either way. */}
+      {patient.speakerData ? (
+        <div
+          style={{
+            marginTop: 16,
+            padding: "12px 14px",
+            border: `1px dashed ${t.muted}`,
+            borderRadius: 10,
+            background: isDark ? "rgba(255,255,255,0.03)" : "#FAFAFA",
+          }}
+        >
+          <div style={{
+            fontSize: 11, fontWeight: 600, color: t.muted,
+            textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6,
+          }}>
+            Debug — paralinguistic tag test
+          </div>
+          <p style={{ fontSize: 12, color: t.sub, margin: "0 0 10px", lineHeight: 1.4 }}>
+            Synthesizes “That was funny [chuckle]” through this voice clone.
+            Listen for whether the model produces a chuckle sound at the end,
+            or pronounces the word “chuckle” aloud.
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              const speaker: Speaker = {
+                name: patient.name || "Patient",
+                type: "patient",
+                embedding: patient.speakerData ?? undefined,
+                lang: caregiverLang,
+              };
+              void speak("That was funny [chuckle]", speaker);
+            }}
+            style={{
+              padding: "8px 14px",
+              background: isDark ? "rgba(255,255,255,0.06)" : "#FFFFFF",
+              border: `1px solid ${t.muted}`,
+              borderRadius: 8,
+              cursor: "pointer",
+              fontSize: 13,
+              color: t.text,
+              fontWeight: 500,
+              fontFamily: "inherit",
+            }}
+          >
+            Test [chuckle]
+          </button>
+        </div>
+      ) : null}
 
       <div style={{ marginTop: 20 }}>
         <div style={labelStyle(t)}>{resolvePhrase("ui.provider.settings.patient_info.backup_voice_label", caregiverLang)}</div>
