@@ -7,6 +7,10 @@ import { VoiceCapture } from "../../shared/VoiceCapture";
 import { VoiceCacheProgress } from "../VoiceCacheProgress";
 import { useSettingsStore, useActivePatient } from "../../../stores/settingsStore";
 import { t as resolvePhrase } from "../../../data/phraseRegistry";
+import { LANGS } from "../../../data/phrases";
+import { confirm } from "../../shared/ConfirmDialog";
+import { canCloneForLocale } from "../../../data/chatterboxLocales";
+import { isGPUReady } from "../../../models/ttsEngine";
 
 // Provider edits (add / remove / voice capture / voice remove) write directly
 // to the settings store instead of buffering through SettingsPanel's draft +
@@ -48,6 +52,39 @@ export function CareTeamSection({
   const [newProvName, setNewProvName] = useState("");
   const [newProvEmoji, setNewProvEmoji] = useState(EMOJIS[0]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+
+  async function handleCaregiverLangChange(destLocale: string) {
+    if (destLocale === cfg.caregiverLang) return;
+
+    const destLangLabel = LANGS.find((l) => l.code === destLocale)?.label ?? destLocale;
+    const patientHasVoice = active?.hasVoice ?? false;
+    const supported = canCloneForLocale(destLocale);
+    // Patient cache = ~150 base phrases + ~700 pain matrix if GPU
+    const phraseCount = 150 + (isGPUReady() ? 700 : 0);
+    const estimatedMinutes = patientHasVoice
+      ? Math.max(1, Math.ceil(phraseCount / (isGPUReady() ? 60 : 5)))
+      : 1;
+
+    const body =
+      !patientHasVoice
+        ? resolvePhrase("ui.provider.settings.lang.caregiver_dialog.body_no_voice", destLocale)
+        : supported
+        ? resolvePhrase("ui.provider.settings.lang.caregiver_dialog.body", destLocale)
+            .replace("{estimatedMinutes}", String(estimatedMinutes))
+        : resolvePhrase("ui.provider.settings.lang.caregiver_dialog.body_unsupported", destLocale)
+            .replace("{lang}", destLangLabel);
+
+    const ok = await confirm({
+      title: resolvePhrase("ui.provider.settings.lang.caregiver_dialog.title", destLocale)
+        .replace("{lang}", destLangLabel),
+      body,
+      confirmLabel: resolvePhrase("ui.provider.settings.lang.change", destLocale),
+      cancelLabel: resolvePhrase("ui.provider.pin_gate.cancel", cfg.caregiverLang),
+    });
+    if (ok) {
+      useSettingsStore.getState().updateCfg({ caregiverLang: destLocale });
+    }
+  }
 
   function commitProviders(next: Provider[]) {
     useSettingsStore.getState().updateCfg({ providers: next });
@@ -91,6 +128,42 @@ export function CareTeamSection({
 
   return (
     <Section label={resolvePhrase("ui.provider.settings.care_team.heading", caregiverLang)} t={t}>
+      {/* ── Care team language picker ──────────────────────────── */}
+      <div style={labelStyle(t)}>
+        {resolvePhrase("ui.provider.settings.lang.caregiver_section", caregiverLang)}
+      </div>
+      <p style={{ fontSize: 13, color: t.muted, margin: "0 0 8px" }}>
+        {resolvePhrase("ui.provider.settings.lang.caregiver_helper", caregiverLang)}
+      </p>
+      <div
+        role="radiogroup"
+        aria-label={resolvePhrase("ui.provider.settings.lang.caregiver_section", caregiverLang)}
+        style={chipGridStyle}
+      >
+        {LANGS.map((l) => {
+          const selected = l.code === cfg.caregiverLang;
+          return (
+            <button
+              key={l.code}
+              role="radio"
+              aria-checked={selected}
+              onClick={() => handleCaregiverLangChange(l.code)}
+              style={chipStyle(selected, isDark)}
+            >
+              <span style={{ fontSize: 22, flexShrink: 0 }}>{l.flag}</span>
+              <span style={chipTextStyle}>
+                <span style={{ fontWeight: selected ? 600 : 500, fontSize: 14 }}>{l.englishLabel}</span>
+                {l.englishLabel !== l.label && (
+                  <span style={{ fontSize: 11, color: t.muted }}>{l.label}</span>
+                )}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div style={{ borderTop: `1px solid ${t.border}`, margin: "20px 0 16px" }} />
+
       {providers.length === 0 && (
         <p style={{ fontSize: 15, color: t.muted, margin: "0 0 12px" }}>
           {resolvePhrase("ui.provider.settings.care_team.empty", caregiverLang)}
@@ -277,6 +350,47 @@ function Section({
       }}>{children}</div>
     </div>
   );
+}
+
+function labelStyle(t: ThemeTokens): JSX.CSSProperties {
+  return { display: "block", fontSize: 14, fontWeight: 600, color: t.sub, marginBottom: 6 };
+}
+
+const chipGridStyle: JSX.CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
+  gap: 8,
+  marginTop: 8,
+};
+
+const chipTextStyle: JSX.CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "flex-start",
+  flex: 1,
+  minWidth: 0,
+  overflow: "hidden",
+};
+
+function chipStyle(selected: boolean, isDark: boolean): JSX.CSSProperties {
+  return {
+    display: "flex",
+    alignItems: "flex-start",
+    gap: 8,
+    padding: "12px 14px",
+    borderRadius: 12,
+    border: selected
+      ? `2px solid ${isDark ? "#60A5FA" : "#2563EB"}`
+      : `1px solid ${isDark ? "rgba(255,255,255,0.12)" : "#E5E7EB"}`,
+    background: selected
+      ? (isDark ? "rgba(37,99,235,0.15)" : "#EFF6FF")
+      : (isDark ? "rgba(255,255,255,0.05)" : "#FFFFFF"),
+    cursor: "pointer",
+    fontSize: 16,
+    color: isDark ? "#F3F4F6" : "#1A1A1A",
+    fontFamily: "inherit",
+    minHeight: 64,
+  };
 }
 
 function inputStyle(t: ThemeTokens, isDark: boolean): JSX.CSSProperties {
