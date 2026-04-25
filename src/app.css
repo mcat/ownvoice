@@ -247,6 +247,38 @@ select:focus-visible {
   }
 }
 
+/**
+ * Per-step inhale/exhale keyframes used by the VoiceCapture coaching
+ * timeline. Unlike the symmetric `voiceCoachBreath` (used for silent
+ * filler beats), these run exactly once per step so the user sees the
+ * circle grow on "Breathe in" and shrink on "Breathe out" — even on
+ * the very first inhale, where a CSS transition would paint the
+ * end-state immediately because there is no prior value to animate
+ * from. `fill-mode: both` keeps the final state held until the next
+ * step's animation overwrites it.
+ */
+@keyframes voiceCoachInhale {
+  from {
+    transform: scale(0.55);
+    opacity: 0.55;
+  }
+  to {
+    transform: scale(1.6);
+    opacity: 1;
+  }
+}
+
+@keyframes voiceCoachExhale {
+  from {
+    transform: scale(1.6);
+    opacity: 1;
+  }
+  to {
+    transform: scale(0.55);
+    opacity: 0.55;
+  }
+}
+
 @keyframes ov-toast-in {
   from {
     opacity: 0;
