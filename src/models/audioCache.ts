@@ -19,7 +19,10 @@ import { recordHash } from "../stores/patientIndex";
 //      halving on-disk footprint.
 // v3 → v4: relaxed post-process LP from 2×7 kHz to 1×9 kHz to preserve sibilance.
 // v4 → v5: lowered TEMPERATURE 0.8 → 0.6 in both TTS workers to flatten prosody.
-const CACHE_DIR = "audio-cache-v5";
+// v5 → v6: prepended [narration] (id 50263) to every TTS input — biases the LM
+//          toward audiobook-style read-aloud delivery. Tokenizer recognizes the
+//          special token cleanly (verified against tokenizer.json added_tokens).
+const CACHE_DIR = "audio-cache-v6";
 const SAMPLE_RATE = 24000; // Chatterbox Turbo output rate
 const INT16_SCALE = 32767;
 
