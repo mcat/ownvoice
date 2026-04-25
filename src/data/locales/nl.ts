@@ -649,6 +649,10 @@ const nl: LocaleStrings = {
     "Microfoontoegang is geblokkeerd. Schakel deze in via uw browserinstellingen of upload een bestand.",
   "ui.provider.voice_capture.err_generic":
     "We konden het voorbereiden van uw stem niet afronden. Tik op Opnieuw proberen.",
+  "ui.provider.voice_capture.err_too_short":
+    "De opname was te kort. Spreek gedurende het hele aftellen en tik daarna op Opnieuw proberen.",
+  "ui.provider.voice_capture.err_too_noisy":
+    "Het achtergrondgeluid was te luid voor een zuivere stemkloon. Ga naar een stillere plek en tik op Opnieuw proberen.",
   "ui.provider.voice_capture.err_mic_denied_raw":
     "Microfoontoegang geweigerd. Probeer een bestand te uploaden.",
   "ui.provider.voice_capture.err_playback":

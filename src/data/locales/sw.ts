@@ -647,6 +647,10 @@ const sw: LocaleStrings = {
     "Ufikiaji wa maikrofoni umezuiwa. Wezesha katika mipangilio ya kivinjari au pakia faili badala yake.",
   "ui.provider.voice_capture.err_generic":
     "Hatukuweza kumaliza kuandaa sauti yako. Gusa Jaribu tena.",
+  "ui.provider.voice_capture.err_too_short":
+    "Rekodi ilikuwa fupi sana. Ongea wakati wote wa kuhesabu nyuma, kisha uguse Jaribu tena.",
+  "ui.provider.voice_capture.err_too_noisy":
+    "Kelele za mazingira zilikuwa kubwa sana kwa kunakili sauti safi. Nenda mahali patulivu zaidi kisha uguse Jaribu tena.",
   "ui.provider.voice_capture.err_mic_denied_raw":
     "Ufikiaji wa maikrofoni umekataliwa. Jaribu kupakia faili badala yake.",
   "ui.provider.voice_capture.err_playback":

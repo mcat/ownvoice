@@ -650,6 +650,10 @@ const ms: LocaleStrings = {
     "Akses mikrofon disekat. Aktifkan dalam tetapan pelayar atau muat naik fail.",
   "ui.provider.voice_capture.err_generic":
     "Kami tidak dapat menyiapkan suara anda. Ketik Cuba lagi.",
+  "ui.provider.voice_capture.err_too_short":
+    "Rakaman terlalu pendek. Bercakap sepanjang kira detik, kemudian ketik Cuba lagi.",
+  "ui.provider.voice_capture.err_too_noisy":
+    "Bunyi latar belakang terlalu kuat untuk klon suara yang bersih. Pergi ke tempat yang lebih senyap dan ketik Cuba lagi.",
   "ui.provider.voice_capture.err_mic_denied_raw":
     "Akses mikrofon ditolak. Cuba muat naik fail.",
   "ui.provider.voice_capture.err_playback":

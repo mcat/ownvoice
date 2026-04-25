@@ -245,4 +245,20 @@ describe("friendlyVoiceError — raw error strings must never reach the user", (
     expect(msg.toLowerCase()).toMatch(/retry|try again/);
     expect(msg.toLowerCase()).not.toContain("weird");
   });
+
+  it("maps 'too short' enrollment rejection to a duration hint", () => {
+    const msg = friendlyVoiceError(
+      "Recording too short — got 0.5s, need at least 1.5s of speech.",
+    );
+    expect(msg.toLowerCase()).toMatch(/short|longer|whole|countdown/);
+    expect(msg.toLowerCase()).not.toContain("0.5s");
+  });
+
+  it("maps 'too noisy' enrollment rejection to a quieter-location hint", () => {
+    const msg = friendlyVoiceError(
+      "Recording too noisy — SNR 5 dB, need at least 15 dB. Try a quieter location.",
+    );
+    expect(msg.toLowerCase()).toMatch(/quiet|noise|background|loud/);
+    expect(msg.toLowerCase()).not.toContain("snr");
+  });
 });

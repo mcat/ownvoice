@@ -4,6 +4,7 @@ import { useSettingsStore } from "../../stores/settingsStore";
 import { Btn } from "./Btn";
 import { getModelManager } from "../../models/modelManager";
 import { getRecordingScript } from "../../data/recordingScripts";
+import { preprocessEnrollment } from "../../models/enrollmentAudio";
 
 /**
  * Voice clone processing status — shown in the UI so the user
@@ -139,6 +140,12 @@ export function friendlyVoiceError(raw: string, locale = "en"): string {
   }
   if (m.includes("denied") || m.includes("permission")) {
     return resolvePhrase("ui.provider.voice_capture.err_mic_denied", locale);
+  }
+  if (m.includes("too short")) {
+    return resolvePhrase("ui.provider.voice_capture.err_too_short", locale);
+  }
+  if (m.includes("too noisy") || m.includes("snr")) {
+    return resolvePhrase("ui.provider.voice_capture.err_too_noisy", locale);
   }
   return resolvePhrase("ui.provider.voice_capture.err_generic", locale);
 }
@@ -347,8 +354,14 @@ export function VoiceCapture({
     setCloneStatus("extracting");
     setError(null);
     try {
-      const audio = await decodeAudio(blob);
-      const embedding = await extractEmbedding(audio);
+      const rawAudio = await decodeAudio(blob);
+      const prep = preprocessEnrollment(rawAudio, 24000);
+      if (!prep.acceptable) {
+        setError(prep.rejectionReason ?? "Recording quality too low.");
+        setCloneStatus("failed");
+        return;
+      }
+      const embedding = await extractEmbedding(prep.audio);
       if (embedding) {
         setCloneStatus("ready");
         onCapture(blob, embedding);
@@ -367,8 +380,17 @@ export function VoiceCapture({
     setCloneStatus("extracting");
     setError(null);
     try {
-      const audio = await decodeAudio(blob);
-      const embedding = await extractEmbedding(audio);
+      const rawAudio = await decodeAudio(blob);
+      const prep = preprocessEnrollment(rawAudio, 24000);
+      if (!prep.acceptable) {
+        // Save the blob so the user can preview what they captured before retrying.
+        setSavedBlob(blob);
+        setError(prep.rejectionReason ?? "Recording quality too low.");
+        setCloneStatus("failed");
+        onCapture(blob);
+        return;
+      }
+      const embedding = await extractEmbedding(prep.audio);
       setSavedBlob(blob);
 
       if (embedding) {

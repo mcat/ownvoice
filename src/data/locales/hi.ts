@@ -634,6 +634,10 @@ const hi: LocaleStrings = {
     "माइक्रोफ़ोन एक्सेस ब्लॉक है। ब्राउज़र सेटिंग्स में इसे चालू करें या फ़ाइल अपलोड करें।",
   "ui.provider.voice_capture.err_generic":
     "आपकी आवाज़ तैयार नहीं हो पाई। फिर से कोशिश करें दबाएँ।",
+  "ui.provider.voice_capture.err_too_short":
+    "रिकॉर्डिंग बहुत छोटी थी। पूरी उलटी गिनती तक बोलें, फिर फिर से कोशिश करें दबाएँ।",
+  "ui.provider.voice_capture.err_too_noisy":
+    "बैकग्राउंड शोर बहुत ज़्यादा था। किसी शांत जगह पर जाएँ और फिर से कोशिश करें दबाएँ।",
   "ui.provider.voice_capture.err_mic_denied_raw":
     "माइक्रोफ़ोन एक्सेस अस्वीकृत। फ़ाइल अपलोड करके देखें।",
   "ui.provider.voice_capture.err_playback":

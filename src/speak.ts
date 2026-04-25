@@ -169,7 +169,7 @@ function spectralDenoise(audio: Float32Array, sampleRate: number): void {
  * Apply a 2nd-order Butterworth biquad filter (low-pass or high-pass).
  * Modifies `buf` in place.
  */
-function applyBiquad(
+export function applyBiquad(
   buf: Float32Array,
   sampleRate: number,
   cutoff: number,

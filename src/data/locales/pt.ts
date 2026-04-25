@@ -638,6 +638,10 @@ const pt: LocaleStrings = {
     "O acesso ao microfone está bloqueado. Ative nas configurações do navegador ou envie um arquivo.",
   "ui.provider.voice_capture.err_generic":
     "Não foi possível concluir a preparação da sua voz. Toque em Tentar novamente.",
+  "ui.provider.voice_capture.err_too_short":
+    "A gravação foi curta demais. Fale durante toda a contagem regressiva e depois toque em Tentar novamente.",
+  "ui.provider.voice_capture.err_too_noisy":
+    "O ruído de fundo estava alto demais para um clone de voz limpo. Vá para um local mais silencioso e toque em Tentar novamente.",
   "ui.provider.voice_capture.err_mic_denied_raw":
     "Acesso ao microfone negado. Tente enviar um arquivo.",
   "ui.provider.voice_capture.err_playback":

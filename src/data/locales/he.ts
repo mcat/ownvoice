@@ -655,6 +655,10 @@ const he: LocaleStrings = {
     "הגישה למיקרופון חסומה. הפעילו אותה בהגדרות הדפדפן או העלו קובץ במקום.",
   "ui.provider.voice_capture.err_generic":
     "לא הצלחנו לסיים להכין את הקול שלך. הקש על נסה שוב.",
+  "ui.provider.voice_capture.err_too_short":
+    "ההקלטה הייתה קצרה מדי. דבר לאורך כל הספירה לאחור ואז הקש נסה שוב.",
+  "ui.provider.voice_capture.err_too_noisy":
+    "רעשי הרקע היו חזקים מדי לשיבוט קולי נקי. עבור למקום שקט יותר והקש נסה שוב.",
   "ui.provider.voice_capture.err_mic_denied_raw":
     "הגישה למיקרופון נדחתה. נסו להעלות קובץ במקום.",
   "ui.provider.voice_capture.err_playback":

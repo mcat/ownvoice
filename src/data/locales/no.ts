@@ -635,6 +635,10 @@ const no: LocaleStrings = {
     "Mikrofontilgang er blokkert. Aktiver den i nettleserinnstillingene eller last opp en fil i stedet.",
   "ui.provider.voice_capture.err_generic":
     "Vi klarte ikke å fullføre stemmeforberedelsen. Trykk Prøv igjen.",
+  "ui.provider.voice_capture.err_too_short":
+    "Opptaket var for kort. Snakk gjennom hele nedtellingen, og trykk deretter Prøv igjen.",
+  "ui.provider.voice_capture.err_too_noisy":
+    "Bakgrunnsstøyen var for høy til en ren stemmeklone. Gå til et roligere sted og trykk Prøv igjen.",
   "ui.provider.voice_capture.err_mic_denied_raw":
     "Mikrofontilgang nektet. Prøv å laste opp en fil i stedet.",
   "ui.provider.voice_capture.err_playback":

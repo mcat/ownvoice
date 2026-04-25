@@ -687,6 +687,10 @@ const tl: LocaleStrings = {
     "Naka-block ang access sa microphone. I-enable sa browser settings o mag-upload ng file.",
   "ui.provider.voice_capture.err_generic":
     "Hindi natapos ang paghahanda ng boses. I-tap ang Subukan ulit.",
+  "ui.provider.voice_capture.err_too_short":
+    "Masyadong maikli ang recording. Magsalita sa buong countdown, pagkatapos ay i-tap ang Subukan ulit.",
+  "ui.provider.voice_capture.err_too_noisy":
+    "Masyadong maingay ang paligid para sa malinaw na voice clone. Pumunta sa mas tahimik na lugar at i-tap ang Subukan ulit.",
   "ui.provider.voice_capture.err_mic_denied_raw":
     "Na-deny ang access sa microphone. Subukang mag-upload ng file.",
   "ui.provider.voice_capture.err_playback":

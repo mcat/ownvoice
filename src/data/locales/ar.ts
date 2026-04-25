@@ -634,6 +634,10 @@ const ar: LocaleStrings = {
     "الوصول إلى الميكروفون محظور. فعّله من إعدادات المتصفح أو ارفع ملفاً بدلاً من ذلك.",
   "ui.provider.voice_capture.err_generic":
     "لم نتمكن من إعداد صوتك. اضغط إعادة المحاولة للمحاولة مرة أخرى.",
+  "ui.provider.voice_capture.err_too_short":
+    "كان التسجيل قصيراً جداً. تحدث طوال فترة العد التنازلي، ثم اضغط إعادة المحاولة.",
+  "ui.provider.voice_capture.err_too_noisy":
+    "كانت الضوضاء المحيطة عالية جداً للحصول على نسخة صوتية واضحة. انتقل إلى مكان أهدأ واضغط إعادة المحاولة.",
   "ui.provider.voice_capture.err_mic_denied_raw":
     "تم رفض الوصول إلى الميكروفون. حاول رفع ملف بدلاً من ذلك.",
   "ui.provider.voice_capture.err_playback":

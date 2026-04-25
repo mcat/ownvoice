@@ -650,6 +650,10 @@ const ko: LocaleStrings = {
     "마이크 접근이 차단되어 있습니다. 브라우저 설정에서 활성화하거나 파일을 업로드하세요.",
   "ui.provider.voice_capture.err_generic":
     "음성 준비를 완료할 수 없었습니다. 재시도를 탭하세요.",
+  "ui.provider.voice_capture.err_too_short":
+    "녹음이 너무 짧았습니다. 카운트다운이 끝날 때까지 말한 후 재시도를 탭하세요.",
+  "ui.provider.voice_capture.err_too_noisy":
+    "배경 소음이 너무 커서 깨끗한 음성 복제가 어렵습니다. 더 조용한 곳으로 이동한 후 재시도를 탭하세요.",
   "ui.provider.voice_capture.err_mic_denied_raw":
     "마이크 접근이 거부되었습니다. 파일 업로드를 시도해 보세요.",
   "ui.provider.voice_capture.err_playback":
