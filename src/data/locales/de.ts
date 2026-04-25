@@ -825,6 +825,7 @@ const de: LocaleStrings = {
   "ui.provider.settings.reset.care_team.confirm_body": "All care-team profiles and their voice clips will be erased. Patient data is preserved. This cannot be undone.",
   "ui.provider.settings.reset.everything.label": "Erase and Reset Everything",
   "ui.provider.settings.reset.everything.description": "Wipe the device — patients, care team, voice models, and settings.",
+  "ui.provider.settings.reset.empty_hint": "No data to erase",
 
   // ── UI chrome: Settings — Accessibility section ───────────────
   "ui.provider.settings.accessibility.heading": "Barrierefreiheit",

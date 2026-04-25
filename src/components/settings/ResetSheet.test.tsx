@@ -14,12 +14,32 @@ vi.mock("../../stores/resetScoped", () => ({
   resetCareTeam: () => resetCareTeamMock(),
 }));
 
-function seed() {
+function seed(opts?: { providers?: { name: string; hasVoice: boolean; emoji: string }[] }) {
   useSettingsStore.setState({
     cfg: makeTestCfg({
       patient: { name: "Maria", patientLang: "en", hasVoice: false },
-      cfg: { caregiverLang: "en" },
+      cfg: {
+        caregiverLang: "en",
+        providers: opts?.providers ?? [],
+      },
     }),
+    speakerData: null,
+    _hasHydrated: true,
+  });
+}
+
+function seedEmpty() {
+  // Set cfg to a shape with zero patients and zero providers — the
+  // legitimately-empty case (e.g. mid-onboarding or post-reset).
+  useSettingsStore.setState({
+    cfg: {
+      patients: [],
+      activePatientId: null,
+      providers: [],
+      caregiverLang: "en",
+      pin: "",
+      assistiveInput: false,
+    },
     speakerData: null,
     _hasHydrated: true,
   });
@@ -46,10 +66,60 @@ describe("ResetSheet", () => {
   }
 
   it("renders all three scoped reset rows", () => {
+    seed({
+      providers: [{ name: "Dr. Smith", hasVoice: true, emoji: "👩‍⚕️" }],
+    });
     renderSheet();
-    expect(screen.getByText("Erase and Reset All Patient Data")).toBeInTheDocument();
-    expect(screen.getByText("Erase and Reset All Care Team Data")).toBeInTheDocument();
+    // Default seed has 1 patient (Maria) and we just added 1 provider, so
+    // the patient + care-team rows render WITH counts; Everything stays
+    // count-less.
+    expect(screen.getByText("Erase and Reset All Patient Data (1)")).toBeInTheDocument();
+    expect(screen.getByText("Erase and Reset All Care Team Data (1)")).toBeInTheDocument();
     expect(screen.getByText("Erase and Reset Everything")).toBeInTheDocument();
+  });
+
+  it("appends the count to the patient + care-team labels", () => {
+    seed({
+      providers: [
+        { name: "Dr. Smith", hasVoice: true, emoji: "👩‍⚕️" },
+        { name: "Nurse Jay", hasVoice: false, emoji: "🧑‍⚕️" },
+        { name: "RT Lee", hasVoice: false, emoji: "👨‍⚕️" },
+      ],
+    });
+    renderSheet();
+    expect(screen.getByText("Erase and Reset All Patient Data (1)")).toBeInTheDocument();
+    expect(screen.getByText("Erase and Reset All Care Team Data (3)")).toBeInTheDocument();
+  });
+
+  it("disables the patient row when there are no patients and shows 'No data to erase'", () => {
+    seedEmpty();
+    renderSheet();
+    const row = screen.getByTestId("reset-patients") as HTMLButtonElement;
+    expect(row.disabled).toBe(true);
+    // Label has no count appended; description swaps to the empty hint.
+    expect(screen.getByText("Erase and Reset All Patient Data")).toBeInTheDocument();
+    expect(row.textContent).toContain("No data to erase");
+  });
+
+  it("disables the care-team row when there are no providers", () => {
+    seedEmpty();
+    renderSheet();
+    const row = screen.getByTestId("reset-care_team") as HTMLButtonElement;
+    expect(row.disabled).toBe(true);
+  });
+
+  it("keeps 'Erase Everything' enabled even when both counts are zero", () => {
+    seedEmpty();
+    renderSheet();
+    const row = screen.getByTestId("reset-everything") as HTMLButtonElement;
+    expect(row.disabled).toBe(false);
+  });
+
+  it("clicking a disabled patient row does NOT open the confirm dialog", () => {
+    seedEmpty();
+    renderSheet();
+    fireEvent.click(screen.getByTestId("reset-patients"));
+    expect(screen.queryByText("Erase all patient data?")).not.toBeInTheDocument();
   });
 
   it("'Erase All Patient Data' opens a confirm dialog scoped to patients", async () => {
@@ -70,6 +140,9 @@ describe("ResetSheet", () => {
   });
 
   it("confirming the care-team reset calls resetCareTeam()", async () => {
+    seed({
+      providers: [{ name: "Dr. Smith", hasVoice: true, emoji: "👩‍⚕️" }],
+    });
     renderSheet();
     fireEvent.click(screen.getByTestId("reset-care_team"));
     await waitFor(() => screen.getByText("Erase all care team data?"));
