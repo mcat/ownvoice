@@ -664,8 +664,7 @@ const ru: LocaleStrings = {
   "ui.provider.setup.skip": "Пропустить →",
   "ui.provider.setup.skip_aria": "Пропустить настройку",
   "ui.provider.setup.skip_dialog.title": "Пропустить настройку?",
-  "ui.provider.setup.skip_dialog.body":
-    "Вы сможете завершить это позже в Настройках.",
+  "ui.provider.setup.skip_dialog.body": "Начните пользоваться OwnVoice сейчас. Вы можете завершить настройку позже, коснувшись имени пациента в заголовке.",
   "ui.provider.setup.skip_dialog.body_add_patient":
     "Пациент не будет добавлен.",
   "ui.provider.setup.skip_dialog.confirm": "Пропустить настройку",

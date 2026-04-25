@@ -675,8 +675,7 @@ const da: LocaleStrings = {
   "ui.provider.setup.skip": "Spring over →",
   "ui.provider.setup.skip_aria": "Spring opsætning over",
   "ui.provider.setup.skip_dialog.title": "Spring opsætning over?",
-  "ui.provider.setup.skip_dialog.body":
-    "Du kan færdiggøre dette senere i Indstillinger.",
+  "ui.provider.setup.skip_dialog.body": "Begynd at bruge OwnVoice nu. Du kan færdiggøre opsætningen senere ved at trykke på patientens navn i toppen.",
   "ui.provider.setup.skip_dialog.body_add_patient":
     "Der vil ikke blive tilføjet en patient.",
   "ui.provider.setup.skip_dialog.confirm": "Spring opsætning over",

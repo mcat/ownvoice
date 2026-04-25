@@ -716,8 +716,7 @@ const tl: LocaleStrings = {
   "ui.provider.setup.skip": "Laktawan →",
   "ui.provider.setup.skip_aria": "Laktawan ang setup",
   "ui.provider.setup.skip_dialog.title": "Laktawan ang setup?",
-  "ui.provider.setup.skip_dialog.body":
-    "Puwede mo itong tapusin mamaya sa Mga Setting.",
+  "ui.provider.setup.skip_dialog.body": "Magsimulang gamitin ang OwnVoice ngayon. Maaari mong tapusin ang setup mamaya sa pamamagitan ng pag-tap sa pangalan ng pasyente sa header.",
   "ui.provider.setup.skip_dialog.body_add_patient":
     "Walang maidadagdag na pasyente.",
   "ui.provider.setup.skip_dialog.confirm": "Laktawan ang setup",

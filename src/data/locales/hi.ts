@@ -660,8 +660,7 @@ const hi: LocaleStrings = {
   "ui.provider.setup.skip": "छोड़ें →",
   "ui.provider.setup.skip_aria": "सेटअप छोड़ें",
   "ui.provider.setup.skip_dialog.title": "सेटअप छोड़ना है?",
-  "ui.provider.setup.skip_dialog.body":
-    "आप बाद में सेटिंग्स में पूरा कर सकते हैं।",
+  "ui.provider.setup.skip_dialog.body": "अभी OwnVoice का उपयोग शुरू करें। आप बाद में हेडर में रोगी के नाम पर टैप करके सेटअप पूरा कर सकते हैं।",
   "ui.provider.setup.skip_dialog.body_add_patient":
     "कोई मरीज़ नहीं जोड़ा जाएगा।",
   "ui.provider.setup.skip_dialog.confirm": "सेटअप छोड़ें",

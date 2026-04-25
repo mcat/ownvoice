@@ -660,8 +660,7 @@ const fi: LocaleStrings = {
   "ui.provider.setup.skip": "Ohita →",
   "ui.provider.setup.skip_aria": "Ohita asennus",
   "ui.provider.setup.skip_dialog.title": "Ohita asennus?",
-  "ui.provider.setup.skip_dialog.body":
-    "Voit viimeistellä tämän myöhemmin Asetuksissa.",
+  "ui.provider.setup.skip_dialog.body": "Aloita OwnVoicen käyttö nyt. Voit viimeistellä asetukset myöhemmin napauttamalla potilaan nimeä yläosassa.",
   "ui.provider.setup.skip_dialog.body_add_patient":
     "Potilasta ei lisätä.",
   "ui.provider.setup.skip_dialog.confirm": "Ohita asennus",

@@ -672,8 +672,7 @@ const tr: LocaleStrings = {
   "ui.provider.setup.skip": "Atla →",
   "ui.provider.setup.skip_aria": "Kurulumu atla",
   "ui.provider.setup.skip_dialog.title": "Kurulum atlansın mı?",
-  "ui.provider.setup.skip_dialog.body":
-    "Bunu daha sonra Ayarlar bölümünden tamamlayabilirsiniz.",
+  "ui.provider.setup.skip_dialog.body": "OwnVoice'u şimdi kullanmaya başlayın. Kurulumu daha sonra üst kısımdaki hasta adına dokunarak tamamlayabilirsiniz.",
   "ui.provider.setup.skip_dialog.body_add_patient":
     "Hiçbir hasta eklenmeyecek.",
   "ui.provider.setup.skip_dialog.confirm": "Kurulumu atla",

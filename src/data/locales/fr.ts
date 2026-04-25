@@ -666,8 +666,7 @@ const fr: LocaleStrings = {
   "ui.provider.setup.skip": "Passer →",
   "ui.provider.setup.skip_aria": "Passer la configuration",
   "ui.provider.setup.skip_dialog.title": "Passer la configuration ?",
-  "ui.provider.setup.skip_dialog.body":
-    "Vous pourrez terminer plus tard dans les Paramètres.",
+  "ui.provider.setup.skip_dialog.body": "Commencez à utiliser OwnVoice maintenant. Vous pouvez terminer la configuration plus tard en touchant le nom du patient dans l'en-tête.",
   "ui.provider.setup.skip_dialog.body_add_patient":
     "Aucun patient ne sera ajouté.",
   "ui.provider.setup.skip_dialog.confirm": "Passer la configuration",

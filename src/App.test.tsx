@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from "@testing-library/preact";
+import { render, screen, fireEvent, waitFor } from "@testing-library/preact";
 import { useSettingsStore } from "./stores/settingsStore";
 import { useUIStore } from "./stores/uiStore";
 import { useConversationStore } from "./stores/conversationStore";
@@ -136,6 +136,42 @@ describe("App", () => {
     render(<App />);
     // Setup component has "Welcome to OwnVoice" heading
     expect(screen.getByText("Welcome to OwnVoice")).toBeInTheDocument();
+  });
+
+  it("Setup's Skip → confirm flow actually resolves end-to-end (host is mounted in this branch)", async () => {
+    // Regression for a silent hang: Setup uses confirm() from
+    // ConfirmDialogHost, but the Setup branch is an early return inside
+    // <App>. The host needs to be mounted in BOTH branches; otherwise
+    // confirm() returns a never-resolving Promise and Skip looks like a
+    // dead button.
+    useSettingsStore.setState({ _hasHydrated: true, cfg: null });
+    render(<App />);
+
+    // Tap the Skip nav button (top-right of Setup). It carries aria-label
+    // "Skip setup"; once the confirm dialog opens it'll also have a
+    // confirm button with the same label, so disambiguate before we click.
+    fireEvent.click(screen.getByRole("button", { name: "Skip setup" }));
+
+    // Confirm dialog must appear — proves the host is in scope.
+    await waitFor(() => {
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
+    });
+    expect(screen.getByText("Skip setup?")).toBeInTheDocument();
+
+    // Confirm — click the dialog's confirm button specifically.
+    const dialog = screen.getByRole("dialog");
+    const confirmBtn = Array.from(dialog.querySelectorAll("button")).find(
+      (b) => b.textContent === "Skip setup",
+    );
+    expect(confirmBtn).toBeTruthy();
+    fireEvent.click(confirmBtn!);
+
+    await waitFor(() => {
+      const cfg = useSettingsStore.getState().cfg;
+      expect(cfg).not.toBeNull();
+      expect(cfg?.patients.length).toBe(1);
+      expect(cfg?.activePatientId).toBe(cfg?.patients[0].id);
+    });
   });
 
   it("renders main app (Header, TabBar) when hydrated with cfg set", () => {

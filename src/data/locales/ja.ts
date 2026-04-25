@@ -665,8 +665,7 @@ const ja: LocaleStrings = {
   "ui.provider.setup.skip": "スキップ →",
   "ui.provider.setup.skip_aria": "セットアップをスキップ",
   "ui.provider.setup.skip_dialog.title": "セットアップをスキップしますか？",
-  "ui.provider.setup.skip_dialog.body":
-    "あとから設定で完了できます。",
+  "ui.provider.setup.skip_dialog.body": "今すぐ OwnVoice を使い始めてください。後でヘッダーの患者名をタップしてセットアップを完了できます。",
   "ui.provider.setup.skip_dialog.body_add_patient":
     "患者は追加されません。",
   "ui.provider.setup.skip_dialog.confirm": "セットアップをスキップ",

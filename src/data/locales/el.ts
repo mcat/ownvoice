@@ -683,8 +683,7 @@ const el: LocaleStrings = {
   "ui.provider.setup.skip": "Παράλειψη →",
   "ui.provider.setup.skip_aria": "Παράλειψη ρύθμισης",
   "ui.provider.setup.skip_dialog.title": "Παράλειψη ρύθμισης;",
-  "ui.provider.setup.skip_dialog.body":
-    "Μπορείτε να το ολοκληρώσετε αργότερα στις Ρυθμίσεις.",
+  "ui.provider.setup.skip_dialog.body": "Ξεκινήστε να χρησιμοποιείτε το OwnVoice τώρα. Μπορείτε να ολοκληρώσετε τη ρύθμιση αργότερα πατώντας το όνομα του ασθενούς στην κεφαλίδα.",
   "ui.provider.setup.skip_dialog.body_add_patient":
     "Δεν θα προστεθεί κανένας ασθενής.",
   "ui.provider.setup.skip_dialog.confirm": "Παράλειψη ρύθμισης",

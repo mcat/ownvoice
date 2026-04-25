@@ -630,7 +630,7 @@ const zh: LocaleStrings = {
   "ui.provider.setup.skip": "跳过 →",
   "ui.provider.setup.skip_aria": "跳过设置",
   "ui.provider.setup.skip_dialog.title": "跳过设置？",
-  "ui.provider.setup.skip_dialog.body": "您可以稍后在设置中完成。",
+  "ui.provider.setup.skip_dialog.body": "立即开始使用 OwnVoice。您可以稍后通过点击顶部的患者名称完成设置。",
   "ui.provider.setup.skip_dialog.body_add_patient":
     "不会添加任何患者。",
   "ui.provider.setup.skip_dialog.confirm": "跳过设置",

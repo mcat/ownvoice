@@ -689,8 +689,7 @@ const vi: LocaleStrings = {
   "ui.provider.setup.skip": "Bỏ qua →",
   "ui.provider.setup.skip_aria": "Bỏ qua thiết lập",
   "ui.provider.setup.skip_dialog.title": "Bỏ qua thiết lập?",
-  "ui.provider.setup.skip_dialog.body":
-    "Bạn có thể hoàn tất sau trong Cài đặt.",
+  "ui.provider.setup.skip_dialog.body": "Bắt đầu sử dụng OwnVoice ngay bây giờ. Bạn có thể hoàn tất cài đặt sau bằng cách chạm vào tên bệnh nhân ở đầu trang.",
   "ui.provider.setup.skip_dialog.body_add_patient":
     "Sẽ không thêm bệnh nhân nào.",
   "ui.provider.setup.skip_dialog.confirm": "Bỏ qua thiết lập",
