@@ -381,7 +381,7 @@ describe("App", () => {
         cfg: makeCfg({ pin: "" }),
       });
       render(<App />);
-      fireEvent.click(screen.getByRole("button", { name: "Switch Patient" }));
+      fireEvent.click(screen.getByRole("button", { name: "Patients" }));
       expect(useUIStore.getState().switchSheetOpen).toBe(true);
       expect(useUIStore.getState().pinEntryOpen).toBe(false);
     });
@@ -392,7 +392,7 @@ describe("App", () => {
         cfg: makeCfg({ pin: "1234" }),
       });
       render(<App />);
-      fireEvent.click(screen.getByRole("button", { name: "Switch Patient" }));
+      fireEvent.click(screen.getByRole("button", { name: "Patients" }));
       expect(useUIStore.getState().pinEntryOpen).toBe(true);
       expect(useUIStore.getState().switchSheetOpen).toBe(false);
     });
@@ -404,7 +404,7 @@ describe("App", () => {
       });
       render(<App />);
       // Tap Switch Patient — opens PinGate
-      fireEvent.click(screen.getByRole("button", { name: "Switch Patient" }));
+      fireEvent.click(screen.getByRole("button", { name: "Patients" }));
       expect(useUIStore.getState().pinEntryOpen).toBe(true);
       // Enter the correct PIN
       fireEvent.click(screen.getByText("1"));
@@ -444,7 +444,7 @@ describe("App", () => {
       });
       useUIStore.setState({ staffAuthed: true });
       render(<App />);
-      fireEvent.click(screen.getByRole("button", { name: "Switch Patient" }));
+      fireEvent.click(screen.getByRole("button", { name: "Patients" }));
       // Should open switch directly — no PIN gate
       expect(useUIStore.getState().switchSheetOpen).toBe(true);
       expect(useUIStore.getState().pinEntryOpen).toBe(false);

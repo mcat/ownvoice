@@ -62,14 +62,14 @@ describe("HeaderNav", () => {
     );
   }
 
-  it("renders the Switch Patient button", () => {
+  it("renders the Patients button", () => {
     renderNav();
-    expect(screen.getByRole("button", { name: "Switch Patient" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Patients" })).toBeInTheDocument();
   });
 
-  it("fires onSwitchPatient when Switch Patient button is clicked", () => {
+  it("fires onSwitchPatient when Patients button is clicked", () => {
     renderNav();
-    fireEvent.click(screen.getByRole("button", { name: "Switch Patient" }));
+    fireEvent.click(screen.getByRole("button", { name: "Patients" }));
     expect(onSwitchPatient).toHaveBeenCalledTimes(1);
   });
 
