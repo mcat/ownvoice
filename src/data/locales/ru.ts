@@ -732,7 +732,7 @@ const ru: LocaleStrings = {
   "ui.provider.patient_edit.title_default": "Редактировать пациента",
   "ui.provider.patient_edit.close_aria": "Закрыть редактор пациента",
   "ui.provider.patient_pill.aria": "Редактировать пациента: {name}",
-  "ui.provider.nav.staff_menu": "Персонал",
+  "ui.provider.nav.staff_menu": "Настройки",
   "ui.provider.staff_sheet.title": "Персонал",
   "ui.provider.staff_sheet.close_aria": "Закрыть меню персонала",
   "ui.provider.staff_sheet.patients_description": "Сменить, добавить или редактировать пациентов",

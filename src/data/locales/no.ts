@@ -729,7 +729,7 @@ const no: LocaleStrings = {
   "ui.provider.patient_edit.title_default": "Rediger pasient",
   "ui.provider.patient_edit.close_aria": "Lukk pasientredigering",
   "ui.provider.patient_pill.aria": "Rediger pasient: {name}",
-  "ui.provider.nav.staff_menu": "Personale",
+  "ui.provider.nav.staff_menu": "Innstillinger",
   "ui.provider.staff_sheet.title": "Personale",
   "ui.provider.staff_sheet.close_aria": "Lukk personalemeny",
   "ui.provider.staff_sheet.patients_description": "Bytt, legg til eller rediger pasienter",

@@ -759,7 +759,7 @@ const vi: LocaleStrings = {
   "ui.provider.patient_edit.title_default": "Chỉnh sửa bệnh nhân",
   "ui.provider.patient_edit.close_aria": "Đóng trình chỉnh sửa bệnh nhân",
   "ui.provider.patient_pill.aria": "Chỉnh sửa bệnh nhân: {name}",
-  "ui.provider.nav.staff_menu": "Nhân viên",
+  "ui.provider.nav.staff_menu": "Cài đặt",
   "ui.provider.staff_sheet.title": "Nhân viên",
   "ui.provider.staff_sheet.close_aria": "Đóng menu nhân viên",
   "ui.provider.staff_sheet.patients_description": "Chuyển, thêm hoặc chỉnh sửa bệnh nhân",

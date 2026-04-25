@@ -54,10 +54,16 @@ describe("SettingsPanel", () => {
     expect(screen.queryByDisplayValue("4A")).toBeNull();
   });
 
-  it("does NOT render the patient roster (PatientsScreen owns it now)", () => {
+  it("renders a Patients nav row that pushes into PatientsScreen (the roster lives there, not inline)", () => {
     renderPanel();
-    // The patient roster sectiontitle "Patients" should NOT appear inside Settings.
-    expect(screen.queryByText("Patients")).toBeNull();
+    // The row uses "Patients" as its label — the roster (kebab menus, Add
+    // Patient card, voice badges) is NOT rendered inline. Tapping the row
+    // opens the "switch" overlay.
+    const patientsButton = screen.getByRole("button", { name: /Patients/ });
+    expect(patientsButton).toBeInTheDocument();
+    // The kebab "⋯" buttons (rendered per-patient inside PatientsScreen)
+    // must NOT appear inline.
+    expect(screen.queryByRole("button", { name: /Actions for/i })).toBeNull();
   });
 
   it("'Reset app' shows confirmation, and confirm calls onReset", () => {

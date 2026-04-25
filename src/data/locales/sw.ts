@@ -748,7 +748,7 @@ const sw: LocaleStrings = {
   "ui.provider.patient_edit.title_default": "Hariri mgonjwa",
   "ui.provider.patient_edit.close_aria": "Funga kihariri cha mgonjwa",
   "ui.provider.patient_pill.aria": "Hariri mgonjwa: {name}",
-  "ui.provider.nav.staff_menu": "Wafanyakazi",
+  "ui.provider.nav.staff_menu": "Mipangilio",
   "ui.provider.staff_sheet.title": "Wafanyakazi",
   "ui.provider.staff_sheet.close_aria": "Funga menyu ya wafanyakazi",
   "ui.provider.staff_sheet.patients_description": "Badilisha, ongeza au hariri wagonjwa",

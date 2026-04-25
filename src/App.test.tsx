@@ -105,7 +105,6 @@ describe("App", () => {
       settingsOpen: false,
       pinEntryOpen: false,
       switchSheetOpen: false,
-      staffSheetOpen: false,
       activeProvIdx: 0,
       speaking: null,
       staffAuthed: false,
@@ -392,32 +391,32 @@ describe("App", () => {
     expect(useUIStore.getState().pinEntryOpen).toBe(false);
   });
 
-  it("Staff button opens the staff sheet after successful PIN entry", () => {
+  it("Settings button opens the settings panel after successful PIN entry", () => {
     useSettingsStore.setState({
       _hasHydrated: true,
       cfg: makeCfg({ pin: "1234" }),
     });
     render(<App />);
-    fireEvent.click(screen.getByRole("button", { name: "Staff" }));
+    fireEvent.click(screen.getByRole("button", { name: "Settings" }));
     expect(useUIStore.getState().pinEntryOpen).toBe(true);
     // Enter the correct PIN
     fireEvent.click(screen.getByText("1"));
     fireEvent.click(screen.getByText("2"));
     fireEvent.click(screen.getByText("3"));
     fireEvent.click(screen.getByText("4"));
-    expect(useUIStore.getState().staffSheetOpen).toBe(true);
+    expect(useUIStore.getState().settingsOpen).toBe(true);
     expect(useUIStore.getState().pinEntryOpen).toBe(false);
   });
 
-  describe("Staff button gating", () => {
-    it("opens StaffSheet directly when no PIN is set", () => {
+  describe("Settings button gating", () => {
+    it("opens settings panel directly when no PIN is set", () => {
       useSettingsStore.setState({
         _hasHydrated: true,
         cfg: makeCfg({ pin: "" }),
       });
       render(<App />);
-      fireEvent.click(screen.getByRole("button", { name: "Staff" }));
-      expect(useUIStore.getState().staffSheetOpen).toBe(true);
+      fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+      expect(useUIStore.getState().settingsOpen).toBe(true);
       expect(useUIStore.getState().pinEntryOpen).toBe(false);
     });
 
@@ -427,24 +426,24 @@ describe("App", () => {
         cfg: makeCfg({ pin: "1234" }),
       });
       render(<App />);
-      fireEvent.click(screen.getByRole("button", { name: "Staff" }));
+      fireEvent.click(screen.getByRole("button", { name: "Settings" }));
       expect(useUIStore.getState().pinEntryOpen).toBe(true);
-      expect(useUIStore.getState().staffSheetOpen).toBe(false);
+      expect(useUIStore.getState().settingsOpen).toBe(false);
     });
 
-    it("opens StaffSheet after successful PIN entry", () => {
+    it("opens settings panel after successful PIN entry", () => {
       useSettingsStore.setState({
         _hasHydrated: true,
         cfg: makeCfg({ pin: "1234" }),
       });
       render(<App />);
-      fireEvent.click(screen.getByRole("button", { name: "Staff" }));
+      fireEvent.click(screen.getByRole("button", { name: "Settings" }));
       expect(useUIStore.getState().pinEntryOpen).toBe(true);
       fireEvent.click(screen.getByText("1"));
       fireEvent.click(screen.getByText("2"));
       fireEvent.click(screen.getByText("3"));
       fireEvent.click(screen.getByText("4"));
-      expect(useUIStore.getState().staffSheetOpen).toBe(true);
+      expect(useUIStore.getState().settingsOpen).toBe(true);
       expect(useUIStore.getState().pinEntryOpen).toBe(false);
     });
   });
@@ -456,8 +455,8 @@ describe("App", () => {
         cfg: makeCfg({ pin: "1234" }),
       });
       render(<App />);
-      // Tap Staff to trigger PIN gate
-      fireEvent.click(screen.getByRole("button", { name: "Staff" }));
+      // Tap Settings to trigger PIN gate
+      fireEvent.click(screen.getByRole("button", { name: "Settings" }));
       expect(useUIStore.getState().pinEntryOpen).toBe(true);
       fireEvent.click(screen.getByText("1"));
       fireEvent.click(screen.getByText("2"));
@@ -467,20 +466,20 @@ describe("App", () => {
       expect(useUIStore.getState().staffAuthedAt).toBeGreaterThan(0);
     });
 
-    it("subsequent tap on Staff skips PinGate when staffAuthed", () => {
+    it("subsequent tap on Settings skips PinGate when staffAuthed", () => {
       useSettingsStore.setState({
         _hasHydrated: true,
         cfg: makeCfg({ pin: "1234" }),
       });
       useUIStore.setState({ staffAuthed: true });
       render(<App />);
-      fireEvent.click(screen.getByRole("button", { name: "Staff" }));
-      // Should open the staff sheet directly — no PIN gate.
-      expect(useUIStore.getState().staffSheetOpen).toBe(true);
+      fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+      // Should open the settings panel directly — no PIN gate.
+      expect(useUIStore.getState().settingsOpen).toBe(true);
       expect(useUIStore.getState().pinEntryOpen).toBe(false);
     });
 
-    it("End Session inside the StaffSheet clears staffAuthed", () => {
+    it("End Session lock in the Settings panel header clears staffAuthed", () => {
       useSettingsStore.setState({
         _hasHydrated: true,
         cfg: makeCfg({ pin: "1234" }),
@@ -488,11 +487,11 @@ describe("App", () => {
       useUIStore.setState({
         staffAuthed: true,
         staffAuthedAt: Date.now(),
-        staffSheetOpen: true,
+        settingsOpen: true,
       });
       render(<App />);
-      // End Staff Session is now an item inside the staff sheet (not a
-      // top-level nav button).
+      // End Staff Session is now a small lock affordance in the settings
+      // sheet header (visible only when authed).
       fireEvent.click(screen.getByRole("button", { name: /End staff session/i }));
       expect(useUIStore.getState().staffAuthed).toBe(false);
       expect(useUIStore.getState().staffAuthedAt).toBeNull();

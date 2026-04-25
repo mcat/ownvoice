@@ -696,7 +696,7 @@ const zh: LocaleStrings = {
   "ui.provider.patient_edit.title_default": "编辑患者",
   "ui.provider.patient_edit.close_aria": "关闭患者编辑器",
   "ui.provider.patient_pill.aria": "编辑患者: {name}",
-  "ui.provider.nav.staff_menu": "员工",
+  "ui.provider.nav.staff_menu": "设置",
   "ui.provider.staff_sheet.title": "员工",
   "ui.provider.staff_sheet.close_aria": "关闭员工菜单",
   "ui.provider.staff_sheet.patients_description": "切换、添加或编辑患者",

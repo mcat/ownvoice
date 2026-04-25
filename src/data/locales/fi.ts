@@ -727,7 +727,7 @@ const fi: LocaleStrings = {
   "ui.provider.patient_edit.title_default": "Muokkaa potilasta",
   "ui.provider.patient_edit.close_aria": "Sulje potilaan muokkaus",
   "ui.provider.patient_pill.aria": "Muokkaa potilasta: {name}",
-  "ui.provider.nav.staff_menu": "Henkilökunta",
+  "ui.provider.nav.staff_menu": "Asetukset",
   "ui.provider.staff_sheet.title": "Henkilökunta",
   "ui.provider.staff_sheet.close_aria": "Sulje henkilökunnan valikko",
   "ui.provider.staff_sheet.patients_description": "Vaihda, lisää tai muokkaa potilaita",

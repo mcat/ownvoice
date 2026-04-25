@@ -777,7 +777,7 @@ const pl: LocaleStrings = {
   "ui.provider.patient_edit.title_default": "Edytuj pacjenta",
   "ui.provider.patient_edit.close_aria": "Zamknij edytor pacjenta",
   "ui.provider.patient_pill.aria": "Edytuj pacjenta: {name}",
-  "ui.provider.nav.staff_menu": "Personel",
+  "ui.provider.nav.staff_menu": "Ustawienia",
   "ui.provider.staff_sheet.title": "Personel",
   "ui.provider.staff_sheet.close_aria": "Zamknij menu personelu",
   "ui.provider.staff_sheet.patients_description": "Zmień, dodaj lub edytuj pacjentów",

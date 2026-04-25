@@ -9,8 +9,7 @@ export type OverlayName =
   | "settings"
   | "pinEntry"
   | "switch"
-  | "addPatient"
-  | "staffSheet";
+  | "addPatient";
 
 interface UIState {
   tab: string;
@@ -23,7 +22,6 @@ interface UIState {
   pinEntryOpen: boolean;
   switchSheetOpen: boolean;
   addPatientOpen: boolean;
-  staffSheetOpen: boolean;
   /** Id of the patient being edited via PatientEditSheet, or null when closed.
    *  PatientEditSheet is overlay-shaped but carries a payload, so it doesn't
    *  use openOverlay/closeOverlay — call openPatientEdit(id)/closePatientEdit(). */
@@ -67,7 +65,6 @@ const OVERLAY_KEYS: Record<OverlayName, keyof UIState> = {
   pinEntry: "pinEntryOpen",
   switch: "switchSheetOpen",
   addPatient: "addPatientOpen",
-  staffSheet: "staffSheetOpen",
 };
 
 function getInitialThemeOverride(): ThemeName | null {
@@ -88,7 +85,6 @@ const INITIAL: Pick<
   | "pinEntryOpen"
   | "switchSheetOpen"
   | "addPatientOpen"
-  | "staffSheetOpen"
   | "patientEditId"
   | "activeProvIdx"
   | "speaking"
@@ -107,7 +103,6 @@ const INITIAL: Pick<
   pinEntryOpen: false,
   switchSheetOpen: false,
   addPatientOpen: false,
-  staffSheetOpen: false,
   patientEditId: null,
   activeProvIdx: 0,
   speaking: null,
@@ -138,7 +133,6 @@ export const useUIStore = create<UIState>((set) => ({
       pinEntryOpen: false,
       switchSheetOpen: false,
       addPatientOpen: false,
-      staffSheetOpen: false,
       patientEditId: null,
     }),
   openPatientEdit: (id) => set({ patientEditId: id }),

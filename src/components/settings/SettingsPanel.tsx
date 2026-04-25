@@ -4,10 +4,12 @@ import { z } from "../../theme/z";
 import { BottomSheet } from "../shared/BottomSheet";
 import { t as resolvePhrase } from "../../data/phraseRegistry";
 import { useSettingsStore } from "../../stores/settingsStore";
+import { useUIStore } from "../../stores/uiStore";
+import { PatientsSection } from "./sections/PatientsSection";
 import { AccessibilitySection } from "./sections/AccessibilitySection";
 import { CareTeamSection } from "./sections/CareTeamSection";
 import { AboutSection } from "./sections/AboutSection";
-import { OfflineReadinessSection } from "./sections/OfflineReadinessSection";
+import { DiagnosticsSection } from "./sections/DiagnosticsSection";
 import { ResetSection } from "./sections/ResetSection";
 import { useStaffActivityBump } from "../../hooks/useStaffActivityBump";
 
@@ -40,10 +42,16 @@ export function SettingsPanel({
   theme,
 }: SettingsPanelProps) {
   const caregiverLang = useSettingsStore((s) => s.cfg?.caregiverLang ?? "en");
+  const staffAuthed = useUIStore((s) => s.staffAuthed);
   const bump = useStaffActivityBump();
 
   function updateCfg(partial: Partial<AppSettings>): void {
     onUpdate({ ...cfg, ...partial });
+  }
+
+  function handleEndSession() {
+    onClose();
+    useUIStore.getState().endStaffSession();
   }
 
   return (
@@ -52,6 +60,31 @@ export function SettingsPanel({
       <BottomSheet onClose={onClose} t={t} zIndex={z.sheetStacked}>
         <BottomSheet.Header>
           <BottomSheet.Title>{resolvePhrase("ui.provider.settings.title", caregiverLang)}</BottomSheet.Title>
+          {/* End-Session lock — shown only when authed. Replaces the
+              top-level "End Staff Session" tile from the old StaffSheet
+              middle layer. The lock motif keeps the PIN-gate cue visible
+              from inside the panel. */}
+          {staffAuthed && (
+            <button
+              type="button"
+              onClick={handleEndSession}
+              aria-label={resolvePhrase("ui.provider.nav.end_staff_session", caregiverLang)}
+              style={{
+                background: "none",
+                border: "none",
+                fontSize: 22,
+                padding: 8,
+                minWidth: 64,
+                minHeight: 64,
+                cursor: "pointer",
+                color: t.muted,
+                fontFamily: "inherit",
+                lineHeight: 1,
+              }}
+            >
+              {"\u{1F512}"}
+            </button>
+          )}
           {/* "Done" text link instead of X — matches iPadOS convention for settings sheets. */}
           <BottomSheet.CloseButton
             aria-label={resolvePhrase("ui.provider.settings.close_aria", caregiverLang)}
@@ -70,17 +103,19 @@ export function SettingsPanel({
         </BottomSheet.Header>
 
         <BottomSheet.Body>
-          {/* Settings now scopes to device + care team. Per-patient editing
-              lives in PatientEditSheet (opened from the header pill or the
-              Patients screen). */}
+          {/* Flat staff workspace: Patients pushes into PatientsScreen;
+              the rest are inline sections. Order is intentional — Patients
+              first because shift-handoff usually starts there, Reset last
+              because it nukes everything. */}
           <div style={{ padding: "0 4px" }}>
+            <PatientsSection t={t} />
             <CareTeamSection
               cfg={cfg}
               t={t}
               theme={theme}
             />
             <AccessibilitySection cfg={cfg} updateCfg={updateCfg} t={t} />
-            <OfflineReadinessSection t={t} />
+            <DiagnosticsSection t={t} />
             <AboutSection t={t} />
             <ResetSection onReset={onReset} t={t} theme={theme} />
           </div>

@@ -14,7 +14,8 @@ const ICONS = {
   listen: "👂",
   provider: "👩‍⚕️",
   // Locked-with-key — distinct from the provider 👩‍⚕️ used by the patient-
-  // facing Care Team button. Signals "behind PIN gate".
+  // facing Care Team button. Signals "behind PIN gate". The button label
+  // reads "Settings" but the lock motif keeps the PIN-gate cue.
   staff: "🔐",
 } as const;
 
@@ -56,15 +57,15 @@ function labelStyle(t: ThemeTokens) {
 
 interface HeaderNavProps {
   /**
-   * Single staff entry point. Replaces the previous trio (Patients,
-   * Settings, End Session) with a PIN-gated Staff button that opens the
-   * StaffSheet — keeps the patient-facing nav focused on Wishes / Listen /
-   * Care Team / Theme.
+   * Single PIN-gated entry point for staff workflows. Opens the flat
+   * Settings panel (Patients, Care Team, Accessibility, Diagnostics,
+   * About, Reset) — keeps the patient-facing nav focused on Wishes /
+   * Listen / Care Team / Theme.
    */
-  onOpenStaff: () => void;
+  onOpenSettings: () => void;
 }
 
-export function HeaderNav({ onOpenStaff }: HeaderNavProps) {
+export function HeaderNav({ onOpenSettings }: HeaderNavProps) {
   const { theme, toggle: onToggleTheme, isAuto, t } = useTheme();
   const openOverlay = useUIStore((s) => s.openOverlay);
   const cfg = useSettingsStore((s) => s.cfg);
@@ -92,8 +93,8 @@ export function HeaderNav({ onOpenStaff }: HeaderNavProps) {
         );
       })}
       <Btn
-        key="staff"
-        onClick={onOpenStaff}
+        key="settings"
+        onClick={onOpenSettings}
         aria-label={resolvePhrase("ui.provider.nav.staff_menu", caregiverLang)}
         style={btnStyle(t, ICONS.staff)}
       >

@@ -692,7 +692,7 @@ const en = {
   "ui.provider.patient_pill.aria": "Edit patient: {name}",
 
   // ── UI chrome: Staff sheet ────────────────────────────────────
-  "ui.provider.nav.staff_menu": "Staff",
+  "ui.provider.nav.staff_menu": "Settings",
   "ui.provider.staff_sheet.title": "Staff",
   "ui.provider.staff_sheet.close_aria": "Close staff menu",
   "ui.provider.staff_sheet.patients_description": "Switch, add, or edit patients",

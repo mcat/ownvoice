@@ -753,7 +753,7 @@ const de: LocaleStrings = {
   "ui.provider.patient_edit.title_default": "Patient bearbeiten",
   "ui.provider.patient_edit.close_aria": "Patientenbearbeitung schließen",
   "ui.provider.patient_pill.aria": "Patient bearbeiten: {name}",
-  "ui.provider.nav.staff_menu": "Personal",
+  "ui.provider.nav.staff_menu": "Einstellungen",
   "ui.provider.staff_sheet.title": "Personal",
   "ui.provider.staff_sheet.close_aria": "Personalmenü schließen",
   "ui.provider.staff_sheet.patients_description": "Patienten wechseln, hinzufügen oder bearbeiten",

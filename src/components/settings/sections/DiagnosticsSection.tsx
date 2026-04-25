@@ -25,7 +25,16 @@ function formatBytes(n: number | null): string {
   return `${(n / 1024 / 1024 / 1024).toFixed(2)} GB`;
 }
 
-export function OfflineReadinessSection({ t }: Props) {
+/**
+ * "Diagnostics" section in the flat Settings panel: offline readiness,
+ * model verification, audio cache rebuild, storage health. Renamed from
+ * `OfflineReadinessSection` because the surface now also covers cache
+ * health and storage troubleshooting — "Diagnostics" reads more honestly
+ * to a clinician scanning the panel. The underlying i18n keys
+ * (`ui.provider.settings.offline.*`) stay put; this is a UI-side rename
+ * only, no locale churn.
+ */
+export function DiagnosticsSection({ t }: Props) {
   const primerRunning = useOfflineStore((s) => s.primerRunning);
   const progress = useOfflineStore((s) => s.progress);
   const verified = useOfflineStore((s) => s.verified);

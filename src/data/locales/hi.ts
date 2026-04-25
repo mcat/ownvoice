@@ -727,7 +727,7 @@ const hi: LocaleStrings = {
   "ui.provider.patient_edit.title_default": "रोगी संपादित करें",
   "ui.provider.patient_edit.close_aria": "रोगी संपादक बंद करें",
   "ui.provider.patient_pill.aria": "रोगी संपादित करें: {name}",
-  "ui.provider.nav.staff_menu": "स्टाफ",
+  "ui.provider.nav.staff_menu": "सेटिंग्स",
   "ui.provider.staff_sheet.title": "स्टाफ",
   "ui.provider.staff_sheet.close_aria": "स्टाफ मेनू बंद करें",
   "ui.provider.staff_sheet.patients_description": "रोगियों को बदलें, जोड़ें या संपादित करें",

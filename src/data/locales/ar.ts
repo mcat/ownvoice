@@ -728,7 +728,7 @@ const ar: LocaleStrings = {
   "ui.provider.patient_edit.title_default": "تعديل المريض",
   "ui.provider.patient_edit.close_aria": "إغلاق محرر المريض",
   "ui.provider.patient_pill.aria": "تعديل المريض: {name}",
-  "ui.provider.nav.staff_menu": "الفريق",
+  "ui.provider.nav.staff_menu": "الإعدادات",
   "ui.provider.staff_sheet.title": "الفريق",
   "ui.provider.staff_sheet.close_aria": "إغلاق قائمة الفريق",
   "ui.provider.staff_sheet.patients_description": "تبديل وإضافة وتعديل المرضى",

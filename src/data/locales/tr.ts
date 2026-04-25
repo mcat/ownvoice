@@ -744,7 +744,7 @@ const tr: LocaleStrings = {
   "ui.provider.patient_edit.title_default": "Hastayı düzenle",
   "ui.provider.patient_edit.close_aria": "Hasta düzenleyiciyi kapat",
   "ui.provider.patient_pill.aria": "Hastayı düzenle: {name}",
-  "ui.provider.nav.staff_menu": "Personel",
+  "ui.provider.nav.staff_menu": "Ayarlar",
   "ui.provider.staff_sheet.title": "Personel",
   "ui.provider.staff_sheet.close_aria": "Personel menüsünü kapat",
   "ui.provider.staff_sheet.patients_description": "Hasta değiştir, ekle veya düzenle",

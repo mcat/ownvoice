@@ -750,7 +750,7 @@ const ko: LocaleStrings = {
   "ui.provider.patient_edit.title_default": "환자 편집",
   "ui.provider.patient_edit.close_aria": "환자 편집기 닫기",
   "ui.provider.patient_pill.aria": "환자 편집: {name}",
-  "ui.provider.nav.staff_menu": "스태프",
+  "ui.provider.nav.staff_menu": "설정",
   "ui.provider.staff_sheet.title": "스태프",
   "ui.provider.staff_sheet.close_aria": "스태프 메뉴 닫기",
   "ui.provider.staff_sheet.patients_description": "환자 전환, 추가, 편집",

@@ -755,7 +755,7 @@ const he: LocaleStrings = {
   "ui.provider.patient_edit.title_default": "עריכת מטופל",
   "ui.provider.patient_edit.close_aria": "סגירת עורך המטופל",
   "ui.provider.patient_pill.aria": "עריכת מטופל: {name}",
-  "ui.provider.nav.staff_menu": "צוות",
+  "ui.provider.nav.staff_menu": "הגדרות",
   "ui.provider.staff_sheet.title": "צוות",
   "ui.provider.staff_sheet.close_aria": "סגירת תפריט הצוות",
   "ui.provider.staff_sheet.patients_description": "החלפה, הוספה או עריכה של מטופלים",

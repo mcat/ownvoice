@@ -787,7 +787,7 @@ const tl: LocaleStrings = {
   "ui.provider.patient_edit.title_default": "I-edit ang pasyente",
   "ui.provider.patient_edit.close_aria": "Isara ang patient editor",
   "ui.provider.patient_pill.aria": "I-edit ang pasyente: {name}",
-  "ui.provider.nav.staff_menu": "Staff",
+  "ui.provider.nav.staff_menu": "Mga Setting",
   "ui.provider.staff_sheet.title": "Staff",
   "ui.provider.staff_sheet.close_aria": "Isara ang staff menu",
   "ui.provider.staff_sheet.patients_description": "Magpalit, magdagdag, o mag-edit ng pasyente",
