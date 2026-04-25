@@ -79,11 +79,11 @@ describe("HeaderNav", () => {
     expect(onSettings).toHaveBeenCalledTimes(1);
   });
 
-  it("renders overlay buttons (Wishes, Listen, Staff)", () => {
+  it("renders overlay buttons (Wishes, Listen, Care Team)", () => {
     renderNav();
     expect(screen.getByRole("button", { name: "Wishes" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Listen" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Staff" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Care Team" })).toBeInTheDocument();
   });
 
   it("hides End Staff Session button when staffAuthed is false", () => {

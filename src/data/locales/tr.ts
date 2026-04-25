@@ -506,7 +506,7 @@ const tr: LocaleStrings = {
   "ui.patient.header.name_fallback": "Hasta",
   "ui.patient.header.bed_prefix": "Yatak ",
   "ui.dual.nav.wishes": "Dilekler",
-  "ui.provider.nav.listen": "Dinle",
+  "ui.dual.nav.listen": "Dinle",
   "ui.provider.nav.staff": "Personel",
   "ui.provider.nav.switch_patient": "Hasta Değiştir",
   "ui.provider.nav.settings": "Ayarlar",

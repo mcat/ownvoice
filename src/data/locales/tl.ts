@@ -531,7 +531,7 @@ const tl: LocaleStrings = {
   "ui.patient.header.name_fallback": "Pasyente",
   "ui.patient.header.bed_prefix": "Kama ",
   "ui.dual.nav.wishes": "Mga gusto",
-  "ui.provider.nav.listen": "Makinig",
+  "ui.dual.nav.listen": "Makinig",
   "ui.provider.nav.staff": "Kawani",
   "ui.provider.nav.switch_patient": "Palitan ang pasyente",
   "ui.provider.nav.settings": "Mga Setting",

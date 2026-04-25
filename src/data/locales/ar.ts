@@ -496,7 +496,7 @@ const ar: LocaleStrings = {
   "ui.patient.header.name_fallback": "المريض",
   "ui.patient.header.bed_prefix": "سرير ",
   "ui.dual.nav.wishes": "رغبات",
-  "ui.provider.nav.listen": "استماع",
+  "ui.dual.nav.listen": "استماع",
   "ui.provider.nav.staff": "الطاقم",
   "ui.provider.nav.switch_patient": "تبديل المريض",
   "ui.provider.nav.settings": "الإعدادات",

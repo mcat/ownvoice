@@ -514,7 +514,7 @@ const vi: LocaleStrings = {
   "ui.patient.header.name_fallback": "Bệnh nhân",
   "ui.patient.header.bed_prefix": "Giường ",
   "ui.dual.nav.wishes": "Mong muốn",
-  "ui.provider.nav.listen": "Nghe",
+  "ui.dual.nav.listen": "Nghe",
   "ui.provider.nav.staff": "Nhân viên",
   "ui.provider.nav.switch_patient": "Đổi bệnh nhân",
   "ui.provider.nav.settings": "Cài đặt",

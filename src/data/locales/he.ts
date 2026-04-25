@@ -517,7 +517,7 @@ const he: LocaleStrings = {
   "ui.patient.header.name_fallback": "מטופל",
   "ui.patient.header.bed_prefix": "מיטה ",
   "ui.dual.nav.wishes": "משאלות",
-  "ui.provider.nav.listen": "האזנה",
+  "ui.dual.nav.listen": "האזנה",
   "ui.provider.nav.staff": "צוות",
   "ui.provider.nav.switch_patient": "החלף מטופל",
   "ui.provider.nav.settings": "הגדרות",

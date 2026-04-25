@@ -514,7 +514,7 @@ const de: LocaleStrings = {
   "ui.patient.header.name_fallback": "Patient",
   "ui.patient.header.bed_prefix": "Bett ",
   "ui.dual.nav.wishes": "Wünsche",
-  "ui.provider.nav.listen": "Zuhören",
+  "ui.dual.nav.listen": "Zuhören",
   "ui.provider.nav.staff": "Personal",
   "ui.provider.nav.switch_patient": "Patient wechseln",
   "ui.provider.nav.settings": "Einstellungen",

@@ -22,7 +22,7 @@ const ICONS = {
 // across renders, so React/Preact reuses the same array reference.
 const OVERLAY_BUTTONS: readonly { overlay: OverlayName; icon: string; labelKey: PhraseKey; usePatientLang?: boolean }[] = [
   { overlay: "wishes", icon: ICONS.wishes, labelKey: "ui.dual.nav.wishes", usePatientLang: true },
-  { overlay: "listen", icon: ICONS.listen, labelKey: "ui.provider.nav.listen" },
+  { overlay: "listen", icon: ICONS.listen, labelKey: "ui.dual.nav.listen", usePatientLang: true },
   { overlay: "provider", icon: ICONS.provider, labelKey: "ui.provider.nav.staff" },
 ];
 

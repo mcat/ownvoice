@@ -510,7 +510,7 @@ const nl: LocaleStrings = {
   "ui.patient.header.name_fallback": "Patiënt",
   "ui.patient.header.bed_prefix": "Bed ",
   "ui.dual.nav.wishes": "Wensen",
-  "ui.provider.nav.listen": "Luisteren",
+  "ui.dual.nav.listen": "Luisteren",
   "ui.provider.nav.staff": "Personeel",
   "ui.provider.nav.switch_patient": "Andere patiënt",
   "ui.provider.nav.settings": "Instellingen",
