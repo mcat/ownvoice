@@ -756,6 +756,12 @@ const he: LocaleStrings = {
   "ui.provider.patient_edit.title_default": "עריכת מטופל",
   "ui.provider.patient_edit.close_aria": "סגירת עורך המטופל",
   "ui.provider.patient_pill.aria": "עריכת מטופל: {name}",
+  "ui.provider.nav.staff_menu": "צוות",
+  "ui.provider.staff_sheet.title": "צוות",
+  "ui.provider.staff_sheet.close_aria": "סגירת תפריט הצוות",
+  "ui.provider.staff_sheet.patients_description": "החלפה, הוספה או עריכה של מטופלים",
+  "ui.provider.staff_sheet.settings_description": "צוות טיפול, נגישות, לא מקוון",
+  "ui.provider.staff_sheet.end_session_description": "יציאה ממצב צוות",
   // ── UI chrome: VoiceCacheProgress ─────────────────────────────
   "ui.provider.settings.voice_cache.discard_title":
     "לבטל את הכנת הקול של {label}?",

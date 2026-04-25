@@ -733,6 +733,12 @@ const pt: LocaleStrings = {
   "ui.provider.patient_edit.title_default": "Editar paciente",
   "ui.provider.patient_edit.close_aria": "Fechar editor de paciente",
   "ui.provider.patient_pill.aria": "Editar paciente: {name}",
+  "ui.provider.nav.staff_menu": "Equipe",
+  "ui.provider.staff_sheet.title": "Equipe",
+  "ui.provider.staff_sheet.close_aria": "Fechar menu da equipe",
+  "ui.provider.staff_sheet.patients_description": "Trocar, adicionar ou editar pacientes",
+  "ui.provider.staff_sheet.settings_description": "Equipe de cuidados, acessibilidade, offline",
+  "ui.provider.staff_sheet.end_session_description": "Sair do modo equipe",
   // ── UI chrome: VoiceCacheProgress ─────────────────────────────
   "ui.provider.settings.voice_cache.discard_title":
     "Descartar a preparação de voz de {label}?",

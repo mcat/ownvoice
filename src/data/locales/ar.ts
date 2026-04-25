@@ -729,6 +729,12 @@ const ar: LocaleStrings = {
   "ui.provider.patient_edit.title_default": "تعديل المريض",
   "ui.provider.patient_edit.close_aria": "إغلاق محرر المريض",
   "ui.provider.patient_pill.aria": "تعديل المريض: {name}",
+  "ui.provider.nav.staff_menu": "الفريق",
+  "ui.provider.staff_sheet.title": "الفريق",
+  "ui.provider.staff_sheet.close_aria": "إغلاق قائمة الفريق",
+  "ui.provider.staff_sheet.patients_description": "تبديل وإضافة وتعديل المرضى",
+  "ui.provider.staff_sheet.settings_description": "الفريق المعالج، إمكانية الوصول، دون اتصال",
+  "ui.provider.staff_sheet.end_session_description": "الخروج من وضع الفريق",
   // ── UI chrome: VoiceCacheProgress ─────────────────────────────
   "ui.provider.settings.voice_cache.discard_title":
     "تجاهل إعداد صوت {label}؟",

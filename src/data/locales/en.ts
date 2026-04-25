@@ -691,6 +691,14 @@ const en = {
   "ui.provider.patient_edit.close_aria": "Close patient editor",
   "ui.provider.patient_pill.aria": "Edit patient: {name}",
 
+  // ── UI chrome: Staff sheet ────────────────────────────────────
+  "ui.provider.nav.staff_menu": "Staff",
+  "ui.provider.staff_sheet.title": "Staff",
+  "ui.provider.staff_sheet.close_aria": "Close staff menu",
+  "ui.provider.staff_sheet.patients_description": "Switch, add, or edit patients",
+  "ui.provider.staff_sheet.settings_description": "Care team, accessibility, offline",
+  "ui.provider.staff_sheet.end_session_description": "Exit staff mode",
+
   // ── UI chrome: VoiceCacheProgress ─────────────────────────────
   "ui.provider.settings.voice_cache.discard_title": "Discard {label}'s voice preparation?",
   "ui.provider.settings.voice_cache.discard_body": "Progress ({current} / {total} phrases) will be lost. The recorded voice sample itself is kept — you can restart preparation later.",

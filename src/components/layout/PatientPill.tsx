@@ -1,6 +1,7 @@
 import type { JSX } from "preact";
 import type { ThemeTokens, ThemeName } from "../../theme/tokens";
 import { t as resolvePhrase } from "../../data/phraseRegistry";
+import { useUIStore } from "../../stores/uiStore";
 import type { Patient } from "../../types";
 
 interface Props {
@@ -27,6 +28,10 @@ export function PatientPill({
 }: Props) {
   const isDark = theme === "dark";
   const blue = isDark ? "#60A5FA" : "#2563EB";
+  // Show the trailing › only when staff is authenticated. To the patient,
+  // the pill is purely informational; the chevron's "tap to edit" affordance
+  // would be misleading since the PIN gate would block them anyway.
+  const staffAuthed = useUIStore((s) => s.staffAuthed);
   const ariaLabel = resolvePhrase("ui.provider.patient_pill.aria", caregiverLang)
     .replace("{name}", patient.name);
 
@@ -97,7 +102,9 @@ export function PatientPill({
           {"🎤"}
         </span>
       )}
-      <span aria-hidden="true" style={chevronStyle}>{"›"}</span>
+      {staffAuthed && (
+        <span aria-hidden="true" style={chevronStyle}>{"›"}</span>
+      )}
     </button>
   );
 }

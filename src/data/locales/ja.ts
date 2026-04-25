@@ -732,6 +732,12 @@ const ja: LocaleStrings = {
   "ui.provider.patient_edit.title_default": "患者を編集",
   "ui.provider.patient_edit.close_aria": "患者エディタを閉じる",
   "ui.provider.patient_pill.aria": "患者を編集: {name}",
+  "ui.provider.nav.staff_menu": "スタッフ",
+  "ui.provider.staff_sheet.title": "スタッフ",
+  "ui.provider.staff_sheet.close_aria": "スタッフメニューを閉じる",
+  "ui.provider.staff_sheet.patients_description": "患者の切替、追加、編集",
+  "ui.provider.staff_sheet.settings_description": "ケアチーム、アクセシビリティ、オフライン",
+  "ui.provider.staff_sheet.end_session_description": "スタッフモードを終了",
   // ── UI chrome: VoiceCacheProgress ─────────────────────────────
   "ui.provider.settings.voice_cache.discard_title":
     "{label}の音声準備を破棄しますか？",

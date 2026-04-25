@@ -6,20 +6,11 @@ import type { AppSettings } from "../../types";
 
 interface HeaderProps {
   cfg: AppSettings;
-  onSettings: () => void;
-  onSwitchPatient: () => void;
+  onOpenStaff: () => void;
   onEditPatient: () => void;
-  staffAuthed: boolean;
-  onEndStaffSession: () => void;
 }
 
-export function Header({
-  onSettings,
-  onSwitchPatient,
-  onEditPatient,
-  staffAuthed,
-  onEndStaffSession,
-}: HeaderProps) {
+export function Header({ onOpenStaff, onEditPatient }: HeaderProps) {
   const { theme, t } = useTheme();
   const active = useActivePatient();
   const caregiverLang = useSettingsStore((s) => s.cfg?.caregiverLang ?? "en");
@@ -46,12 +37,7 @@ export function Header({
           />
         )}
       </div>
-      <HeaderNav
-        onSettings={onSettings}
-        onSwitchPatient={onSwitchPatient}
-        staffAuthed={staffAuthed}
-        onEndStaffSession={onEndStaffSession}
-      />
+      <HeaderNav onOpenStaff={onOpenStaff} />
     </header>
   );
 }

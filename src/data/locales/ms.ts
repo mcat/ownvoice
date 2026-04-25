@@ -745,6 +745,12 @@ const ms: LocaleStrings = {
   "ui.provider.patient_edit.title_default": "Edit pesakit",
   "ui.provider.patient_edit.close_aria": "Tutup penyunting pesakit",
   "ui.provider.patient_pill.aria": "Edit pesakit: {name}",
+  "ui.provider.nav.staff_menu": "Kakitangan",
+  "ui.provider.staff_sheet.title": "Kakitangan",
+  "ui.provider.staff_sheet.close_aria": "Tutup menu kakitangan",
+  "ui.provider.staff_sheet.patients_description": "Tukar, tambah atau edit pesakit",
+  "ui.provider.staff_sheet.settings_description": "Pasukan penjagaan, kebolehcapaian, luar talian",
+  "ui.provider.staff_sheet.end_session_description": "Keluar mod kakitangan",
   // ── UI chrome: VoiceCacheProgress ─────────────────────────────
   "ui.provider.settings.voice_cache.discard_title":
     "Buang penyediaan suara {label}?",

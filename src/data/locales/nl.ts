@@ -751,6 +751,12 @@ const nl: LocaleStrings = {
   "ui.provider.patient_edit.title_default": "Patiënt bewerken",
   "ui.provider.patient_edit.close_aria": "Patiënteditor sluiten",
   "ui.provider.patient_pill.aria": "Patiënt bewerken: {name}",
+  "ui.provider.nav.staff_menu": "Personeel",
+  "ui.provider.staff_sheet.title": "Personeel",
+  "ui.provider.staff_sheet.close_aria": "Personeelmenu sluiten",
+  "ui.provider.staff_sheet.patients_description": "Patiënten wisselen, toevoegen of bewerken",
+  "ui.provider.staff_sheet.settings_description": "Zorgteam, toegankelijkheid, offline",
+  "ui.provider.staff_sheet.end_session_description": "Personeelsmodus verlaten",
   // ── UI chrome: VoiceCacheProgress ─────────────────────────────
   "ui.provider.settings.voice_cache.discard_title":
     "Stemvoorbereiding van {label} verwijderen?",

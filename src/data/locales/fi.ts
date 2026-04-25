@@ -728,6 +728,12 @@ const fi: LocaleStrings = {
   "ui.provider.patient_edit.title_default": "Muokkaa potilasta",
   "ui.provider.patient_edit.close_aria": "Sulje potilaan muokkaus",
   "ui.provider.patient_pill.aria": "Muokkaa potilasta: {name}",
+  "ui.provider.nav.staff_menu": "Henkilökunta",
+  "ui.provider.staff_sheet.title": "Henkilökunta",
+  "ui.provider.staff_sheet.close_aria": "Sulje henkilökunnan valikko",
+  "ui.provider.staff_sheet.patients_description": "Vaihda, lisää tai muokkaa potilaita",
+  "ui.provider.staff_sheet.settings_description": "Hoitotiimi, esteettömyys, offline",
+  "ui.provider.staff_sheet.end_session_description": "Poistu henkilökunta-tilasta",
   // ── UI chrome: VoiceCacheProgress ─────────────────────────────
   "ui.provider.settings.voice_cache.discard_title":
     "Hylätäänkö äänen valmistelu: {label}?",

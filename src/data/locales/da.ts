@@ -748,6 +748,12 @@ const da: LocaleStrings = {
   "ui.provider.patient_edit.title_default": "Rediger patient",
   "ui.provider.patient_edit.close_aria": "Luk patientredigering",
   "ui.provider.patient_pill.aria": "Rediger patient: {name}",
+  "ui.provider.nav.staff_menu": "Personale",
+  "ui.provider.staff_sheet.title": "Personale",
+  "ui.provider.staff_sheet.close_aria": "Luk personalemenu",
+  "ui.provider.staff_sheet.patients_description": "Skift, tilføj eller rediger patienter",
+  "ui.provider.staff_sheet.settings_description": "Plejeteam, tilgængelighed, offline",
+  "ui.provider.staff_sheet.end_session_description": "Forlad personale-tilstand",
   // ── UI chrome: VoiceCacheProgress ─────────────────────────────
   "ui.provider.settings.voice_cache.discard_title":
     "Kassér stemmeforberedelse for {label}?",

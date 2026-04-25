@@ -28,77 +28,51 @@ vi.mock("../../hooks/useTheme", () => ({
 }));
 
 describe("HeaderNav", () => {
-  const onSettings = vi.fn();
-  const onSwitchPatient = vi.fn();
-  const onEndStaffSession = vi.fn();
+  const onOpenStaff = vi.fn();
 
   beforeEach(() => {
-    onSettings.mockReset();
-    onSwitchPatient.mockReset();
-    onEndStaffSession.mockReset();
+    onOpenStaff.mockReset();
     const cfg = makeTestCfg({ patient: { name: "Test" }, cfg: { pin: "" } });
     useSettingsStore.setState({ cfg, speakerData: null, _hasHydrated: true });
-    useUIStore.setState({
-      builderOpen: false,
-      wishesOpen: false,
-      providerOpen: false,
-      listenOpen: false,
-      settingsOpen: false,
-      pinEntryOpen: false,
-      switchSheetOpen: false,
-      staffAuthed: false,
-      staffAuthedAt: null,
-    });
+    useUIStore.getState().resetUI();
   });
 
-  function renderNav(staffAuthed = false) {
-    return render(
-      <HeaderNav
-        onSettings={onSettings}
-        onSwitchPatient={onSwitchPatient}
-        staffAuthed={staffAuthed}
-        onEndStaffSession={onEndStaffSession}
-      />,
-    );
+  function renderNav() {
+    return render(<HeaderNav onOpenStaff={onOpenStaff} />);
   }
 
-  it("renders the Patients button", () => {
+  it("renders the Staff button (single staff entry point)", () => {
     renderNav();
-    expect(screen.getByRole("button", { name: "Patients" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Staff" })).toBeInTheDocument();
   });
 
-  it("fires onSwitchPatient when Patients button is clicked", () => {
+  it("fires onOpenStaff when the Staff button is clicked", () => {
     renderNav();
-    fireEvent.click(screen.getByRole("button", { name: "Patients" }));
-    expect(onSwitchPatient).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("button", { name: "Staff" }));
+    expect(onOpenStaff).toHaveBeenCalledTimes(1);
   });
 
-  it("fires onSettings when Settings button is clicked", () => {
+  it("does NOT render Patients, Settings, or End Staff Session buttons in the nav (those moved into StaffSheet)", () => {
     renderNav();
-    fireEvent.click(screen.getByRole("button", { name: "Settings" }));
-    expect(onSettings).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("button", { name: "Patients" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Settings" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "End staff session" })).toBeNull();
   });
 
-  it("renders overlay buttons (Wishes, Listen, Care Team)", () => {
+  it("renders the patient-facing overlay buttons (Wishes, Listen, Care Team)", () => {
     renderNav();
     expect(screen.getByRole("button", { name: "Wishes" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Listen" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Care Team" })).toBeInTheDocument();
   });
 
-  it("hides End Staff Session button when staffAuthed is false", () => {
-    renderNav(false);
-    expect(screen.queryByRole("button", { name: "End staff session" })).not.toBeInTheDocument();
-  });
-
-  it("shows End Staff Session button when staffAuthed is true", () => {
-    renderNav(true);
-    expect(screen.getByRole("button", { name: "End staff session" })).toBeInTheDocument();
-  });
-
-  it("fires onEndStaffSession when End Staff Session button is clicked", () => {
-    renderNav(true);
-    fireEvent.click(screen.getByRole("button", { name: "End staff session" }));
-    expect(onEndStaffSession).toHaveBeenCalledTimes(1);
+  it("renders a theme toggle button", () => {
+    renderNav();
+    // Theme button uses an aria-label of the form "Theme: <label>"; assert
+    // by prefix so this stays decoupled from the active theme/locale text.
+    const themeBtn = screen
+      .getAllByRole("button")
+      .find((b) => b.getAttribute("aria-label")?.startsWith("Theme:"));
+    expect(themeBtn).toBeTruthy();
   });
 });

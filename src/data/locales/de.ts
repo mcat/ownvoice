@@ -754,6 +754,12 @@ const de: LocaleStrings = {
   "ui.provider.patient_edit.title_default": "Patient bearbeiten",
   "ui.provider.patient_edit.close_aria": "Patientenbearbeitung schließen",
   "ui.provider.patient_pill.aria": "Patient bearbeiten: {name}",
+  "ui.provider.nav.staff_menu": "Personal",
+  "ui.provider.staff_sheet.title": "Personal",
+  "ui.provider.staff_sheet.close_aria": "Personalmenü schließen",
+  "ui.provider.staff_sheet.patients_description": "Patienten wechseln, hinzufügen oder bearbeiten",
+  "ui.provider.staff_sheet.settings_description": "Pflegeteam, Barrierefreiheit, Offline",
+  "ui.provider.staff_sheet.end_session_description": "Personal-Modus verlassen",
   // ── UI chrome: VoiceCacheProgress ─────────────────────────────
   "ui.provider.settings.voice_cache.discard_title":
     "Stimmvorbereitung von {label} verwerfen?",

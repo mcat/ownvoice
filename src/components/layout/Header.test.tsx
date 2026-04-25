@@ -34,27 +34,13 @@ const makeCfg = (overrides?: { patient?: Record<string, unknown>; cfg?: Partial<
   });
 
 describe("Header", () => {
-  const onSettings = vi.fn();
-  const onSwitchPatient = vi.fn();
+  const onOpenStaff = vi.fn();
   const onEditPatient = vi.fn();
-  const onEndStaffSession = vi.fn();
 
   beforeEach(() => {
-    onSettings.mockReset();
-    onSwitchPatient.mockReset();
+    onOpenStaff.mockReset();
     onEditPatient.mockReset();
-    onEndStaffSession.mockReset();
-    useUIStore.setState({
-      builderOpen: false,
-      wishesOpen: false,
-      providerOpen: false,
-      listenOpen: false,
-      settingsOpen: false,
-      pinEntryOpen: false,
-      switchSheetOpen: false,
-      staffAuthed: false,
-      staffAuthedAt: null,
-    });
+    useUIStore.getState().resetUI();
   });
 
   function renderHeader(overrides?: { patient?: Record<string, unknown>; cfg?: Partial<AppSettings> }) {
@@ -63,11 +49,8 @@ describe("Header", () => {
     return render(
       <Header
         cfg={cfg}
-        onSettings={onSettings}
-        onSwitchPatient={onSwitchPatient}
+        onOpenStaff={onOpenStaff}
         onEditPatient={onEditPatient}
-        staffAuthed={false}
-        onEndStaffSession={onEndStaffSession}
       />,
     );
   }
@@ -89,36 +72,31 @@ describe("Header", () => {
 
   it("wishes overlay button calls openOverlay on UI store", () => {
     renderHeader();
-    const heartBtn = screen.getByText("❤️");
-    fireEvent.click(heartBtn);
+    fireEvent.click(screen.getByText("❤️"));
     expect(useUIStore.getState().wishesOpen).toBe(true);
   });
 
   it("listen overlay button calls openOverlay on UI store", () => {
     renderHeader();
-    const listenBtn = screen.getByText("👂");
-    fireEvent.click(listenBtn);
+    fireEvent.click(screen.getByText("👂"));
     expect(useUIStore.getState().listenOpen).toBe(true);
   });
 
   it("provider overlay button calls openOverlay on UI store", () => {
     renderHeader();
-    const providerBtn = screen.getByText("👩‍⚕️");
-    fireEvent.click(providerBtn);
+    fireEvent.click(screen.getByText("👩‍⚕️"));
     expect(useUIStore.getState().providerOpen).toBe(true);
   });
 
-  it("settings button calls onSettings callback", () => {
+  it("staff button calls onOpenStaff callback", () => {
     renderHeader({ cfg: { pin: "1234" } });
-    const settingsBtn = screen.getByText("⚙️");
-    fireEvent.click(settingsBtn);
-    expect(onSettings).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("button", { name: "Staff" }));
+    expect(onOpenStaff).toHaveBeenCalledTimes(1);
   });
 
-  it("switch patient button calls onSwitchPatient callback", () => {
+  it("tapping the patient pill calls onEditPatient", () => {
     renderHeader();
-    const switchBtn = screen.getByText("🔄");
-    fireEvent.click(switchBtn);
-    expect(onSwitchPatient).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("button", { name: /Edit patient: Maria/ }));
+    expect(onEditPatient).toHaveBeenCalledTimes(1);
   });
 });

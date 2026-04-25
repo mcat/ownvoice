@@ -788,6 +788,12 @@ const tl: LocaleStrings = {
   "ui.provider.patient_edit.title_default": "I-edit ang pasyente",
   "ui.provider.patient_edit.close_aria": "Isara ang patient editor",
   "ui.provider.patient_pill.aria": "I-edit ang pasyente: {name}",
+  "ui.provider.nav.staff_menu": "Staff",
+  "ui.provider.staff_sheet.title": "Staff",
+  "ui.provider.staff_sheet.close_aria": "Isara ang staff menu",
+  "ui.provider.staff_sheet.patients_description": "Magpalit, magdagdag, o mag-edit ng pasyente",
+  "ui.provider.staff_sheet.settings_description": "Care team, accessibility, offline",
+  "ui.provider.staff_sheet.end_session_description": "Lumabas sa staff mode",
   // ── UI chrome: VoiceCacheProgress ─────────────────────────────
   "ui.provider.settings.voice_cache.discard_title":
     "Itapon ang paghahanda ng boses ni {label}?",
