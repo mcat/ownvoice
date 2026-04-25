@@ -50,9 +50,10 @@ export function SettingsPanel({
       <BottomSheet onClose={onClose} t={t} zIndex={z.sheetStacked}>
         <BottomSheet.Header>
           <BottomSheet.Title>{resolvePhrase("ui.provider.settings.title", caregiverLang)}</BottomSheet.Title>
-          {/* End-session lives in the global header (HeaderLockButton)
-              with a live countdown — no need for a duplicate inline
-              affordance here. */}
+          {/* End-session lives in the SettingsLockPill in the global
+              header — when authed, the right half shows a live
+              countdown and locks on tap. No duplicate inline affordance
+              here. */}
           <BottomSheet.CloseButton
             aria-label={resolvePhrase("ui.provider.settings.close_aria", caregiverLang)}
             style={{

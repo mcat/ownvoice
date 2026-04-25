@@ -484,7 +484,7 @@ describe("App", () => {
       expect(useUIStore.getState().pinEntryOpen).toBe(false);
     });
 
-    it("HeaderLockButton clears staffAuthed when tapped", () => {
+    it("SettingsLockPill lock half clears staffAuthed when tapped", () => {
       useSettingsStore.setState({
         _hasHydrated: true,
         cfg: makeCfg({ pin: "1234" }),

@@ -5,7 +5,7 @@ import { useTheme } from "../../hooks/useTheme";
 import { t as resolvePhrase } from "../../data/phraseRegistry";
 import type { PhraseKey } from "../../data/phraseRegistry";
 import type { ThemeTokens } from "../../theme/tokens";
-import { HeaderLockButton } from "./HeaderLockButton";
+import { SettingsLockPill } from "./SettingsLockPill";
 
 const ICONS = {
   auto: "🌓",
@@ -14,10 +14,6 @@ const ICONS = {
   wishes: "❤️",
   listen: "👂",
   provider: "👩‍⚕️",
-  // Locked-with-key — distinct from the provider 👩‍⚕️ used by the patient-
-  // facing Care Team button. Signals "behind PIN gate". The button label
-  // reads "Settings" but the lock motif keeps the PIN-gate cue.
-  staff: "🔐",
 } as const;
 
 // Overlay button definitions live at module scope — identity never changes
@@ -93,19 +89,11 @@ export function HeaderNav({ onOpenSettings }: HeaderNavProps) {
           </Btn>
         );
       })}
-      <Btn
-        key="settings"
-        onClick={onOpenSettings}
-        aria-label={resolvePhrase("ui.provider.nav.staff_menu", caregiverLang)}
-        style={btnStyle(t, ICONS.staff)}
-      >
-        <span>{ICONS.staff}</span>
-        <span style={labelStyle(t)}>{resolvePhrase("ui.provider.nav.staff_menu", caregiverLang)}</span>
-      </Btn>
-      {/* HeaderLockButton renders only when staffAuthed — sits at the
-          trailing edge of the nav with a live countdown to the
-          auto-lock. Click to lock immediately. */}
-      <HeaderLockButton t={t} />
+      {/* Settings + (when authed) Lock countdown live in a single
+          compound pill — one chrome, two sibling tap targets, hairline
+          divider between. Authed state grows the pill; unauthed renders
+          identically to a standalone Settings button. */}
+      <SettingsLockPill onOpenSettings={onOpenSettings} t={t} />
     </div>
   );
 }
