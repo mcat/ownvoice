@@ -258,9 +258,27 @@ function BackButton({ parentLabel, onClick, ...rest }: BackButtonProps) {
         ...(rest.style as JSX.CSSProperties | undefined),
       }}
     >
-      <span aria-hidden="true" style={{ fontSize: 24, lineHeight: 1, fontWeight: 400 }}>
-        {"\u2039"}
-      </span>
+      {/* SVG chevron \u2014 sized to match the label's cap height so it
+          sits on the same baseline. Stroke uses currentColor so it
+          tracks the button's text color in light/dark themes. The
+          Unicode `\u2039` glyph rendered at a larger fontSize put the
+          visual top of the chevron above the label's cap height. */}
+      <svg
+        aria-hidden="true"
+        width="9"
+        height="15"
+        viewBox="0 0 9 15"
+        fill="none"
+        style={{ flexShrink: 0 }}
+      >
+        <path
+          d="M7.5 1.5L1.5 7.5L7.5 13.5"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
       <span>{parentLabel}</span>
     </button>
   );
