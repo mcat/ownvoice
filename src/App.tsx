@@ -255,7 +255,17 @@ export function App() {
   // Wait for IndexedDB hydration before deciding setup vs main app
   if (!hasHydrated) return null;
   if (!cfg || cfg.patients.length === 0 || cfg.activePatientId === null) {
-    return <Setup onFirstRunDone={setCfg} mode="first-run" />;
+    // ConfirmDialogHost MUST be in this branch — Setup uses confirm() for
+    // its Skip flow, and without a mounted host the promise never resolves
+    // (Skip silently hangs). The host is also mounted in the main-app
+    // branch below; both branches need their own copy because this is an
+    // early return.
+    return (
+      <>
+        <Setup onFirstRunDone={setCfg} mode="first-run" />
+        <ConfirmDialogHost />
+      </>
+    );
   }
 
   // After the gate above, active is guaranteed non-null.
