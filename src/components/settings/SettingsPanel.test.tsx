@@ -11,12 +11,10 @@ function seedStore(cfg: ReturnType<typeof makeTestCfg>) {
 
 describe("SettingsPanel", () => {
   const onUpdate = vi.fn();
-  const onReset = vi.fn();
   const onClose = vi.fn();
 
   beforeEach(() => {
     onUpdate.mockClear();
-    onReset.mockClear();
     onClose.mockClear();
     useUIStore.getState().resetUI();
     vi.useFakeTimers();
@@ -36,7 +34,6 @@ describe("SettingsPanel", () => {
       <SettingsPanel
         cfg={cfg}
         onUpdate={onUpdate}
-        onReset={onReset}
         onClose={onClose}
         t={light}
         theme="light"
@@ -100,34 +97,19 @@ describe("SettingsPanel", () => {
     expect(screen.queryByDisplayValue("4A")).toBeNull();
   });
 
-  /* ---------- Reset (inline destructive footer) ---------- */
+  /* ---------- Reset (now its own sub-panel) ---------- */
 
-  it("'Reset app' shows confirmation, and confirm calls onReset", () => {
+  it("renders a Reset nav row that pushes into the Reset sub-panel", () => {
     renderPanel();
-    fireEvent.click(screen.getByText("Reset app for new patient"));
-    vi.advanceTimersByTime(300);
-
-    expect(screen.getByText("Are you sure?")).toBeInTheDocument();
-    expect(
-      screen.getByText(/This will erase all patient data/),
-    ).toBeInTheDocument();
-
-    fireEvent.click(screen.getByText("Reset everything"));
-    vi.advanceTimersByTime(300);
-
-    expect(onReset).toHaveBeenCalledOnce();
+    useUIStore.setState({ settingsOpen: true });
+    fireEvent.click(screen.getByRole("button", { name: /^Reset/ }));
+    expect(useUIStore.getState().settingsOpen).toBe(false);
+    expect(useUIStore.getState().resetOpen).toBe(true);
   });
 
-  it("'Cancel' in reset confirmation hides the confirmation", () => {
+  it("does NOT render the legacy inline 'Reset app for new patient' button", () => {
     renderPanel();
-    fireEvent.click(screen.getByText("Reset app for new patient"));
-    vi.advanceTimersByTime(300);
-    expect(screen.getByText("Are you sure?")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByText("Cancel"));
-    vi.advanceTimersByTime(300);
-    expect(screen.queryByText("Are you sure?")).not.toBeInTheDocument();
-    expect(screen.getByText("Reset app for new patient")).toBeInTheDocument();
+    expect(screen.queryByText("Reset app for new patient")).toBeNull();
   });
 
   /* ---------- Sheet chrome ---------- */

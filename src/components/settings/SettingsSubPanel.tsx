@@ -11,7 +11,7 @@ interface SettingsSubPanelProps {
   /** Title shown in the sheet header. */
   title: string;
   /** The overlay key this sub-panel is bound to (e.g. "careTeam"). */
-  overlay: Extract<OverlayName, "careTeam" | "accessibility" | "diagnostics" | "about">;
+  overlay: Extract<OverlayName, "careTeam" | "accessibility" | "diagnostics" | "about" | "reset">;
   t: ThemeTokens;
   children: ComponentChildren;
 }

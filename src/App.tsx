@@ -25,6 +25,7 @@ import { CareTeamSheet } from "./components/settings/CareTeamSheet";
 import { AccessibilitySheet } from "./components/settings/AccessibilitySheet";
 import { DiagnosticsSheet } from "./components/settings/DiagnosticsSheet";
 import { AboutSheet } from "./components/settings/AboutSheet";
+import { ResetSheet } from "./components/settings/ResetSheet";
 import { PatientsScreen } from "./components/patients/PatientsScreen";
 import { PatientEditSheet } from "./components/patient/PatientEditSheet";
 import { PinGate } from "./components/shared/PinGate";
@@ -81,6 +82,7 @@ export function App() {
   const accessibilityOpen = useUIStore((s) => s.accessibilityOpen);
   const diagnosticsOpen = useUIStore((s) => s.diagnosticsOpen);
   const aboutOpen = useUIStore((s) => s.aboutOpen);
+  const resetOpen = useUIStore((s) => s.resetOpen);
   const pinEntryOpen = useUIStore((s) => s.pinEntryOpen);
   const switchSheetOpen = useUIStore((s) => s.switchSheetOpen);
   const addPatientOpen = useUIStore((s) => s.addPatientOpen);
@@ -476,11 +478,14 @@ export function App() {
             // instantly dismiss the panel.
             useSettingsStore.getState().setCfg(c);
           }}
-          onReset={resetAll}
           onClose={() => closeOverlay("settings")}
           t={t}
           theme={theme}
         />
+      )}
+
+      {resetOpen && (
+        <ResetSheet onResetEverything={resetAll} t={t} />
       )}
 
       {careTeamOpen && (

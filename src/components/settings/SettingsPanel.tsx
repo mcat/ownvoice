@@ -6,7 +6,6 @@ import { t as resolvePhrase } from "../../data/phraseRegistry";
 import { useSettingsStore } from "../../stores/settingsStore";
 import { useUIStore, type OverlayName } from "../../stores/uiStore";
 import { SettingsNavRow } from "./SettingsNavRow";
-import { ResetSection } from "./sections/ResetSection";
 import { useStaffActivityBump } from "../../hooks/useStaffActivityBump";
 
 interface SettingsPanelProps {
@@ -17,7 +16,6 @@ interface SettingsPanelProps {
    */
   cfg: AppSettings;
   onUpdate: (cfg: AppSettings) => void;
-  onReset: () => void | Promise<void>;
   onClose: () => void;
   t: ThemeTokens;
   theme: ThemeName;
@@ -33,10 +31,8 @@ interface SettingsPanelProps {
  * "Done" on either dismisses the whole flow.
  */
 export function SettingsPanel({
-  onReset,
   onClose,
   t,
-  theme,
 }: SettingsPanelProps) {
   const caregiverLang = useSettingsStore((s) => s.cfg?.caregiverLang ?? "en");
   const patientCount = useSettingsStore((s) => s.cfg?.patients.length ?? 0);
@@ -44,7 +40,7 @@ export function SettingsPanel({
   const staffAuthed = useUIStore((s) => s.staffAuthed);
   const bump = useStaffActivityBump();
 
-  function pushTo(overlay: Extract<OverlayName, "switch" | "careTeam" | "accessibility" | "diagnostics" | "about">) {
+  function pushTo(overlay: Extract<OverlayName, "switch" | "careTeam" | "accessibility" | "diagnostics" | "about" | "reset">) {
     useUIStore.getState().closeOverlay("settings");
     useUIStore.getState().openOverlay(overlay);
   }
@@ -132,11 +128,17 @@ export function SettingsPanel({
               onClick={() => pushTo("about")}
               t={t}
             />
-            {/* Reset stays inline as a destructive footer action — it's the
-                shift-handoff "nuclear option" and shouldn't hide one tap deeper. */}
-            <div style={{ marginTop: 16 }}>
-              <ResetSection onReset={onReset} t={t} theme={theme} />
-            </div>
+            {/* Reset is a sub-panel of its own — three scoped destructive
+                actions (patients only / care team only / everything). The
+                row keeps the destructive red treatment so it reads as
+                dangerous even before the user pushes in. */}
+            <SettingsNavRow
+              icon={"🧹"}
+              label={resolvePhrase("ui.provider.settings.reset.row_label", caregiverLang)}
+              description={resolvePhrase("ui.provider.settings.reset.row_description", caregiverLang)}
+              onClick={() => pushTo("reset")}
+              t={t}
+            />
           </div>
         </BottomSheet.Body>
       </BottomSheet>

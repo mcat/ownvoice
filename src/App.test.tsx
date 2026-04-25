@@ -107,6 +107,7 @@ describe("App", () => {
       accessibilityOpen: false,
       diagnosticsOpen: false,
       aboutOpen: false,
+      resetOpen: false,
       pinEntryOpen: false,
       switchSheetOpen: false,
       activeProvIdx: 0,

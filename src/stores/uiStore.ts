@@ -11,6 +11,7 @@ export type OverlayName =
   | "accessibility"
   | "diagnostics"
   | "about"
+  | "reset"
   | "pinEntry"
   | "switch"
   | "addPatient";
@@ -27,6 +28,7 @@ interface UIState {
   accessibilityOpen: boolean;
   diagnosticsOpen: boolean;
   aboutOpen: boolean;
+  resetOpen: boolean;
   pinEntryOpen: boolean;
   switchSheetOpen: boolean;
   addPatientOpen: boolean;
@@ -74,6 +76,7 @@ const OVERLAY_KEYS: Record<OverlayName, keyof UIState> = {
   accessibility: "accessibilityOpen",
   diagnostics: "diagnosticsOpen",
   about: "aboutOpen",
+  reset: "resetOpen",
   pinEntry: "pinEntryOpen",
   switch: "switchSheetOpen",
   addPatient: "addPatientOpen",
@@ -98,6 +101,7 @@ const INITIAL: Pick<
   | "accessibilityOpen"
   | "diagnosticsOpen"
   | "aboutOpen"
+  | "resetOpen"
   | "pinEntryOpen"
   | "switchSheetOpen"
   | "addPatientOpen"
@@ -120,6 +124,7 @@ const INITIAL: Pick<
   accessibilityOpen: false,
   diagnosticsOpen: false,
   aboutOpen: false,
+  resetOpen: false,
   pinEntryOpen: false,
   switchSheetOpen: false,
   addPatientOpen: false,
@@ -154,6 +159,7 @@ export const useUIStore = create<UIState>((set) => ({
       accessibilityOpen: false,
       diagnosticsOpen: false,
       aboutOpen: false,
+      resetOpen: false,
       pinEntryOpen: false,
       switchSheetOpen: false,
       addPatientOpen: false,
