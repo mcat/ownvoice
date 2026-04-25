@@ -747,11 +747,15 @@ export function VoiceCapture({
             />
           )}
           {inBreath && (
-            // Breath-paced circle with text label. The key on the outer
-            // wrapper is "breath" (constant across inhale↔exhale) so the
-            // circle element persists and its CSS transition smoothly
-            // animates between the two scale targets. The inner text is
-            // keyed on countdownIdx so it fades in/out per substep.
+            // Breath-paced circle with text label. The circle uses a
+            // per-step CSS keyframe animation (voiceCoachInhale /
+            // voiceCoachExhale) keyed on countdownIdx so each step
+            // starts at its declared "from" state — small for inhale,
+            // large for exhale — even on the very first beat. A CSS
+            // transition would paint the end-state immediately on the
+            // first inhale because there's no prior value to animate
+            // from. The text is keyed identically so it fades in/out
+            // per substep.
             <div
               key="breath"
               style={{
@@ -762,15 +766,14 @@ export function VoiceCapture({
               }}
             >
               <span
+                key={`breath-circle-${countdownIdx}`}
                 aria-hidden="true"
                 style={{
                   width: 80,
                   height: 80,
                   borderRadius: "50%",
                   background: "radial-gradient(circle, #FCD34D 0%, #FDE68A 75%)",
-                  transform: step.kind === "inhale" ? "scale(1.6)" : "scale(0.55)",
-                  opacity: step.kind === "inhale" ? 1 : 0.55,
-                  transition: `transform ${BREATH_CYCLE_MS}ms ease-in-out, opacity ${BREATH_CYCLE_MS}ms ease-in-out`,
+                  animation: `${step.kind === "inhale" ? "voiceCoachInhale" : "voiceCoachExhale"} ${BREATH_CYCLE_MS}ms ease-in-out both`,
                   transformOrigin: "center",
                   boxShadow: "0 0 28px 6px rgba(252, 211, 77, 0.25)",
                 }}
