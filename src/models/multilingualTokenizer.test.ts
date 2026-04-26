@@ -11,19 +11,25 @@ const TOKENIZER_JSON = JSON.parse(
 );
 
 describe("multilingualTokenizer encode", () => {
-  test("encodes a language tag as its dedicated id at the start", () => {
+  // The post-processor wraps every encoded sequence as:
+  //   [EXAGGERATION (6563), BOS (255), <inner>, EOS (0), START_SPEECH (6561), START_SPEECH (6561)]
+  // So inner tokens start at index 2 (after EXAGGERATION + BOS) and end at
+  // index length-4 (before EOS + START_SPEECH × 2).
+  test("wraps encoded text with the post-processor template", () => {
     const tok = buildMultilingualTokenizer(TOKENIZER_JSON);
     const ids = tok.encode("[en]Hello");
-    expect(ids[0]).toBe(708); // [en]
-    expect(ids[ids.length - 1]).toBe(0); // [STOP] appended
+    expect(ids[0]).toBe(6563); // EXAGGERATION
+    expect(ids[1]).toBe(255); // BOS
+    expect(ids[2]).toBe(708); // [en] is the first inner token
+    expect(ids[ids.length - 3]).toBe(0); // EOS
+    expect(ids[ids.length - 2]).toBe(6561); // START_SPEECH
+    expect(ids[ids.length - 1]).toBe(6561); // START_SPEECH (×2)
   });
 
   test("treats a literal space as the [SPACE] token (id 2)", () => {
     const tok = buildMultilingualTokenizer(TOKENIZER_JSON);
     const ids = tok.encode("[en]Hello world");
-    // Expect 708 ... 2 ... 0 -- exactly one [SPACE] in the middle
-    expect(ids[0]).toBe(708);
-    expect(ids[ids.length - 1]).toBe(0);
+    // Inner content has exactly one [SPACE] in the middle.
     const spaceCount = ids.filter((id) => id === 2).length;
     expect(spaceCount).toBe(1);
   });
@@ -64,14 +70,17 @@ describe("multilingualTokenizer decode", () => {
     expect(decoded).toBe("   ");
   });
 
-  test("stops decoding at [STOP]", () => {
+  test("stops decoding at EOS and skips post-processor wrappers", () => {
     const tok = buildMultilingualTokenizer(TOKENIZER_JSON);
     const ids = tok.encode("[en]Hi");
-    expect(ids[ids.length - 1]).toBe(0);
+    // Wrapped sequence ends with [..., EOS=0, START_SPEECH=6561, START_SPEECH=6561]
+    expect(ids[ids.length - 3]).toBe(0); // EOS
     const decoded = tok.decode(ids);
-    // Should not include [STOP] character or the [en] tag literal
+    // Should not include the [en] tag literal or any wrapper marker text
     expect(decoded).not.toContain("[en]");
     expect(decoded).not.toContain("STOP");
+    expect(decoded).not.toContain("EXAGGERATION");
+    expect(decoded).not.toContain("BOS");
   });
 });
 
@@ -106,7 +115,10 @@ describe("multilingualTokenizer round-trip across languages", () => {
   test("zh: encodes without error even though hanzi are out-of-vocab", () => {
     const prepared = prepareLanguage("你好世界", "zh");
     const ids = tok.encode(prepared);
-    expect(ids[0]).toBe(725); // [zh]
-    expect(ids[ids.length - 1]).toBe(0); // [STOP]
+    // Wrapped: [EXAGGERATION, BOS, [zh], <maybe nothing inner>, EOS, START_SPEECH, START_SPEECH]
+    expect(ids[0]).toBe(6563); // EXAGGERATION
+    expect(ids[1]).toBe(255); // BOS
+    expect(ids[2]).toBe(725); // [zh] is first inner token
+    expect(ids[ids.length - 1]).toBe(6561); // trailing START_SPEECH
   });
 });

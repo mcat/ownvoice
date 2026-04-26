@@ -531,11 +531,18 @@ async function handleSynthesize(text, speakerData, id, languageId, exaggeration 
 
   // embed_tokens runs on WASM with int64 inputs.
   // Multilingual embed_tokens requires position_ids and exaggeration.
-  // Positions for text tokens are arange(N) - 1, i.e. [-1, 0, 1, ..., N-2].
-  // Verified against upstream HF inference example. NOT [0..N-1] — the off-by-one
-  // shifts every position-embedding lookup and degrades both pacing and clone identity.
+  // Per upstream HF reference inference:
+  //   position_ids = np.where(input_ids >= START_SPEECH_TOKEN, 0, arange(N) - 1)
+  // i.e. transition wrapper tokens (EXAGGERATION 6563 at the start,
+  // START_SPEECH 6561 ×2 at the end) get position 0; text-side tokens use
+  // arange-1 indexing. The model is trained with this dual-positioning so
+  // wrappers act as positionless markers and text carries sequence position.
   const embedIdsTensor = new ort.Tensor("int64", BigInt64Array.from(inputIds.map(BigInt)), [1, inputIds.length]);
-  const positionIdsTensor = new ort.Tensor("int64", BigInt64Array.from(inputIds.map((_, i) => BigInt(i - 1))), [1, inputIds.length]);
+  const positionIdsTensor = new ort.Tensor(
+    "int64",
+    BigInt64Array.from(inputIds.map((tokenId, i) => (tokenId >= START_SPEECH_TOKEN ? 0n : BigInt(i - 1)))),
+    [1, inputIds.length],
+  );
   const exaggerationTensor = new ort.Tensor("float32", new Float32Array([exaggeration]), [1]);
 
   // Step 2: Embed text + start-of-speech tokens

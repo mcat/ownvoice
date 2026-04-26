@@ -39,7 +39,16 @@ import { recordHash } from "../stores/patientIndex";
 //           sampling was producing gibberish English. The Turbo stutter-bug
 //           rationale that originally forced sampling doesn't apply to the
 //           Llama-based multilingual LM.
-const CACHE_DIR = "audio-cache-v10";
+// v10 → v11: BIG fix. Tokenizer now applies the post-processor template
+//            (EXAGGERATION + BOS + <text> + EOS + START_SPEECH × 2). Without
+//            the trailing START_SPEECH × 2 the model never enters
+//            speech-generation mode and runs to MAX_NEW_TOKENS without ever
+//            emitting STOP_SPEECH. Also fixed position_ids: wrapper tokens
+//            now get position 0 (not their arange position) per upstream's
+//            np.where logic. Together these were the load-bearing bugs
+//            behind earlier rounds of "drawn out / inaccurate / runaway
+//            generation" listening reports.
+const CACHE_DIR = "audio-cache-v11";
 const SAMPLE_RATE = 24000; // Chatterbox Turbo output rate
 const INT16_SCALE = 32767;
 

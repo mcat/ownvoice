@@ -461,12 +461,15 @@ async function handleSynthesize(
 
   // Step 2: Get text + start-of-speech embeddings via embed_tokens.
   // Multilingual embed_tokens requires position_ids and exaggeration.
-  // Positions for text tokens are arange(N) - 1, i.e. [-1, 0, 1, ..., N-2].
-  // Verified against upstream HF inference example. NOT [0..N-1] — the off-by-one
-  // shifts every position-embedding lookup, which manifests as drawn-out pacing
-  // and degraded clone identity (the speaker conditioning rides on attention
-  // patterns that depend on these positions).
-  const positionIds = Array.from({ length: inputIds.length }, (_, i) => i - 1);
+  // Per upstream HF reference inference:
+  //   position_ids = np.where(input_ids >= START_SPEECH_TOKEN, 0, arange(N) - 1)
+  // i.e. transition wrapper tokens (EXAGGERATION 6563 at the start,
+  // START_SPEECH 6561 ×2 at the end) get position 0; text-side tokens use
+  // arange-1 indexing. The model is trained with this dual-positioning so
+  // wrappers act as positionless markers and text carries sequence position.
+  const positionIds = inputIds.map((tokenId, i) =>
+    tokenId >= START_SPEECH ? 0 : i - 1,
+  );
   const positionIdsTensor = intTensor(positionIds, [1, inputIds.length]);
   const exaggerationTensor = new ort.Tensor("float32", new Float32Array([exaggeration]), [1]);
 

@@ -1,13 +1,23 @@
 /**
  * Multilingual Chatterbox BPE tokenizer.
  *
- * Mirrors upstream MTLTokenizer.encode():
+ * Mirrors upstream MTLTokenizer.encode() including the post-processor template
+ * that wraps the encoded text with the model's expected control tokens:
+ *
+ *   [EXAGGERATION (6563), BOS (255), <encoded text>, EOS (0), START_SPEECH (6561), START_SPEECH (6561)]
+ *
+ * The trailing START_SPEECH × 2 is what tells the LM to enter speech-generation
+ * mode. Without these wrappers (we shipped one earlier version that emitted only
+ * `<text> + [STOP]`) the model never properly transitions out of text mode and
+ * either runs to MAX_NEW_TOKENS without emitting STOP_SPEECH (greedy) or emits
+ * gibberish speech tokens (sampling).
+ *
  *   1. prepareLanguage(text, lang) -> "[xx]text" (NO space, lowercase tag)
  *   2. encode(text):
  *      - Replace literal spaces with "[SPACE]" so the BPE sees them as added tokens
  *      - Split on the added-token regex; emit dedicated IDs for matches
  *      - BPE-encode each non-special segment
- *      - Append [STOP] (id 0) at the end
+ *      - Wrap the result with the post-processor template above
  *
  * Differences from src/models/bpeTokenizer.ts (the LFM2 GPT-2 BPE):
  *   - No byte-level pre-tokenization (multilingual vocab handles bytes via BPE merges)
@@ -25,8 +35,13 @@ export interface MultilingualTokenizer {
   decode: (ids: number[]) => string;
 }
 
-const STOP_TOKEN_ID = 0;
 const SPACE_TOKEN_ID = 2;
+// Post-processor template ids — verified from tokenizer.json post_processor.special_tokens.
+// These DON'T live inside vocab.json; the model knows them as architectural constants.
+const EXAGGERATION_TOKEN_ID = 6563;
+const BOS_TOKEN_ID = 255;
+const EOS_TOKEN_ID = 0;
+const START_SPEECH_TOKEN_ID = 6561;
 
 export function buildMultilingualTokenizer(
   json: TokenizerJSON,
@@ -93,7 +108,7 @@ export function buildMultilingualTokenizer(
       // the BPE sees [SPACE] as an added token rather than collapsing whitespace.
       const normalized = text.replace(/ /g, "[SPACE]");
 
-      const ids: number[] = [];
+      const innerIds: number[] = [];
       const segments = addedPattern
         ? normalized.split(addedPattern)
         : [normalized];
@@ -102,29 +117,44 @@ export function buildMultilingualTokenizer(
         if (segment === "") continue;
         const specialId = addedTokens.get(segment);
         if (specialId !== undefined) {
-          ids.push(specialId);
+          innerIds.push(specialId);
           continue;
         }
         const merged = applyBPE([...segment]);
         for (const tok of merged) {
           const id = vocab.get(tok);
-          if (id !== undefined) ids.push(id);
+          if (id !== undefined) innerIds.push(id);
         }
       }
-      ids.push(STOP_TOKEN_ID);
-      return ids;
+
+      // Apply the post-processor template:
+      //   EXAGGERATION + BOS + <inner> + EOS + START_SPEECH + START_SPEECH
+      // The trailing START_SPEECH × 2 is the model's signal to switch into
+      // speech-token generation. Missing it produces runaway / gibberish output.
+      return [
+        EXAGGERATION_TOKEN_ID,
+        BOS_TOKEN_ID,
+        ...innerIds,
+        EOS_TOKEN_ID,
+        START_SPEECH_TOKEN_ID,
+        START_SPEECH_TOKEN_ID,
+      ];
     },
 
     decode(ids: number[]): string {
       const out: string[] = [];
       for (const id of ids) {
-        if (id === STOP_TOKEN_ID) break;
+        // EOS terminates decode (matches upstream behavior on the inner content)
+        if (id === EOS_TOKEN_ID) break;
         if (id === SPACE_TOKEN_ID) {
           out.push(" ");
           continue;
         }
-        // Skip added/special tokens by ID (not by content prefix) so that
-        // regular vocab tokens like '[' (id 303) are preserved correctly.
+        // Skip the post-processor wrappers and any other added/special tokens
+        // by ID so regular vocab tokens like '[' (id 303) are preserved.
+        if (id === EXAGGERATION_TOKEN_ID) continue;
+        if (id === BOS_TOKEN_ID) continue;
+        if (id === START_SPEECH_TOKEN_ID) continue;
         if (addedTokenIds.has(id)) continue;
         const tok = idToToken.get(id);
         if (tok) out.push(tok);
