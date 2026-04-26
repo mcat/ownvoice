@@ -83,24 +83,6 @@ const MIN_NEW_TOKENS = 10; // Don't allow STOP before this many speech tokens
 // hyperparameters (top_p, top_k, temperature) for this specific model.
 const USE_GREEDY = true;
 
-// Classifier-free guidance weight. Upstream multilingual defaults to 0.5
-// (mtl_tts.py:generate). Each LM step runs two forward passes — conditional
-// (full text + speaker conditioning) and unconditional (text-zeroed + same
-// speaker conditioning) — and combines logits as
-//   final = cond + CFG_WEIGHT * (cond - uncond)
-// This amplifies the LM's response to the actual text input, which improves
-// both prosody and identity transfer. Turbo (English-only GPT-2) does NOT
-// use CFG; multilingual does.
-//
-// Cost: ~2x LM forward time per token (embed_tokens + decoder unaffected).
-// On M5 iPad WebGPU this is the right tradeoff for clone fidelity.
-//
-// Set to 0 to disable (single-branch decoding, faster but weaker identity).
-// First attempted alongside sampling + rep_penalty=2.0, which caused "Yes"
-// runaway. With greedy + rep_penalty=1.2 retained, the decoding regime is
-// stable; CFG just amplifies the conditional direction.
-const CFG_WEIGHT = 0.5;
-
 // WASM paths for fallback ops. Points to /ort/ where the JSEP WASM lives.
 //
 // numThreads is gated on `crossOriginIsolated` — set only when the page
@@ -615,95 +597,73 @@ async function handleSynthesize(text, speakerData, id, languageId, exaggeration 
   const textEmbeds = embedResult["inputs_embeds"];
   if (!textEmbeds) throw new Error("embed_tokens failed: " + Object.keys(embedResult));
 
-  // Step 3: Autoregressive LM generation with classifier-free guidance.
-  //
-  // Two parallel branches sharing speaker conditioning but differing in text:
-  //   cond branch:   [condEmb || text_embeds]
-  //   uncond branch: [condEmb || zeros(text_embeds.shape)]
-  // Each step runs the LM forward on both branches independently (separate
-  // KV caches), then combines per-token logits as
-  //   final = cond + CFG_WEIGHT * (cond - uncond)
-  // Subsequent speech tokens are embedded once and copied to both branches —
-  // upstream zeros only the original text_emb, not later speech embeddings.
-  // Skipped entirely when CFG_WEIGHT === 0 (single-branch path, faster).
+  // Step 3: Autoregressive LM generation
   const condEmbF32 = new Float32Array(speakerData.condEmb);
   const condLen = speakerData.condEmbShape[1] ?? 0;
   const textLen = textEmbeds.dims[1] ?? 0;
   const embedDim = textEmbeds.dims[2] ?? 0;
   const totalLen = condLen + textLen;
 
-  const condInitial = new Float32Array(totalLen * embedDim);
-  condInitial.set(condEmbF32, 0);
-  condInitial.set(textEmbeds.data, condLen * embedDim);
+  const combinedEmbeds = new Float32Array(totalLen * embedDim);
+  combinedEmbeds.set(condEmbF32, 0);
+  // textEmbeds.data is already a Float32Array view from ORT; set() reads
+  // it directly without an intermediate copy.
+  combinedEmbeds.set(textEmbeds.data, condLen * embedDim);
 
-  // Uncond branch: condEmb prefix with zero-text region. Float32Array() is
-  // zero-initialized, so the text slot stays zero.
-  const uncondInitial = CFG_WEIGHT > 0 ? new Float32Array(totalLen * embedDim) : null;
-  if (uncondInitial) uncondInitial.set(condEmbF32, 0);
+  // attention_mask gets a fresh typed array per decode step.
+  //
+  // An earlier optimization pre-allocated one typed array and handed out
+  // .subarray() views across steps. That produced GatherBlockQuantized
+  // bounds errors on the LM's position-embedding gather: ORT Web's WebGPU
+  // backend does not reliably handle multiple input Tensors that share a
+  // backing ArrayBuffer across successive run() calls. The safe idiom is
+  // "one typed array per Tensor per run."
+  //
+  // Multilingual LM does not take position_ids (positions are absorbed by
+  // embed_tokens). attention_mask is int64 per the ONNX graph.
 
-  // attention_mask + KV cache: one typed array per Tensor per run (ORT Web
-  // WebGPU has shared-buffer hazards across successive run() calls).
-  // Multilingual LM: attention_mask is int64, no position_ids input.
-  const buildInitialInputs = (embeds) => {
-    const inputs = {
-      inputs_embeds: new ort.Tensor("float32", embeds, [1, totalLen, embedDim]),
-      attention_mask: new ort.Tensor("int64", BigInt64Array.from({ length: totalLen }, () => 1n), [1, totalLen]),
-    };
-    for (let i = 0; i < NUM_LAYERS; i++) {
-      inputs[`past_key_values.${i}.key`] = new ort.Tensor("float16", new Uint16Array(0), [1, NUM_HEADS, 0, HEAD_DIM]);
-      inputs[`past_key_values.${i}.value`] = new ort.Tensor("float16", new Uint16Array(0), [1, NUM_HEADS, 0, HEAD_DIM]);
-    }
-    return inputs;
+  let lmInputs = {
+    inputs_embeds: new ort.Tensor("float32", combinedEmbeds, [1, totalLen, embedDim]),
+    attention_mask: new ort.Tensor("int64", BigInt64Array.from({ length: totalLen }, () => 1n), [1, totalLen]),
   };
-  let condInputs = buildInitialInputs(condInitial);
-  let uncondInputs = uncondInitial ? buildInitialInputs(uncondInitial) : null;
+
+  for (let i = 0; i < NUM_LAYERS; i++) {
+    lmInputs[`past_key_values.${i}.key`] = new ort.Tensor("float16", new Uint16Array(0), [1, NUM_HEADS, 0, HEAD_DIM]);
+    lmInputs[`past_key_values.${i}.value`] = new ort.Tensor("float16", new Uint16Array(0), [1, NUM_HEADS, 0, HEAD_DIM]);
+  }
 
   const generatedTokens = [START_SPEECH_TOKEN];
 
-  // Per-branch GPU KV tensors from the prior step. Disposed once consumed.
-  // Without this, WebGPU buffers accumulate across the autoregressive loop
-  // and leak into subsequent sentences during batch pre-gen.
-  let priorGpuKVCond = [];
-  let priorGpuKVUncond = [];
+  // Tracks the GPU-backed tensors from the prior step so we can dispose
+  // them once the next run() has consumed them as its past_key_values.*
+  // inputs. Without this, the backing WebGPU buffers accumulate across
+  // the autoregressive loop and leak into subsequent sentences during
+  // batch pre-gen (702 pain phrases would eventually exhaust memory).
+  let priorGpuKV = [];
 
   try {
   for (let step = 0; step < MAX_NEW_TOKENS; step++) {
-    // Two LM forwards per step when CFG is enabled. ORT Web is single-threaded
-    // per session, so these run sequentially. No await Promise.all() —
-    // concurrent run() on the same session corrupts state.
-    const condResult = await languageModelSession.run(condInputs);
-    const uncondResult = uncondInputs ? await languageModelSession.run(uncondInputs) : null;
-    for (const t of priorGpuKVCond) t.dispose?.();
-    for (const t of priorGpuKVUncond) t.dispose?.();
-    priorGpuKVCond = [];
-    priorGpuKVUncond = [];
+    const lmResult = await languageModelSession.run(lmInputs);
+    // Once the run has consumed the previous step's KV cache tensors as
+    // inputs, their GPU buffers can be released — we'll swap in the new
+    // present.* tensors below.
+    for (const t of priorGpuKV) t.dispose?.();
+    priorGpuKV = [];
 
-    const condLogits = condResult["logits"];
-    if (!condLogits) throw new Error("LM missing logits: " + Object.keys(condResult));
+    const logits = lmResult["logits"];
+    if (!logits) throw new Error("LM missing logits: " + Object.keys(lmResult));
 
-    const vocabSize = condLogits.dims[condLogits.dims.length - 1] ?? 0;
-    const condLast = condLogits.data.subarray(condLogits.data.length - vocabSize);
-
-    // CFG combine: final = cond + cfg_weight * (cond - uncond). When CFG is
-    // disabled, lastTokenLogits is just the cond logits view (no copy needed).
-    let lastTokenLogits;
-    if (uncondResult) {
-      const uncondLogits = uncondResult["logits"];
-      if (!uncondLogits) throw new Error("Uncond LM missing logits");
-      const uncondLast = uncondLogits.data.subarray(uncondLogits.data.length - vocabSize);
-      lastTokenLogits = new Float32Array(vocabSize);
-      for (let i = 0; i < vocabSize; i++) {
-        lastTokenLogits[i] = condLast[i] + CFG_WEIGHT * (condLast[i] - uncondLast[i]);
-      }
-    } else {
-      // Need a writable copy because we mask in place below.
-      lastTokenLogits = new Float32Array(condLast);
-    }
+    // logits.data is a Float32Array view. For multi-position prompts (step 0)
+    // we only care about the last token's row; for single-position decode
+    // steps the view is already the last row. subarray() is a zero-copy view.
+    const vocabSize = logits.dims[logits.dims.length - 1] ?? 0;
+    const lastTokenLogits = logits.data.subarray(logits.data.length - vocabSize);
 
     // Mask invalid tokens: only speech codes [0, 6560] and STOP (6562) are valid.
     // START (6561) should not appear mid-sequence; text tokens (> 6562) would
     // cause out-of-bounds lookups in the conditional decoder's speech embedding.
-    // Multilingual LM logits dim is 8194 — the upper mask loop zeros 6563..8193.
+    // Multilingual LM logits dim is 8194 (vs Turbo's 6563), so the upper mask
+    // loop is load-bearing — it zeros 6563..8193.
     lastTokenLogits[START_SPEECH_TOKEN] = -Infinity;
     for (let i = STOP_SPEECH_TOKEN + 1; i < lastTokenLogits.length; i++) {
       lastTokenLogits[i] = -Infinity;
@@ -714,8 +674,10 @@ async function handleSynthesize(text, speakerData, id, languageId, exaggeration 
       lastTokenLogits[STOP_SPEECH_TOKEN] = -Infinity;
     }
 
-    // Apply repetition penalty BEFORE argmax. Upstream's "greedy" mode
-    // actually does this — bare argmax gets trapped on repeating attractors.
+    // Apply repetition penalty BEFORE argmax. This is what upstream's
+    // "greedy" mode actually does — bare argmax gets trapped on repeating
+    // attractors. sampleToken() applies rep_penalty internally; the greedy
+    // path needs to do it explicitly.
     if (USE_GREEDY) {
       applyRepetitionPenalty(lastTokenLogits, generatedTokens, REPETITION_PENALTY);
     }
@@ -729,10 +691,12 @@ async function handleSynthesize(text, speakerData, id, languageId, exaggeration 
     }
     generatedTokens.push(maxIdx);
 
-    // Embed the next speech token once and feed the same embedding to both
-    // branches. Upstream zeros only the original text_emb; subsequent speech
-    // embeds enter both branches identically.
+    // Next step — embed the new speech token. maxIdx is always a valid speech
+    // token here: START is masked to -Infinity during sampling, and STOP
+    // triggers `break` above.
     const nextTok = new ort.Tensor("int64", BigInt64Array.from([BigInt(maxIdx)]), [1, 1]);
+    // Position for speech token: sequential from text length onward.
+    // embed_tokens absorbs position encoding for the multilingual model.
     const stepPos = new ort.Tensor("int64", BigInt64Array.from([BigInt(step + 1)]), [1, 1]);
     const nextEmb = await embedTokensSession.run({
       input_ids: nextTok,
@@ -741,33 +705,18 @@ async function handleSynthesize(text, speakerData, id, languageId, exaggeration 
     });
     const newLen = totalLen + step + 1;
 
-    // Each branch gets its own copy of the embedding (ORT Web shared-buffer
-    // hazard across successive run() calls).
-    const embData = nextEmb["inputs_embeds"].data;
-    const embDims = nextEmb["inputs_embeds"].dims;
-    condInputs = {
-      inputs_embeds: new ort.Tensor("float32", new Float32Array(embData), embDims),
+    // Multilingual LM: attention_mask is int64, no position_ids.
+    // Fresh typed arrays per step — see note above the initial lmInputs
+    // construction for why we can't share backing memory.
+    lmInputs = {
+      inputs_embeds: nextEmb["inputs_embeds"],
       attention_mask: new ort.Tensor("int64", BigInt64Array.from({ length: newLen }, () => 1n), [1, newLen]),
     };
-    if (uncondInputs) {
-      uncondInputs = {
-        inputs_embeds: new ort.Tensor("float32", new Float32Array(embData), embDims),
-        attention_mask: new ort.Tensor("int64", BigInt64Array.from({ length: newLen }, () => 1n), [1, newLen]),
-      };
-    }
 
-    for (const [key, value] of Object.entries(condResult)) {
+    for (const [key, value] of Object.entries(lmResult)) {
       if (key.startsWith("present.")) {
-        condInputs["past_key_values." + key.slice("present.".length)] = value;
-        if (value?.location === "gpu-buffer") priorGpuKVCond.push(value);
-      }
-    }
-    if (uncondResult && uncondInputs) {
-      for (const [key, value] of Object.entries(uncondResult)) {
-        if (key.startsWith("present.")) {
-          uncondInputs["past_key_values." + key.slice("present.".length)] = value;
-          if (value?.location === "gpu-buffer") priorGpuKVUncond.push(value);
-        }
+        lmInputs["past_key_values." + key.slice("present.".length)] = value;
+        if (value?.location === "gpu-buffer") priorGpuKV.push(value);
       }
     }
   }
@@ -775,10 +724,8 @@ async function handleSynthesize(text, speakerData, id, languageId, exaggeration 
   } finally {
     // Loop exited normally (STOP/MAX_NEW_TOKENS) or threw mid-run —
     // either way the orphaned KV buffers must be released.
-    for (const t of priorGpuKVCond) t.dispose?.();
-    for (const t of priorGpuKVUncond) t.dispose?.();
-    priorGpuKVCond = [];
-    priorGpuKVUncond = [];
+    for (const t of priorGpuKV) t.dispose?.();
+    priorGpuKV = [];
   }
 
   console.log(`${LOG} Generated ${generatedTokens.length} speech tokens in ${((performance.now() - t0) / 1000).toFixed(1)}s`);

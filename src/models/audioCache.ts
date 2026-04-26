@@ -62,16 +62,7 @@ import { recordHash } from "../stores/patientIndex";
 //            for "Yes"/"No"/"Thank you"/etc. (Earlier all-at-once v14 attempt
 //            with rep_penalty=2.0 + sampling + CFG was reverted; this v14 is
 //            a different fix on top of the same v13 baseline.)
-// v14 → v15: enabled classifier-free guidance (CFG_WEIGHT=0.5) in the GPU
-//            worker. Two parallel LM forwards per token: cond branch with
-//            text + speaker conditioning, uncond branch with text-zeroed +
-//            same speaker conditioning. Combine logits as
-//            cond + 0.5*(cond - uncond). Greedy decoding + rep_penalty=1.2
-//            stay (proven-stable). Doubles LM forward time per token. The
-//            previous bundled CFG attempt (with rep_penalty=2.0 + sampling)
-//            caused runaway; with the lowercase tokenization fix in place
-//            and stable decoding, CFG should improve clone fidelity.
-const CACHE_DIR = "audio-cache-v15";
+const CACHE_DIR = "audio-cache-v14";
 const SAMPLE_RATE = 24000; // Chatterbox Turbo output rate
 const INT16_SCALE = 32767;
 
