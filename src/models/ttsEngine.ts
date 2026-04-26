@@ -160,16 +160,20 @@ export function initGPU(modelUrl: string): Promise<boolean> {
       // Plain JS worker in public/ — not bundled by Vite
       worker = new Worker("/tts-gpu-worker.js", { type: "module" });
 
-      // 180s budget for multilingual: worker loads ~913 MB across 4 ONNX
+      // 300s budget for multilingual: worker loads ~913 MB across 4 ONNX
       // sessions (vs Turbo's ~381 MB), and the 30-layer Llama LM has
       // significantly more WebGPU shaders to compile on first run than
-      // Turbo's 24-layer GPT-2. Empirically Turbo needs ~10-20s on M5;
-      // multilingual likely needs 30-90s cold. Tighter budgets risk a
+      // Turbo's 24-layer GPT-2. With the conditional_decoder also on
+      // WebGPU EP (rather than WASM-only), shader compilation grew —
+      // observed 187s cold-load on M5 iPad after the WebGPU-decoder
+      // switch, which tripped the previous 180s timeout despite the
+      // worker succeeding seconds later. Tighter budgets risk a
       // false-negative WASM fallback before WebGPU has a chance to finish.
+      const INIT_TIMEOUT_MS = 300000;
       timeout = setTimeout(() => {
-        console.warn("[OwnVoice:TTS:GPU] Init timeout (180s)");
+        console.warn(`[OwnVoice:TTS:GPU] Init timeout (${INIT_TIMEOUT_MS / 1000}s)`);
         settle(false);
-      }, 180000);
+      }, INIT_TIMEOUT_MS);
 
       worker.onmessage = (e) => {
         if (e.data.type === "ready") {
