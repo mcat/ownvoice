@@ -445,8 +445,14 @@ async function handleInit(modelUrl) {
   // Notes on EP choice:
   //  - embed_tokens on WASM: Metal GatherBlockQuantized dispatch bug
   //  - language_model on WebGPU: the hot autoregressive loop
-  //  - conditional_decoder on WASM: WebGPU variant has ConvTranspose
-  //    quantization artifacts that trash audio quality
+  //  - conditional_decoder on WebGPU (with WASM per-op fallback): we
+  //    historically forced WASM-only here on the rationale that the
+  //    "WebGPU variant has ConvTranspose quantization artifacts." But
+  //    conditional_decoder.onnx is full-precision (no _q4 suffix) and
+  //    ORT Web's WebGPU EP has matured since that note was written.
+  //    Letting WebGPU run the heavy ops should reduce WASM-side
+  //    numerical noise and speed the decoder pass; if audible artifacts
+  //    appear, revert this back to wasmOnly=true.
   const [, embed] = await Promise.all([
     loadTokenizer(baseUrl + "tokenizer.json"),
     createSession(baseUrl + "embed_tokens.onnx", true, true),
@@ -463,7 +469,7 @@ async function handleInit(modelUrl) {
   conditionalDecoderSession = await createSession(
     baseUrl + "conditional_decoder.onnx",
     true,
-    true,
+    false,
   );
 
   console.log(`${LOG} All models loaded in ${((performance.now() - t0) / 1000).toFixed(1)}s`);

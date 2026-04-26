@@ -70,7 +70,19 @@ import { recordHash } from "../stores/patientIndex";
 //            ONNX (batch_size is a dynamic dim; CPU smoke test reproduces
 //            two batch=1 outputs in one batch=2 call). Greedy + rep_penalty
 //            =1.2 stay (proven-stable). Expected ~1.5x latency vs v14.
-const CACHE_DIR = "audio-cache-v15";
+// v15 → v17: switched conditional_decoder execution provider from WASM-only
+//            to WebGPU (with per-op WASM fallback). Skipped v16 because
+//            two reverted experiments (option C: CFG=1.0+exag=0.7; option
+//            D: rep_penalty=2.0+token guard) used v16 in OPFS and left
+//            orphan audio on user disks. v17 forces a clean re-render
+//            past those.
+//
+//            The conditional_decoder is full precision (no _q4 suffix);
+//            previous "WebGPU produces ConvTranspose artifacts" note was
+//            written against an older ORT Web build and likely stale.
+//            If audible artifacts appear (clicks, fizz, glitchy attack
+//            transients), revert public/tts-gpu-worker.js to wasmOnly=true.
+const CACHE_DIR = "audio-cache-v17";
 const SAMPLE_RATE = 24000; // Chatterbox conditional decoder output rate (S3GEN_SR)
 const INT16_SCALE = 32767;
 
