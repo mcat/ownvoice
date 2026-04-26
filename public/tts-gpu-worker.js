@@ -475,23 +475,40 @@ async function handleInit(modelUrl) {
   //    Letting WebGPU run the heavy ops should reduce WASM-side
   //    numerical noise and speed the decoder pass; if audible artifacts
   //    appear, revert this back to wasmOnly=true.
+  // Per-session timing helpers — without these, the worker is silent for
+  // 100+ seconds during WebGPU shader compile, indistinguishable from a
+  // hang. Logging the start and elapsed of each createSession lets us
+  // pinpoint which session is taking the time on cold load.
+  const stage = async (name, fn) => {
+    console.log(`${LOG} Loading ${name}...`);
+    const s0 = performance.now();
+    const result = await fn();
+    console.log(`${LOG} Loaded ${name} in ${((performance.now() - s0) / 1000).toFixed(1)}s`);
+    return result;
+  };
+
+  console.log(`${LOG} Loading tokenizer + embed_tokens (parallel)...`);
   const [, embed] = await Promise.all([
     loadTokenizer(baseUrl + "tokenizer.json"),
     createSession(baseUrl + "embed_tokens.onnx", true, true),
   ]);
   embedTokensSession = embed;
 
-  languageModelSession = await createSession(
-    baseUrl + "language_model_q4f16.onnx",
-    true,
-    false,
-    { preferredOutputLocation: kvCacheOnGpu() },
+  languageModelSession = await stage("language_model_q4f16 (WebGPU)", () =>
+    createSession(
+      baseUrl + "language_model_q4f16.onnx",
+      true,
+      false,
+      { preferredOutputLocation: kvCacheOnGpu() },
+    ),
   );
 
-  conditionalDecoderSession = await createSession(
-    baseUrl + "conditional_decoder.onnx",
-    true,
-    false,
+  conditionalDecoderSession = await stage("conditional_decoder (WebGPU)", () =>
+    createSession(
+      baseUrl + "conditional_decoder.onnx",
+      true,
+      false,
+    ),
   );
 
   console.log(`${LOG} All models loaded in ${((performance.now() - t0) / 1000).toFixed(1)}s`);
