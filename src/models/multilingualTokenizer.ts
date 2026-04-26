@@ -256,6 +256,105 @@ export function puncNorm(text: string): string {
   return out;
 }
 
+// ── Chinese Cangjie5 lookup ────────────────────────────────────────────
+//
+// Upstream `ChineseCangjieConverter` maps each Chinese ideograph to a
+// short alphabetic code (e.g. 你 → "onf"), then emits one `[cj_<letter>]`
+// token per code letter, separated by `[cj_.]`. The 37 Cangjie tokens
+// (lowercase a-z, digits 0-9, dot) are added_tokens in tokenizer.json.
+//
+// Data lives in Cangjie5_TC.json — 126,610 `<word>\t<code>` entries
+// (1.92 MB). Workers fetch this file alongside tokenizer.json at init
+// and feed it to `setCangjieData`. Tests load it directly from disk.
+//
+// Skipped from the upstream port: the optional pkuseg word segmenter.
+// pkuseg is a Python-only Chinese segmenter (~50 MB); upstream's
+// fallback path runs char-by-char and works for our phrase set. If a
+// future use case needs phrase-level segmentation we can integrate
+// jieba-js or similar then.
+let cangjieWord2Code: Map<string, string> | null = null;
+let cangjieCode2Words: Map<string, string[]> | null = null;
+
+/** Initialize the Cangjie lookup tables from raw Cangjie5_TC.json entries.
+ *  Each entry is "<word>\t<code>". Pass `null` to clear (mainly for tests).
+ *  Idempotent — calling again replaces the previous tables. */
+export function setCangjieData(entries: readonly string[] | null): void {
+  if (entries === null) {
+    cangjieWord2Code = null;
+    cangjieCode2Words = null;
+    return;
+  }
+  const w2c = new Map<string, string>();
+  const c2w = new Map<string, string[]>();
+  for (const entry of entries) {
+    const tab = entry.indexOf("\t");
+    if (tab === -1) continue;
+    const word = entry.slice(0, tab);
+    const code = entry.slice(tab + 1);
+    w2c.set(word, code);
+    const list = c2w.get(code);
+    if (list) list.push(word);
+    else c2w.set(code, [word]);
+  }
+  cangjieWord2Code = w2c;
+  cangjieCode2Words = c2w;
+}
+
+function cangjieEncodeChar(glyph: string): string | null {
+  if (!cangjieWord2Code || !cangjieCode2Words) return null;
+  const code = cangjieWord2Code.get(glyph);
+  if (code === undefined) return null;
+  const candidates = cangjieCode2Words.get(code);
+  if (!candidates) return null;
+  // For homophone-class glyphs sharing a code, append the index so the
+  // original character can be disambiguated. Index 0 → no suffix.
+  const index = candidates.indexOf(glyph);
+  return code + (index > 0 ? String(index) : "");
+}
+
+/** Convert Chinese ideographs in `text` to their Cangjie token sequence.
+ *  Non-ideographic characters pass through unchanged. Ideographs not in
+ *  the Cangjie table also pass through (rare; e.g. Japanese kana that
+ *  slipped into Chinese text).
+ *
+ *  Requires {@link setCangjieData} to have been called with the
+ *  Cangjie5_TC entries. If data isn't loaded, returns input unchanged
+ *  and logs a one-time warning. */
+let cangjieMissingDataWarned = false;
+export function cangjieNormalize(text: string): string {
+  if (!cangjieWord2Code) {
+    if (!cangjieMissingDataWarned) {
+      console.warn(
+        "[multilingualTokenizer] cangjieNormalize called before setCangjieData; " +
+          "Chinese inputs will pass through unchanged",
+      );
+      cangjieMissingDataWarned = true;
+    }
+    return text;
+  }
+  let out = "";
+  // \p{Lo} = "Letter, other" — matches CJK ideographs and other
+  // letter-class characters that don't have explicit case (matches
+  // upstream's `category(t) == "Lo"` check).
+  const isLo = /\p{Lo}/u;
+  for (const ch of text) {
+    if (isLo.test(ch)) {
+      const cj = cangjieEncodeChar(ch);
+      if (cj === null) {
+        out += ch;
+      } else {
+        for (const c of cj) out += `[cj_${c}]`;
+        out += "[cj_.]";
+      }
+    } else {
+      out += ch;
+    }
+  }
+  return out;
+}
+
+// ── Korean Jamo decomposition ───────────────────────────────────────────
+
 /** Korean syllable → Jamo decomposition. Port of upstream
  *  `korean_normalize`. The BPE vocab indexes Hangul Jamo letters
  *  (U+1100 / U+1161 / U+11A7 ranges), not the precomposed syllables
@@ -284,14 +383,16 @@ export function koreanNormalize(text: string): string {
 /** Dispatch the upstream language-specific preprocessor that runs after
  *  lowercase/NFKD and before the `[lang]` tag is prepended.
  *
- *  Implemented:  ko (Hangul → Jamo)
- *  Pending:      zh (Cangjie5), ja (kakasi hiragana), he (dicta diacritics),
+ *  Implemented:  ko (Hangul → Jamo), zh (Cangjie5 lookup)
+ *  Pending:      ja (kakasi hiragana), he (dicta diacritics),
  *                ru (stress marking) — those produce degraded output until
  *                their preprocessors are ported. */
 function applyLanguagePreprocessor(text: string, lang: string): string {
   switch (lang) {
     case "ko":
       return koreanNormalize(text);
+    case "zh":
+      return cangjieNormalize(text);
     default:
       return text;
   }

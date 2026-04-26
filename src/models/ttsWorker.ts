@@ -193,6 +193,25 @@ async function loadTokenizer(tokenizerUrl: string): Promise<void> {
   tokenizer = mod.buildMultilingualTokenizer(json);
   prepareLanguageFn = mod.prepareLanguage;
 
+  // Load Cangjie5 lookup for Chinese preprocessing alongside the tokenizer.
+  // Failure is non-fatal — Chinese inputs degrade silently, other languages
+  // keep working. Cangjie5_TC.json sits next to tokenizer.json in the
+  // multilingual model dir.
+  const cangjieUrl = tokenizerUrl.replace(/tokenizer\.json$/, "Cangjie5_TC.json");
+  try {
+    const cjResp = await fetch(cangjieUrl);
+    if (cjResp.ok) {
+      const entries: string[] = await cjResp.json();
+      mod.setCangjieData(entries);
+      console.log(`${LOG} Cangjie5 table loaded (${entries.length} entries)`);
+    } else {
+      throw new Error(`HTTP ${cjResp.status}`);
+    }
+  } catch (err) {
+    console.warn(`${LOG} Failed to load Cangjie5 (${err}); Chinese phrases will degrade`);
+    mod.setCangjieData(null);
+  }
+
   console.log(`${LOG} Multilingual BPE tokenizer loaded (${Object.keys(json.model.vocab).length} vocab, ${json.model.merges.length} merges)`);
 }
 

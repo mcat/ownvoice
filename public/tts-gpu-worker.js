@@ -209,9 +209,76 @@ function koreanNormalize(text) {
   return out.trim();
 }
 
+// ── Chinese Cangjie5 lookup (mirror of multilingualTokenizer.ts) ──
+// Populated by setCangjieData() at worker init from Cangjie5_TC.json.
+let cangjieWord2Code = null;
+let cangjieCode2Words = null;
+let cangjieMissingDataWarned = false;
+
+function setCangjieData(entries) {
+  if (!entries) {
+    cangjieWord2Code = null;
+    cangjieCode2Words = null;
+    return;
+  }
+  const w2c = new Map();
+  const c2w = new Map();
+  for (const entry of entries) {
+    const tab = entry.indexOf("\t");
+    if (tab === -1) continue;
+    const word = entry.slice(0, tab);
+    const code = entry.slice(tab + 1);
+    w2c.set(word, code);
+    const list = c2w.get(code);
+    if (list) list.push(word);
+    else c2w.set(code, [word]);
+  }
+  cangjieWord2Code = w2c;
+  cangjieCode2Words = c2w;
+}
+
+function cangjieEncodeChar(glyph) {
+  if (!cangjieWord2Code || !cangjieCode2Words) return null;
+  const code = cangjieWord2Code.get(glyph);
+  if (code === undefined) return null;
+  const candidates = cangjieCode2Words.get(code);
+  if (!candidates) return null;
+  const index = candidates.indexOf(glyph);
+  return code + (index > 0 ? String(index) : "");
+}
+
+function cangjieNormalize(text) {
+  if (!cangjieWord2Code) {
+    if (!cangjieMissingDataWarned) {
+      console.warn(
+        `${LOG} cangjieNormalize called before setCangjieData; Chinese inputs will pass through unchanged`,
+      );
+      cangjieMissingDataWarned = true;
+    }
+    return text;
+  }
+  let out = "";
+  const isLo = /\p{Lo}/u;
+  for (const ch of text) {
+    if (isLo.test(ch)) {
+      const cj = cangjieEncodeChar(ch);
+      if (cj === null) {
+        out += ch;
+      } else {
+        for (const c of cj) out += `[cj_${c}]`;
+        out += "[cj_.]";
+      }
+    } else {
+      out += ch;
+    }
+  }
+  return out;
+}
+
 function applyLanguagePreprocessor(text, lang) {
   switch (lang) {
     case "ko": return koreanNormalize(text);
+    case "zh": return cangjieNormalize(text);
     default: return text;
   }
 }
@@ -343,6 +410,23 @@ async function loadTokenizer(url) {
   const json = await response.json();
   tokenizer = buildMultilingualTokenizer(json);
   console.log(`${LOG} Multilingual BPE tokenizer loaded (${Object.keys(json.model.vocab).length} vocab, ${json.model.merges.length} merges)`);
+}
+
+/** Fetch and install the Cangjie5 lookup table for Chinese preprocessing.
+ *  Failure is non-fatal — Chinese inputs will pass through the BPE
+ *  unchanged (effectively unsupported) but other languages keep working.
+ *  The file is ~1.92 MB of `<word>\\t<code>` entries packaged as JSON. */
+async function loadCangjieData(url) {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const entries = await response.json();
+    setCangjieData(entries);
+    console.log(`${LOG} Cangjie5 table loaded (${entries.length} entries)`);
+  } catch (err) {
+    console.warn(`${LOG} Failed to load Cangjie5 (${err}); Chinese phrases will degrade`);
+    setCangjieData(null);
+  }
 }
 
 /**
@@ -514,9 +598,10 @@ async function handleInit(modelUrl) {
     return result;
   };
 
-  console.log(`${LOG} Loading tokenizer + embed_tokens (parallel)...`);
-  const [, embed] = await Promise.all([
+  console.log(`${LOG} Loading tokenizer + Cangjie + embed_tokens (parallel)...`);
+  const [, , embed] = await Promise.all([
     loadTokenizer(baseUrl + "tokenizer.json"),
+    loadCangjieData(baseUrl + "Cangjie5_TC.json"),
     createSession(baseUrl + "embed_tokens.onnx", true, true),
   ]);
   embedTokensSession = embed;

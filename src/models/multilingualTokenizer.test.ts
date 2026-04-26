@@ -1,10 +1,12 @@
-import { describe, expect, test } from "vitest";
+import { afterAll, beforeEach, describe, expect, test } from "vitest";
 import { readFileSync } from "node:fs";
 import {
   buildMultilingualTokenizer,
+  cangjieNormalize,
   koreanNormalize,
   prepareLanguage,
   puncNorm,
+  setCangjieData,
   SUPPORTED_LANGUAGES,
 } from "./multilingualTokenizer";
 
@@ -111,6 +113,67 @@ describe("puncNorm", () => {
 
   test("returns canned text on empty input", () => {
     expect(puncNorm("")).toBe("You need to add some text for me to talk.");
+  });
+});
+
+describe("cangjieNormalize (Chinese ideographs → [cj_*] tokens)", () => {
+  // Load the real Cangjie5 table once for the suite. It's a 126,610-entry
+  // tab-separated dataset shipped alongside the tokenizer.
+  const cangjieEntries: string[] = JSON.parse(
+    readFileSync(
+      "public/models/chatterbox-multilingual/Cangjie5_TC.json",
+      "utf8",
+    ),
+  );
+
+  // setCangjieData mutates module-level state. beforeEach guarantees every
+  // test starts with the real table loaded, regardless of failure / test
+  // ordering. afterAll restores so subsequent describe blocks (including
+  // the round-trip suite below) get a known-good Cangjie state.
+  beforeEach(() => {
+    setCangjieData(cangjieEntries);
+  });
+  afterAll(() => {
+    setCangjieData(cangjieEntries);
+  });
+
+  test("encodes a single ideograph to wrapped Cangjie code", () => {
+    // 你 (you) has Cangjie code "onf" (lowercase per the data file).
+    const encoded = cangjieNormalize("你");
+    expect(encoded).toBe("[cj_o][cj_n][cj_f][cj_.]");
+  });
+
+  test("encodes a multi-character phrase", () => {
+    // 你好 → "你" (onf) + "好" (vnd)
+    const encoded = cangjieNormalize("你好");
+    expect(encoded).toBe("[cj_o][cj_n][cj_f][cj_.][cj_v][cj_n][cj_d][cj_.]");
+  });
+
+  test("leaves non-ideographic characters untouched", () => {
+    // Mixed: ASCII + ideograph + ASCII.
+    const encoded = cangjieNormalize("hi 你 bye");
+    expect(encoded).toBe("hi [cj_o][cj_n][cj_f][cj_.] bye");
+    // Punctuation and digits are not category Lo — pass through.
+    expect(cangjieNormalize("123, abc.")).toBe("123, abc.");
+  });
+
+  test("passes through ideographs not in the Cangjie table", () => {
+    // Japanese hiragana あ is category Lo but isn't a Chinese
+    // ideograph, so won't be in Cangjie5_TC. Should pass through.
+    const result = cangjieNormalize("あ");
+    expect(result).toBe("あ");
+  });
+
+  test("returns input unchanged when data not loaded", () => {
+    setCangjieData(null);
+    expect(cangjieNormalize("你好")).toBe("你好");
+  });
+
+  test("plumbs through prepareLanguage for zh", () => {
+    // prepareLanguage runs punc_norm → lowercase → NFKD → cangjieNormalize → [zh] prefix.
+    const prepared = prepareLanguage("你好", "zh");
+    // Expect: "[zh]" + Cangjie-encoded "你好" + "."
+    expect(prepared).toBe("[zh][cj_o][cj_n][cj_f][cj_.][cj_v][cj_n][cj_d][cj_.].");
   });
 });
 
