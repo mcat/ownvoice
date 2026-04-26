@@ -62,8 +62,16 @@ import { recordHash } from "../stores/patientIndex";
 //            for "Yes"/"No"/"Thank you"/etc. (Earlier all-at-once v14 attempt
 //            with rep_penalty=2.0 + sampling + CFG was reverted; this v14 is
 //            a different fix on top of the same v13 baseline.)
-const CACHE_DIR = "audio-cache-v14";
-const SAMPLE_RATE = 24000; // Chatterbox Turbo output rate
+// v14 → v15: enabled batched classifier-free guidance in the GPU worker
+//            (CFG_WEIGHT=0.5, upstream multilingual default). Single LM
+//            call with batch=2 instead of two sequential session.run calls
+//            — the dual-call CFG attempt timed out at 5min+ due to per-call
+//            JS/ORT overhead. Verified batched form works against the LM
+//            ONNX (batch_size is a dynamic dim; CPU smoke test reproduces
+//            two batch=1 outputs in one batch=2 call). Greedy + rep_penalty
+//            =1.2 stay (proven-stable). Expected ~1.5x latency vs v14.
+const CACHE_DIR = "audio-cache-v15";
+const SAMPLE_RATE = 24000; // Chatterbox conditional decoder output rate (S3GEN_SR)
 const INT16_SCALE = 32767;
 
 /** Convert Float32 audio (assumed roughly in ±1.0) to clamped Int16 PCM. */
