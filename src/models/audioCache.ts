@@ -54,12 +54,7 @@ import { recordHash } from "../stores/patientIndex";
 //            attractors. Upstream's "greedy" is actually rep_penalty+argmax
 //            per generation_config.json. This was the runaway-generation
 //            root cause.
-// v13 → v14: bisect step 1 — rep_penalty 1.2 → 2.0 (upstream multilingual
-//            default; Turbo uses 1.2). Greedy decoding stays. CFG stays
-//            disabled. The earlier all-at-once v14 attempt (CFG + sampling
-//            + rep_penalty 2.0) caused "Yes" to run away to 139 tokens of
-//            repeated "Yes"; reverted and isolating one variable at a time.
-const CACHE_DIR = "audio-cache-v14";
+const CACHE_DIR = "audio-cache-v13";
 const SAMPLE_RATE = 24000; // Chatterbox Turbo output rate
 const INT16_SCALE = 32767;
 
