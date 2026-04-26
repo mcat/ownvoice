@@ -81,6 +81,61 @@
         }
       ]
     },
+    "tts-multilingual": {
+      "baseUrl": "/models/chatterbox-multilingual/",
+      "files": [
+        {
+          "name": "speech_encoder.onnx",
+          "size": 1184608,
+          "magic": "onnx"
+        },
+        {
+          "name": "speech_encoder.onnx_data",
+          "size": 591274880,
+          "magic": null
+        },
+        {
+          "name": "embed_tokens.onnx",
+          "size": 13286,
+          "magic": "onnx"
+        },
+        {
+          "name": "embed_tokens.onnx_data",
+          "size": 68390912,
+          "magic": null
+        },
+        {
+          "name": "language_model_q4f16.onnx",
+          "size": 229388,
+          "magic": "onnx"
+        },
+        {
+          "name": "language_model_q4f16.onnx_data",
+          "size": 304737408,
+          "magic": null
+        },
+        {
+          "name": "conditional_decoder.onnx",
+          "size": 6350448,
+          "magic": "onnx"
+        },
+        {
+          "name": "conditional_decoder.onnx_data",
+          "size": 533970816,
+          "magic": null
+        },
+        {
+          "name": "tokenizer.json",
+          "size": 71798,
+          "magic": "json"
+        },
+        {
+          "name": "Cangjie5_TC.json",
+          "size": 1920163,
+          "magic": "json"
+        }
+      ]
+    },
     "llm": {
       "baseUrl": "/models/lfm2-1.2b-instruct/",
       "files": [
