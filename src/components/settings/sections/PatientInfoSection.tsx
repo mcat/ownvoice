@@ -1,4 +1,3 @@
-import { useState } from "preact/hooks";
 import type { JSX, ComponentChildren } from "preact";
 import type { AppSettings, Patient } from "../../../types";
 import type { ThemeTokens, ThemeName } from "../../../theme/tokens";
@@ -11,8 +10,7 @@ import { useSettingsStore } from "../../../stores/settingsStore";
 import { t as resolvePhrase } from "../../../data/phraseRegistry";
 import { confirm } from "../../shared/ConfirmDialog";
 import { canCloneForLocale } from "../../../data/chatterboxLocales";
-import { isGPUReady, synthesizeGPU } from "../../../models/ttsEngine";
-import { playAudioBuffer, postProcessAudio } from "../../../speak";
+import { isGPUReady } from "../../../models/ttsEngine";
 
 interface Props {
   /** The patient being edited. Caller passes the active patient (Settings) or any patient (PatientEditSheet). */
@@ -148,15 +146,6 @@ export function PatientInfoSection({
         />
       </div>
 
-      {/* TEMPORARY: paralinguistic-tag test row. Validates whether the model
-          honors special-token tags like [chuckle] (a Resemble-documented
-          paralinguistic marker) by producing a chuckle sound — or speaks the
-          word like it did with [narration]. Bypasses speak() because that's
-          deliberately cache-only on the tap path; goes directly to the GPU
-          engine for live synthesis. Remove this block once validated. */}
-      {patient.speakerData ? (
-        <ChuckleTestPanel patient={patient} t={t} isDark={isDark} />
-      ) : null}
 
       <div style={{ marginTop: 20 }}>
         <div style={labelStyle(t)}>{resolvePhrase("ui.provider.settings.patient_info.backup_voice_label", caregiverLang)}</div>
@@ -208,97 +197,4 @@ function inputStyle(t: ThemeTokens, isDark: boolean): JSX.CSSProperties {
     fontSize: 16, color: t.text, outline: "none", boxSizing: "border-box",
     fontFamily: "'Atkinson Hyperlegible Next', system-ui, -apple-system, sans-serif",
   };
-}
-
-/** Debug panel — tests whether [chuckle] produces a chuckle sound or
- *  pronounces the word. Goes directly to the GPU engine because speak()
- *  is cache-only on the tap path and would fall through to Web Speech for
- *  any phrase that hasn't been pre-generated. */
-function ChuckleTestPanel({
-  patient, t, isDark,
-}: {
-  patient: Patient; t: ThemeTokens; isDark: boolean;
-}) {
-  const [status, setStatus] = useState<"idle" | "running" | "ok" | "error" | "no-gpu">("idle");
-  const [errMsg, setErrMsg] = useState<string>("");
-
-  async function run() {
-    if (!patient.speakerData) return;
-    if (!isGPUReady()) {
-      setStatus("no-gpu");
-      return;
-    }
-    setStatus("running");
-    setErrMsg("");
-    try {
-      const result = await synthesizeGPU(
-        "That was funny [chuckle]",
-        patient.speakerData as Parameters<typeof synthesizeGPU>[1],
-        { timeoutMs: 30000 },
-      );
-      const processed = postProcessAudio(result.data, result.sampleRate);
-      await playAudioBuffer(processed, result.sampleRate);
-      setStatus("ok");
-    } catch (err) {
-      console.error("[chuckle test] failed:", err);
-      setErrMsg(err instanceof Error ? err.message : String(err));
-      setStatus("error");
-    }
-  }
-
-  const statusLine = (() => {
-    if (status === "running") return "Synthesizing…";
-    if (status === "no-gpu") return "GPU TTS not ready — wait for the model to finish loading and retry.";
-    if (status === "error") return `Failed: ${errMsg}`;
-    return "";
-  })();
-
-  return (
-    <div
-      style={{
-        marginTop: 16,
-        padding: "12px 14px",
-        border: `1px dashed ${t.muted}`,
-        borderRadius: 10,
-        background: isDark ? "rgba(255,255,255,0.03)" : "#FAFAFA",
-      }}
-    >
-      <div style={{
-        fontSize: 11, fontWeight: 600, color: t.muted,
-        textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6,
-      }}>
-        Debug — paralinguistic tag test
-      </div>
-      <p style={{ fontSize: 12, color: t.sub, margin: "0 0 10px", lineHeight: 1.4 }}>
-        Synthesizes “That was funny [chuckle]” through this voice clone via
-        the GPU engine directly (bypassing speak()'s cache-only routing).
-        Listen for whether the model produces a chuckle sound at the end, or
-        pronounces the word “chuckle” aloud.
-      </p>
-      <button
-        type="button"
-        onClick={run}
-        disabled={status === "running"}
-        style={{
-          padding: "8px 14px",
-          background: isDark ? "rgba(255,255,255,0.06)" : "#FFFFFF",
-          border: `1px solid ${t.muted}`,
-          borderRadius: 8,
-          cursor: status === "running" ? "wait" : "pointer",
-          fontSize: 13,
-          color: t.text,
-          fontWeight: 500,
-          fontFamily: "inherit",
-          opacity: status === "running" ? 0.6 : 1,
-        }}
-      >
-        Test [chuckle]
-      </button>
-      {statusLine && (
-        <div style={{ fontSize: 12, color: t.sub, marginTop: 8 }}>
-          {statusLine}
-        </div>
-      )}
-    </div>
-  );
 }

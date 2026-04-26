@@ -316,7 +316,7 @@ export function postProcessAudio(raw: Float32Array, sampleRate: number): Float32
  * work per playback, which is the difference between "feels instant"
  * and "perceptibly slow" for an AAC tap.
  */
-export async function playAudioBuffer(
+async function playAudioBuffer(
   audio: Float32Array,
   sampleRate: number,
 ): Promise<void> {
