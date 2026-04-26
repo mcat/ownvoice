@@ -31,7 +31,10 @@ import { recordHash } from "../stores/patientIndex";
 // v7 → v8: swapped Chatterbox Turbo (English-only) → Chatterbox Multilingual
 //          (23 languages, exaggeration runtime input). All cached audio
 //          regenerates because the entire model changed, not just one knob.
-const CACHE_DIR = "audio-cache-v8";
+// v8 → v9: fixed first-call position_ids in both workers from arange(N) to
+//          arange(N) - 1 to match upstream — was producing drawn-out pacing
+//          and degraded clone identity due to off-by-one in position embeddings.
+const CACHE_DIR = "audio-cache-v9";
 const SAMPLE_RATE = 24000; // Chatterbox Turbo output rate
 const INT16_SCALE = 32767;
 
