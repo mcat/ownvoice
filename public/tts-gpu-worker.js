@@ -514,12 +514,13 @@ async function handleSynthesize(text, speakerData, id, languageId, exaggeration 
   }
 
   const t0 = performance.now();
-  console.log(`${LOG} Synthesizing: "${text.slice(0, 50)}..."`);
+  console.log(`${LOG} Synthesizing: "${text.slice(0, 50)}..." [lang=${languageId}, exag=${exaggeration}]`);
 
   // Step 1: Tokenize via multilingual BPE.
   // prepareLanguage prepends "[xx]" language tag (e.g. "[en]Hello").
   const preparedText = prepareLanguage(text, languageId);
   const inputIds = tokenizer.encode(preparedText);
+  console.log(`${LOG} Prepared text: "${preparedText.slice(0, 60)}" → first 8 ids: ${inputIds.slice(0, 8).join(",")}`);
 
   // embed_tokens runs on WASM with int64 inputs.
   // Multilingual embed_tokens requires position_ids and exaggeration.

@@ -406,7 +406,7 @@ async function handleSynthesize(
   const useGPU = getEP() === "webgpu";
   // Signal EP info to main thread via progress message (passes through ORT proxy)
   _postMessage({ type: "progress", loaded: useGPU ? 1 : 0, total: -1 });
-  console.log(`${LOG} Synthesizing: "${text.slice(0, 50)}..." (EP: ${useGPU ? "webgpu" : "wasm"})`);
+  console.log(`${LOG} Synthesizing: "${text.slice(0, 50)}..." [lang=${languageId}, exag=${exaggeration}, EP=${useGPU ? "webgpu" : "wasm"}]`);
 
   // Helper: create an integer tensor in the right dtype for the active EP.
   // WebGPU models use int32 inputs; WASM models use int64.
@@ -426,6 +426,7 @@ async function handleSynthesize(
   // prepareLanguage prepends "[xx]" language tag (e.g. "[en]Hello").
   const preparedText = prepareLanguageFn(text, languageId);
   const inputIds = tokenizer.encode(preparedText);
+  console.log(`${LOG} Prepared text: "${preparedText.slice(0, 60)}" → first 8 ids: ${inputIds.slice(0, 8).join(",")}`);
   const inputIdsTensor = intTensor(inputIds, [1, inputIds.length]);
 
   // Step 2: Get text + start-of-speech embeddings via embed_tokens.
