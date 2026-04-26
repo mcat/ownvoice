@@ -1,5 +1,5 @@
 /**
- * WebGPU TTS Worker — Chatterbox Turbo via ONNX Runtime WebGPU EP.
+ * WebGPU TTS Worker — Chatterbox Multilingual (23 languages) via ONNX Runtime WebGPU EP.
  *
  * This is a plain JS worker (not bundled by Vite) that imports ORT directly
  * from the dist path. Vite's worker bundler can't resolve onnxruntime-web/webgpu
@@ -7,7 +7,7 @@
  *
  * Messages IN:
  *   { type: "init", modelUrl: string }
- *   { type: "synthesize", text: string, speakerData: object, id?: number }
+ *   { type: "synthesize", text: string, speakerData: object, id?: number, languageId: string, exaggeration?: number }
  *
  * Messages OUT:
  *   { type: "ready" }
@@ -33,9 +33,8 @@ const SAMPLE_RATE = 24000;
 const START_SPEECH_TOKEN = 6561;
 const STOP_SPEECH_TOKEN = 6562;
 const SILENCE_TOKEN = 4299;
-const EOT_TOKEN = 50256;
 const MAX_NEW_TOKENS = 768; // Model supports 1024; 768 covers long sentences with headroom
-const NUM_LAYERS = 24;
+const NUM_LAYERS = 30;
 const NUM_HEADS = 16;
 const HEAD_DIM = 64;
 
@@ -139,59 +138,57 @@ function kvCacheOnGpu() {
   return loc;
 }
 
-// ── GPT-2 Byte-Level BPE Tokenizer ──────────────────────────────────────────
-function buildByteToUnicode() {
-  const bs = [];
-  for (let i = 33; i <= 126; i++) bs.push(i);
-  for (let i = 161; i <= 172; i++) bs.push(i);
-  for (let i = 174; i <= 255; i++) bs.push(i);
-  const cs = [...bs];
-  let n = 0;
-  for (let b = 0; b < 256; b++) {
-    if (!bs.includes(b)) { bs.push(b); cs.push(256 + n); n++; }
+// ── Multilingual BPE Tokenizer (inlined from src/models/multilingualTokenizer.ts) ─
+
+/** Languages supported by chatterbox-multilingual. Each gets a [xx] tag id. */
+const SUPPORTED_LANGUAGES = new Set([
+  "ar", "da", "de", "el", "en", "es", "fi", "fr", "he", "hi",
+  "it", "ja", "ko", "ms", "nl", "no", "pl", "pt", "ru", "sv",
+  "sw", "tr", "zh",
+]);
+
+/** Mirror upstream `txt = f"[{language_id.lower()}]{txt}"`. NO space, lowercase. */
+function prepareLanguage(text, languageId) {
+  const lang = languageId.toLowerCase();
+  if (!SUPPORTED_LANGUAGES.has(lang)) {
+    throw new Error(
+      `Unsupported language: ${languageId}. Supported: ${Array.from(SUPPORTED_LANGUAGES).sort().join(", ")}`,
+    );
   }
-  const map = new Map();
-  for (let i = 0; i < bs.length; i++) map.set(bs[i], String.fromCodePoint(cs[i]));
-  return map;
-}
-const BYTE_TO_UNICODE = buildByteToUnicode();
-const GPT2_PAT = /'s|'t|'re|'ve|'m|'ll|'d| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+/gu;
-
-function textToByteTokens(text) {
-  const bytes = new TextEncoder().encode(text);
-  let result = "";
-  for (const b of bytes) result += BYTE_TO_UNICODE.get(b) ?? String.fromCodePoint(b);
-  return result;
+  return `[${lang}]${text}`;
 }
 
-function applyBPE(tokens, mergeRanks) {
-  if (tokens.length <= 1) return tokens;
-  let word = [...tokens];
+function applyBPE(chars, mergeRanks) {
+  if (chars.length <= 1) return chars;
+  let word = [...chars];
   while (word.length > 1) {
-    let bestPair = null;
+    let best = null;
     for (let i = 0; i < word.length - 1; i++) {
-      const rank = mergeRanks.get(`${word[i]} ${word[i + 1]}`);
-      if (rank !== undefined && (bestPair === null || rank < bestPair[2]))
-        bestPair = [word[i], word[i + 1], rank];
+      const r = mergeRanks.get(`${word[i]} ${word[i + 1]}`);
+      if (r !== undefined && (!best || r < best[2]))
+        best = [word[i], word[i + 1], r];
     }
-    if (!bestPair) break;
-    const [left, right] = bestPair;
-    const merged = left + right;
-    const newWord = [];
-    let i = 0;
-    while (i < word.length) {
-      if (i < word.length - 1 && word[i] === left && word[i + 1] === right) {
-        newWord.push(merged); i += 2;
-      } else { newWord.push(word[i]); i++; }
+    if (!best) break;
+    const [l, r] = best;
+    const next = [];
+    for (let i = 0; i < word.length; ) {
+      if (i < word.length - 1 && word[i] === l && word[i + 1] === r) {
+        next.push(l + r); i += 2;
+      } else { next.push(word[i]); i++; }
     }
-    word = newWord;
+    word = next;
   }
   return word;
 }
 
-async function loadTokenizer(url) {
-  const response = await fetch(url);
-  const json = await response.json();
+/**
+ * Build a multilingual BPE tokenizer from tokenizer.json.
+ * Replaces the old GPT-2 byte-level BPE; handles [xx] language tags and
+ * [SPACE] normalization natively. Appends [STOP] (id 0) at the end.
+ */
+function buildMultilingualTokenizer(json) {
+  const STOP_TOKEN_ID = 0;
+
   const vocab = new Map();
   for (const [token, id] of Object.entries(json.model.vocab)) vocab.set(token, id);
 
@@ -201,26 +198,56 @@ async function loadTokenizer(url) {
     mergeRanks.set(Array.isArray(m) ? m.join(" ") : m, i);
   }
 
-  // Post-processor: append <|endoftext|> × 2
-  const eotId = json.added_tokens?.find(t => t.content === "<|endoftext|>")?.id ?? 50256;
+  const addedTokens = new Map();
+  for (const t of json.added_tokens ?? []) {
+    addedTokens.set(t.content, t.id);
+  }
 
-  tokenizer = {
+  // Regex matching any added token literal — longest first to avoid prefix collisions
+  let addedPattern = null;
+  if (addedTokens.size) {
+    addedPattern = new RegExp(
+      `(${Array.from(addedTokens.keys())
+        .sort((a, b) => b.length - a.length)
+        .map((s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+        .join("|")})`,
+    );
+  }
+
+  return {
     encode(text) {
+      // Replace literal spaces with "[SPACE]" so BPE sees them as added tokens
+      const normalized = text.replace(/ /g, "[SPACE]");
+
       const ids = [];
-      const words = text.match(GPT2_PAT) ?? [];
-      for (const word of words) {
-        const byteStr = textToByteTokens(word);
-        const merged = applyBPE([...byteStr], mergeRanks);
-        for (const token of merged) {
-          const id = vocab.get(token);
+      const segments = addedPattern
+        ? normalized.split(addedPattern)
+        : [normalized];
+
+      for (const segment of segments) {
+        if (segment === "") continue;
+        const specialId = addedTokens.get(segment);
+        if (specialId !== undefined) {
+          ids.push(specialId);
+          continue;
+        }
+        const merged = applyBPE([...segment], mergeRanks);
+        for (const tok of merged) {
+          const id = vocab.get(tok);
           if (id !== undefined) ids.push(id);
         }
       }
-      ids.push(eotId, eotId);
+      ids.push(STOP_TOKEN_ID);
       return ids;
     },
   };
-  console.log(`${LOG} BPE tokenizer loaded (${vocab.size} vocab, ${mergeRanks.size} merges)`);
+}
+
+async function loadTokenizer(url) {
+  const response = await fetch(url);
+  const json = await response.json();
+  tokenizer = buildMultilingualTokenizer(json);
+  console.log(`${LOG} Multilingual BPE tokenizer loaded (${Object.keys(json.model.vocab).length} vocab, ${json.model.merges.length} merges)`);
 }
 
 /**
@@ -354,19 +381,19 @@ async function handleInit(modelUrl) {
   //    quantization artifacts that trash audio quality
   const [, embed] = await Promise.all([
     loadTokenizer(baseUrl + "tokenizer.json"),
-    createSession(baseUrl + "embed_tokens_q4f16.onnx", true, true),
+    createSession(baseUrl + "embed_tokens.onnx", true, true),
   ]);
   embedTokensSession = embed;
 
   languageModelSession = await createSession(
-    baseUrl + "language_model_q4f16_webgpu.onnx",
+    baseUrl + "language_model_q4f16.onnx",
     true,
     false,
     { preferredOutputLocation: kvCacheOnGpu() },
   );
 
   conditionalDecoderSession = await createSession(
-    baseUrl + "conditional_decoder_q4f16.onnx",
+    baseUrl + "conditional_decoder.onnx",
     true,
     true,
   );
@@ -417,9 +444,12 @@ async function warmupLanguageModel() {
 
   // Step A: discover embedDim by running embed_tokens on a short fake input.
   // This also primes the embed_tokens WASM session (first-call JIT costs).
-  const fakeIds = [100, 200, 50256, 50256];
+  // Use small IDs valid for the multilingual vocab (~2453 entries).
+  const fakeIds = [100, 200, 300, 400];
   const idsTensor = new ort.Tensor("int64", BigInt64Array.from(fakeIds.map(BigInt)), [1, fakeIds.length]);
-  const embedOut = await embedTokensSession.run({ input_ids: idsTensor });
+  const posTensor = new ort.Tensor("int64", BigInt64Array.from(fakeIds.map((_, i) => BigInt(i))), [1, fakeIds.length]);
+  const exagTensor = new ort.Tensor("float32", new Float32Array([0.5]), [1]);
+  const embedOut = await embedTokensSession.run({ input_ids: idsTensor, position_ids: posTensor, exaggeration: exagTensor });
   const textEmbeds = embedOut["inputs_embeds"];
   if (!textEmbeds) throw new Error("warmup: embed_tokens produced no output");
   const embedDim = textEmbeds.dims[2] ?? 0;
@@ -436,10 +466,10 @@ async function warmupLanguageModel() {
   // and splice in the real textEmbeds bytes after it.
   combinedEmbeds.set(new Float32Array(textEmbeds.data), condLen * embedDim);
 
+  // Multilingual LM: attention_mask is int64, no position_ids input.
   const passA = {
     inputs_embeds: new ort.Tensor("float32", combinedEmbeds, [1, totalLen, embedDim]),
-    attention_mask_int32: new ort.Tensor("int32", new Int32Array(totalLen).fill(1), [1, totalLen]),
-    position_ids_int32: new ort.Tensor("int32", Int32Array.from({ length: totalLen }, (_, i) => i), [1, totalLen]),
+    attention_mask: new ort.Tensor("int64", BigInt64Array.from({ length: totalLen }, () => 1n), [1, totalLen]),
   };
   for (let i = 0; i < NUM_LAYERS; i++) {
     passA[`past_key_values.${i}.key`] = new ort.Tensor("float16", new Uint16Array(0), [1, NUM_HEADS, 0, HEAD_DIM]);
@@ -451,12 +481,13 @@ async function warmupLanguageModel() {
   // + grown KV cache). This compiles the kernels used for every token
   // after the first, which is where most loop time is spent.
   const nextTok = new ort.Tensor("int64", BigInt64Array.from([0n]), [1, 1]);
-  const nextEmb = await embedTokensSession.run({ input_ids: nextTok });
+  const nextPos = new ort.Tensor("int64", BigInt64Array.from([0n]), [1, 1]);
+  const nextEmb = await embedTokensSession.run({ input_ids: nextTok, position_ids: nextPos, exaggeration: exagTensor });
   const newLen = totalLen + 1;
+  // Multilingual LM: attention_mask is int64, no position_ids input.
   const passB = {
     inputs_embeds: nextEmb["inputs_embeds"],
-    attention_mask_int32: new ort.Tensor("int32", new Int32Array(newLen).fill(1), [1, newLen]),
-    position_ids_int32: new ort.Tensor("int32", Int32Array.from([newLen - 1]), [1, 1]),
+    attention_mask: new ort.Tensor("int64", BigInt64Array.from({ length: newLen }, () => 1n), [1, newLen]),
   };
   for (const [key, value] of Object.entries(resultA)) {
     if (key.startsWith("present.")) {
@@ -477,7 +508,7 @@ async function warmupLanguageModel() {
   console.log(`${LOG} Warmup complete in ${((performance.now() - w0) / 1000).toFixed(1)}s`);
 }
 
-async function handleSynthesize(text, speakerData, id) {
+async function handleSynthesize(text, speakerData, id, languageId, exaggeration = 0.5) {
   if (!embedTokensSession || !languageModelSession || !conditionalDecoderSession || !tokenizer) {
     throw new Error("Models not initialized");
   }
@@ -485,15 +516,23 @@ async function handleSynthesize(text, speakerData, id) {
   const t0 = performance.now();
   console.log(`${LOG} Synthesizing: "${text.slice(0, 50)}..."`);
 
-  // Step 1: Tokenize via GPT-2 BPE.
-  // Post-processor appends [50256, 50256]; embed_tokens routes last 2 to speech_emb.
-  const inputIds = tokenizer.encode(text);
+  // Step 1: Tokenize via multilingual BPE.
+  // prepareLanguage prepends "[xx]" language tag (e.g. "[en]Hello").
+  const preparedText = prepareLanguage(text, languageId);
+  const inputIds = tokenizer.encode(preparedText);
 
-  // embed_tokens runs on WASM with the int64 model variant
+  // embed_tokens runs on WASM with int64 inputs.
+  // Multilingual embed_tokens requires position_ids and exaggeration.
   const embedIdsTensor = new ort.Tensor("int64", BigInt64Array.from(inputIds.map(BigInt)), [1, inputIds.length]);
+  const positionIdsTensor = new ort.Tensor("int64", BigInt64Array.from(inputIds.map((_, i) => BigInt(i))), [1, inputIds.length]);
+  const exaggerationTensor = new ort.Tensor("float32", new Float32Array([exaggeration]), [1]);
 
   // Step 2: Embed text + start-of-speech tokens
-  const embedResult = await embedTokensSession.run({ input_ids: embedIdsTensor });
+  const embedResult = await embedTokensSession.run({
+    input_ids: embedIdsTensor,
+    position_ids: positionIdsTensor,
+    exaggeration: exaggerationTensor,
+  });
   const textEmbeds = embedResult["inputs_embeds"];
   if (!textEmbeds) throw new Error("embed_tokens failed: " + Object.keys(embedResult));
 
@@ -510,25 +549,21 @@ async function handleSynthesize(text, speakerData, id) {
   // it directly without an intermediate copy.
   combinedEmbeds.set(textEmbeds.data, condLen * embedDim);
 
-  // attention_mask and position_ids get fresh typed arrays per decode step.
+  // attention_mask gets a fresh typed array per decode step.
   //
-  // An earlier optimization pre-allocated one Int32Array and handed out
+  // An earlier optimization pre-allocated one typed array and handed out
   // .subarray() views across steps. That produced GatherBlockQuantized
-  // bounds errors (`idx=<garbage> must be within [-8196,8195]`) on the
-  // LM's position-embedding gather: ORT Web's WebGPU backend does not
-  // reliably handle multiple input Tensors that share a backing
-  // ArrayBuffer across successive run() calls — whether by aliased
-  // subarray views or by in-place mutation of a reused single-slot
-  // buffer. The safe idiom is "one typed array per Tensor per run."
+  // bounds errors on the LM's position-embedding gather: ORT Web's WebGPU
+  // backend does not reliably handle multiple input Tensors that share a
+  // backing ArrayBuffer across successive run() calls. The safe idiom is
+  // "one typed array per Tensor per run."
   //
-  // We keep the modest improvement over the very first version by using
-  // `new Int32Array(N).fill(1)` instead of `Int32Array.from(Array(N).fill(1))`
-  // — single allocation, no intermediate Array object.
+  // Multilingual LM does not take position_ids (positions are absorbed by
+  // embed_tokens). attention_mask is int64 per the ONNX graph.
 
   let lmInputs = {
     inputs_embeds: new ort.Tensor("float32", combinedEmbeds, [1, totalLen, embedDim]),
-    attention_mask_int32: new ort.Tensor("int32", new Int32Array(totalLen).fill(1), [1, totalLen]),
-    position_ids_int32: new ort.Tensor("int32", Int32Array.from({ length: totalLen }, (_, i) => i), [1, totalLen]),
+    attention_mask: new ort.Tensor("int64", BigInt64Array.from({ length: totalLen }, () => 1n), [1, totalLen]),
   };
 
   for (let i = 0; i < NUM_LAYERS; i++) {
@@ -563,12 +598,15 @@ async function handleSynthesize(text, speakerData, id) {
     const vocabSize = logits.dims[logits.dims.length - 1] ?? 0;
     const lastTokenLogits = logits.data.subarray(logits.data.length - vocabSize);
 
-    // Mask invalid tokens. Chatterbox Turbo's LM vocab_size is 6563
-    // (config.json: `vocab_size`), so we only need to kill START
-    // (6561) which shouldn't recur mid-sequence. STOP (6562) is valid.
-    // The old loop masking anything above STOP was dead code: with
-    // vocab_size == STOP + 1, the loop never iterated.
+    // Mask invalid tokens: only speech codes [0, 6560] and STOP (6562) are valid.
+    // START (6561) should not appear mid-sequence; text tokens (> 6562) would
+    // cause out-of-bounds lookups in the conditional decoder's speech embedding.
+    // Multilingual LM logits dim is 8194 (vs Turbo's 6563), so the upper mask
+    // loop is load-bearing — it zeros 6563..8193.
     lastTokenLogits[START_SPEECH_TOKEN] = -Infinity;
+    for (let i = STOP_SPEECH_TOKEN + 1; i < lastTokenLogits.length; i++) {
+      lastTokenLogits[i] = -Infinity;
+    }
 
     // Prevent premature STOP before minimum tokens are generated
     if (step < MIN_NEW_TOKENS) {
@@ -585,20 +623,26 @@ async function handleSynthesize(text, speakerData, id) {
     }
     generatedTokens.push(maxIdx);
 
-    // Next step — embed via speech_emb (single token routed by Slice[-2:]).
-    // Substitute token 0 for control tokens (START/STOP) to avoid ORT WASM
-    // GatherBlockQuantized bounds bug on speech_emb indices >= 6561.
-    const embedIdx = maxIdx >= START_SPEECH_TOKEN ? 0 : maxIdx;
-    const nextTok = new ort.Tensor("int64", BigInt64Array.from([BigInt(embedIdx)]), [1, 1]);
-    const nextEmb = await embedTokensSession.run({ input_ids: nextTok });
+    // Next step — embed the new speech token. maxIdx is always a valid speech
+    // token here: START is masked to -Infinity during sampling, and STOP
+    // triggers `break` above.
+    const nextTok = new ort.Tensor("int64", BigInt64Array.from([BigInt(maxIdx)]), [1, 1]);
+    // Position for speech token: sequential from text length onward.
+    // embed_tokens absorbs position encoding for the multilingual model.
+    const stepPos = new ort.Tensor("int64", BigInt64Array.from([BigInt(step + 1)]), [1, 1]);
+    const nextEmb = await embedTokensSession.run({
+      input_ids: nextTok,
+      position_ids: stepPos,
+      exaggeration: exaggerationTensor,
+    });
     const newLen = totalLen + step + 1;
 
+    // Multilingual LM: attention_mask is int64, no position_ids.
+    // Fresh typed arrays per step — see note above the initial lmInputs
+    // construction for why we can't share backing memory.
     lmInputs = {
       inputs_embeds: nextEmb["inputs_embeds"],
-      // Fresh typed arrays per step — see note above the initial
-      // lmInputs construction for why we can't share backing memory.
-      attention_mask_int32: new ort.Tensor("int32", new Int32Array(newLen).fill(1), [1, newLen]),
-      position_ids_int32: new ort.Tensor("int32", new Int32Array([newLen - 1]), [1, 1]),
+      attention_mask: new ort.Tensor("int64", BigInt64Array.from({ length: newLen }, () => 1n), [1, newLen]),
     };
 
     for (const [key, value] of Object.entries(lmResult)) {
@@ -677,7 +721,7 @@ self.addEventListener("message", (e) => {
     // responses via `msg.id` and ignores those for synths it has
     // already timed out on.
     synthChain = synthChain.then(() =>
-      handleSynthesize(msg.text, msg.speakerData, msg.id).catch((err) => {
+      handleSynthesize(msg.text, msg.speakerData, msg.id, msg.languageId, msg.exaggeration).catch((err) => {
         const message = err instanceof Error ? err.message : String(err);
         console.error(`${LOG} Synth error:`, message);
         postMessage({ type: "error", message, id: msg.id });
