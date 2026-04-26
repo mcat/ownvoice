@@ -517,7 +517,16 @@ async function handleSynthesize(
       lastTokenLogits[STOP_SPEECH] = -Infinity;
     }
 
-    const maxIdx = sampleToken(lastTokenLogits, generatedTokens);
+    // Multilingual model: upstream HF reference inference uses argmax.
+    // Sampling at temp=0.6 was producing gibberish — Llama LM has different
+    // training dynamics than Turbo's GPT-2 where greedy caused stutters.
+    let maxIdx = 0;
+    let bestVal = lastTokenLogits[0];
+    for (let i = 1; i < lastTokenLogits.length; i++) {
+      if (lastTokenLogits[i] > bestVal) { bestVal = lastTokenLogits[i]; maxIdx = i; }
+    }
+    // Hold the sampleToken function in scope for future revival if needed.
+    void sampleToken;
 
     if (maxIdx === STOP_SPEECH) {
       console.log(`${LOG} Generation stopped at token ${step + 1}`);

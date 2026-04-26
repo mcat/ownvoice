@@ -74,7 +74,14 @@ const MIN_NEW_TOKENS = 10; // Don't allow STOP before this many speech tokens
 // If byte-stable regens ever become important, the follow-up is to
 // seed the sampler from hashKey(phrase, fingerprint) and use a
 // deterministic PRNG in sampleToken.
-const USE_GREEDY = false;
+// Multilingual model: upstream HF reference inference uses argmax (greedy).
+// Multilingual is a Llama LM with different training dynamics than Turbo's
+// GPT-2 — the Turbo stutter-bug rationale that originally forced sampling
+// doesn't necessarily apply here. Sampling at temp=0.6 was producing
+// gibberish for English; switching to greedy to match upstream.
+// If multilingual ALSO stutters with greedy, revert and investigate sampling
+// hyperparameters (top_p, top_k, temperature) for this specific model.
+const USE_GREEDY = true;
 
 // WASM paths for fallback ops. Points to /ort/ where the JSEP WASM lives.
 //

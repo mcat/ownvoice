@@ -34,7 +34,12 @@ import { recordHash } from "../stores/patientIndex";
 // v8 → v9: fixed first-call position_ids in both workers from arange(N) to
 //          arange(N) - 1 to match upstream — was producing drawn-out pacing
 //          and degraded clone identity due to off-by-one in position embeddings.
-const CACHE_DIR = "audio-cache-v9";
+// v9 → v10: switched both workers from sampling (temp=0.6, top_p=0.95) to
+//           greedy argmax. Multilingual upstream HF reference uses argmax;
+//           sampling was producing gibberish English. The Turbo stutter-bug
+//           rationale that originally forced sampling doesn't apply to the
+//           Llama-based multilingual LM.
+const CACHE_DIR = "audio-cache-v10";
 const SAMPLE_RATE = 24000; // Chatterbox Turbo output rate
 const INT16_SCALE = 32767;
 
