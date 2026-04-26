@@ -70,14 +70,7 @@ import { recordHash } from "../stores/patientIndex";
 //            ONNX (batch_size is a dynamic dim; CPU smoke test reproduces
 //            two batch=1 outputs in one batch=2 call). Greedy + rep_penalty
 //            =1.2 stay (proven-stable). Expected ~1.5x latency vs v14.
-// v15 → v16: bumped two conditioning levers in tandem to push clone
-//            identity strength: CFG_WEIGHT 0.5 → 1.0 (stronger conditional
-//            amplification: final = 2*cond - uncond instead of
-//            1.5*cond - 0.5*uncond) and exaggeration 0.5 → 0.7 (more
-//            pronounced emotion_adv projection in the conditioning prefix).
-//            Both are runtime parameters, no compute change. Testing whether
-//            tandem boost gets clone audio audibly closer to the source.
-const CACHE_DIR = "audio-cache-v16";
+const CACHE_DIR = "audio-cache-v15";
 const SAMPLE_RATE = 24000; // Chatterbox conditional decoder output rate (S3GEN_SR)
 const INT16_SCALE = 32767;
 
@@ -524,12 +517,7 @@ function synthesizeOne(
       text: phrase,
       speakerData,
       languageId,
-      // 0.7 emphasizes voice characteristics more than the upstream-listed
-      // 0.5 default. Higher values fed into emotion_adv_fc produce a more
-      // pronounced conditioning prefix; trade-off is theatrical-sounding
-      // prosody at the high end (~1.0). 0.7 is a moderate bump aimed at
-      // clone identity strength without losing naturalness.
-      exaggeration: 0.7,
+      exaggeration: 0.5,
     });
   });
 }

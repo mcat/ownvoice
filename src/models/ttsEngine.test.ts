@@ -193,9 +193,7 @@ describe("ttsEngine — synthesizeGPU", () => {
     expect(call.id).toBe(1);
     expect(call.speakerData).toBe(SPEAKER);
     expect(call.languageId).toBe("en");
-    // Default exaggeration matches the pre-gen value in audioCache.ts so
-    // cache hits and live-tap fallbacks sound consistent.
-    expect(call.exaggeration).toBe(0.7);
+    expect(call.exaggeration).toBe(0.5);
 
     const audio = new Float32Array([0.1, 0.2, 0.3]);
     worker.__post({
