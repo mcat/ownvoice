@@ -355,13 +355,17 @@ export function VoiceCapture({
     setError(null);
     try {
       const rawAudio = await decodeAudio(blob);
+      // SNR/length gate only — pass raw audio to the encoder. Upstream
+      // chatterbox-multilingual passes librosa.load output straight in;
+      // our HP at 80Hz / peak-normalize / VAD-trim chain was scrubbing
+      // identity cues the encoder uses (notably male F0 fundamentals).
       const prep = preprocessEnrollment(rawAudio, 24000);
       if (!prep.acceptable) {
         setError(prep.rejectionReason ?? "Recording quality too low.");
         setCloneStatus("failed");
         return;
       }
-      const embedding = await extractEmbedding(prep.audio);
+      const embedding = await extractEmbedding(rawAudio);
       if (embedding) {
         setCloneStatus("ready");
         onCapture(blob, embedding);
@@ -381,6 +385,7 @@ export function VoiceCapture({
     setError(null);
     try {
       const rawAudio = await decodeAudio(blob);
+      // See retryEmbedding above — SNR gate only, raw audio to the encoder.
       const prep = preprocessEnrollment(rawAudio, 24000);
       if (!prep.acceptable) {
         // Save the blob so the user can preview what they captured before retrying.
@@ -390,7 +395,7 @@ export function VoiceCapture({
         onCapture(blob);
         return;
       }
-      const embedding = await extractEmbedding(prep.audio);
+      const embedding = await extractEmbedding(rawAudio);
       setSavedBlob(blob);
 
       if (embedding) {

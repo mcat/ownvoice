@@ -201,7 +201,7 @@ describe("settingsStore persist migration", () => {
     expect(p.name).toBe("Maria");
     expect(p.bed).toBe("4B-12");
     expect(p.patientLang).toBe("es");
-    // v2→v3 clears hasVoice + speakerData for the multilingual model swap
+    // v2→v4 clears hasVoice + speakerData (multilingual swap + raw-audio re-enroll)
     expect(p.hasVoice).toBe(false);
     expect(p.speakerData).toBeNull();
     expect(p.fallbackVoice).toEqual({ voiceURI: "com.apple.speech.synthesis.voice.Maria", name: "Maria" });
@@ -221,20 +221,25 @@ describe("settingsStore persist migration", () => {
     expect(store.getState().speakerData).toBeNull();
   });
 
-  it("leaves already-v3 configs alone", async () => {
+  it("migrates v3 → v4: re-clears speaker data for the raw-audio enrollment path", async () => {
+    // v3 embeddings were extracted from preprocessed (HP-filtered, peak-normalized,
+    // VAD-trimmed) audio; v4 enrollment passes raw decoded audio to the speech
+    // encoder. Existing embeddings are stale — re-enroll.
     const v3 = {
       state: {
         cfg: {
           pin: "9999",
           caregiverLang: "de",
-          providers: [],
+          providers: [
+            { name: "Dr. Lee", hasVoice: true, embedding: { condEmb: [0.5] } },
+          ],
           patients: [{
             id: "abc-123",
             name: "Jean",
             bed: "",
             patientLang: "fr",
-            hasVoice: false,
-            speakerData: null,
+            hasVoice: true,
+            speakerData: { speakerEmbeddings: [0.7] },
             addedAt: 1_000_000,
             lastActiveAt: 1_000_000,
           }],
@@ -246,12 +251,18 @@ describe("settingsStore persist migration", () => {
     };
     const store = await seedAndImport(v3);
     const cfg = store.getState().cfg!;
+    // Structural fields preserved
     expect(cfg.patients[0].id).toBe("abc-123");
     expect(cfg.activePatientId).toBe("abc-123");
     expect(cfg.pin).toBe("9999");
+    // Speaker data cleared on patient and provider
+    expect(cfg.patients[0].speakerData).toBeNull();
+    expect(cfg.patients[0].hasVoice).toBe(false);
+    expect(cfg.providers[0].embedding).toBeUndefined();
+    expect(cfg.providers[0].hasVoice).toBe(false);
   });
 
-  it("migrates v2 → v3: nulls speakerData and clears hasVoice on patients and providers", async () => {
+  it("migrates v2 → v4: nulls speakerData and clears hasVoice on patients and providers", async () => {
     const v2 = {
       state: {
         cfg: {
@@ -319,7 +330,7 @@ describe("settingsStore persist migration", () => {
     expect(cfg.caregiverLang).toBe("en");
   });
 
-  it("chains v0 → v3: full migration path from legacy single-patient + multilingual swap", async () => {
+  it("chains v0 → v4: full migration path from legacy single-patient + raw-audio re-enrollment", async () => {
     const v0 = {
       state: {
         cfg: {
@@ -338,7 +349,7 @@ describe("settingsStore persist migration", () => {
     const cfg = store.getState().cfg!;
 
     // v0→v1 added caregiverLang, v1→v2 migrated to multi-patient,
-    // v2→v3 cleared embeddings for multilingual swap
+    // v2→v4 cleared embeddings (multilingual swap + raw-audio re-enroll)
     expect(cfg.caregiverLang).toBe("en");
     expect(cfg.patients).toHaveLength(1);
     expect(cfg.patients[0].speakerData).toBeNull();
@@ -553,7 +564,7 @@ describe("settingsStore persist middleware wiring", () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const persist = (useSettingsStore as any).persist;
     expect(persist.getOptions().name).toBe("ov-settings");
-    expect(persist.getOptions().version).toBe(3);
+    expect(persist.getOptions().version).toBe(4);
   });
 });
 

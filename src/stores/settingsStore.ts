@@ -8,7 +8,7 @@ import type { AppSettings, Patient } from "../types";
 // In-memory Zustand updates stay synchronous so controlled inputs don't
 // lag; only the disk write is batched.
 const PERSIST_DEBOUNCE_MS = 300;
-const STORE_VERSION = 3;
+const STORE_VERSION = 4;
 
 interface SettingsPersistedState {
   cfg: AppSettings | null;
@@ -179,7 +179,11 @@ export const useSettingsStore = create<SettingsState>()(
         // Existing speaker embeddings are incompatible with the new speech
         // encoder — force re-enrollment by clearing speakerData/embedding
         // and setting hasVoice = false on every patient and provider.
-        if (fromVersion < 3 && cfg) {
+        // v3 → v4: enrollment now passes raw decoded audio to the speech
+        // encoder (previously fed preprocessed audio). Existing embeddings
+        // were extracted from filtered/normalized audio and bake in
+        // identity-distorting artifacts — re-enroll to recapture identity.
+        if (fromVersion < 4 && cfg) {
           cfg = {
             ...cfg,
             patients: cfg.patients.map((p) => ({
