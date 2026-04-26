@@ -191,10 +191,19 @@ function applyBPE(chars, mergeRanks) {
 /**
  * Build a multilingual BPE tokenizer from tokenizer.json.
  * Replaces the old GPT-2 byte-level BPE; handles [xx] language tags and
- * [SPACE] normalization natively. Appends [STOP] (id 0) at the end.
+ * [SPACE] normalization natively. Applies the post-processor template:
+ *   EXAGGERATION (6563) + BOS (255) + <text> + EOS (0) + START_SPEECH (6561) ×2
+ * The trailing START_SPEECH ×2 is the model's signal to enter speech-token
+ * generation mode. Without it the LM never emits STOP_SPEECH and runs to
+ * MAX_NEW_TOKENS producing garbage output.
  */
 function buildMultilingualTokenizer(json) {
-  const STOP_TOKEN_ID = 0;
+  // Post-processor template ids — verified from tokenizer.json
+  // post_processor.special_tokens. Architectural constants, not vocab entries.
+  const EXAGGERATION_TOKEN_ID = 6563;
+  const BOS_TOKEN_ID = 255;
+  const EOS_TOKEN_ID = 0;
+  const START_SPEECH_TOKEN_ID = 6561;
 
   const vocab = new Map();
   for (const [token, id] of Object.entries(json.model.vocab)) vocab.set(token, id);
@@ -226,7 +235,7 @@ function buildMultilingualTokenizer(json) {
       // Replace literal spaces with "[SPACE]" so BPE sees them as added tokens
       const normalized = text.replace(/ /g, "[SPACE]");
 
-      const ids = [];
+      const innerIds = [];
       const segments = addedPattern
         ? normalized.split(addedPattern)
         : [normalized];
@@ -235,17 +244,25 @@ function buildMultilingualTokenizer(json) {
         if (segment === "") continue;
         const specialId = addedTokens.get(segment);
         if (specialId !== undefined) {
-          ids.push(specialId);
+          innerIds.push(specialId);
           continue;
         }
         const merged = applyBPE([...segment], mergeRanks);
         for (const tok of merged) {
           const id = vocab.get(tok);
-          if (id !== undefined) ids.push(id);
+          if (id !== undefined) innerIds.push(id);
         }
       }
-      ids.push(STOP_TOKEN_ID);
-      return ids;
+
+      // Apply the post-processor template (mirrors src/models/multilingualTokenizer.ts).
+      return [
+        EXAGGERATION_TOKEN_ID,
+        BOS_TOKEN_ID,
+        ...innerIds,
+        EOS_TOKEN_ID,
+        START_SPEECH_TOKEN_ID,
+        START_SPEECH_TOKEN_ID,
+      ];
     },
   };
 }

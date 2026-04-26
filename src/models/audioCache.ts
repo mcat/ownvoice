@@ -45,10 +45,11 @@ import { recordHash } from "../stores/patientIndex";
 //            speech-generation mode and runs to MAX_NEW_TOKENS without ever
 //            emitting STOP_SPEECH. Also fixed position_ids: wrapper tokens
 //            now get position 0 (not their arange position) per upstream's
-//            np.where logic. Together these were the load-bearing bugs
-//            behind earlier rounds of "drawn out / inaccurate / runaway
-//            generation" listening reports.
-const CACHE_DIR = "audio-cache-v11";
+//            np.where logic.
+// v11 → v12: GPU worker had its own inlined copy of the tokenizer that v11
+//            forgot to update — only the WASM-side tokenizer got the fix.
+//            v12 brings the GPU worker's encode in line with the TS module.
+const CACHE_DIR = "audio-cache-v12";
 const SAMPLE_RATE = 24000; // Chatterbox Turbo output rate
 const INT16_SCALE = 32767;
 
