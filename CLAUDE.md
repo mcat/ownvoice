@@ -40,7 +40,7 @@ The app is decomposed into focused modules. Colocated `*.test.ts(x)` files live 
 - `src/data/phraseRegistry.ts` — Single source of truth for all speakable text. `t(key, locale)` resolves a phrase; `getCategories`, `getProviderCategories`, `getEmojiFPS`, `getWishTopics`, `composePainSentence`, `composeWishSentence`, `getAllSpeakablePhrases` expose structure.
 - `src/data/locales/` — Per-locale string tables (currently `en.ts`). Statically imported so language switching works offline.
 - `src/hooks/` — `useTheme`, `useSpeakActions`, `useMicrophone`, `useModels`, `useDebouncedTap`
-- `src/models/` — On-device inference: `modelManager.ts` (worker lifecycle, OPFS model storage), `ttsEngine.ts` (WebGPU main-thread Chatterbox Turbo), `ttsWorker.ts` / `sttWorker.ts` / `llmWorker.ts` (WASM fallbacks), `audioCache.ts` (OPFS-backed pre-generated phrase audio), `bootModels.ts`, `bpeTokenizer.ts`
+- `src/models/` — On-device inference: `modelManager.ts` (worker lifecycle, OPFS model storage), `ttsEngine.ts` (WebGPU main-thread Chatterbox Multilingual), `ttsWorker.ts` / `sttWorker.ts` / `llmWorker.ts` (WASM fallbacks), `audioCache.ts` (OPFS-backed pre-generated phrase audio), `bootModels.ts`, `multilingualTokenizer.ts` (BPE + per-language preprocessors)
 - `src/stores/` — Zustand stores: `settingsStore`, `conversationStore`, `uiStore`; plus `idbStorage.ts` (Zustand IDB adapter) and `resetAll.ts` (wipes every persistent layer)
 - `src/theme/` — Theme tokens and palette
 - `docs/PRD.md` — Full product requirements (voice cloning, SICG, latency tiers, 4-phase roadmap)
@@ -48,7 +48,7 @@ The app is decomposed into focused modules. Colocated `*.test.ts(x)` files live 
 
 ### State management
 
-- **`settingsStore`** — Persisted to IndexedDB (`ov-settings`). Holds `cfg: AppSettings` and the extracted `speakerData` (Chatterbox Turbo speech-encoder outputs). `_hasHydrated` gates the render until rehydration completes.
+- **`settingsStore`** — Persisted to IndexedDB (`ov-settings`). Holds `cfg: AppSettings` and the extracted `speakerData` (Chatterbox Multilingual speech-encoder outputs: condEmb, promptToken, speakerEmbeddings, speakerFeatures). `_hasHydrated` gates the render until rehydration completes.
 - **`conversationStore`** — In-memory thread of `Message`s (patient/provider, text, time, label).
 - **`uiStore`** — Transient navigation: current tab, subcategory index, open overlays, active provider, `speaking` state.
 - **`resetAll()`** — Wipes IndexedDB, OPFS audio-cache, OPFS model weights, service-worker caches, `localStorage`, and in-memory stores. Called from SettingsPanel.
@@ -56,7 +56,7 @@ The app is decomposed into focused modules. Colocated `*.test.ts(x)` files live 
 ### Data flow for speech
 
 1. Patient taps a phrase → `useSpeakActions.speakAsPatient(text)` → adds message, sets `speaking` overlay, calls `speak(text, speaker)`.
-2. `speak()` tries in order: GPU Chatterbox Turbo (if `speaker.embedding` and `isGPUReady()`) → WASM TTS worker → Web Speech API → confirmation tone. Post-processes raw PCM before playback.
+2. `speak()` tries in order: GPU Chatterbox Multilingual (if `speaker.embedding` and `isGPUReady()`) → WASM TTS worker → Web Speech API → confirmation tone. Post-processes raw PCM before playback. Provider speech runs in `patientLang`; patient speech runs in `caregiverLang`.
 3. Provider taps use `speakAsProvider` — no embedding, so always Web Speech or tone.
 
 ### Offline storage
