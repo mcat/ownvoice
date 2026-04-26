@@ -99,7 +99,11 @@ const USE_GREEDY = true;
 //
 // Set to 0 to disable (single-batch fast path, preserved for fallback).
 // Turbo (English-only GPT-2 LM) does NOT use CFG; multilingual does.
-const CFG_WEIGHT = 0.5;
+// 0.5 is upstream's listed default; 1.0 produces stronger conditional
+// amplification (final = 2*cond - uncond instead of 1.5*cond - 0.5*uncond)
+// which clones often benefit from in practice. Trade-off: too high can
+// introduce artifacts. 1.0 is a common alternative cited in TTS literature.
+const CFG_WEIGHT = 1.0;
 
 // WASM paths for fallback ops. Points to /ort/ where the JSEP WASM lives.
 //

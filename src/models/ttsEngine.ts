@@ -279,7 +279,10 @@ export function synthesizeGPU(
       speakerData,
       id,
       languageId,
-      exaggeration: opts?.exaggeration ?? 0.5,
+      // Match the pre-gen default in audioCache.ts. Cache hits use 0.7
+      // already-baked into the audio; cache misses (rare — live-tap
+      // fallback path) need the same value to sound consistent.
+      exaggeration: opts?.exaggeration ?? 0.7,
     });
   });
 }
