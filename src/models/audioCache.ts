@@ -28,7 +28,10 @@ import { recordHash } from "../stores/patientIndex";
 //          [chuckle]) on a single test phrase.
 // v6 → v7: rolled back the [narration] prefix; force regen so the broken v6
 //          audio is discarded.
-const CACHE_DIR = "audio-cache-v7";
+// v7 → v8: swapped Chatterbox Turbo (English-only) → Chatterbox Multilingual
+//          (23 languages, exaggeration runtime input). All cached audio
+//          regenerates because the entire model changed, not just one knob.
+const CACHE_DIR = "audio-cache-v8";
 const SAMPLE_RATE = 24000; // Chatterbox Turbo output rate
 const INT16_SCALE = 32767;
 
@@ -245,7 +248,7 @@ export async function* generateAllPhrases(
   phrases: string[],
   speakerData: unknown,
   signal?: AbortSignal,
-  opts?: { gpuOnly?: boolean; patientId?: string | null },
+  opts?: { gpuOnly?: boolean; patientId?: string | null; languageId?: string },
 ): AsyncGenerator<GenerateProgress> {
   const mgr = getModelManager();
   const worker = mgr.getWorker("tts");
@@ -292,6 +295,7 @@ export async function* generateAllPhrases(
         speakerData,
         signal,
         gpuOnly,
+        opts?.languageId ?? "en",
       );
       // Post-process once here, at cache-write time, so playback in
       // speak.ts skips the ~10-50ms FFT pipeline on every tap.
@@ -337,7 +341,7 @@ export async function* retryFailed(
   phrases: string[],
   speakerData: unknown,
   signal?: AbortSignal,
-  opts?: { gpuOnly?: boolean; patientId?: string | null },
+  opts?: { gpuOnly?: boolean; patientId?: string | null; languageId?: string },
 ): AsyncGenerator<GenerateProgress> {
   yield* generateAllPhrases(phrases, speakerData, signal, opts);
 }
@@ -368,6 +372,7 @@ async function synthesizeWithRetries(
   speakerData: unknown,
   signal?: AbortSignal,
   gpuOnly: boolean = false,
+  languageId: string = "en",
 ): Promise<Float32Array> {
   let lastErr: unknown;
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
@@ -375,7 +380,7 @@ async function synthesizeWithRetries(
       throw new DOMException("Aborted", "AbortError");
     }
     try {
-      return await synthesizeBestAvailable(worker, phrase, speakerData, signal, gpuOnly);
+      return await synthesizeBestAvailable(worker, phrase, speakerData, signal, gpuOnly, languageId);
     } catch (err) {
       if (signal?.aborted) throw err;
       lastErr = err;
@@ -400,12 +405,14 @@ async function synthesizeBestAvailable(
   speakerData: unknown,
   signal?: AbortSignal,
   gpuOnly: boolean = false,
+  languageId: string = "en",
 ): Promise<Float32Array> {
   if (isGPUReady()) {
     try {
       const { data } = await synthesizeGPU(
         phrase,
         speakerData as Parameters<typeof synthesizeGPU>[1],
+        languageId,
         { timeoutMs: PREGEN_GPU_TIMEOUT_MS },
       );
       return data;
@@ -420,7 +427,7 @@ async function synthesizeBestAvailable(
   if (!worker) {
     throw new Error("No TTS worker available for WASM fallback");
   }
-  return synthesizeOne(worker, phrase, speakerData, signal);
+  return synthesizeOne(worker, phrase, speakerData, signal, languageId);
 }
 
 function synthesizeOne(
@@ -428,6 +435,7 @@ function synthesizeOne(
   phrase: string,
   speakerData: unknown,
   signal?: AbortSignal,
+  languageId: string = "en",
 ): Promise<Float32Array> {
   return new Promise<Float32Array>((resolve, reject) => {
     // 180s per-phrase timeout — matches the speak.ts live-synth timeout.
@@ -469,6 +477,8 @@ function synthesizeOne(
       type: "synthesize",
       text: phrase,
       speakerData,
+      languageId,
+      exaggeration: 0.5,
     });
   });
 }

@@ -201,8 +201,9 @@ describe("settingsStore persist migration", () => {
     expect(p.name).toBe("Maria");
     expect(p.bed).toBe("4B-12");
     expect(p.patientLang).toBe("es");
-    expect(p.hasVoice).toBe(true);
-    expect(p.speakerData).toEqual({ id: "maria-voice-data" });
+    // v2→v3 clears hasVoice + speakerData for the multilingual model swap
+    expect(p.hasVoice).toBe(false);
+    expect(p.speakerData).toBeNull();
     expect(p.fallbackVoice).toEqual({ voiceURI: "com.apple.speech.synthesis.voice.Maria", name: "Maria" });
     expect(p.id).toMatch(/^[0-9a-f-]{36}$/i);  // UUID
     expect(typeof p.addedAt).toBe("number");
@@ -220,8 +221,8 @@ describe("settingsStore persist migration", () => {
     expect(store.getState().speakerData).toBeNull();
   });
 
-  it("leaves already-v2 configs alone", async () => {
-    const v2 = {
+  it("leaves already-v3 configs alone", async () => {
+    const v3 = {
       state: {
         cfg: {
           pin: "9999",
@@ -241,13 +242,110 @@ describe("settingsStore persist migration", () => {
         },
         speakerData: null,
       },
-      version: 2,
+      version: 3,
     };
-    const store = await seedAndImport(v2);
+    const store = await seedAndImport(v3);
     const cfg = store.getState().cfg!;
     expect(cfg.patients[0].id).toBe("abc-123");
     expect(cfg.activePatientId).toBe("abc-123");
     expect(cfg.pin).toBe("9999");
+  });
+
+  it("migrates v2 → v3: nulls speakerData and clears hasVoice on patients and providers", async () => {
+    const v2 = {
+      state: {
+        cfg: {
+          pin: "1234",
+          caregiverLang: "en",
+          providers: [
+            { name: "Dr. Smith", hasVoice: true, embedding: { condEmb: [1, 2, 3] } },
+            { name: "Nurse Kim", hasVoice: false },
+          ],
+          patients: [
+            {
+              id: "p-1",
+              name: "Maria",
+              bed: "4B",
+              patientLang: "es",
+              hasVoice: true,
+              speakerData: { speakerEmbeddings: [0.1, 0.2, 0.3] },
+              addedAt: 1_000_000,
+              lastActiveAt: 1_000_000,
+            },
+            {
+              id: "p-2",
+              name: "Jean",
+              bed: "5A",
+              patientLang: "fr",
+              hasVoice: false,
+              speakerData: null,
+              addedAt: 2_000_000,
+              lastActiveAt: 2_000_000,
+            },
+          ],
+          activePatientId: "p-1",
+        },
+        speakerData: { legacy: true },
+      },
+      version: 2,
+    };
+    const store = await seedAndImport(v2);
+    const cfg = store.getState().cfg!;
+
+    // Patient speakerData nulled, hasVoice cleared
+    expect(cfg.patients[0].speakerData).toBeNull();
+    expect(cfg.patients[0].hasVoice).toBe(false);
+    expect(cfg.patients[0].name).toBe("Maria"); // other fields preserved
+    expect(cfg.patients[0].patientLang).toBe("es");
+
+    // Already-null speakerData patient is unchanged
+    expect(cfg.patients[1].speakerData).toBeNull();
+    expect(cfg.patients[1].hasVoice).toBe(false);
+
+    // Provider embedding cleared, hasVoice cleared
+    expect(cfg.providers[0].embedding).toBeUndefined();
+    expect(cfg.providers[0].hasVoice).toBe(false);
+    expect(cfg.providers[0].name).toBe("Dr. Smith");
+
+    // Provider without embedding stays clean
+    expect(cfg.providers[1].hasVoice).toBe(false);
+
+    // Top-level speakerData cleared
+    expect(store.getState().speakerData).toBeNull();
+
+    // Structural fields preserved
+    expect(cfg.activePatientId).toBe("p-1");
+    expect(cfg.pin).toBe("1234");
+    expect(cfg.caregiverLang).toBe("en");
+  });
+
+  it("chains v0 → v3: full migration path from legacy single-patient + multilingual swap", async () => {
+    const v0 = {
+      state: {
+        cfg: {
+          patientName: "Maria",
+          bed: "4B-12",
+          patientLang: "es",
+          patientVoice: true,
+          pin: "",
+          providers: [{ name: "Dr. Smith", hasVoice: true, embedding: { x: 1 } }],
+        },
+        speakerData: { oldVoice: true },
+      },
+      version: 0,
+    };
+    const store = await seedAndImport(v0);
+    const cfg = store.getState().cfg!;
+
+    // v0→v1 added caregiverLang, v1→v2 migrated to multi-patient,
+    // v2→v3 cleared embeddings for multilingual swap
+    expect(cfg.caregiverLang).toBe("en");
+    expect(cfg.patients).toHaveLength(1);
+    expect(cfg.patients[0].speakerData).toBeNull();
+    expect(cfg.patients[0].hasVoice).toBe(false);
+    expect(cfg.providers[0].embedding).toBeUndefined();
+    expect(cfg.providers[0].hasVoice).toBe(false);
+    expect(store.getState().speakerData).toBeNull();
   });
 });
 
@@ -455,7 +553,7 @@ describe("settingsStore persist middleware wiring", () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const persist = (useSettingsStore as any).persist;
     expect(persist.getOptions().name).toBe("ov-settings");
-    expect(persist.getOptions().version).toBe(2);
+    expect(persist.getOptions().version).toBe(3);
   });
 });
 

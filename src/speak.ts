@@ -465,7 +465,12 @@ async function tryWebSpeech(text: string, lang?: string): Promise<boolean> {
  *
  * The patient always gets feedback. No silent failures.
  */
-export async function speak(text: string, speaker: Speaker): Promise<void> {
+export async function speak(
+  text: string,
+  speaker: Speaker,
+  opts?: { exaggeration?: number },
+): Promise<void> {
+  void opts; // Reserved for future live-synth path; unused while tap path is cache-only.
   console.log("[OwnVoice:TTS] speak() called", {
     text: text.slice(0, 30),
     hasEmbedding: !!speaker.embedding,

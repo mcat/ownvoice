@@ -13,7 +13,7 @@ import {
   getProviderSpokenPhrases,
   getPatientPainSentencesForSpeech,
 } from "../data/phraseRegistry";
-import { canCloneForLocale } from "../data/chatterboxLocales";
+import { canCloneForLocale, baseLocale } from "../data/chatterboxLocales";
 import { isGPUReady } from "./ttsEngine";
 
 /**
@@ -44,6 +44,11 @@ export interface SpeakerPlan {
    */
   patientId: string | null;
   /**
+   * Base BCP 47 language tag for TTS synthesis (e.g. "en", "es").
+   * Patient entries use caregiverLang; provider entries use patientLang.
+   */
+  languageId: string;
+  /**
    * When true, the generator skips entirely if WebGPU isn't ready and
    * never falls back to WASM mid-run. Used for the 702-phrase pain
    * matrix whose WASM cost (hours) would be worse than no cache at all.
@@ -64,6 +69,10 @@ function buildPlan(cfg: AppSettings): SpeakerPlan[] {
     : null;
   if (!activePatient) return plan;
 
+  // Patient voice speaks caregiverLang; provider voice speaks patientLang.
+  const patientLangId = baseLocale(cfg.caregiverLang);
+  const providerLangId = baseLocale(activePatient.patientLang);
+
   if (
     canCloneForLocale(cfg.caregiverLang) &&
     isRunnable(activePatient.speakerData)
@@ -73,6 +82,7 @@ function buildPlan(cfg: AppSettings): SpeakerPlan[] {
       speakerData: activePatient.speakerData,
       phrases: getPatientSpokenPhrases(cfg.caregiverLang),
       patientId: activePatient.id,
+      languageId: patientLangId,
     });
   }
 
@@ -84,6 +94,7 @@ function buildPlan(cfg: AppSettings): SpeakerPlan[] {
           speakerData: p.embedding,
           phrases: getProviderSpokenPhrases(activePatient.patientLang),
           patientId: null,
+          languageId: providerLangId,
         });
       }
     });
@@ -102,6 +113,7 @@ function buildPlan(cfg: AppSettings): SpeakerPlan[] {
       speakerData: activePatient.speakerData,
       phrases: getPatientPainSentencesForSpeech(cfg.caregiverLang),
       patientId: activePatient.id,
+      languageId: patientLangId,
       gpuOnly: true,
     });
   }
@@ -159,7 +171,7 @@ export async function runPreGeneration(cfg: AppSettings): Promise<void> {
         speaker.phrases,
         speaker.speakerData,
         controller.signal,
-        { gpuOnly: speaker.gpuOnly === true, patientId: speaker.patientId },
+        { gpuOnly: speaker.gpuOnly === true, patientId: speaker.patientId, languageId: speaker.languageId },
       )) {
         if (controller.signal.aborted) return;
         if (progress.failed) {
@@ -215,7 +227,7 @@ export async function retryFailed(
       failed,
       speaker.speakerData,
       controller.signal,
-      { gpuOnly: speaker.gpuOnly === true, patientId: speaker.patientId },
+      { gpuOnly: speaker.gpuOnly === true, patientId: speaker.patientId, languageId: speaker.languageId },
     )) {
       if (controller.signal.aborted || runId !== currentRunId) return;
       if (progress.failed) {
