@@ -54,15 +54,7 @@ import { recordHash } from "../stores/patientIndex";
 //            attractors. Upstream's "greedy" is actually rep_penalty+argmax
 //            per generation_config.json. This was the runaway-generation
 //            root cause.
-// v13 → v14: aligned multilingual generation pipeline with upstream
-//            mtl_tts.py defaults: classifier-free guidance (cfg_weight=0.5,
-//            GPU worker only), repetition_penalty 1.2 → 2.0, min_p 0.05,
-//            top_p 0.95 → 1.0, temperature 0.6 → 0.8, switched from greedy
-//            to sampling. CFG was the dominant fidelity gap — multilingual
-//            unconditionally runs the LM with batch=2 (cond + uncond with
-//            text zeroed) and combines logits as cond + cfg*(cond - uncond);
-//            without it the model drifts off-prompt and clones sound generic.
-const CACHE_DIR = "audio-cache-v14";
+const CACHE_DIR = "audio-cache-v13";
 const SAMPLE_RATE = 24000; // Chatterbox Turbo output rate
 const INT16_SCALE = 32767;
 

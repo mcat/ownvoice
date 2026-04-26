@@ -53,18 +53,16 @@ const SILENCE_TOKEN = 4299;
 // critical path.
 const MAX_NEW_TOKENS = 768;
 
-// Sampling parameters — upstream chatterbox-multilingual defaults from
-// mtl_tts.py:generate(). Multilingual diverges from Turbo on every sampling
-// knob (rep_penalty 2.0 vs 1.2, top_p 1.0 vs 0.95, plus min_p which Turbo
-// doesn't use). The WASM path is the fallback when WebGPU is unavailable —
-// it does NOT implement classifier-free guidance (the GPU worker does), so
-// fidelity is weaker here, but the sampling pipeline still aligns.
-// Processing order: rep_penalty → temperature → min_p → top_p → softmax → sample.
-const TEMPERATURE = 0.8;
+// Sampling parameters — repetition_penalty matches the model's
+// generation_config.json. Temperature lowered from upstream's 0.8 to 0.6 to
+// tighten the output distribution: 0.8 was producing prosody that read as
+// theatrical/sarcastic on conversational phrases. 0.6 is still well within
+// the sampling regime (greedy is unsafe — see USE_GREEDY note in the GPU worker).
+// Processing order: repetition penalty → temperature → top-k → top-p → sample.
+const TEMPERATURE = 0.6;
 const TOP_K = 1000;
-const TOP_P = 1.0;
-const MIN_P = 0.05;
-const REPETITION_PENALTY = 2.0;
+const TOP_P = 0.95;
+const REPETITION_PENALTY = 1.2;
 const MIN_NEW_TOKENS = 10; // Don't allow STOP before this many speech tokens
 
 /** Outputs from the speech encoder, stored and reused for all synthesis calls.
@@ -258,25 +256,7 @@ function sampleToken(logits: Float32Array, generatedTokens: number[]): number {
     for (let i = 0; i < probs.length; i++) probs[i] /= sumExp;
   }
 
-  // 5. Min-P filtering — drop tokens whose probability is below MIN_P × max_prob.
-  //    Replaces top_p as the primary truncation in upstream multilingual.
-  if (MIN_P > 0) {
-    let pMax = 0;
-    for (let i = 0; i < probs.length; i++) {
-      if (probs[i] > pMax) pMax = probs[i];
-    }
-    const minPThreshold = MIN_P * pMax;
-    let renorm = 0;
-    for (let i = 0; i < probs.length; i++) {
-      if (probs[i] < minPThreshold) probs[i] = 0;
-      else renorm += probs[i];
-    }
-    if (renorm > 0) {
-      for (let i = 0; i < probs.length; i++) probs[i] /= renorm;
-    }
-  }
-
-  // 6. Top-P (nucleus) — sort by probability, keep smallest set summing to >= TOP_P
+  // 5. Top-P (nucleus) — sort by probability, keep smallest set summing to >= TOP_P
   const indexed: [number, number][] = [];
   for (let i = 0; i < probs.length; i++) {
     if (probs[i] > 0) indexed.push([i, probs[i]]);
@@ -570,12 +550,29 @@ async function handleSynthesize(
       lastTokenLogits[STOP_SPEECH] = -Infinity;
     }
 
-    // Sample using the upstream multilingual pipeline:
-    // rep_penalty (2.0) → temperature (0.8) → min_p (0.05) → top_p (1.0) → softmax → multinomial.
-    // This is the WASM fallback — no CFG (which would add a second LM forward
-    // per token). Fidelity is correspondingly weaker than the GPU path, but the
-    // sampler is aligned. sampleToken applies rep_penalty internally.
-    const maxIdx = sampleToken(lastTokenLogits, generatedTokens);
+    // Multilingual model: upstream HF reference inference uses
+    // rep_penalty + argmax (NOT bare argmax — bare argmax gets trapped
+    // on repeating-token attractors and never emits STOP).
+    //
+    // Apply HF-convention repetition penalty in-place (penalty 1.2 from
+    // generation_config.json): positive logits divided, negative multiplied,
+    // for every previously-generated token.
+    {
+      const seen = new Set(generatedTokens);
+      for (const tok of seen) {
+        if (tok < lastTokenLogits.length) {
+          if (lastTokenLogits[tok] > 0) lastTokenLogits[tok] /= REPETITION_PENALTY;
+          else lastTokenLogits[tok] *= REPETITION_PENALTY;
+        }
+      }
+    }
+    let maxIdx = 0;
+    let bestVal = lastTokenLogits[0];
+    for (let i = 1; i < lastTokenLogits.length; i++) {
+      if (lastTokenLogits[i] > bestVal) { bestVal = lastTokenLogits[i]; maxIdx = i; }
+    }
+    // Hold the sampleToken function in scope for future revival if needed.
+    void sampleToken;
 
     if (maxIdx === STOP_SPEECH) {
       console.log(`${LOG} Generation stopped at token ${step + 1}`);
