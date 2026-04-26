@@ -51,3 +51,6 @@ __pycache__/
 *.pyc
 
 .superpowers/
+
+# Worktrees for isolated multi-branch development
+.worktrees/
