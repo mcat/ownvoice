@@ -286,3 +286,119 @@ describe("multilingualTokenizer round-trip across languages", () => {
     expect(ids[ids.length - 1]).toBe(6561); // trailing START_SPEECH
   });
 });
+
+describe("upstream tokenization parity (byte-for-byte)", () => {
+  // Golden token sequences captured from the upstream HuggingFace
+  // `tokenizers` library running the full upstream MTLTokenizer.encode +
+  // mtl_tts.py SOT/EOT padding pipeline (lowercase + NFKD + per-language
+  // preprocessor + post_processor template). These pin our TS port to
+  // the reference implementation so any drift in puncNorm, lowercase,
+  // NFKD ordering, koreanNormalize, or cangjieNormalize fails loudly.
+  //
+  // To regenerate after a deliberate preprocessing change, run the
+  // capture script printed in this file's git history at the
+  // "feat(tts): port Chinese Cangjie5 preprocessor" commit, or replay
+  // the python harness used to seed these values:
+  //
+  //   /tmp/cbox-test/bin/python <<<'... see git log dc5d96c.. for harness ...'
+
+  const cangjieEntries: string[] = JSON.parse(
+    readFileSync(
+      "public/models/chatterbox-multilingual/Cangjie5_TC.json",
+      "utf8",
+    ),
+  );
+  const tok = buildMultilingualTokenizer(TOKENIZER_JSON);
+
+  beforeEach(() => {
+    setCangjieData(cangjieEntries);
+  });
+
+  const cases: Array<{
+    lang: string;
+    phrase: string;
+    description: string;
+    expectedIds: number[];
+  }> = [
+    {
+      lang: "en",
+      phrase: "Yes",
+      description: "single word, terminal period appended by punc_norm",
+      expectedIds: [6563, 255, 708, 38, 61, 9, 0, 6561, 6561],
+    },
+    {
+      lang: "en",
+      phrase: "No.",
+      description: "single word, existing terminal period preserved",
+      expectedIds: [6563, 255, 708, 95, 9, 0, 6561, 6561],
+    },
+    {
+      lang: "en",
+      phrase: "I'm cold",
+      description: "apostrophe + space",
+      expectedIds: [6563, 255, 708, 22, 4, 26, 2, 174, 79, 9, 0, 6561, 6561],
+    },
+    {
+      lang: "en",
+      phrase: "Please wait",
+      description: "two words, period appended (the punc_norm canary)",
+      expectedIds: [6563, 255, 708, 29, 64, 55, 18, 2, 36, 14, 60, 9, 0, 6561, 6561],
+    },
+    {
+      lang: "en",
+      phrase: "How are you?",
+      description: "question mark already present, no period appended",
+      expectedIds: [6563, 255, 708, 21, 69, 2, 127, 2, 74, 13, 0, 6561, 6561],
+    },
+    {
+      lang: "en",
+      phrase: "Hello   world",
+      description: "multiple spaces collapsed by punc_norm",
+      expectedIds: [6563, 255, 708, 62, 84, 28, 2, 179, 79, 9, 0, 6561, 6561],
+    },
+    {
+      lang: "es",
+      phrase: "Hola, ¿cómo estás?",
+      description: "spanish accents + inverted question (NFKD decomposition)",
+      expectedIds: [6563, 255, 635, 21, 28, 25, 14, 7, 2, 360, 174, 764, 115, 2, 218, 14, 764, 32, 13, 0, 6561, 6561],
+    },
+    {
+      lang: "fr",
+      phrase: "Café au lait",
+      description: "french accent (NFKD decomposition)",
+      expectedIds: [6563, 255, 634, 183, 132, 764, 2, 14, 34, 2, 25, 14, 60, 9, 0, 6561, 6561],
+    },
+    {
+      lang: "de",
+      phrase: "Schöne Grüße",
+      description: "german umlauts (NFKD)",
+      expectedIds: [6563, 255, 636, 32, 71, 28, 762, 111, 2, 198, 34, 762, 392, 18, 9, 0, 6561, 6561],
+    },
+    {
+      lang: "ko",
+      phrase: "안녕하세요",
+      description: "korean greeting (Jamo decomposition)",
+      expectedIds: [6563, 255, 724, 1794, 1880, 1954, 1785, 1886, 1971, 1801, 1880, 1792, 1885, 1794, 1892, 9, 0, 6561, 6561],
+    },
+    {
+      lang: "zh",
+      phrase: "你好世界",
+      description: "chinese hello world (Cangjie5 lookup)",
+      expectedIds: [6563, 255, 725, 747, 746, 738, 2064, 754, 746, 736, 2064, 748, 752, 2064, 755, 747, 744, 744, 2064, 9, 0, 6561, 6561],
+    },
+    {
+      lang: "zh",
+      phrase: "我饿了",
+      description: "chinese 'I am hungry' (Cangjie5 lookup)",
+      expectedIds: [6563, 255, 725, 740, 749, 741, 2064, 746, 754, 740, 749, 741, 2064, 746, 746, 2064, 9, 0, 6561, 6561],
+    },
+  ];
+
+  for (const { lang, phrase, description, expectedIds } of cases) {
+    test(`${lang}: ${description} — ${JSON.stringify(phrase)}`, () => {
+      const prepared = prepareLanguage(phrase, lang);
+      const ids = tok.encode(prepared);
+      expect(ids).toEqual(expectedIds);
+    });
+  }
+});
