@@ -285,29 +285,55 @@ function sampleToken(logits: Float32Array, generatedTokens: number[]): number {
 }
 
 /**
- * Initialize runtime models (embed_tokens, language_model, conditional_decoder).
+ * Initialize tokenizer + baseUrl, then signal ready.
+ *
+ * Synth-side models (embed_tokens, language_model, conditional_decoder) are
+ * lazy-loaded on first synthesize call — see ensureSynthModelsLoaded.
  * Speech encoder is loaded on-demand during embed().
+ *
+ * Why lazy: the WASM TTS worker's only hot-path job in this codebase is
+ * enrollment (handleEmbed), which doesn't touch the synth models. Pre-gen
+ * runs through the GPU engine, not this worker. Live synth on WASM is a
+ * fallback path used only when WebGPU is unavailable. Loading ~900 MB of
+ * synth models eagerly during init was blocking `mgr.isReady("tts")` — and
+ * therefore the enrollment UI — for ~150s+ on cold starts.
  */
 async function handleInit(modelUrl: string): Promise<void> {
   baseUrl = modelUrl.endsWith("/") ? modelUrl : modelUrl + "/";
   const ep = getEP();
   console.log(`${LOG} Initializing with EP: ${ep}`);
 
-  // Load tokenizer
+  // Tokenizer is small and needed for any operation; load eagerly.
   await loadTokenizer(baseUrl + CHATTERBOX_FILES.tokenizer);
 
-  // WASM worker uses the original int64 models
-  console.log(`${LOG} Loading embed_tokens (WASM)...`);
-  embedTokensSession = await createSession(baseUrl + CHATTERBOX_FILES.embedTokens.onnx, true, true);
-
-  console.log(`${LOG} Loading language_model (WASM)...`);
-  languageModelSession = await createSession(baseUrl + CHATTERBOX_FILES.languageModel.onnx, true, true);
-
-  console.log(`${LOG} Loading conditional_decoder (WASM)...`);
-  conditionalDecoderSession = await createSession(baseUrl + CHATTERBOX_FILES.conditionalDecoder.onnx, true, true);
-
-  console.log(`${LOG} All runtime models loaded. Ready.`);
+  console.log(`${LOG} Init complete (synth models lazy-loaded on first synthesize). Ready.`);
   _postMessage({ type: "ready" });
+}
+
+/**
+ * Lazy-load the synth-side runtime models. Called from handleSynthesize.
+ * Idempotent — subsequent calls return immediately if all sessions exist.
+ */
+async function ensureSynthModelsLoaded(): Promise<void> {
+  if (embedTokensSession && languageModelSession && conditionalDecoderSession) return;
+
+  console.log(`${LOG} Lazy-loading synth models (first synthesize call)...`);
+  const t0 = performance.now();
+
+  if (!embedTokensSession) {
+    console.log(`${LOG} Loading embed_tokens (WASM)...`);
+    embedTokensSession = await createSession(baseUrl + CHATTERBOX_FILES.embedTokens.onnx, true, true);
+  }
+  if (!languageModelSession) {
+    console.log(`${LOG} Loading language_model (WASM)...`);
+    languageModelSession = await createSession(baseUrl + CHATTERBOX_FILES.languageModel.onnx, true, true);
+  }
+  if (!conditionalDecoderSession) {
+    console.log(`${LOG} Loading conditional_decoder (WASM)...`);
+    conditionalDecoderSession = await createSession(baseUrl + CHATTERBOX_FILES.conditionalDecoder.onnx, true, true);
+  }
+
+  console.log(`${LOG} Synth models loaded in ${((performance.now() - t0) / 1000).toFixed(1)}s`);
 }
 
 /**
@@ -398,10 +424,14 @@ async function handleSynthesize(
   languageId: string,
   exaggeration: number = 0.5,
 ): Promise<void> {
-  if (!embedTokensSession || !languageModelSession || !conditionalDecoderSession) {
-    throw new Error("Runtime models not initialized");
-  }
   if (!tokenizer || !prepareLanguageFn) throw new Error("Tokenizer not loaded");
+
+  // Lazy-load synth models on first call. Init only loaded the tokenizer
+  // (small) so the worker could signal ready quickly for enrollment.
+  await ensureSynthModelsLoaded();
+  if (!embedTokensSession || !languageModelSession || !conditionalDecoderSession) {
+    throw new Error("Runtime models failed to load");
+  }
 
   const useGPU = getEP() === "webgpu";
   // Signal EP info to main thread via progress message (passes through ORT proxy)
