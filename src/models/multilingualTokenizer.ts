@@ -210,6 +210,52 @@ export const SUPPORTED_LANGUAGES = new Set([
  *  hiragana for ja, diacritics for he, Jamo for ko, stress for ru) that
  *  we don't implement — those languages will produce degraded output
  *  until the corresponding preprocessors are ported. */
+/** Punctuation normalization, ported from upstream `mtl_tts.py:punc_norm`.
+ *  Runs BEFORE lowercase/NFKD so the period appended here is part of the
+ *  text the BPE encodes.
+ *
+ *  Critical for terminal-prosody: the model was trained on text-with-
+ *  terminal-punctuation, and missing punctuation produces subtle
+ *  end-of-utterance drift. We saw "Please wait" mispronounced as "Nice
+ *  wait" until this normalization was added.
+ *
+ *  Skips upstream's "capitalize first letter" step — we lowercase next,
+ *  so capitalization is a no-op for the final BPE input. */
+export function puncNorm(text: string): string {
+  if (text.length === 0) return "You need to add some text for me to talk.";
+
+  // Collapse multiple whitespace runs.
+  let out = text.split(/\s+/).filter(Boolean).join(" ");
+
+  // Replace uncommon / LLM-ish punctuation with model-friendly equivalents.
+  const replacements: Array<[string, string]> = [
+    ["...", ", "],
+    ["…", ", "], // …
+    [":", ","],
+    [" - ", ", "],
+    [";", ", "],
+    ["—", "-"], // em-dash
+    ["–", "-"], // en-dash
+    [" ,", ","],
+    ["“", '"'], // left double quote
+    ["”", '"'], // right double quote
+    ["‘", "'"], // left single quote
+    ["’", "'"], // right single quote
+  ];
+  for (const [from, to] of replacements) {
+    out = out.split(from).join(to);
+  }
+
+  // Append a period if no terminal punctuation. Mirrors upstream's
+  // sentence-enders set (includes CJK punctuation for multilingual).
+  out = out.replace(/\s+$/, "");
+  const enders = new Set([".", "!", "?", "-", ",", "、", "，", "。", "？", "！"]);
+  if (out.length > 0 && !enders.has(out[out.length - 1])) {
+    out += ".";
+  }
+  return out;
+}
+
 export function prepareLanguage(text: string, languageId: string): string {
   const lang = languageId.toLowerCase();
   if (!SUPPORTED_LANGUAGES.has(lang)) {
@@ -217,6 +263,7 @@ export function prepareLanguage(text: string, languageId: string): string {
       `Unsupported language: ${languageId}. Supported: ${Array.from(SUPPORTED_LANGUAGES).sort().join(", ")}`,
     );
   }
-  const preprocessed = text.toLowerCase().normalize("NFKD");
+  const punctuated = puncNorm(text);
+  const preprocessed = punctuated.toLowerCase().normalize("NFKD");
   return `[${lang}]${preprocessed}`;
 }

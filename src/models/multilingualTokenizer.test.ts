@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import {
   buildMultilingualTokenizer,
   prepareLanguage,
+  puncNorm,
   SUPPORTED_LANGUAGES,
 } from "./multilingualTokenizer";
 
@@ -43,14 +44,14 @@ describe("multilingualTokenizer encode", () => {
 });
 
 describe("prepareLanguage", () => {
-  test("prepends [xx] with no space, lowercase tag, lowercased text", () => {
+  test("prepends [xx] with no space, lowercase tag, lowercased text, terminal period", () => {
     // Upstream MTLTokenizer.encode lowercases text before tokenizing.
     // We were skipping this, so "Yes" produced Y(301) + es(61) instead
     // of upstream's y(38) + es(61).
-    expect(prepareLanguage("Hello", "en")).toBe("[en]hello");
-    expect(prepareLanguage("Bonjour", "FR")).toBe("[fr]bonjour"); // case-insensitive
+    expect(prepareLanguage("Hello", "en")).toBe("[en]hello.");
+    expect(prepareLanguage("Bonjour", "FR")).toBe("[fr]bonjour."); // case-insensitive
     expect(prepareLanguage("こんにちは", "ja")).toBe(
-      "[ja]こんにちは",
+      "[ja]こんにちは.",
     );
   });
 
@@ -60,7 +61,7 @@ describe("prepareLanguage", () => {
     // input — composed accents would tokenize as unknown.
     const composed = "Café";
     const prepared = prepareLanguage(composed, "fr");
-    expect(prepared).toBe("[fr]café");
+    expect(prepared).toBe("[fr]café.");
   });
 
   test("rejects unsupported language codes", () => {
@@ -72,6 +73,43 @@ describe("prepareLanguage", () => {
     for (const lang of SUPPORTED_LANGUAGES) {
       expect(() => prepareLanguage("test", lang)).not.toThrow();
     }
+  });
+});
+
+describe("puncNorm", () => {
+  test("appends period when no terminal punctuation", () => {
+    expect(puncNorm("Hello world")).toBe("Hello world.");
+    expect(puncNorm("please wait")).toBe("please wait.");
+  });
+
+  test("leaves text alone when terminal punctuation already present", () => {
+    for (const p of [".", "!", "?", "-", ","]) {
+      expect(puncNorm(`Yes${p}`)).toBe(`Yes${p}`);
+    }
+    // CJK enders
+    expect(puncNorm("こんにちは。")).toBe(
+      "こんにちは。",
+    );
+  });
+
+  test("collapses runs of whitespace", () => {
+    expect(puncNorm("hello    world")).toBe("hello world.");
+    expect(puncNorm("  hi  there  ")).toBe("hi there.");
+  });
+
+  test("normalizes uncommon LLM punctuation", () => {
+    // Upstream rewrites: "..." → ", " (comma + space), ";" → ", ", etc.
+    // After replacement the trailing whitespace is rstripped, then a
+    // terminal period is appended unless the last char is already an
+    // ender. So "yes..." → "yes," (comma is itself an ender; no period).
+    expect(puncNorm("yes...")).toBe("yes,");
+    expect(puncNorm("a;b")).toBe("a, b.");
+    expect(puncNorm("“hi”")).toBe('"hi".'); // smart quotes → straight
+    expect(puncNorm("a—b")).toBe("a-b."); // em-dash → hyphen
+  });
+
+  test("returns canned text on empty input", () => {
+    expect(puncNorm("")).toBe("You need to add some text for me to talk.");
   });
 });
 

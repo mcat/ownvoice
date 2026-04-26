@@ -82,7 +82,14 @@ import { recordHash } from "../stores/patientIndex";
 //            written against an older ORT Web build and likely stale.
 //            If audible artifacts appear (clicks, fizz, glitchy attack
 //            transients), revert public/tts-gpu-worker.js to wasmOnly=true.
-const CACHE_DIR = "audio-cache-v17";
+// v17 → v18: ported upstream punc_norm. Texts without terminal punctuation
+//            now get "." appended before BPE encoding (matches mtl_tts.py
+//            behavior). The model was trained on terminally-punctuated
+//            text and drifts on the last phoneme without it — observed
+//            "Please wait" mispronouncing as "Nice wait" until the
+//            terminal period was included. Token id 9 (period) now appears
+//            in the encoded sequence right before EOS for these phrases.
+const CACHE_DIR = "audio-cache-v18";
 const SAMPLE_RATE = 24000; // Chatterbox conditional decoder output rate (S3GEN_SR)
 const INT16_SCALE = 32767;
 

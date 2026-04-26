@@ -172,10 +172,31 @@ const SUPPORTED_LANGUAGES = new Set([
   "sw", "tr", "zh",
 ]);
 
+/** Punctuation normalization (port of upstream punc_norm). Adds terminal
+ *  period when missing — fixes phrases like "Please wait" mispronouncing
+ *  as "Nice wait" because the model was trained on terminally-punctuated
+ *  text and drifts on the last phoneme without a period. */
+function puncNorm(text) {
+  if (text.length === 0) return "You need to add some text for me to talk.";
+  let out = text.split(/\s+/).filter(Boolean).join(" ");
+  const replacements = [
+    ["...", ", "], ["…", ", "], [":", ","], [" - ", ", "], [";", ", "],
+    ["—", "-"], ["–", "-"], [" ,", ","],
+    ["“", '"'], ["”", '"'], ["‘", "'"], ["’", "'"],
+  ];
+  for (const [from, to] of replacements) out = out.split(from).join(to);
+  out = out.replace(/\s+$/, "");
+  const enders = new Set([".", "!", "?", "-", ",", "、", "，", "。", "？", "！"]);
+  if (out.length > 0 && !enders.has(out[out.length - 1])) out += ".";
+  return out;
+}
+
 /** Mirror upstream MTLTokenizer.encode() preprocessing — see the matching
  *  comment in src/models/multilingualTokenizer.ts. Adds lowercase + NFKD
  *  normalization before prepending [lang]; missing this caused "Yes" to
- *  tokenize differently than upstream and degraded clone fidelity. */
+ *  tokenize differently than upstream and degraded clone fidelity.
+ *  punc_norm runs first to ensure terminal punctuation is part of the
+ *  BPE input. */
 function prepareLanguage(text, languageId) {
   const lang = languageId.toLowerCase();
   if (!SUPPORTED_LANGUAGES.has(lang)) {
@@ -183,7 +204,8 @@ function prepareLanguage(text, languageId) {
       `Unsupported language: ${languageId}. Supported: ${Array.from(SUPPORTED_LANGUAGES).sort().join(", ")}`,
     );
   }
-  const preprocessed = text.toLowerCase().normalize("NFKD");
+  const punctuated = puncNorm(text);
+  const preprocessed = punctuated.toLowerCase().normalize("NFKD");
   return `[${lang}]${preprocessed}`;
 }
 
