@@ -192,7 +192,24 @@ export const SUPPORTED_LANGUAGES = new Set([
   "zh",
 ]);
 
-/** Mirror upstream `txt = f"[{language_id.lower()}]{txt}"`. NO space, lowercase. */
+/** Mirror upstream `MTLTokenizer.encode()` preprocessing pipeline:
+ *    txt = txt.lower()
+ *    txt = NFKD(txt)
+ *    [language-specific preprocessing for zh/ja/he/ko/ru — not implemented here]
+ *    txt = f"[{language_id.lower()}]{txt}"
+ *
+ *  The earlier port skipped lowercase + NFKD, so "Yes" tokenized as
+ *  Y(301) + es(61) instead of upstream's y(38) + es(61). The Llama LM
+ *  was trained on lowercased input — uppercase produced different
+ *  token IDs the model didn't recognize as the intended phoneme path.
+ *
+ *  NFKD decomposes accented characters (é → e + ◌́) so the BPE sees
+ *  base letters. Pure-ASCII English is unchanged.
+ *
+ *  zh/ja/he/ko/ru need additional preprocessing (Cangjie codes for zh,
+ *  hiragana for ja, diacritics for he, Jamo for ko, stress for ru) that
+ *  we don't implement — those languages will produce degraded output
+ *  until the corresponding preprocessors are ported. */
 export function prepareLanguage(text: string, languageId: string): string {
   const lang = languageId.toLowerCase();
   if (!SUPPORTED_LANGUAGES.has(lang)) {
@@ -200,5 +217,6 @@ export function prepareLanguage(text: string, languageId: string): string {
       `Unsupported language: ${languageId}. Supported: ${Array.from(SUPPORTED_LANGUAGES).sort().join(", ")}`,
     );
   }
-  return `[${lang}]${text}`;
+  const preprocessed = text.toLowerCase().normalize("NFKD");
+  return `[${lang}]${preprocessed}`;
 }

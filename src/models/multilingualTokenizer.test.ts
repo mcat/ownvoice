@@ -43,12 +43,24 @@ describe("multilingualTokenizer encode", () => {
 });
 
 describe("prepareLanguage", () => {
-  test("prepends [xx] with no space, lowercase tag", () => {
-    expect(prepareLanguage("Hello", "en")).toBe("[en]Hello");
-    expect(prepareLanguage("Bonjour", "FR")).toBe("[fr]Bonjour"); // case-insensitive
+  test("prepends [xx] with no space, lowercase tag, lowercased text", () => {
+    // Upstream MTLTokenizer.encode lowercases text before tokenizing.
+    // We were skipping this, so "Yes" produced Y(301) + es(61) instead
+    // of upstream's y(38) + es(61).
+    expect(prepareLanguage("Hello", "en")).toBe("[en]hello");
+    expect(prepareLanguage("Bonjour", "FR")).toBe("[fr]bonjour"); // case-insensitive
     expect(prepareLanguage("こんにちは", "ja")).toBe(
       "[ja]こんにちは",
     );
+  });
+
+  test("NFKD-normalizes input (decomposes accented chars)", () => {
+    // "café" with composed é (U+00E9) decomposes to "café"
+    // (e + combining acute accent). The BPE was trained on decomposed
+    // input — composed accents would tokenize as unknown.
+    const composed = "Café";
+    const prepared = prepareLanguage(composed, "fr");
+    expect(prepared).toBe("[fr]café");
   });
 
   test("rejects unsupported language codes", () => {

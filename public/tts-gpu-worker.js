@@ -154,7 +154,10 @@ const SUPPORTED_LANGUAGES = new Set([
   "sw", "tr", "zh",
 ]);
 
-/** Mirror upstream `txt = f"[{language_id.lower()}]{txt}"`. NO space, lowercase. */
+/** Mirror upstream MTLTokenizer.encode() preprocessing — see the matching
+ *  comment in src/models/multilingualTokenizer.ts. Adds lowercase + NFKD
+ *  normalization before prepending [lang]; missing this caused "Yes" to
+ *  tokenize differently than upstream and degraded clone fidelity. */
 function prepareLanguage(text, languageId) {
   const lang = languageId.toLowerCase();
   if (!SUPPORTED_LANGUAGES.has(lang)) {
@@ -162,7 +165,8 @@ function prepareLanguage(text, languageId) {
       `Unsupported language: ${languageId}. Supported: ${Array.from(SUPPORTED_LANGUAGES).sort().join(", ")}`,
     );
   }
-  return `[${lang}]${text}`;
+  const preprocessed = text.toLowerCase().normalize("NFKD");
+  return `[${lang}]${preprocessed}`;
 }
 
 function applyBPE(chars, mergeRanks) {

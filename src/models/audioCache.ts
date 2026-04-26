@@ -54,7 +54,15 @@ import { recordHash } from "../stores/patientIndex";
 //            attractors. Upstream's "greedy" is actually rep_penalty+argmax
 //            per generation_config.json. This was the runaway-generation
 //            root cause.
-const CACHE_DIR = "audio-cache-v13";
+// v13 → v14: lowercase + NFKD-normalize input text in prepareLanguage to
+//            match upstream MTLTokenizer.encode preprocessing. Without it,
+//            "Yes" tokenized to Y(301) + es(61), but the model was trained
+//            on lowercase y(38) + es(61). Verified by running the upstream
+//            HF tokenizer against the same vocab — IDs now match byte-for-byte
+//            for "Yes"/"No"/"Thank you"/etc. (Earlier all-at-once v14 attempt
+//            with rep_penalty=2.0 + sampling + CFG was reverted; this v14 is
+//            a different fix on top of the same v13 baseline.)
+const CACHE_DIR = "audio-cache-v14";
 const SAMPLE_RATE = 24000; // Chatterbox Turbo output rate
 const INT16_SCALE = 32767;
 
