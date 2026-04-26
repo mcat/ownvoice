@@ -62,7 +62,10 @@ const MAX_NEW_TOKENS = 768;
 const TEMPERATURE = 0.6;
 const TOP_K = 1000;
 const TOP_P = 0.95;
-const REPETITION_PENALTY = 1.2;
+// 2.0 is upstream chatterbox-multilingual default; see matching comment in
+// public/tts-gpu-worker.js. WASM fallback also gets the token-repetition
+// guard so a stray repeat attractor terminates the loop early.
+const REPETITION_PENALTY = 2.0;
 const MIN_NEW_TOKENS = 10; // Don't allow STOP before this many speech tokens
 
 /** Outputs from the speech encoder, stored and reused for all synthesis calls.
@@ -554,9 +557,10 @@ async function handleSynthesize(
     // rep_penalty + argmax (NOT bare argmax — bare argmax gets trapped
     // on repeating-token attractors and never emits STOP).
     //
-    // Apply HF-convention repetition penalty in-place (penalty 1.2 from
-    // generation_config.json): positive logits divided, negative multiplied,
-    // for every previously-generated token.
+    // Apply HF-convention repetition penalty in-place (REPETITION_PENALTY,
+    // currently 2.0 to match upstream multilingual default): positive
+    // logits divided, negative multiplied, for every previously-generated
+    // token.
     {
       const seen = new Set(generatedTokens);
       for (const tok of seen) {
@@ -580,6 +584,18 @@ async function handleSynthesize(
     }
 
     generatedTokens.push(maxIdx);
+
+    // Token-repetition guard — port of upstream AlignmentStreamAnalyzer.step.
+    // Once we've generated 2+ speech tokens AND the last two are equal,
+    // we're on a repeat attractor that rep_penalty 2.0 alone can't escape.
+    // Upstream forces EOS via logits clobbering; we exit the loop here for
+    // the same effect. The conditional decoder pads with three SILENCE
+    // tokens regardless of how the speech sequence ended.
+    if (generatedTokens.length >= 3 &&
+        generatedTokens[generatedTokens.length - 1] === generatedTokens[generatedTokens.length - 2]) {
+      console.log(`${LOG} Token-repetition guard fired at token ${step + 1} (repeated ${maxIdx})`);
+      break;
+    }
 
     // Prepare next step with KV cache — feed only the new token embedding.
     // maxIdx is always a valid speech token here: START is masked to -Infinity

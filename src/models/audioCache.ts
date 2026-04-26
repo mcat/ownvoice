@@ -70,7 +70,16 @@ import { recordHash } from "../stores/patientIndex";
 //            ONNX (batch_size is a dynamic dim; CPU smoke test reproduces
 //            two batch=1 outputs in one batch=2 call). Greedy + rep_penalty
 //            =1.2 stay (proven-stable). Expected ~1.5x latency vs v14.
-const CACHE_DIR = "audio-cache-v15";
+// v15 → v16: aligned decoding regime with upstream multilingual default —
+//            rep_penalty 1.2 → 2.0 plus a token-repetition guard ported
+//            from AlignmentStreamAnalyzer.step. The guard exits the LM
+//            loop when the last 2 generated tokens are equal (force-EOS
+//            equivalent), preventing the runaway we saw when rep_penalty
+//            2.0 was tried alone. Upstream's full hallucination-guard
+//            uses attention layer 9 outputs we can't access via ONNX, but
+//            the token-side check is the load-bearing portion for the
+//            common runaway pattern.
+const CACHE_DIR = "audio-cache-v16";
 const SAMPLE_RATE = 24000; // Chatterbox conditional decoder output rate (S3GEN_SR)
 const INT16_SCALE = 32767;
 
