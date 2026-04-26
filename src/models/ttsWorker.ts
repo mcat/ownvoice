@@ -62,7 +62,10 @@ const MAX_NEW_TOKENS = 768;
 const TEMPERATURE = 0.6;
 const TOP_K = 1000;
 const TOP_P = 0.95;
-const REPETITION_PENALTY = 1.2;
+// 2.0 is upstream chatterbox-multilingual default; Turbo used 1.2. See
+// the matching comment in public/tts-gpu-worker.js for rationale. This
+// is step 1 of a deliberate bisect — sampling stays disabled here too.
+const REPETITION_PENALTY = 2.0;
 const MIN_NEW_TOKENS = 10; // Don't allow STOP before this many speech tokens
 
 /** Outputs from the speech encoder, stored and reused for all synthesis calls.

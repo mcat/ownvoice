@@ -47,7 +47,11 @@ const HEAD_DIM = 64;
 const TEMPERATURE = 0.6;
 const TOP_K = 1000;
 const TOP_P = 0.95;
-const REPETITION_PENALTY = 1.2;
+// rep_penalty 2.0 is the upstream chatterbox-multilingual default
+// (Turbo uses 1.2). The Llama LM has wider attractors than Turbo's GPT-2,
+// so the same logit landscape needs stronger repeat suppression. This is
+// step 1 of a deliberate bisect — sampling and CFG stayed reverted.
+const REPETITION_PENALTY = 2.0;
 const MIN_NEW_TOKENS = 10; // Don't allow STOP before this many speech tokens
 
 // Use the full Chatterbox Turbo sampling pipeline
