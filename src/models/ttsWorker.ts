@@ -550,9 +550,22 @@ async function handleSynthesize(
       lastTokenLogits[STOP_SPEECH] = -Infinity;
     }
 
-    // Multilingual model: upstream HF reference inference uses argmax.
-    // Sampling at temp=0.6 was producing gibberish — Llama LM has different
-    // training dynamics than Turbo's GPT-2 where greedy caused stutters.
+    // Multilingual model: upstream HF reference inference uses
+    // rep_penalty + argmax (NOT bare argmax — bare argmax gets trapped
+    // on repeating-token attractors and never emits STOP).
+    //
+    // Apply HF-convention repetition penalty in-place (penalty 1.2 from
+    // generation_config.json): positive logits divided, negative multiplied,
+    // for every previously-generated token.
+    {
+      const seen = new Set(generatedTokens);
+      for (const tok of seen) {
+        if (tok < lastTokenLogits.length) {
+          if (lastTokenLogits[tok] > 0) lastTokenLogits[tok] /= REPETITION_PENALTY;
+          else lastTokenLogits[tok] *= REPETITION_PENALTY;
+        }
+      }
+    }
     let maxIdx = 0;
     let bestVal = lastTokenLogits[0];
     for (let i = 1; i < lastTokenLogits.length; i++) {

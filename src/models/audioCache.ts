@@ -49,7 +49,12 @@ import { recordHash } from "../stores/patientIndex";
 // v11 → v12: GPU worker had its own inlined copy of the tokenizer that v11
 //            forgot to update — only the WASM-side tokenizer got the fix.
 //            v12 brings the GPU worker's encode in line with the TS module.
-const CACHE_DIR = "audio-cache-v12";
+// v12 → v13: applied repetition_penalty=1.2 BEFORE argmax in greedy mode in
+//            both workers. Bare argmax gets trapped on repeating-token
+//            attractors. Upstream's "greedy" is actually rep_penalty+argmax
+//            per generation_config.json. This was the runaway-generation
+//            root cause.
+const CACHE_DIR = "audio-cache-v13";
 const SAMPLE_RATE = 24000; // Chatterbox Turbo output rate
 const INT16_SCALE = 32767;
 

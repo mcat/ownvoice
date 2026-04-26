@@ -275,9 +275,31 @@ async function loadTokenizer(url) {
 }
 
 /**
- * Greedy argmax over the masked logits. Used when USE_GREEDY is true —
- * deterministic, ~5-15% faster per step vs. the full sampling pipeline
- * (no sort, no exp, no random). -Infinity entries are naturally skipped
+ * Apply HuggingFace-convention repetition penalty in-place to logits.
+ * Penalty > 1.0 discourages tokens already in `generated`; positive logits
+ * are divided by the penalty (lowering probability) and negative logits
+ * are multiplied (lowering further). This is what upstream chatterbox
+ * applies BEFORE argmax — without it, greedy decoding gets stuck on
+ * repeating-token attractors and never emits STOP_SPEECH.
+ *
+ * generation_config.json declares repetition_penalty: 1.2; that's the
+ * model's training-time decode default and is mandatory for greedy.
+ */
+function applyRepetitionPenalty(logits, generated, penalty) {
+  if (penalty === 1.0) return;
+  const seen = new Set(generated);
+  for (const tok of seen) {
+    if (tok < logits.length) {
+      if (logits[tok] > 0) logits[tok] /= penalty;
+      else logits[tok] *= penalty;
+    }
+  }
+}
+
+/**
+ * Greedy argmax over the masked logits. The upstream "greedy" mode is
+ * actually rep_penalty + argmax, not bare argmax — see
+ * applyRepetitionPenalty above. -Infinity entries are naturally skipped
  * because nothing compares greater than -Infinity.
  */
 function argmaxGreedy(logits) {
@@ -648,6 +670,13 @@ async function handleSynthesize(text, speakerData, id, languageId, exaggeration 
       lastTokenLogits[STOP_SPEECH_TOKEN] = -Infinity;
     }
 
+    // Apply repetition penalty BEFORE argmax. This is what upstream's
+    // "greedy" mode actually does — bare argmax gets trapped on repeating
+    // attractors. sampleToken() applies rep_penalty internally; the greedy
+    // path needs to do it explicitly.
+    if (USE_GREEDY) {
+      applyRepetitionPenalty(lastTokenLogits, generatedTokens, REPETITION_PENALTY);
+    }
     const maxIdx = USE_GREEDY
       ? argmaxGreedy(lastTokenLogits)
       : sampleToken(lastTokenLogits, generatedTokens);
