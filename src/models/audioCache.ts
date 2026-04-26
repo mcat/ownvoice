@@ -28,8 +28,69 @@ import { recordHash } from "../stores/patientIndex";
 //          [chuckle]) on a single test phrase.
 // v6 → v7: rolled back the [narration] prefix; force regen so the broken v6
 //          audio is discarded.
-const CACHE_DIR = "audio-cache-v7";
-const SAMPLE_RATE = 24000; // Chatterbox Turbo output rate
+// v7 → v8: swapped Chatterbox Turbo (English-only) → Chatterbox Multilingual
+//          (23 languages, exaggeration runtime input). All cached audio
+//          regenerates because the entire model changed, not just one knob.
+// v8 → v9: fixed first-call position_ids in both workers from arange(N) to
+//          arange(N) - 1 to match upstream — was producing drawn-out pacing
+//          and degraded clone identity due to off-by-one in position embeddings.
+// v9 → v10: switched both workers from sampling (temp=0.6, top_p=0.95) to
+//           greedy argmax. Multilingual upstream HF reference uses argmax;
+//           sampling was producing gibberish English. The Turbo stutter-bug
+//           rationale that originally forced sampling doesn't apply to the
+//           Llama-based multilingual LM.
+// v10 → v11: BIG fix. Tokenizer now applies the post-processor template
+//            (EXAGGERATION + BOS + <text> + EOS + START_SPEECH × 2). Without
+//            the trailing START_SPEECH × 2 the model never enters
+//            speech-generation mode and runs to MAX_NEW_TOKENS without ever
+//            emitting STOP_SPEECH. Also fixed position_ids: wrapper tokens
+//            now get position 0 (not their arange position) per upstream's
+//            np.where logic.
+// v11 → v12: GPU worker had its own inlined copy of the tokenizer that v11
+//            forgot to update — only the WASM-side tokenizer got the fix.
+//            v12 brings the GPU worker's encode in line with the TS module.
+// v12 → v13: applied repetition_penalty=1.2 BEFORE argmax in greedy mode in
+//            both workers. Bare argmax gets trapped on repeating-token
+//            attractors. Upstream's "greedy" is actually rep_penalty+argmax
+//            per generation_config.json. This was the runaway-generation
+//            root cause.
+// v13 → v14: lowercase + NFKD-normalize input text in prepareLanguage to
+//            match upstream MTLTokenizer.encode preprocessing. Without it,
+//            "Yes" tokenized to Y(301) + es(61), but the model was trained
+//            on lowercase y(38) + es(61). Verified by running the upstream
+//            HF tokenizer against the same vocab — IDs now match byte-for-byte
+//            for "Yes"/"No"/"Thank you"/etc. (Earlier all-at-once v14 attempt
+//            with rep_penalty=2.0 + sampling + CFG was reverted; this v14 is
+//            a different fix on top of the same v13 baseline.)
+// v14 → v15: enabled batched classifier-free guidance in the GPU worker
+//            (CFG_WEIGHT=0.5, upstream multilingual default). Single LM
+//            call with batch=2 instead of two sequential session.run calls
+//            — the dual-call CFG attempt timed out at 5min+ due to per-call
+//            JS/ORT overhead. Verified batched form works against the LM
+//            ONNX (batch_size is a dynamic dim; CPU smoke test reproduces
+//            two batch=1 outputs in one batch=2 call). Greedy + rep_penalty
+//            =1.2 stay (proven-stable). Expected ~1.5x latency vs v14.
+// v15 → v17: switched conditional_decoder execution provider from WASM-only
+//            to WebGPU (with per-op WASM fallback). Skipped v16 because
+//            two reverted experiments (option C: CFG=1.0+exag=0.7; option
+//            D: rep_penalty=2.0+token guard) used v16 in OPFS and left
+//            orphan audio on user disks. v17 forces a clean re-render
+//            past those.
+//
+//            The conditional_decoder is full precision (no _q4 suffix);
+//            previous "WebGPU produces ConvTranspose artifacts" note was
+//            written against an older ORT Web build and likely stale.
+//            If audible artifacts appear (clicks, fizz, glitchy attack
+//            transients), revert public/tts-gpu-worker.js to wasmOnly=true.
+// v17 → v18: ported upstream punc_norm. Texts without terminal punctuation
+//            now get "." appended before BPE encoding (matches mtl_tts.py
+//            behavior). The model was trained on terminally-punctuated
+//            text and drifts on the last phoneme without it — observed
+//            "Please wait" mispronouncing as "Nice wait" until the
+//            terminal period was included. Token id 9 (period) now appears
+//            in the encoded sequence right before EOS for these phrases.
+const CACHE_DIR = "audio-cache-v18";
+const SAMPLE_RATE = 24000; // Chatterbox conditional decoder output rate (S3GEN_SR)
 const INT16_SCALE = 32767;
 
 /** Convert Float32 audio (assumed roughly in ±1.0) to clamped Int16 PCM. */
@@ -245,7 +306,7 @@ export async function* generateAllPhrases(
   phrases: string[],
   speakerData: unknown,
   signal?: AbortSignal,
-  opts?: { gpuOnly?: boolean; patientId?: string | null },
+  opts?: { gpuOnly?: boolean; patientId?: string | null; languageId?: string },
 ): AsyncGenerator<GenerateProgress> {
   const mgr = getModelManager();
   const worker = mgr.getWorker("tts");
@@ -292,6 +353,7 @@ export async function* generateAllPhrases(
         speakerData,
         signal,
         gpuOnly,
+        opts?.languageId ?? "en",
       );
       // Post-process once here, at cache-write time, so playback in
       // speak.ts skips the ~10-50ms FFT pipeline on every tap.
@@ -337,7 +399,7 @@ export async function* retryFailed(
   phrases: string[],
   speakerData: unknown,
   signal?: AbortSignal,
-  opts?: { gpuOnly?: boolean; patientId?: string | null },
+  opts?: { gpuOnly?: boolean; patientId?: string | null; languageId?: string },
 ): AsyncGenerator<GenerateProgress> {
   yield* generateAllPhrases(phrases, speakerData, signal, opts);
 }
@@ -368,6 +430,7 @@ async function synthesizeWithRetries(
   speakerData: unknown,
   signal?: AbortSignal,
   gpuOnly: boolean = false,
+  languageId: string = "en",
 ): Promise<Float32Array> {
   let lastErr: unknown;
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
@@ -375,7 +438,7 @@ async function synthesizeWithRetries(
       throw new DOMException("Aborted", "AbortError");
     }
     try {
-      return await synthesizeBestAvailable(worker, phrase, speakerData, signal, gpuOnly);
+      return await synthesizeBestAvailable(worker, phrase, speakerData, signal, gpuOnly, languageId);
     } catch (err) {
       if (signal?.aborted) throw err;
       lastErr = err;
@@ -400,12 +463,14 @@ async function synthesizeBestAvailable(
   speakerData: unknown,
   signal?: AbortSignal,
   gpuOnly: boolean = false,
+  languageId: string = "en",
 ): Promise<Float32Array> {
   if (isGPUReady()) {
     try {
       const { data } = await synthesizeGPU(
         phrase,
         speakerData as Parameters<typeof synthesizeGPU>[1],
+        languageId,
         { timeoutMs: PREGEN_GPU_TIMEOUT_MS },
       );
       return data;
@@ -420,7 +485,7 @@ async function synthesizeBestAvailable(
   if (!worker) {
     throw new Error("No TTS worker available for WASM fallback");
   }
-  return synthesizeOne(worker, phrase, speakerData, signal);
+  return synthesizeOne(worker, phrase, speakerData, signal, languageId);
 }
 
 function synthesizeOne(
@@ -428,6 +493,7 @@ function synthesizeOne(
   phrase: string,
   speakerData: unknown,
   signal?: AbortSignal,
+  languageId: string = "en",
 ): Promise<Float32Array> {
   return new Promise<Float32Array>((resolve, reject) => {
     // 180s per-phrase timeout — matches the speak.ts live-synth timeout.
@@ -469,6 +535,8 @@ function synthesizeOne(
       type: "synthesize",
       text: phrase,
       speakerData,
+      languageId,
+      exaggeration: 0.5,
     });
   });
 }

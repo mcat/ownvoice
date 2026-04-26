@@ -117,7 +117,7 @@ OwnVoice captures 15 seconds of audio for speaker-embedding extraction. During t
 
 > "When the sunlight strikes raindrops in the air, they act like a prism and form a rainbow. The rainbow is a division of white light into many beautiful colors."
 
-**Why a script rather than free-form speech.** Chatterbox Turbo encodes the speaker via a CAMPPlus 192-dim x-vector that statistically summarizes spectrum, pitch, and formants averaged across the clip. Phonetic diversity and prosodic variety in the reference directly shape what the clone *can* sound like — monotone 15-second free-form speech systematically under-captures the patient's pitch range. The Rainbow Passage is the canonical reference in the VCTK corpus and decades of speech-science research, runs ~14 seconds at conversational pace, and reliably elicits a wider phonetic distribution than improvised speech. See `docs/BIBLIOGRAPHY.md` §9 for citations.
+**Why a script rather than free-form speech.** Chatterbox Multilingual encodes the speaker via a CAMPPlus 192-dim x-vector that statistically summarizes spectrum, pitch, and formants averaged across the clip. Phonetic diversity and prosodic variety in the reference directly shape what the clone *can* sound like — monotone 15-second free-form speech systematically under-captures the patient's pitch range. The Rainbow Passage is the canonical reference in the VCTK corpus and decades of speech-science research, runs ~14 seconds at conversational pace, and reliably elicits a wider phonetic distribution than improvised speech. See `docs/BIBLIOGRAPHY.md` §9 for citations.
 
 **Recording UX principles:**
 
@@ -398,7 +398,7 @@ OwnVoice supports 13 languages: English, Spanish, Chinese, Arabic, French, Germa
 - **Patient voice clone speaks in the caregiver's language.** Phrases on the patient surface display in the patient's language.
 - **Provider voice clones speak in the patient's language.** Phrases on the provider surface display in the caregiver's language.
 - Conversation thread shows both languages for every utterance (primary + smaller gloss) when the two locales differ.
-- Voice cloning is only offered when Chatterbox Turbo supports the target speech-output locale. Otherwise the device's system voice is used via Web Speech.
+- Voice cloning is only offered when Chatterbox Multilingual supports the target speech-output locale (one of 23 languages — see `src/data/chatterboxLocales.ts`). Otherwise the device's system voice is used via Web Speech, and the language picker badges those entries as "System voice only".
 
 **Design history:** earlier versions of this PRD described patient voice speaking in the patient's language. The clinical rationale for the revised model is that voiceless ICU patients need their bedside caregivers to understand them; speaking the caregiver's language removes the interpreter bottleneck in acute moments. See `docs/superpowers/specs/2026-04-22-localization-design.md` for the full design.
 

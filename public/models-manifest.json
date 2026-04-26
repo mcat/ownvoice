@@ -2,81 +2,56 @@
   "version": 1,
   "models": {
     "tts": {
-      "baseUrl": "/models/chatterbox-turbo/",
+      "baseUrl": "/models/chatterbox-multilingual/",
       "files": [
         {
-          "name": "embed_tokens_q4f16.onnx",
-          "size": 2548,
+          "name": "speech_encoder.onnx",
+          "size": 1184608,
           "magic": "onnx"
         },
         {
-          "name": "embed_tokens_q4f16.onnx_data",
-          "size": 33648688,
+          "name": "speech_encoder.onnx_data",
+          "size": 591274880,
           "magic": null
         },
         {
-          "name": "embed_tokens_q4f16_webgpu.onnx",
-          "size": 2668,
+          "name": "embed_tokens.onnx",
+          "size": 13286,
           "magic": "onnx"
         },
         {
-          "name": "embed_tokens_q4f16_webgpu.onnx_data",
-          "size": 33648688,
+          "name": "embed_tokens.onnx_data",
+          "size": 68390912,
           "magic": null
         },
         {
           "name": "language_model_q4f16.onnx",
-          "size": 276803,
+          "size": 229388,
           "magic": "onnx"
         },
         {
           "name": "language_model_q4f16.onnx_data",
-          "size": 183981430,
+          "size": 304737408,
           "magic": null
         },
         {
-          "name": "language_model_q4f16_webgpu.onnx",
-          "size": 281934,
+          "name": "conditional_decoder.onnx",
+          "size": 6350448,
           "magic": "onnx"
         },
         {
-          "name": "language_model_q4f16_webgpu.onnx_data",
-          "size": 183981430,
-          "magic": null
-        },
-        {
-          "name": "conditional_decoder_q4f16.onnx",
-          "size": 2394210,
-          "magic": "onnx"
-        },
-        {
-          "name": "conditional_decoder_q4f16.onnx_data",
-          "size": 162996136,
-          "magic": null
-        },
-        {
-          "name": "conditional_decoder_q4f16_webgpu.onnx",
-          "size": 2413793,
-          "magic": "onnx"
-        },
-        {
-          "name": "conditional_decoder_q4f16_webgpu.onnx_data",
-          "size": 162996136,
-          "magic": null
-        },
-        {
-          "name": "speech_encoder_fp16.onnx",
-          "size": 1189888,
-          "magic": "onnx"
-        },
-        {
-          "name": "speech_encoder_fp16.onnx_data",
-          "size": 522307136,
+          "name": "conditional_decoder.onnx_data",
+          "size": 533970816,
           "magic": null
         },
         {
           "name": "tokenizer.json",
-          "size": 3562272,
+          "size": 71798,
+          "magic": "json"
+        },
+        {
+          "name": "Cangjie5_TC.json",
+          "size": 1920163,
           "magic": "json"
         }
       ]

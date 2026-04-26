@@ -134,4 +134,31 @@ describe("LanguagePicker", () => {
       screen.getByText("The language your care team understands."),
     ).toBeInTheDocument();
   });
+
+  it("badges non-cloneable languages as 'System voice only'", () => {
+    // Vietnamese and Tagalog are listed in LANGS but not in CHATTERBOX_LOCALES,
+    // so taps fall through to Web Speech. The badge tells staff this up-front
+    // — without it, a clinician picks Vietnamese expecting their patient's
+    // cloned voice and silently gets a different voice on every tap.
+    render(
+      <LanguagePicker
+        {...baseProps}
+        value="en"
+        onChange={() => {}}
+      />,
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: /Patient language/ }),
+    );
+    // Vietnamese chip should carry the badge.
+    const viChip = screen
+      .getAllByText("Vietnamese")
+      .map((el) => el.closest("button")!)[0];
+    expect(viChip.textContent).toContain("System voice only");
+    // English chip (cloneable) should NOT carry the badge.
+    const enChip = screen
+      .getAllByText("English")
+      .map((el) => el.closest("button")!)[0];
+    expect(enChip.textContent).not.toContain("System voice only");
+  });
 });

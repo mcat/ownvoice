@@ -1,3 +1,35 @@
+/**
+ * Chatterbox-Multilingual ONNX component contracts
+ * (verified via Phase 1.2 model inspection)
+ *
+ * embed_tokens.onnx
+ *   inputs:  input_ids (int64), position_ids (int64), exaggeration (fp32 [batch_size])
+ *   outputs: inputs_embeds (fp32 [batch, seq, 1024])
+ *
+ * speech_encoder.onnx (same as Turbo)
+ *   inputs:  audio_values (fp32)
+ *   outputs: audio_features, audio_tokens (int64), speaker_embeddings (fp32 [batch, 192]),
+ *            speaker_features (fp32 [batch, feat, 80])
+ *
+ * language_model_q4f16.onnx (Llama, 30 layers)
+ *   inputs:  inputs_embeds (fp32 [batch, seq, 1024]), attention_mask (int64),
+ *            past_key_values.0..29.{key,value} (fp16 [batch, 16, past, 64])
+ *   outputs: logits (fp32 [batch, seq, 8194]),
+ *            present.0..29.{key,value} (fp16)
+ *   No position_ids input (positions are absorbed into embed_tokens).
+ *
+ * conditional_decoder.onnx (same as Turbo)
+ *   inputs:  speech_tokens (int64), speaker_embeddings (fp32 [batch, 192]),
+ *            speaker_features (fp32 [batch, feat, 80])
+ *   outputs: waveform (fp32 [batch, num_samples])
+ *
+ * T3Config constants verified upstream:
+ *   START_SPEECH_TOKEN = 6561
+ *   STOP_SPEECH_TOKEN = 6562
+ *   speech_tokens_dict_size = 8194 (logits last dim)
+ *   max_speech_tokens = 4096
+ */
+
 export type ModelId = "tts" | "tts-encoder" | "llm" | "stt";
 
 export type ModelStatus = "idle" | "downloading" | "loading" | "ready" | "error";
@@ -43,29 +75,37 @@ export type WorkerResponse =
   | { type: "error"; message: string };
 
 /**
- * Chatterbox Turbo ONNX files.
+ * Chatterbox-Multilingual ONNX files.
  * 4-component pipeline: speech_encoder (setup only) + embed_tokens + language_model + conditional_decoder.
- * Speech encoder is fp16 (one-time enrollment, embedding quality is permanent).
- * Runtime models are q4f16 (loaded continuously; size matters more than precision).
+ * Speech encoder is fp32 (one-time enrollment, embedding quality is permanent).
+ * Language model is q4f16; embed_tokens and conditional_decoder are unquantised.
  */
 export const CHATTERBOX_FILES = {
-  speechEncoder: { onnx: "speech_encoder_fp16.onnx", data: "speech_encoder_fp16.onnx_data" },
-  embedTokens: { onnx: "embed_tokens_q4f16.onnx", data: "embed_tokens_q4f16.onnx_data" },
+  speechEncoder: { onnx: "speech_encoder.onnx", data: "speech_encoder.onnx_data" },
+  embedTokens: { onnx: "embed_tokens.onnx", data: "embed_tokens.onnx_data" },
   languageModel: { onnx: "language_model_q4f16.onnx", data: "language_model_q4f16.onnx_data" },
-  conditionalDecoder: { onnx: "conditional_decoder_q4f16.onnx", data: "conditional_decoder_q4f16.onnx_data" },
+  conditionalDecoder: { onnx: "conditional_decoder.onnx", data: "conditional_decoder.onnx_data" },
   tokenizer: "tokenizer.json",
 } as const;
 
 export const CHATTERBOX_TOKENS = {
   START_SPEECH: 6561,
   STOP_SPEECH: 6562,
+  // logits last dim — speech vocab size; positions 6563..8193 are not valid speech codes,
+  // mask them in the autoregressive sampling loop alongside START.
+  SPEECH_VOCAB_SIZE: 8194,
   MAX_NEW_TOKENS: 1024,
   SAMPLE_RATE: 24000,
+  // LM architecture (Llama, 30 layers vs Turbo's 24-layer GPT-2).
+  NUM_LAYERS: 30,
+  NUM_HEADS: 16,
+  HEAD_DIM: 64,
+  EMBED_DIM: 1024,
 } as const;
 
 /** Base URLs for model downloads. Dev uses local paths, production uses CDN. */
 export const MODEL_URLS = {
-  tts: "/models/chatterbox-turbo/",
+  tts: "/models/chatterbox-multilingual/",
   llm: "/models/lfm2-1.2b-instruct/",
   stt: "/models/whisper-small/",
 } as const;

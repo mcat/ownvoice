@@ -1,5 +1,5 @@
 /**
- * WebGPU TTS Worker — Chatterbox Turbo via ONNX Runtime WebGPU EP.
+ * WebGPU TTS Worker — Chatterbox Multilingual (23 languages) via ONNX Runtime WebGPU EP.
  *
  * This is a plain JS worker (not bundled by Vite) that imports ORT directly
  * from the dist path. Vite's worker bundler can't resolve onnxruntime-web/webgpu
@@ -7,7 +7,7 @@
  *
  * Messages IN:
  *   { type: "init", modelUrl: string }
- *   { type: "synthesize", text: string, speakerData: object, id?: number }
+ *   { type: "synthesize", text: string, speakerData: object, id?: number, languageId: string, exaggeration?: number }
  *
  * Messages OUT:
  *   { type: "ready" }
@@ -33,9 +33,8 @@ const SAMPLE_RATE = 24000;
 const START_SPEECH_TOKEN = 6561;
 const STOP_SPEECH_TOKEN = 6562;
 const SILENCE_TOKEN = 4299;
-const EOT_TOKEN = 50256;
 const MAX_NEW_TOKENS = 768; // Model supports 1024; 768 covers long sentences with headroom
-const NUM_LAYERS = 24;
+const NUM_LAYERS = 30;
 const NUM_HEADS = 16;
 const HEAD_DIM = 64;
 
@@ -75,7 +74,32 @@ const MIN_NEW_TOKENS = 10; // Don't allow STOP before this many speech tokens
 // If byte-stable regens ever become important, the follow-up is to
 // seed the sampler from hashKey(phrase, fingerprint) and use a
 // deterministic PRNG in sampleToken.
-const USE_GREEDY = false;
+// Multilingual model: upstream HF reference inference uses argmax (greedy).
+// Multilingual is a Llama LM with different training dynamics than Turbo's
+// GPT-2 — the Turbo stutter-bug rationale that originally forced sampling
+// doesn't necessarily apply here. Sampling at temp=0.6 was producing
+// gibberish for English; switching to greedy to match upstream.
+// If multilingual ALSO stutters with greedy, revert and investigate sampling
+// hyperparameters (top_p, top_k, temperature) for this specific model.
+const USE_GREEDY = true;
+
+// Classifier-free guidance weight. Upstream multilingual defaults to 0.5
+// (mtl_tts.py:generate). Implementation: a SINGLE LM call with batch=2.
+// Batch[0] is the conditional branch (full text + speaker conditioning);
+// batch[1] is unconditional (text-zeroed + same speaker). Per-token logits
+// are combined as
+//   final = cond + CFG_WEIGHT * (cond - uncond)
+//
+// The LM ONNX has `batch_size` as a dynamic dim (verified via onnx.load),
+// so a single batch=2 forward replaces two sequential batch=1 forwards.
+// This is critical for performance: an earlier "two session.run calls"
+// implementation timed out (5min+) because per-call JS/ORT overhead
+// dominated the actual GPU compute. Batched CFG keeps overhead at one
+// call per token instead of two.
+//
+// Set to 0 to disable (single-batch fast path, preserved for fallback).
+// Turbo (English-only GPT-2 LM) does NOT use CFG; multilingual does.
+const CFG_WEIGHT = 0.5;
 
 // WASM paths for fallback ops. Points to /ort/ where the JSEP WASM lives.
 //
@@ -139,59 +163,186 @@ function kvCacheOnGpu() {
   return loc;
 }
 
-// ── GPT-2 Byte-Level BPE Tokenizer ──────────────────────────────────────────
-function buildByteToUnicode() {
-  const bs = [];
-  for (let i = 33; i <= 126; i++) bs.push(i);
-  for (let i = 161; i <= 172; i++) bs.push(i);
-  for (let i = 174; i <= 255; i++) bs.push(i);
-  const cs = [...bs];
-  let n = 0;
-  for (let b = 0; b < 256; b++) {
-    if (!bs.includes(b)) { bs.push(b); cs.push(256 + n); n++; }
+// ── Multilingual BPE Tokenizer (inlined from src/models/multilingualTokenizer.ts) ─
+
+/** Languages supported by chatterbox-multilingual. Each gets a [xx] tag id. */
+const SUPPORTED_LANGUAGES = new Set([
+  "ar", "da", "de", "el", "en", "es", "fi", "fr", "he", "hi",
+  "it", "ja", "ko", "ms", "nl", "no", "pl", "pt", "ru", "sv",
+  "sw", "tr", "zh",
+]);
+
+/** Punctuation normalization (port of upstream punc_norm). Adds terminal
+ *  period when missing — fixes phrases like "Please wait" mispronouncing
+ *  as "Nice wait" because the model was trained on terminally-punctuated
+ *  text and drifts on the last phoneme without a period. */
+function puncNorm(text) {
+  if (text.length === 0) return "You need to add some text for me to talk.";
+  let out = text.split(/\s+/).filter(Boolean).join(" ");
+  const replacements = [
+    ["...", ", "], ["…", ", "], [":", ","], [" - ", ", "], [";", ", "],
+    ["—", "-"], ["–", "-"], [" ,", ","],
+    ["“", '"'], ["”", '"'], ["‘", "'"], ["’", "'"],
+  ];
+  for (const [from, to] of replacements) out = out.split(from).join(to);
+  out = out.replace(/\s+$/, "");
+  const enders = new Set([".", "!", "?", "-", ",", "、", "，", "。", "？", "！"]);
+  if (out.length > 0 && !enders.has(out[out.length - 1])) out += ".";
+  return out;
+}
+
+/** Korean Hangul → Jamo decomposition (mirror of koreanNormalize in
+ *  src/models/multilingualTokenizer.ts). The BPE vocab indexes Jamo
+ *  letters (U+1100 / U+1161 / U+11A7), not the precomposed syllables
+ *  in U+AC00..U+D7AF. */
+function koreanNormalize(text) {
+  let out = "";
+  for (const ch of text) {
+    const code = ch.codePointAt(0);
+    if (code < 0xac00 || code > 0xd7af) { out += ch; continue; }
+    const base = code - 0xac00;
+    const initial = String.fromCodePoint(0x1100 + Math.floor(base / (21 * 28)));
+    const medial = String.fromCodePoint(0x1161 + Math.floor((base % (21 * 28)) / 28));
+    const final = base % 28 > 0 ? String.fromCodePoint(0x11a7 + (base % 28)) : "";
+    out += initial + medial + final;
   }
-  const map = new Map();
-  for (let i = 0; i < bs.length; i++) map.set(bs[i], String.fromCodePoint(cs[i]));
-  return map;
-}
-const BYTE_TO_UNICODE = buildByteToUnicode();
-const GPT2_PAT = /'s|'t|'re|'ve|'m|'ll|'d| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+/gu;
-
-function textToByteTokens(text) {
-  const bytes = new TextEncoder().encode(text);
-  let result = "";
-  for (const b of bytes) result += BYTE_TO_UNICODE.get(b) ?? String.fromCodePoint(b);
-  return result;
+  return out.trim();
 }
 
-function applyBPE(tokens, mergeRanks) {
-  if (tokens.length <= 1) return tokens;
-  let word = [...tokens];
+// ── Chinese Cangjie5 lookup (mirror of multilingualTokenizer.ts) ──
+// Populated by setCangjieData() at worker init from Cangjie5_TC.json.
+let cangjieWord2Code = null;
+let cangjieCode2Words = null;
+let cangjieMissingDataWarned = false;
+
+function setCangjieData(entries) {
+  if (!entries) {
+    cangjieWord2Code = null;
+    cangjieCode2Words = null;
+    return;
+  }
+  const w2c = new Map();
+  const c2w = new Map();
+  for (const entry of entries) {
+    const tab = entry.indexOf("\t");
+    if (tab === -1) continue;
+    const word = entry.slice(0, tab);
+    const code = entry.slice(tab + 1);
+    w2c.set(word, code);
+    const list = c2w.get(code);
+    if (list) list.push(word);
+    else c2w.set(code, [word]);
+  }
+  cangjieWord2Code = w2c;
+  cangjieCode2Words = c2w;
+}
+
+function cangjieEncodeChar(glyph) {
+  if (!cangjieWord2Code || !cangjieCode2Words) return null;
+  const code = cangjieWord2Code.get(glyph);
+  if (code === undefined) return null;
+  const candidates = cangjieCode2Words.get(code);
+  if (!candidates) return null;
+  const index = candidates.indexOf(glyph);
+  return code + (index > 0 ? String(index) : "");
+}
+
+function cangjieNormalize(text) {
+  if (!cangjieWord2Code) {
+    if (!cangjieMissingDataWarned) {
+      console.warn(
+        `${LOG} cangjieNormalize called before setCangjieData; Chinese inputs will pass through unchanged`,
+      );
+      cangjieMissingDataWarned = true;
+    }
+    return text;
+  }
+  let out = "";
+  const isLo = /\p{Lo}/u;
+  for (const ch of text) {
+    if (isLo.test(ch)) {
+      const cj = cangjieEncodeChar(ch);
+      if (cj === null) {
+        out += ch;
+      } else {
+        for (const c of cj) out += `[cj_${c}]`;
+        out += "[cj_.]";
+      }
+    } else {
+      out += ch;
+    }
+  }
+  return out;
+}
+
+function applyLanguagePreprocessor(text, lang) {
+  switch (lang) {
+    case "ko": return koreanNormalize(text);
+    case "zh": return cangjieNormalize(text);
+    default: return text;
+  }
+}
+
+/** Mirror upstream MTLTokenizer.encode() preprocessing — see the matching
+ *  comment in src/models/multilingualTokenizer.ts. Adds lowercase + NFKD
+ *  normalization before prepending [lang]; missing this caused "Yes" to
+ *  tokenize differently than upstream and degraded clone fidelity.
+ *  punc_norm runs first to ensure terminal punctuation is part of the
+ *  BPE input. Per-language preprocessing (zh/ja/he/ko/ru) runs after
+ *  lowercase/NFKD and before the [lang] tag. */
+function prepareLanguage(text, languageId) {
+  const lang = languageId.toLowerCase();
+  if (!SUPPORTED_LANGUAGES.has(lang)) {
+    throw new Error(
+      `Unsupported language: ${languageId}. Supported: ${Array.from(SUPPORTED_LANGUAGES).sort().join(", ")}`,
+    );
+  }
+  const punctuated = puncNorm(text);
+  const normalized = punctuated.toLowerCase().normalize("NFKD");
+  const langPreprocessed = applyLanguagePreprocessor(normalized, lang);
+  return `[${lang}]${langPreprocessed}`;
+}
+
+function applyBPE(chars, mergeRanks) {
+  if (chars.length <= 1) return chars;
+  let word = [...chars];
   while (word.length > 1) {
-    let bestPair = null;
+    let best = null;
     for (let i = 0; i < word.length - 1; i++) {
-      const rank = mergeRanks.get(`${word[i]} ${word[i + 1]}`);
-      if (rank !== undefined && (bestPair === null || rank < bestPair[2]))
-        bestPair = [word[i], word[i + 1], rank];
+      const r = mergeRanks.get(`${word[i]} ${word[i + 1]}`);
+      if (r !== undefined && (!best || r < best[2]))
+        best = [word[i], word[i + 1], r];
     }
-    if (!bestPair) break;
-    const [left, right] = bestPair;
-    const merged = left + right;
-    const newWord = [];
-    let i = 0;
-    while (i < word.length) {
-      if (i < word.length - 1 && word[i] === left && word[i + 1] === right) {
-        newWord.push(merged); i += 2;
-      } else { newWord.push(word[i]); i++; }
+    if (!best) break;
+    const [l, r] = best;
+    const next = [];
+    for (let i = 0; i < word.length; ) {
+      if (i < word.length - 1 && word[i] === l && word[i + 1] === r) {
+        next.push(l + r); i += 2;
+      } else { next.push(word[i]); i++; }
     }
-    word = newWord;
+    word = next;
   }
   return word;
 }
 
-async function loadTokenizer(url) {
-  const response = await fetch(url);
-  const json = await response.json();
+/**
+ * Build a multilingual BPE tokenizer from tokenizer.json.
+ * Replaces the old GPT-2 byte-level BPE; handles [xx] language tags and
+ * [SPACE] normalization natively. Applies the post-processor template:
+ *   EXAGGERATION (6563) + BOS (255) + <text> + EOS (0) + START_SPEECH (6561) ×2
+ * The trailing START_SPEECH ×2 is the model's signal to enter speech-token
+ * generation mode. Without it the LM never emits STOP_SPEECH and runs to
+ * MAX_NEW_TOKENS producing garbage output.
+ */
+function buildMultilingualTokenizer(json) {
+  // Post-processor template ids — verified from tokenizer.json
+  // post_processor.special_tokens. Architectural constants, not vocab entries.
+  const EXAGGERATION_TOKEN_ID = 6563;
+  const BOS_TOKEN_ID = 255;
+  const EOS_TOKEN_ID = 0;
+  const START_SPEECH_TOKEN_ID = 6561;
+
   const vocab = new Map();
   for (const [token, id] of Object.entries(json.model.vocab)) vocab.set(token, id);
 
@@ -201,32 +352,109 @@ async function loadTokenizer(url) {
     mergeRanks.set(Array.isArray(m) ? m.join(" ") : m, i);
   }
 
-  // Post-processor: append <|endoftext|> × 2
-  const eotId = json.added_tokens?.find(t => t.content === "<|endoftext|>")?.id ?? 50256;
+  const addedTokens = new Map();
+  for (const t of json.added_tokens ?? []) {
+    addedTokens.set(t.content, t.id);
+  }
 
-  tokenizer = {
+  // Regex matching any added token literal — longest first to avoid prefix collisions
+  let addedPattern = null;
+  if (addedTokens.size) {
+    addedPattern = new RegExp(
+      `(${Array.from(addedTokens.keys())
+        .sort((a, b) => b.length - a.length)
+        .map((s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+        .join("|")})`,
+    );
+  }
+
+  return {
     encode(text) {
-      const ids = [];
-      const words = text.match(GPT2_PAT) ?? [];
-      for (const word of words) {
-        const byteStr = textToByteTokens(word);
-        const merged = applyBPE([...byteStr], mergeRanks);
-        for (const token of merged) {
-          const id = vocab.get(token);
-          if (id !== undefined) ids.push(id);
+      // Replace literal spaces with "[SPACE]" so BPE sees them as added tokens
+      const normalized = text.replace(/ /g, "[SPACE]");
+
+      const innerIds = [];
+      const segments = addedPattern
+        ? normalized.split(addedPattern)
+        : [normalized];
+
+      for (const segment of segments) {
+        if (segment === "") continue;
+        const specialId = addedTokens.get(segment);
+        if (specialId !== undefined) {
+          innerIds.push(specialId);
+          continue;
+        }
+        const merged = applyBPE([...segment], mergeRanks);
+        for (const tok of merged) {
+          const id = vocab.get(tok);
+          if (id !== undefined) innerIds.push(id);
         }
       }
-      ids.push(eotId, eotId);
-      return ids;
+
+      // Apply the post-processor template (mirrors src/models/multilingualTokenizer.ts).
+      return [
+        EXAGGERATION_TOKEN_ID,
+        BOS_TOKEN_ID,
+        ...innerIds,
+        EOS_TOKEN_ID,
+        START_SPEECH_TOKEN_ID,
+        START_SPEECH_TOKEN_ID,
+      ];
     },
   };
-  console.log(`${LOG} BPE tokenizer loaded (${vocab.size} vocab, ${mergeRanks.size} merges)`);
+}
+
+async function loadTokenizer(url) {
+  const response = await fetch(url);
+  const json = await response.json();
+  tokenizer = buildMultilingualTokenizer(json);
+  console.log(`${LOG} Multilingual BPE tokenizer loaded (${Object.keys(json.model.vocab).length} vocab, ${json.model.merges.length} merges)`);
+}
+
+/** Fetch and install the Cangjie5 lookup table for Chinese preprocessing.
+ *  Failure is non-fatal — Chinese inputs will pass through the BPE
+ *  unchanged (effectively unsupported) but other languages keep working.
+ *  The file is ~1.92 MB of `<word>\\t<code>` entries packaged as JSON. */
+async function loadCangjieData(url) {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const entries = await response.json();
+    setCangjieData(entries);
+    console.log(`${LOG} Cangjie5 table loaded (${entries.length} entries)`);
+  } catch (err) {
+    console.warn(`${LOG} Failed to load Cangjie5 (${err}); Chinese phrases will degrade`);
+    setCangjieData(null);
+  }
 }
 
 /**
- * Greedy argmax over the masked logits. Used when USE_GREEDY is true —
- * deterministic, ~5-15% faster per step vs. the full sampling pipeline
- * (no sort, no exp, no random). -Infinity entries are naturally skipped
+ * Apply HuggingFace-convention repetition penalty in-place to logits.
+ * Penalty > 1.0 discourages tokens already in `generated`; positive logits
+ * are divided by the penalty (lowering probability) and negative logits
+ * are multiplied (lowering further). This is what upstream chatterbox
+ * applies BEFORE argmax — without it, greedy decoding gets stuck on
+ * repeating-token attractors and never emits STOP_SPEECH.
+ *
+ * generation_config.json declares repetition_penalty: 1.2; that's the
+ * model's training-time decode default and is mandatory for greedy.
+ */
+function applyRepetitionPenalty(logits, generated, penalty) {
+  if (penalty === 1.0) return;
+  const seen = new Set(generated);
+  for (const tok of seen) {
+    if (tok < logits.length) {
+      if (logits[tok] > 0) logits[tok] /= penalty;
+      else logits[tok] *= penalty;
+    }
+  }
+}
+
+/**
+ * Greedy argmax over the masked logits. The upstream "greedy" mode is
+ * actually rep_penalty + argmax, not bare argmax — see
+ * applyRepetitionPenalty above. -Infinity entries are naturally skipped
  * because nothing compares greater than -Infinity.
  */
 function argmaxGreedy(logits) {
@@ -350,25 +578,49 @@ async function handleInit(modelUrl) {
   // Notes on EP choice:
   //  - embed_tokens on WASM: Metal GatherBlockQuantized dispatch bug
   //  - language_model on WebGPU: the hot autoregressive loop
-  //  - conditional_decoder on WASM: WebGPU variant has ConvTranspose
-  //    quantization artifacts that trash audio quality
-  const [, embed] = await Promise.all([
+  //  - conditional_decoder on WebGPU (with WASM per-op fallback): we
+  //    historically forced WASM-only here on the rationale that the
+  //    "WebGPU variant has ConvTranspose quantization artifacts." But
+  //    conditional_decoder.onnx is full-precision (no _q4 suffix) and
+  //    ORT Web's WebGPU EP has matured since that note was written.
+  //    Letting WebGPU run the heavy ops should reduce WASM-side
+  //    numerical noise and speed the decoder pass; if audible artifacts
+  //    appear, revert this back to wasmOnly=true.
+  // Per-session timing helpers — without these, the worker is silent for
+  // 100+ seconds during WebGPU shader compile, indistinguishable from a
+  // hang. Logging the start and elapsed of each createSession lets us
+  // pinpoint which session is taking the time on cold load.
+  const stage = async (name, fn) => {
+    console.log(`${LOG} Loading ${name}...`);
+    const s0 = performance.now();
+    const result = await fn();
+    console.log(`${LOG} Loaded ${name} in ${((performance.now() - s0) / 1000).toFixed(1)}s`);
+    return result;
+  };
+
+  console.log(`${LOG} Loading tokenizer + Cangjie + embed_tokens (parallel)...`);
+  const [, , embed] = await Promise.all([
     loadTokenizer(baseUrl + "tokenizer.json"),
-    createSession(baseUrl + "embed_tokens_q4f16.onnx", true, true),
+    loadCangjieData(baseUrl + "Cangjie5_TC.json"),
+    createSession(baseUrl + "embed_tokens.onnx", true, true),
   ]);
   embedTokensSession = embed;
 
-  languageModelSession = await createSession(
-    baseUrl + "language_model_q4f16_webgpu.onnx",
-    true,
-    false,
-    { preferredOutputLocation: kvCacheOnGpu() },
+  languageModelSession = await stage("language_model_q4f16 (WebGPU)", () =>
+    createSession(
+      baseUrl + "language_model_q4f16.onnx",
+      true,
+      false,
+      { preferredOutputLocation: kvCacheOnGpu() },
+    ),
   );
 
-  conditionalDecoderSession = await createSession(
-    baseUrl + "conditional_decoder_q4f16.onnx",
-    true,
-    true,
+  conditionalDecoderSession = await stage("conditional_decoder (WebGPU)", () =>
+    createSession(
+      baseUrl + "conditional_decoder.onnx",
+      true,
+      false,
+    ),
   );
 
   console.log(`${LOG} All models loaded in ${((performance.now() - t0) / 1000).toFixed(1)}s`);
@@ -417,9 +669,12 @@ async function warmupLanguageModel() {
 
   // Step A: discover embedDim by running embed_tokens on a short fake input.
   // This also primes the embed_tokens WASM session (first-call JIT costs).
-  const fakeIds = [100, 200, 50256, 50256];
+  // Use small IDs valid for the multilingual vocab (~2453 entries).
+  const fakeIds = [100, 200, 300, 400];
   const idsTensor = new ort.Tensor("int64", BigInt64Array.from(fakeIds.map(BigInt)), [1, fakeIds.length]);
-  const embedOut = await embedTokensSession.run({ input_ids: idsTensor });
+  const posTensor = new ort.Tensor("int64", BigInt64Array.from(fakeIds.map((_, i) => BigInt(i))), [1, fakeIds.length]);
+  const exagTensor = new ort.Tensor("float32", new Float32Array([0.5]), [1]);
+  const embedOut = await embedTokensSession.run({ input_ids: idsTensor, position_ids: posTensor, exaggeration: exagTensor });
   const textEmbeds = embedOut["inputs_embeds"];
   if (!textEmbeds) throw new Error("warmup: embed_tokens produced no output");
   const embedDim = textEmbeds.dims[2] ?? 0;
@@ -431,32 +686,52 @@ async function warmupLanguageModel() {
   const condLen = 4;
   const totalLen = condLen + textLen;
 
-  const combinedEmbeds = new Float32Array(totalLen * embedDim);
-  // Leave the condEmb region zero-filled (warmup doesn't need real values)
-  // and splice in the real textEmbeds bytes after it.
-  combinedEmbeds.set(new Float32Array(textEmbeds.data), condLen * embedDim);
+  // Warmup uses the same batch size as real synthesis. With CFG enabled,
+  // the LM forwards run with batch=2 — compiling those kernels here avoids
+  // a multi-second stall on the first synth.
+  const batch = CFG_WEIGHT > 0 ? 2 : 1;
+  const rowSize = totalLen * embedDim;
 
+  const combinedEmbeds = new Float32Array(batch * rowSize);
+  // Leave condEmb region zero (warmup doesn't need real values), splice in
+  // textEmbeds after it for batch[0]. Batch[1] (if present) stays zero-filled.
+  const textBytes = new Float32Array(textEmbeds.data);
+  combinedEmbeds.set(textBytes, condLen * embedDim);
+
+  // Multilingual LM: attention_mask is int64, no position_ids input.
   const passA = {
-    inputs_embeds: new ort.Tensor("float32", combinedEmbeds, [1, totalLen, embedDim]),
-    attention_mask_int32: new ort.Tensor("int32", new Int32Array(totalLen).fill(1), [1, totalLen]),
-    position_ids_int32: new ort.Tensor("int32", Int32Array.from({ length: totalLen }, (_, i) => i), [1, totalLen]),
+    inputs_embeds: new ort.Tensor("float32", combinedEmbeds, [batch, totalLen, embedDim]),
+    attention_mask: new ort.Tensor("int64", BigInt64Array.from({ length: batch * totalLen }, () => 1n), [batch, totalLen]),
   };
   for (let i = 0; i < NUM_LAYERS; i++) {
-    passA[`past_key_values.${i}.key`] = new ort.Tensor("float16", new Uint16Array(0), [1, NUM_HEADS, 0, HEAD_DIM]);
-    passA[`past_key_values.${i}.value`] = new ort.Tensor("float16", new Uint16Array(0), [1, NUM_HEADS, 0, HEAD_DIM]);
+    passA[`past_key_values.${i}.key`] = new ort.Tensor("float16", new Uint16Array(0), [batch, NUM_HEADS, 0, HEAD_DIM]);
+    passA[`past_key_values.${i}.value`] = new ort.Tensor("float16", new Uint16Array(0), [batch, NUM_HEADS, 0, HEAD_DIM]);
   }
   const resultA = await languageModelSession.run(passA);
 
-  // Step B: one more LM call with the step-N shape (inputs_embeds [1,1,D]
-  // + grown KV cache). This compiles the kernels used for every token
-  // after the first, which is where most loop time is spent.
+  // Step B: one more LM call with the step-N shape — inputs_embeds [batch,1,D]
+  // + grown KV cache. This compiles the kernels used for every token after
+  // the first, where most loop time is spent.
   const nextTok = new ort.Tensor("int64", BigInt64Array.from([0n]), [1, 1]);
-  const nextEmb = await embedTokensSession.run({ input_ids: nextTok });
+  const nextPos = new ort.Tensor("int64", BigInt64Array.from([0n]), [1, 1]);
+  const nextEmb = await embedTokensSession.run({ input_ids: nextTok, position_ids: nextPos, exaggeration: exagTensor });
   const newLen = totalLen + 1;
+
+  // Broadcast nextEmb (batch=1) to batch=2 if CFG is on.
+  const nextEmbData = nextEmb["inputs_embeds"].data;
+  let nextEmbedsBatched;
+  if (batch === 2) {
+    nextEmbedsBatched = new Float32Array(2 * embedDim);
+    nextEmbedsBatched.set(nextEmbData, 0);
+    nextEmbedsBatched.set(nextEmbData, embedDim);
+  } else {
+    nextEmbedsBatched = new Float32Array(nextEmbData);
+  }
+
+  // Multilingual LM: attention_mask is int64, no position_ids input.
   const passB = {
-    inputs_embeds: nextEmb["inputs_embeds"],
-    attention_mask_int32: new ort.Tensor("int32", new Int32Array(newLen).fill(1), [1, newLen]),
-    position_ids_int32: new ort.Tensor("int32", Int32Array.from([newLen - 1]), [1, 1]),
+    inputs_embeds: new ort.Tensor("float32", nextEmbedsBatched, [batch, 1, embedDim]),
+    attention_mask: new ort.Tensor("int64", BigInt64Array.from({ length: batch * newLen }, () => 1n), [batch, newLen]),
   };
   for (const [key, value] of Object.entries(resultA)) {
     if (key.startsWith("present.")) {
@@ -477,104 +752,143 @@ async function warmupLanguageModel() {
   console.log(`${LOG} Warmup complete in ${((performance.now() - w0) / 1000).toFixed(1)}s`);
 }
 
-async function handleSynthesize(text, speakerData, id) {
+async function handleSynthesize(text, speakerData, id, languageId, exaggeration = 0.5) {
   if (!embedTokensSession || !languageModelSession || !conditionalDecoderSession || !tokenizer) {
     throw new Error("Models not initialized");
   }
 
   const t0 = performance.now();
-  console.log(`${LOG} Synthesizing: "${text.slice(0, 50)}..."`);
+  console.log(`${LOG} Synthesizing: "${text.slice(0, 50)}..." [lang=${languageId}, exag=${exaggeration}]`);
 
-  // Step 1: Tokenize via GPT-2 BPE.
-  // Post-processor appends [50256, 50256]; embed_tokens routes last 2 to speech_emb.
-  const inputIds = tokenizer.encode(text);
+  // Step 1: Tokenize via multilingual BPE.
+  // prepareLanguage prepends "[xx]" language tag (e.g. "[en]Hello").
+  const preparedText = prepareLanguage(text, languageId);
+  const inputIds = tokenizer.encode(preparedText);
+  console.log(`${LOG} Prepared text: "${preparedText.slice(0, 60)}" → first 8 ids: ${inputIds.slice(0, 8).join(",")}`);
 
-  // embed_tokens runs on WASM with the int64 model variant
+  // embed_tokens runs on WASM with int64 inputs.
+  // Multilingual embed_tokens requires position_ids and exaggeration.
+  // Per upstream HF reference inference:
+  //   position_ids = np.where(input_ids >= START_SPEECH_TOKEN, 0, arange(N) - 1)
+  // i.e. transition wrapper tokens (EXAGGERATION 6563 at the start,
+  // START_SPEECH 6561 ×2 at the end) get position 0; text-side tokens use
+  // arange-1 indexing. The model is trained with this dual-positioning so
+  // wrappers act as positionless markers and text carries sequence position.
   const embedIdsTensor = new ort.Tensor("int64", BigInt64Array.from(inputIds.map(BigInt)), [1, inputIds.length]);
+  const positionIdsTensor = new ort.Tensor(
+    "int64",
+    BigInt64Array.from(inputIds.map((tokenId, i) => (tokenId >= START_SPEECH_TOKEN ? 0n : BigInt(i - 1)))),
+    [1, inputIds.length],
+  );
+  const exaggerationTensor = new ort.Tensor("float32", new Float32Array([exaggeration]), [1]);
 
   // Step 2: Embed text + start-of-speech tokens
-  const embedResult = await embedTokensSession.run({ input_ids: embedIdsTensor });
+  const embedResult = await embedTokensSession.run({
+    input_ids: embedIdsTensor,
+    position_ids: positionIdsTensor,
+    exaggeration: exaggerationTensor,
+  });
   const textEmbeds = embedResult["inputs_embeds"];
   if (!textEmbeds) throw new Error("embed_tokens failed: " + Object.keys(embedResult));
 
-  // Step 3: Autoregressive LM generation
+  // Step 3: Autoregressive LM generation with batched classifier-free guidance.
+  //
+  // ONE LM call per token with batch=2 (cond at [0], uncond at [1]):
+  //   batch[0] = condEmb || text_embeds                   (full conditioning)
+  //   batch[1] = condEmb || zeros(text_embeds.shape)      (text zeroed)
+  // Logits combine: final = cond + CFG_WEIGHT * (cond - uncond).
+  //
+  // Earlier dual-call CFG (two sequential session.run with batch=1) timed
+  // out at 5min+ on M5 iPad WebGPU because per-call JS/ORT overhead
+  // dominated. Single batched call recovers most of that cost — the LM
+  // ONNX has batch_size as a dynamic dim (verified) so the GPU can
+  // pipeline both branches in parallel within one kernel launch.
+  //
+  // CFG_WEIGHT === 0 → batch=1 fast path (no uncond branch built).
+  const cfgEnabled = CFG_WEIGHT > 0;
+  const batch = cfgEnabled ? 2 : 1;
+
   const condEmbF32 = new Float32Array(speakerData.condEmb);
   const condLen = speakerData.condEmbShape[1] ?? 0;
   const textLen = textEmbeds.dims[1] ?? 0;
   const embedDim = textEmbeds.dims[2] ?? 0;
   const totalLen = condLen + textLen;
+  const rowSize = totalLen * embedDim;
 
-  const combinedEmbeds = new Float32Array(totalLen * embedDim);
-  combinedEmbeds.set(condEmbF32, 0);
-  // textEmbeds.data is already a Float32Array view from ORT; set() reads
-  // it directly without an intermediate copy.
-  combinedEmbeds.set(textEmbeds.data, condLen * embedDim);
+  // Batch[0]: full conditioning (condEmb + real text_embeds).
+  // Batch[1]: text-zeroed (condEmb + zeros). Float32Array() is zero-init.
+  const batchedEmbeds = new Float32Array(batch * rowSize);
+  batchedEmbeds.set(condEmbF32, 0);
+  batchedEmbeds.set(textEmbeds.data, condLen * embedDim);
+  if (cfgEnabled) {
+    // Uncond row: copy condEmb prefix only; text region stays zero.
+    batchedEmbeds.set(condEmbF32, rowSize);
+  }
 
-  // attention_mask and position_ids get fresh typed arrays per decode step.
-  //
-  // An earlier optimization pre-allocated one Int32Array and handed out
-  // .subarray() views across steps. That produced GatherBlockQuantized
-  // bounds errors (`idx=<garbage> must be within [-8196,8195]`) on the
-  // LM's position-embedding gather: ORT Web's WebGPU backend does not
-  // reliably handle multiple input Tensors that share a backing
-  // ArrayBuffer across successive run() calls — whether by aliased
-  // subarray views or by in-place mutation of a reused single-slot
-  // buffer. The safe idiom is "one typed array per Tensor per run."
-  //
-  // We keep the modest improvement over the very first version by using
-  // `new Int32Array(N).fill(1)` instead of `Int32Array.from(Array(N).fill(1))`
-  // — single allocation, no intermediate Array object.
-
+  // attention_mask: one typed array per Tensor per run (ORT Web WebGPU has
+  // shared-buffer hazards across successive run() calls).
+  // Multilingual LM: attention_mask is int64, no position_ids input.
   let lmInputs = {
-    inputs_embeds: new ort.Tensor("float32", combinedEmbeds, [1, totalLen, embedDim]),
-    attention_mask_int32: new ort.Tensor("int32", new Int32Array(totalLen).fill(1), [1, totalLen]),
-    position_ids_int32: new ort.Tensor("int32", Int32Array.from({ length: totalLen }, (_, i) => i), [1, totalLen]),
+    inputs_embeds: new ort.Tensor("float32", batchedEmbeds, [batch, totalLen, embedDim]),
+    attention_mask: new ort.Tensor("int64", BigInt64Array.from({ length: batch * totalLen }, () => 1n), [batch, totalLen]),
   };
-
   for (let i = 0; i < NUM_LAYERS; i++) {
-    lmInputs[`past_key_values.${i}.key`] = new ort.Tensor("float16", new Uint16Array(0), [1, NUM_HEADS, 0, HEAD_DIM]);
-    lmInputs[`past_key_values.${i}.value`] = new ort.Tensor("float16", new Uint16Array(0), [1, NUM_HEADS, 0, HEAD_DIM]);
+    lmInputs[`past_key_values.${i}.key`] = new ort.Tensor("float16", new Uint16Array(0), [batch, NUM_HEADS, 0, HEAD_DIM]);
+    lmInputs[`past_key_values.${i}.value`] = new ort.Tensor("float16", new Uint16Array(0), [batch, NUM_HEADS, 0, HEAD_DIM]);
   }
 
   const generatedTokens = [START_SPEECH_TOKEN];
 
-  // Tracks the GPU-backed tensors from the prior step so we can dispose
-  // them once the next run() has consumed them as its past_key_values.*
-  // inputs. Without this, the backing WebGPU buffers accumulate across
-  // the autoregressive loop and leak into subsequent sentences during
-  // batch pre-gen (702 pain phrases would eventually exhaust memory).
+  // Tracks GPU-backed tensors from the prior step so we can dispose them
+  // once the next run() has consumed them as past_key_values.* inputs.
+  // Without this, WebGPU buffers accumulate across the autoregressive loop
+  // and leak into subsequent sentences during batch pre-gen.
   let priorGpuKV = [];
 
   try {
   for (let step = 0; step < MAX_NEW_TOKENS; step++) {
     const lmResult = await languageModelSession.run(lmInputs);
-    // Once the run has consumed the previous step's KV cache tensors as
-    // inputs, their GPU buffers can be released — we'll swap in the new
-    // present.* tensors below.
     for (const t of priorGpuKV) t.dispose?.();
     priorGpuKV = [];
 
     const logits = lmResult["logits"];
     if (!logits) throw new Error("LM missing logits: " + Object.keys(lmResult));
 
-    // logits.data is a Float32Array view. For multi-position prompts (step 0)
-    // we only care about the last token's row; for single-position decode
-    // steps the view is already the last row. subarray() is a zero-copy view.
+    // logits.data layout: [batch=0 row 0, ..., batch=0 row T-1, batch=1 row 0, ...]
+    // For step 0 we have T positions per batch; for subsequent steps T=1.
     const vocabSize = logits.dims[logits.dims.length - 1] ?? 0;
-    const lastTokenLogits = logits.data.subarray(logits.data.length - vocabSize);
+    const seqLenOut = logits.dims[1] ?? 1;
+    const condLastStart = (seqLenOut - 1) * vocabSize;
+    const condLast = logits.data.subarray(condLastStart, condLastStart + vocabSize);
 
-    // Mask invalid tokens. Chatterbox Turbo's LM vocab_size is 6563
-    // (config.json: `vocab_size`), so we only need to kill START
-    // (6561) which shouldn't recur mid-sequence. STOP (6562) is valid.
-    // The old loop masking anything above STOP was dead code: with
-    // vocab_size == STOP + 1, the loop never iterated.
+    // CFG combine — produces a writable copy regardless of the path.
+    let lastTokenLogits;
+    if (cfgEnabled) {
+      const uncondLastStart = (seqLenOut + seqLenOut - 1) * vocabSize;
+      const uncondLast = logits.data.subarray(uncondLastStart, uncondLastStart + vocabSize);
+      lastTokenLogits = new Float32Array(vocabSize);
+      for (let i = 0; i < vocabSize; i++) {
+        lastTokenLogits[i] = condLast[i] + CFG_WEIGHT * (condLast[i] - uncondLast[i]);
+      }
+    } else {
+      lastTokenLogits = new Float32Array(condLast);
+    }
+
+    // Mask invalid tokens: only speech codes [0, 6560] and STOP (6562) are valid.
+    // START (6561) should not appear mid-sequence; text tokens (> 6562) would
+    // cause out-of-bounds lookups in the conditional decoder's speech embedding.
+    // Multilingual LM logits dim is 8194 — the upper mask loop zeros 6563..8193.
     lastTokenLogits[START_SPEECH_TOKEN] = -Infinity;
-
-    // Prevent premature STOP before minimum tokens are generated
+    for (let i = STOP_SPEECH_TOKEN + 1; i < lastTokenLogits.length; i++) {
+      lastTokenLogits[i] = -Infinity;
+    }
     if (step < MIN_NEW_TOKENS) {
       lastTokenLogits[STOP_SPEECH_TOKEN] = -Infinity;
     }
 
+    if (USE_GREEDY) {
+      applyRepetitionPenalty(lastTokenLogits, generatedTokens, REPETITION_PENALTY);
+    }
     const maxIdx = USE_GREEDY
       ? argmaxGreedy(lastTokenLogits)
       : sampleToken(lastTokenLogits, generatedTokens);
@@ -585,20 +899,31 @@ async function handleSynthesize(text, speakerData, id) {
     }
     generatedTokens.push(maxIdx);
 
-    // Next step — embed via speech_emb (single token routed by Slice[-2:]).
-    // Substitute token 0 for control tokens (START/STOP) to avoid ORT WASM
-    // GatherBlockQuantized bounds bug on speech_emb indices >= 6561.
-    const embedIdx = maxIdx >= START_SPEECH_TOKEN ? 0 : maxIdx;
-    const nextTok = new ort.Tensor("int64", BigInt64Array.from([BigInt(embedIdx)]), [1, 1]);
-    const nextEmb = await embedTokensSession.run({ input_ids: nextTok });
+    // Embed next speech token (batch=1) and broadcast to batch=2 by copy.
+    // Upstream zeros only the original text_emb, not subsequent speech embeds —
+    // both branches see the same generated speech token.
+    const nextTok = new ort.Tensor("int64", BigInt64Array.from([BigInt(maxIdx)]), [1, 1]);
+    const stepPos = new ort.Tensor("int64", BigInt64Array.from([BigInt(step + 1)]), [1, 1]);
+    const nextEmb = await embedTokensSession.run({
+      input_ids: nextTok,
+      position_ids: stepPos,
+      exaggeration: exaggerationTensor,
+    });
     const newLen = totalLen + step + 1;
+    const embData = nextEmb["inputs_embeds"].data; // Float32Array, length embedDim
+
+    let nextBatchedEmbeds;
+    if (cfgEnabled) {
+      nextBatchedEmbeds = new Float32Array(2 * embedDim);
+      nextBatchedEmbeds.set(embData, 0);
+      nextBatchedEmbeds.set(embData, embedDim);
+    } else {
+      nextBatchedEmbeds = new Float32Array(embData); // copy for safety
+    }
 
     lmInputs = {
-      inputs_embeds: nextEmb["inputs_embeds"],
-      // Fresh typed arrays per step — see note above the initial
-      // lmInputs construction for why we can't share backing memory.
-      attention_mask_int32: new ort.Tensor("int32", new Int32Array(newLen).fill(1), [1, newLen]),
-      position_ids_int32: new ort.Tensor("int32", new Int32Array([newLen - 1]), [1, 1]),
+      inputs_embeds: new ort.Tensor("float32", nextBatchedEmbeds, [batch, 1, embedDim]),
+      attention_mask: new ort.Tensor("int64", BigInt64Array.from({ length: batch * newLen }, () => 1n), [batch, newLen]),
     };
 
     for (const [key, value] of Object.entries(lmResult)) {
@@ -677,7 +1002,7 @@ self.addEventListener("message", (e) => {
     // responses via `msg.id` and ignores those for synths it has
     // already timed out on.
     synthChain = synthChain.then(() =>
-      handleSynthesize(msg.text, msg.speakerData, msg.id).catch((err) => {
+      handleSynthesize(msg.text, msg.speakerData, msg.id, msg.languageId, msg.exaggeration).catch((err) => {
         const message = err instanceof Error ? err.message : String(err);
         console.error(`${LOG} Synth error:`, message);
         postMessage({ type: "error", message, id: msg.id });

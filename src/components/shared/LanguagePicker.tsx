@@ -2,6 +2,7 @@ import { useState } from "preact/hooks";
 import type { JSX } from "preact";
 import type { ThemeTokens } from "../../theme/tokens";
 import { LANGS } from "../../data/phrases";
+import { canCloneForLocale } from "../../data/chatterboxLocales";
 import { BottomSheet } from "./BottomSheet";
 
 interface Props {
@@ -89,6 +90,12 @@ export function LanguagePicker({
             >
               {LANGS.map((l) => {
                 const selected = l.code === value;
+                // Languages outside Chatterbox Multilingual fall through
+                // to the system Web Speech voice on tap; the cloned voice
+                // is unused. Show users this up-front so picking, e.g.,
+                // Vietnamese doesn't appear silently identical to picking
+                // Spanish (which gets full cloned audio).
+                const cloneable = canCloneForLocale(l.code);
                 return (
                   <button
                     key={l.code}
@@ -106,6 +113,18 @@ export function LanguagePicker({
                       {l.englishLabel !== l.label && (
                         <span style={{ fontSize: 11, color: t.muted }}>
                           {l.label}
+                        </span>
+                      )}
+                      {!cloneable && (
+                        <span
+                          style={{
+                            fontSize: 10,
+                            color: t.muted,
+                            fontWeight: 500,
+                            marginTop: 2,
+                          }}
+                        >
+                          System voice only
                         </span>
                       )}
                     </span>

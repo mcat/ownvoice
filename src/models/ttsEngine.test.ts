@@ -89,7 +89,8 @@ async function loadEngineWithMocks(): Promise<{
   synthesizeGPU: (
     text: string,
     data: SpeakerDataLike,
-    opts?: { timeoutMs?: number },
+    languageId: string,
+    opts?: { timeoutMs?: number; exaggeration?: number },
   ) => Promise<{ data: Float32Array; sampleRate: number }>;
   isGPUReady: () => boolean;
   __testPendingSynthsSize: () => number;
@@ -183,7 +184,7 @@ describe("ttsEngine — synthesizeGPU", () => {
     const worker = workers[0];
     worker.postMessage.mockClear();
 
-    const synthPromise = synthesizeGPU("hello", SPEAKER, { timeoutMs: 5000 });
+    const synthPromise = synthesizeGPU("hello", SPEAKER, "en", { timeoutMs: 5000 });
 
     expect(worker.postMessage).toHaveBeenCalledTimes(1);
     const call = worker.postMessage.mock.calls[0][0];
@@ -191,6 +192,8 @@ describe("ttsEngine — synthesizeGPU", () => {
     expect(call.text).toBe("hello");
     expect(call.id).toBe(1);
     expect(call.speakerData).toBe(SPEAKER);
+    expect(call.languageId).toBe("en");
+    expect(call.exaggeration).toBe(0.5);
 
     const audio = new Float32Array([0.1, 0.2, 0.3]);
     worker.__post({
@@ -218,8 +221,8 @@ describe("ttsEngine — synthesizeGPU", () => {
     const worker = workers[0];
     worker.postMessage.mockClear();
 
-    const p0 = synthesizeGPU("alpha", SPEAKER, { timeoutMs: 5000 });
-    const p1 = synthesizeGPU("beta", SPEAKER, { timeoutMs: 5000 });
+    const p0 = synthesizeGPU("alpha", SPEAKER, "en", { timeoutMs: 5000 });
+    const p1 = synthesizeGPU("beta", SPEAKER, "en", { timeoutMs: 5000 });
 
     const id0 = worker.postMessage.mock.calls[0][0].id;
     const id1 = worker.postMessage.mock.calls[1][0].id;
@@ -248,7 +251,7 @@ describe("ttsEngine — synthesizeGPU", () => {
 
     const worker = workers[0];
     worker.postMessage.mockClear();
-    const synthPromise = synthesizeGPU("hello", SPEAKER, { timeoutMs: 5000 });
+    const synthPromise = synthesizeGPU("hello", SPEAKER, "en", { timeoutMs: 5000 });
     const id = worker.postMessage.mock.calls[0][0].id;
 
     // Decoy audio with wrong id — should be ignored.
@@ -279,7 +282,7 @@ describe("ttsEngine — synthesizeGPU", () => {
 
     const worker = workers[0];
     worker.postMessage.mockClear();
-    const synthPromise = synthesizeGPU("hello", SPEAKER, { timeoutMs: 5000 });
+    const synthPromise = synthesizeGPU("hello", SPEAKER, "en", { timeoutMs: 5000 });
     const id = worker.postMessage.mock.calls[0][0].id;
     worker.__post({ type: "error", message: "synth failed", id });
 
@@ -293,7 +296,7 @@ describe("ttsEngine — synthesizeGPU", () => {
     workers[0].__post({ type: "ready" });
     await initPromise;
 
-    const synthPromise = synthesizeGPU("hello", SPEAKER, { timeoutMs: 100 });
+    const synthPromise = synthesizeGPU("hello", SPEAKER, "en", { timeoutMs: 100 });
     const rejectSpy = vi.fn();
     synthPromise.catch(rejectSpy);
 
@@ -314,7 +317,7 @@ describe("ttsEngine — synthesizeGPU", () => {
     workers[0].__post({ type: "ready" });
     await initPromise;
 
-    const synthPromise = synthesizeGPU("hello", SPEAKER);
+    const synthPromise = synthesizeGPU("hello", SPEAKER, "en");
     const rejectSpy = vi.fn();
     synthPromise.catch(rejectSpy);
 
@@ -343,7 +346,7 @@ describe("ttsEngine — synthesizeGPU", () => {
 
     const worker = workers[0];
     worker.postMessage.mockClear();
-    const synthPromise = synthesizeGPU("hello", SPEAKER, { timeoutMs: 5000 });
+    const synthPromise = synthesizeGPU("hello", SPEAKER, "en", { timeoutMs: 5000 });
 
     // Mid-synth: entry is registered.
     expect(__testPendingSynthsSize()).toBe(1);
@@ -370,7 +373,7 @@ describe("ttsEngine — synthesizeGPU", () => {
 
     const worker = workers[0];
     worker.postMessage.mockClear();
-    const p = synthesizeGPU("hello", SPEAKER, { timeoutMs: 5000 });
+    const p = synthesizeGPU("hello", SPEAKER, "en", { timeoutMs: 5000 });
     expect(__testPendingSynthsSize()).toBe(1);
 
     const id = worker.postMessage.mock.calls[0][0].id;
@@ -399,14 +402,14 @@ describe("ttsEngine — post-init worker crash rejects in-flight synths fast", (
 
     // Long timeout — we want to prove the crash wakes up the promise
     // before the timeout would.
-    const synthPromise = synthesizeGPU("hello", SPEAKER, { timeoutMs: 300_000 });
+    const synthPromise = synthesizeGPU("hello", SPEAKER, "en", { timeoutMs: 300_000 });
 
     workers[0].__error("out of memory");
 
     await expect(synthPromise).rejects.toThrow(/worker crashed.*out of memory/);
     // Subsequent calls should fail fast — engine is no longer ready.
     expect(isGPUReady()).toBe(false);
-    await expect(synthesizeGPU("follow-up", SPEAKER)).rejects.toThrow(
+    await expect(synthesizeGPU("follow-up", SPEAKER, "en")).rejects.toThrow(
       "GPU TTS not ready",
     );
   });
@@ -420,9 +423,9 @@ describe("ttsEngine — post-init worker crash rejects in-flight synths fast", (
     workers[0].__post({ type: "ready" });
     await initPromise;
 
-    const p0 = synthesizeGPU("alpha", SPEAKER, { timeoutMs: 300_000 });
-    const p1 = synthesizeGPU("beta", SPEAKER, { timeoutMs: 300_000 });
-    const p2 = synthesizeGPU("gamma", SPEAKER, { timeoutMs: 300_000 });
+    const p0 = synthesizeGPU("alpha", SPEAKER, "en", { timeoutMs: 300_000 });
+    const p1 = synthesizeGPU("beta", SPEAKER, "en", { timeoutMs: 300_000 });
+    const p2 = synthesizeGPU("gamma", SPEAKER, "en", { timeoutMs: 300_000 });
 
     workers[0].__error("worker terminated");
 

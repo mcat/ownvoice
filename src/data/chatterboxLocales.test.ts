@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { CHATTERBOX_LOCALES, canCloneForLocale } from "./chatterboxLocales";
+import { CHATTERBOX_LOCALES, canCloneForLocale, baseLocale } from "./chatterboxLocales";
 
 describe("CHATTERBOX_LOCALES", () => {
   it("contains exactly 23 locales", () => {
@@ -47,5 +47,35 @@ describe("canCloneForLocale", () => {
 
   it("returns false for garbage input", () => {
     expect(canCloneForLocale("xx-YZ")).toBe(false);
+  });
+
+  it("strips BCP 47 region subtags and matches the base language", () => {
+    expect(canCloneForLocale("en-US")).toBe(true);
+    expect(canCloneForLocale("es-MX")).toBe(true);
+    expect(canCloneForLocale("zh-TW")).toBe(true);
+    expect(canCloneForLocale("pt-BR")).toBe(true);
+  });
+
+  it("returns false for unsupported locales even with region subtags", () => {
+    expect(canCloneForLocale("vi-VN")).toBe(false);
+    expect(canCloneForLocale("tl-PH")).toBe(false);
+  });
+});
+
+describe("baseLocale", () => {
+  it("extracts the base language subtag from a BCP 47 tag", () => {
+    expect(baseLocale("en-US")).toBe("en");
+    expect(baseLocale("zh-TW")).toBe("zh");
+    expect(baseLocale("pt-BR")).toBe("pt");
+  });
+
+  it("returns the input unchanged when there is no region subtag", () => {
+    expect(baseLocale("en")).toBe("en");
+    expect(baseLocale("fr")).toBe("fr");
+  });
+
+  it("lowercases the result", () => {
+    expect(baseLocale("EN-US")).toBe("en");
+    expect(baseLocale("FR")).toBe("fr");
   });
 });

@@ -8,7 +8,7 @@ import type { AppSettings, Patient } from "../types";
 // In-memory Zustand updates stay synchronous so controlled inputs don't
 // lag; only the disk write is batched.
 const PERSIST_DEBOUNCE_MS = 300;
-const STORE_VERSION = 2;
+const STORE_VERSION = 4;
 
 interface SettingsPersistedState {
   cfg: AppSettings | null;
@@ -150,6 +150,7 @@ export const useSettingsStore = create<SettingsState>()(
 
         // v0 → v1: add caregiverLang (from previous migration)
         let cfg = typed.cfg;
+        let speakerData = typed.speakerData;
         if (fromVersion < 1 && cfg) {
           const c = cfg as unknown as Record<string, unknown>;
           if (!("caregiverLang" in c)) {
@@ -161,7 +162,7 @@ export const useSettingsStore = create<SettingsState>()(
         if (fromVersion < 2 && cfg) {
           const legacyCfg = cfg as unknown as Record<string, unknown>;
           if (!Array.isArray(legacyCfg.patients)) {
-            const patient = newPatientFromLegacy(legacyCfg, typed.speakerData);
+            const patient = newPatientFromLegacy(legacyCfg, speakerData);
             cfg = {
               pin: String(legacyCfg.pin ?? ""),
               caregiverLang: String(legacyCfg.caregiverLang ?? "en"),
@@ -171,9 +172,35 @@ export const useSettingsStore = create<SettingsState>()(
               activePatientId: patient.id,
             };
           }
-          return { cfg, speakerData: null };
+          speakerData = null;
         }
-        return { cfg, speakerData: typed.speakerData };
+
+        // v2 → v3: Chatterbox Turbo → Multilingual model swap.
+        // Existing speaker embeddings are incompatible with the new speech
+        // encoder — force re-enrollment by clearing speakerData/embedding
+        // and setting hasVoice = false on every patient and provider.
+        // v3 → v4: enrollment now passes raw decoded audio to the speech
+        // encoder (previously fed preprocessed audio). Existing embeddings
+        // were extracted from filtered/normalized audio and bake in
+        // identity-distorting artifacts — re-enroll to recapture identity.
+        if (fromVersion < 4 && cfg) {
+          cfg = {
+            ...cfg,
+            patients: cfg.patients.map((p) => ({
+              ...p,
+              speakerData: null,
+              hasVoice: false,
+            })),
+            providers: cfg.providers.map((p) => ({
+              ...p,
+              embedding: undefined,
+              hasVoice: false,
+            })),
+          };
+          speakerData = null;
+        }
+
+        return { cfg, speakerData };
       },
       partialize: (s): SettingsPersistedState => ({
         cfg: s.cfg,

@@ -1,11 +1,10 @@
 /**
- * TTS Web Worker — Chatterbox Turbo (350M, Resemble AI, MIT, English only).
- * Multilingual support requires switching to ChatterboxMultilingualTTS (separate model).
+ * TTS Web Worker — Chatterbox Multilingual (23 languages, Resemble AI, MIT).
  *
  * 4-component ONNX pipeline:
  *   1. Speech Encoder:      audio_values → cond_emb, prompt_token, speaker_embeddings, speaker_features
- *   2. Embed Tokens:        input_ids → inputs_embeds
- *   3. Language Model:      inputs_embeds + attention_mask + KV cache → logits (autoregressive)
+ *   2. Embed Tokens:        input_ids + position_ids + exaggeration → inputs_embeds
+ *   3. Language Model:      inputs_embeds + attention_mask + KV cache → logits (autoregressive, Llama 30-layer)
  *   4. Conditional Decoder:  speech_tokens + speaker_embeddings + speaker_features → wav (24kHz)
  *
  * Load strategy:
@@ -15,7 +14,7 @@
  * Messages IN:
  *   { type: "init", modelUrl: string }         — Load runtime models (embed_tokens, language_model, conditional_decoder, tokenizer)
  *   { type: "embed", audio: Float32Array, sampleRate: number }  — Load speech_encoder, extract embedding, unload
- *   { type: "synthesize", text: string, speakerData: SpeakerData }  — Generate speech
+ *   { type: "synthesize", text: string, speakerData: SpeakerData, languageId: string, exaggeration?: number }  — Generate speech
  *
  * Messages OUT:
  *   { type: "ready" }
@@ -30,6 +29,7 @@
 // WASM-only fallback — the primary WebGPU path runs in ttsEngine.ts (main thread).
 // This worker is used when WebGPU is unavailable.
 import * as ort from "onnxruntime-web";
+import { CHATTERBOX_FILES, CHATTERBOX_TOKENS } from "./types";
 
 const _postMessage = self.postMessage.bind(self);
 
@@ -45,20 +45,13 @@ if (ort.env?.wasm) {
 }
 
 const LOG = "[OwnVoice:TTS]";
-const SAMPLE_RATE = 24000;
-const START_SPEECH_TOKEN = 6561;
-const STOP_SPEECH_TOKEN = 6562;
+const { START_SPEECH, STOP_SPEECH, NUM_LAYERS, NUM_HEADS, HEAD_DIM, SAMPLE_RATE } = CHATTERBOX_TOKENS;
 const SILENCE_TOKEN = 4299;
-const EOT_TOKEN = 50256; // <|endoftext|> — appended to text tokens; embed_tokens converts to START via Where op
-// Match the GPU worker's cap. WASM is slower per token, but silent truncation
-// mid-sentence is a worse UX than a longer pre-gen latency on the rare phrase
-// that runs long. Pre-gen happens off the user's critical path.
+// Tighter cap than CHATTERBOX_TOKENS.MAX_NEW_TOKENS (1024). WASM is slower per
+// token, but silent truncation mid-sentence is a worse UX than a longer pre-gen
+// latency on the rare phrase that runs long. Pre-gen happens off the user's
+// critical path.
 const MAX_NEW_TOKENS = 768;
-
-// GPT-2 LM dimensions (from config.json) — needed for KV cache initialization
-const NUM_LAYERS = 24;
-const NUM_HEADS = 16;
-const HEAD_DIM = 64; // n_embd (1024) / n_head (16)
 
 // Sampling parameters — repetition_penalty matches the model's
 // generation_config.json. Temperature lowered from upstream's 0.8 to 0.6 to
@@ -92,8 +85,9 @@ let embedTokensSession: ort.InferenceSession | null = null;
 let languageModelSession: ort.InferenceSession | null = null;
 let conditionalDecoderSession: ort.InferenceSession | null = null;
 
-// Tokenizer vocabulary
+// Tokenizer vocabulary (multilingual BPE)
 let tokenizer: { encode: (text: string) => number[] } | null = null;
+let prepareLanguageFn: ((text: string, lang: string) => string) | null = null;
 
 let baseUrl = "";
 
@@ -185,9 +179,9 @@ async function createSession(
 }
 
 /**
- * Load the GPT-2 BPE tokenizer from tokenizer.json (HuggingFace format).
- * The post-processor appends [50256, 50256] (<|endoftext|> × 2) automatically,
- * which embed_tokens uses as start-of-speech markers.
+ * Load the multilingual BPE tokenizer from tokenizer.json.
+ * Replaces the old GPT-2 BPE; the multilingual tokenizer handles [xx] language
+ * tags and [SPACE] normalization natively.
  */
 async function loadTokenizer(tokenizerUrl: string): Promise<void> {
   console.log(`${LOG} Loading tokenizer...`);
@@ -195,10 +189,30 @@ async function loadTokenizer(tokenizerUrl: string): Promise<void> {
   if (!response.ok) throw new Error(`Tokenizer fetch failed: ${response.status}`);
   const json = await response.json();
 
-  const { buildBPETokenizer } = await import("./bpeTokenizer");
-  tokenizer = buildBPETokenizer(json);
+  const mod = await import("./multilingualTokenizer");
+  tokenizer = mod.buildMultilingualTokenizer(json);
+  prepareLanguageFn = mod.prepareLanguage;
 
-  console.log(`${LOG} BPE tokenizer loaded (${Object.keys(json.model.vocab).length} vocab, ${json.model.merges.length} merges)`);
+  // Load Cangjie5 lookup for Chinese preprocessing alongside the tokenizer.
+  // Failure is non-fatal — Chinese inputs degrade silently, other languages
+  // keep working. Cangjie5_TC.json sits next to tokenizer.json in the
+  // multilingual model dir.
+  const cangjieUrl = tokenizerUrl.replace(/tokenizer\.json$/, "Cangjie5_TC.json");
+  try {
+    const cjResp = await fetch(cangjieUrl);
+    if (cjResp.ok) {
+      const entries: string[] = await cjResp.json();
+      mod.setCangjieData(entries);
+      console.log(`${LOG} Cangjie5 table loaded (${entries.length} entries)`);
+    } else {
+      throw new Error(`HTTP ${cjResp.status}`);
+    }
+  } catch (err) {
+    console.warn(`${LOG} Failed to load Cangjie5 (${err}); Chinese phrases will degrade`);
+    mod.setCangjieData(null);
+  }
+
+  console.log(`${LOG} Multilingual BPE tokenizer loaded (${Object.keys(json.model.vocab).length} vocab, ${json.model.merges.length} merges)`);
 }
 
 /**
@@ -290,29 +304,55 @@ function sampleToken(logits: Float32Array, generatedTokens: number[]): number {
 }
 
 /**
- * Initialize runtime models (embed_tokens, language_model, conditional_decoder).
+ * Initialize tokenizer + baseUrl, then signal ready.
+ *
+ * Synth-side models (embed_tokens, language_model, conditional_decoder) are
+ * lazy-loaded on first synthesize call — see ensureSynthModelsLoaded.
  * Speech encoder is loaded on-demand during embed().
+ *
+ * Why lazy: the WASM TTS worker's only hot-path job in this codebase is
+ * enrollment (handleEmbed), which doesn't touch the synth models. Pre-gen
+ * runs through the GPU engine, not this worker. Live synth on WASM is a
+ * fallback path used only when WebGPU is unavailable. Loading ~900 MB of
+ * synth models eagerly during init was blocking `mgr.isReady("tts")` — and
+ * therefore the enrollment UI — for ~150s+ on cold starts.
  */
 async function handleInit(modelUrl: string): Promise<void> {
   baseUrl = modelUrl.endsWith("/") ? modelUrl : modelUrl + "/";
   const ep = getEP();
   console.log(`${LOG} Initializing with EP: ${ep}`);
 
-  // Load tokenizer
-  await loadTokenizer(baseUrl + "tokenizer.json");
+  // Tokenizer is small and needed for any operation; load eagerly.
+  await loadTokenizer(baseUrl + CHATTERBOX_FILES.tokenizer);
 
-  // WASM worker uses the original int64 models
-  console.log(`${LOG} Loading embed_tokens (WASM)...`);
-  embedTokensSession = await createSession(baseUrl + "embed_tokens_q4f16.onnx", true, true);
-
-  console.log(`${LOG} Loading language_model (WASM)...`);
-  languageModelSession = await createSession(baseUrl + "language_model_q4f16.onnx", true, true);
-
-  console.log(`${LOG} Loading conditional_decoder (WASM)...`);
-  conditionalDecoderSession = await createSession(baseUrl + "conditional_decoder_q4f16.onnx", true, true);
-
-  console.log(`${LOG} All runtime models loaded. Ready.`);
+  console.log(`${LOG} Init complete (synth models lazy-loaded on first synthesize). Ready.`);
   _postMessage({ type: "ready" });
+}
+
+/**
+ * Lazy-load the synth-side runtime models. Called from handleSynthesize.
+ * Idempotent — subsequent calls return immediately if all sessions exist.
+ */
+async function ensureSynthModelsLoaded(): Promise<void> {
+  if (embedTokensSession && languageModelSession && conditionalDecoderSession) return;
+
+  console.log(`${LOG} Lazy-loading synth models (first synthesize call)...`);
+  const t0 = performance.now();
+
+  if (!embedTokensSession) {
+    console.log(`${LOG} Loading embed_tokens (WASM)...`);
+    embedTokensSession = await createSession(baseUrl + CHATTERBOX_FILES.embedTokens.onnx, true, true);
+  }
+  if (!languageModelSession) {
+    console.log(`${LOG} Loading language_model (WASM)...`);
+    languageModelSession = await createSession(baseUrl + CHATTERBOX_FILES.languageModel.onnx, true, true);
+  }
+  if (!conditionalDecoderSession) {
+    console.log(`${LOG} Loading conditional_decoder (WASM)...`);
+    conditionalDecoderSession = await createSession(baseUrl + CHATTERBOX_FILES.conditionalDecoder.onnx, true, true);
+  }
+
+  console.log(`${LOG} Synth models loaded in ${((performance.now() - t0) / 1000).toFixed(1)}s`);
 }
 
 /**
@@ -330,8 +370,8 @@ async function handleEmbed(audio: Float32Array, _sampleRate: number): Promise<vo
   audioRms = Math.sqrt(audioRms / audio.length);
   console.log(`${LOG} Extracting speaker embedding from ${(audio.length / SAMPLE_RATE).toFixed(1)}s audio (max=${audioMax.toFixed(4)}, rms=${audioRms.toFixed(4)})`);
 
-  console.log(`${LOG} Loading speech_encoder (on-demand, fp16, WASM)...`);
-  const speechEncoderSession = await createSession(baseUrl + "speech_encoder_fp16.onnx", true, true);
+  console.log(`${LOG} Loading speech_encoder (on-demand, WASM)...`);
+  const speechEncoderSession = await createSession(baseUrl + CHATTERBOX_FILES.speechEncoder.onnx, true, true);
 
   // Run speech encoder
   // Input: audio_values (float32, [1, audio_length])
@@ -397,16 +437,25 @@ async function handleEmbed(audio: Float32Array, _sampleRate: number): Promise<vo
  *   3. Concatenate [cond_emb, text_embeds] + autoregressive LM generation → speech tokens
  *   4. conditional_decoder(speech_tokens, speaker_embeddings, speaker_features) → wav
  */
-async function handleSynthesize(text: string, speakerData: SpeakerData): Promise<void> {
+async function handleSynthesize(
+  text: string,
+  speakerData: SpeakerData,
+  languageId: string,
+  exaggeration: number = 0.5,
+): Promise<void> {
+  if (!tokenizer || !prepareLanguageFn) throw new Error("Tokenizer not loaded");
+
+  // Lazy-load synth models on first call. Init only loaded the tokenizer
+  // (small) so the worker could signal ready quickly for enrollment.
+  await ensureSynthModelsLoaded();
   if (!embedTokensSession || !languageModelSession || !conditionalDecoderSession) {
-    throw new Error("Runtime models not initialized");
+    throw new Error("Runtime models failed to load");
   }
-  if (!tokenizer) throw new Error("Tokenizer not loaded");
 
   const useGPU = getEP() === "webgpu";
   // Signal EP info to main thread via progress message (passes through ORT proxy)
   _postMessage({ type: "progress", loaded: useGPU ? 1 : 0, total: -1 });
-  console.log(`${LOG} Synthesizing: "${text.slice(0, 50)}..." (EP: ${useGPU ? "webgpu" : "wasm"})`);
+  console.log(`${LOG} Synthesizing: "${text.slice(0, 50)}..." [lang=${languageId}, exag=${exaggeration}, EP=${useGPU ? "webgpu" : "wasm"}]`);
 
   // Helper: create an integer tensor in the right dtype for the active EP.
   // WebGPU models use int32 inputs; WASM models use int64.
@@ -419,19 +468,35 @@ async function handleSynthesize(text: string, speakerData: SpeakerData): Promise
 
   // WebGPU model variants use "_int32" suffixed input names
   const maskName = useGPU ? "attention_mask_int32" : "attention_mask";
-  const posName = useGPU ? "position_ids_int32" : "position_ids";
   const idsName = useGPU ? "input_ids_int32" : "input_ids";
   const speechTokName = useGPU ? "speech_tokens_int32" : "speech_tokens";
 
-  // Step 1: Tokenize text via GPT-2 BPE.
-  // The tokenizer's post-processor appends [50256, 50256] (<|endoftext|> × 2).
-  // embed_tokens slices input_ids[:-2] → text_emb, input_ids[-2:] → speech_emb,
-  // with a Where op that converts 50256 to START_SPEECH_TOKEN (6561) for speech_emb.
-  const inputIds = tokenizer.encode(text);
+  // Step 1: Tokenize text via multilingual BPE.
+  // prepareLanguage prepends "[xx]" language tag (e.g. "[en]Hello").
+  const preparedText = prepareLanguageFn(text, languageId);
+  const inputIds = tokenizer.encode(preparedText);
+  console.log(`${LOG} Prepared text: "${preparedText.slice(0, 60)}" → first 8 ids: ${inputIds.slice(0, 8).join(",")}`);
   const inputIdsTensor = intTensor(inputIds, [1, inputIds.length]);
 
-  // Step 2: Get text + start-of-speech embeddings via embed_tokens
-  const embedResult = await embedTokensSession.run({ [idsName]: inputIdsTensor });
+  // Step 2: Get text + start-of-speech embeddings via embed_tokens.
+  // Multilingual embed_tokens requires position_ids and exaggeration.
+  // Per upstream HF reference inference:
+  //   position_ids = np.where(input_ids >= START_SPEECH_TOKEN, 0, arange(N) - 1)
+  // i.e. transition wrapper tokens (EXAGGERATION 6563 at the start,
+  // START_SPEECH 6561 ×2 at the end) get position 0; text-side tokens use
+  // arange-1 indexing. The model is trained with this dual-positioning so
+  // wrappers act as positionless markers and text carries sequence position.
+  const positionIds = inputIds.map((tokenId, i) =>
+    tokenId >= START_SPEECH ? 0 : i - 1,
+  );
+  const positionIdsTensor = intTensor(positionIds, [1, inputIds.length]);
+  const exaggerationTensor = new ort.Tensor("float32", new Float32Array([exaggeration]), [1]);
+
+  const embedResult = await embedTokensSession.run({
+    [idsName]: inputIdsTensor,
+    position_ids: positionIdsTensor,
+    exaggeration: exaggerationTensor,
+  });
   const textEmbeds = embedResult["inputs_embeds"];
   if (!textEmbeds) {
     throw new Error(`embed_tokens failed. Available: ${Object.keys(embedResult).join(", ")}`);
@@ -455,17 +520,14 @@ async function handleSynthesize(text: string, speakerData: SpeakerData): Promise
   // Attention mask: all 1s
   const attentionMask = intTensor(Array(totalLen).fill(1), [1, totalLen]);
 
-  // Position IDs
-  const positionIds = intTensor(Array.from({ length: totalLen }, (_, i) => i), [1, totalLen]);
-
   // First forward pass — provide empty KV cache tensors.
+  // Multilingual LM does not take position_ids (positions are absorbed into embed_tokens).
   let lmInputs: Record<string, ort.Tensor> = {
     inputs_embeds: combinedTensor,
     [maskName]: attentionMask,
-    [posName]: positionIds,
   };
 
-  // Seed empty KV cache for all 24 layers × key/value.
+  // Seed empty KV cache for all 30 layers × key/value.
   for (let i = 0; i < NUM_LAYERS; i++) {
     lmInputs[`past_key_values.${i}.key`] = new ort.Tensor(
       "float16",
@@ -479,7 +541,7 @@ async function handleSynthesize(text: string, speakerData: SpeakerData): Promise
     );
   }
 
-  const generatedTokens: number[] = [START_SPEECH_TOKEN];
+  const generatedTokens: number[] = [START_SPEECH];
 
   for (let step = 0; step < MAX_NEW_TOKENS; step++) {
     const lmResult = await languageModelSession.run(lmInputs);
@@ -497,19 +559,41 @@ async function handleSynthesize(text: string, speakerData: SpeakerData): Promise
     // Mask invalid tokens: only speech codes [0, 6560] and STOP (6562) are valid.
     // START (6561) should not appear mid-sequence; text tokens (> 6562) would
     // cause out-of-bounds lookups in the conditional decoder's speech embedding.
-    lastTokenLogits[START_SPEECH_TOKEN] = -Infinity;
-    for (let i = STOP_SPEECH_TOKEN + 1; i < lastTokenLogits.length; i++) {
+    lastTokenLogits[START_SPEECH] = -Infinity;
+    for (let i = STOP_SPEECH + 1; i < lastTokenLogits.length; i++) {
       lastTokenLogits[i] = -Infinity;
     }
 
     // Prevent premature STOP before minimum tokens are generated
     if (step < MIN_NEW_TOKENS) {
-      lastTokenLogits[STOP_SPEECH_TOKEN] = -Infinity;
+      lastTokenLogits[STOP_SPEECH] = -Infinity;
     }
 
-    const maxIdx = sampleToken(lastTokenLogits, generatedTokens);
+    // Multilingual model: upstream HF reference inference uses
+    // rep_penalty + argmax (NOT bare argmax — bare argmax gets trapped
+    // on repeating-token attractors and never emits STOP).
+    //
+    // Apply HF-convention repetition penalty in-place (penalty 1.2 from
+    // generation_config.json): positive logits divided, negative multiplied,
+    // for every previously-generated token.
+    {
+      const seen = new Set(generatedTokens);
+      for (const tok of seen) {
+        if (tok < lastTokenLogits.length) {
+          if (lastTokenLogits[tok] > 0) lastTokenLogits[tok] /= REPETITION_PENALTY;
+          else lastTokenLogits[tok] *= REPETITION_PENALTY;
+        }
+      }
+    }
+    let maxIdx = 0;
+    let bestVal = lastTokenLogits[0];
+    for (let i = 1; i < lastTokenLogits.length; i++) {
+      if (lastTokenLogits[i] > bestVal) { bestVal = lastTokenLogits[i]; maxIdx = i; }
+    }
+    // Hold the sampleToken function in scope for future revival if needed.
+    void sampleToken;
 
-    if (maxIdx === STOP_SPEECH_TOKEN) {
+    if (maxIdx === STOP_SPEECH) {
       console.log(`${LOG} Generation stopped at token ${step + 1}`);
       break;
     }
@@ -517,22 +601,25 @@ async function handleSynthesize(text: string, speakerData: SpeakerData): Promise
     generatedTokens.push(maxIdx);
 
     // Prepare next step with KV cache — feed only the new token embedding.
-    // Single-token input: embed_tokens routes it through speech_emb (Slice[-2:]).
-    // Skip embedding for START (6561) — ORT WASM GatherBlockQuantized bug
-    // miscalculates speech_emb bounds as 6561 instead of 6563.
-    const embedIdx = maxIdx >= START_SPEECH_TOKEN ? 0 : maxIdx;
-    const nextTokenTensor = intTensor([embedIdx], [1, 1]);
-    const nextEmbedResult = await embedTokensSession.run({ [idsName]: nextTokenTensor });
+    // maxIdx is always a valid speech token here: START is masked to -Infinity
+    // during sampling, and STOP triggers `break` above.
+    const nextTokenTensor = intTensor([maxIdx], [1, 1]);
+    // Position for speech token: sequential from text length onward.
+    // embed_tokens absorbs position encoding for the multilingual model.
+    const stepPositionTensor = intTensor([step + 1], [1, 1]);
+    const nextEmbedResult = await embedTokensSession.run({
+      [idsName]: nextTokenTensor,
+      position_ids: stepPositionTensor,
+      exaggeration: exaggerationTensor,
+    });
     const nextEmbeds = nextEmbedResult["inputs_embeds"];
 
     const newLen = totalLen + step + 1;
     const nextAttention = intTensor(Array(newLen).fill(1), [1, newLen]);
-    const nextPosition = intTensor([newLen - 1], [1, 1]);
 
     lmInputs = {
       inputs_embeds: nextEmbeds!,
       [maskName]: nextAttention,
-      [posName]: nextPosition,
     };
 
     // Add KV cache from previous step.
@@ -551,7 +638,7 @@ async function handleSynthesize(text: string, speakerData: SpeakerData): Promise
   // Post-process: strip ALL control tokens (>= 6561), prepend prompt_token, append 3× silence.
   // The reference implementation does: speech_tokens = speech_tokens[speech_tokens < 6561]
   // This removes START, STOP, and any other control tokens anywhere in the sequence.
-  const speechOnly = generatedTokens.filter(t => t < START_SPEECH_TOKEN);
+  const speechOnly = generatedTokens.filter(t => t < START_SPEECH);
 
   // Always prepend prompt tokens — the decoder's Conv layers require the
   // sequence length from the prompt even if the tokens are zeros.
@@ -615,7 +702,7 @@ self.addEventListener("message", async (e: MessageEvent) => {
         break;
 
       case "synthesize":
-        await handleSynthesize(msg.text, msg.speakerData);
+        await handleSynthesize(msg.text, msg.speakerData, msg.languageId, msg.exaggeration);
         break;
     }
   } catch (err) {

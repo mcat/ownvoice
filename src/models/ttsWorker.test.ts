@@ -97,8 +97,12 @@ function setupFetchMocks() {
       return {
         ok: true,
         json: async () => ({
-          model: { vocab: { "<s>": 1, a: 2, b: 3, c: 4 }, merges: [] },
-          added_tokens: [{ content: "<s>", id: 1 }],
+          model: { vocab: { "<s>": 1, a: 2, b: 3, c: 4, H: 5, e: 6, l: 7, o: 8 }, merges: [] },
+          added_tokens: [
+            { content: "[STOP]", id: 0, special: true },
+            { content: "[SPACE]", id: 9, special: true },
+            { content: "[en]", id: 10, special: true },
+          ],
         }),
       };
     }
@@ -285,7 +289,7 @@ describe("ttsWorker — message protocol", () => {
     };
 
     await handler({
-      data: { type: "synthesize", text: "Hello", speakerData },
+      data: { type: "synthesize", text: "Hello", speakerData, languageId: "en" },
     } as unknown as MessageEvent);
 
     expect(mockPostMessage).toHaveBeenCalledWith(
@@ -380,7 +384,7 @@ describe("ttsWorker — message protocol", () => {
     };
 
     await handler({
-      data: { type: "synthesize", text: "Hello world", speakerData },
+      data: { type: "synthesize", text: "Hello world", speakerData, languageId: "en" },
     } as unknown as MessageEvent);
 
     // Should have generated audio after multiple tokens
@@ -418,7 +422,7 @@ describe("ttsWorker — message protocol", () => {
     };
 
     await handler({
-      data: { type: "synthesize", text: "Hello", speakerData },
+      data: { type: "synthesize", text: "Hello", speakerData, languageId: "en" },
     } as unknown as MessageEvent);
 
     expect(mockPostMessage).toHaveBeenCalledWith(
@@ -465,7 +469,7 @@ describe("ttsWorker — message protocol", () => {
     };
 
     await handler({
-      data: { type: "synthesize", text: "Hello", speakerData },
+      data: { type: "synthesize", text: "Hello", speakerData, languageId: "en" },
     } as unknown as MessageEvent);
 
     expect(mockPostMessage).toHaveBeenCalledWith(
@@ -514,7 +518,7 @@ describe("ttsWorker — message protocol", () => {
     };
 
     await handler({
-      data: { type: "synthesize", text: "Hello", speakerData },
+      data: { type: "synthesize", text: "Hello", speakerData, languageId: "en" },
     } as unknown as MessageEvent);
 
     expect(mockPostMessage).toHaveBeenCalledWith(
@@ -574,7 +578,7 @@ describe("ttsWorker — message protocol", () => {
     };
 
     await handler({
-      data: { type: "synthesize", text: "Hello", speakerData },
+      data: { type: "synthesize", text: "Hello", speakerData, languageId: "en" },
     } as unknown as MessageEvent);
 
     expect(mockPostMessage).toHaveBeenCalledWith(

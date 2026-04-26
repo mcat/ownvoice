@@ -160,10 +160,20 @@ export function initGPU(modelUrl: string): Promise<boolean> {
       // Plain JS worker in public/ — not bundled by Vite
       worker = new Worker("/tts-gpu-worker.js", { type: "module" });
 
+      // 300s budget for multilingual: worker loads ~913 MB across 4 ONNX
+      // sessions (vs Turbo's ~381 MB), and the 30-layer Llama LM has
+      // significantly more WebGPU shaders to compile on first run than
+      // Turbo's 24-layer GPT-2. With the conditional_decoder also on
+      // WebGPU EP (rather than WASM-only), shader compilation grew —
+      // observed 187s cold-load on M5 iPad after the WebGPU-decoder
+      // switch, which tripped the previous 180s timeout despite the
+      // worker succeeding seconds later. Tighter budgets risk a
+      // false-negative WASM fallback before WebGPU has a chance to finish.
+      const INIT_TIMEOUT_MS = 300000;
       timeout = setTimeout(() => {
-        console.warn("[OwnVoice:TTS:GPU] Init timeout (60s)");
+        console.warn(`[OwnVoice:TTS:GPU] Init timeout (${INIT_TIMEOUT_MS / 1000}s)`);
         settle(false);
-      }, 60000);
+      }, INIT_TIMEOUT_MS);
 
       worker.onmessage = (e) => {
         if (e.data.type === "ready") {
@@ -208,15 +218,19 @@ export function initGPU(modelUrl: string): Promise<boolean> {
 /**
  * Synthesize speech on the GPU worker.
  *
- * Pass `opts.timeoutMs` to override the default. Live taps use the
- * short default (fail fast so the UI doesn't stall); pre-gen passes a
- * longer budget since pain-matrix sentences are 5–20× longer than
- * quick phrases and take proportionally longer to decode.
+ * @param languageId — Base BCP 47 tag (e.g. "en", "es", "zh") identifying
+ *   the target synthesis language. Required by the Chatterbox Multilingual
+ *   worker — it maps the tag to the model's internal language token.
+ * @param opts.exaggeration — Prosody exaggeration factor (0–1, default 0.5).
+ *   Higher values produce more expressive speech.
+ * @param opts.timeoutMs — Override the default synthesis timeout. Live taps
+ *   use the short default (fail fast); pre-gen passes a longer budget.
  */
 export function synthesizeGPU(
   text: string,
   speakerData: SpeakerData,
-  opts?: { timeoutMs?: number },
+  languageId: string,
+  opts?: { timeoutMs?: number; exaggeration?: number },
 ): Promise<{ data: Float32Array; sampleRate: number }> {
   if (!worker || !ready) {
     return Promise.reject(new Error("GPU TTS not ready"));
@@ -263,6 +277,13 @@ export function synthesizeGPU(
     }, timeoutMs);
 
     worker!.addEventListener("message", handler);
-    worker!.postMessage({ type: "synthesize", text, speakerData, id });
+    worker!.postMessage({
+      type: "synthesize",
+      text,
+      speakerData,
+      id,
+      languageId,
+      exaggeration: opts?.exaggeration ?? 0.5,
+    });
   });
 }
