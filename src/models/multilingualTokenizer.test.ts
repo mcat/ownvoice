@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import { readFileSync } from "node:fs";
 import {
   buildMultilingualTokenizer,
+  koreanNormalize,
   prepareLanguage,
   puncNorm,
   SUPPORTED_LANGUAGES,
@@ -110,6 +111,56 @@ describe("puncNorm", () => {
 
   test("returns canned text on empty input", () => {
     expect(puncNorm("")).toBe("You need to add some text for me to talk.");
+  });
+});
+
+describe("koreanNormalize (Hangul → Jamo)", () => {
+  test("decomposes a syllable with final consonant", () => {
+    // 안 (U+C548) = 안 (initial ᄋ U+110B + medial ᅡ U+1161 + final ᆫ U+11AB)
+    const decomposed = koreanNormalize("안");
+    expect(decomposed.length).toBe(3);
+    expect(decomposed.codePointAt(0)).toBe(0x110b);
+    expect(decomposed.codePointAt(1)).toBe(0x1161);
+    expect(decomposed.codePointAt(2)).toBe(0x11ab);
+  });
+
+  test("decomposes a syllable without final consonant", () => {
+    // 가 (U+AC00) = 가 (initial ᄀ U+1100 + medial ᅡ U+1161, no final)
+    const decomposed = koreanNormalize("가");
+    expect(decomposed.length).toBe(2);
+    expect(decomposed.codePointAt(0)).toBe(0x1100);
+    expect(decomposed.codePointAt(1)).toBe(0x1161);
+  });
+
+  test("leaves non-Hangul characters untouched", () => {
+    expect(koreanNormalize("hello")).toBe("hello");
+    expect(koreanNormalize("123")).toBe("123");
+    // Mixed: only Hangul gets decomposed
+    expect(koreanNormalize("hi 안")).toBe(
+      "hi " + String.fromCodePoint(0x110b, 0x1161, 0x11ab),
+    );
+  });
+
+  test("handles empty string", () => {
+    expect(koreanNormalize("")).toBe("");
+  });
+
+  test("plumbs through prepareLanguage for ko", () => {
+    // prepareLanguage should: punc_norm → lowercase → NFKD → koreanNormalize → [ko] prefix.
+    const prepared = prepareLanguage("안", "ko");
+    // expect: "[ko]" + decomposed-안 + "."
+    expect(prepared.startsWith("[ko]")).toBe(true);
+    expect(prepared.endsWith(".")).toBe(true);
+    // Decomposed Jamo letters present
+    expect(prepared.codePointAt(4)).toBe(0x110b); // initial ᄋ
+    expect(prepared.codePointAt(5)).toBe(0x1161); // medial ᅡ
+    expect(prepared.codePointAt(6)).toBe(0x11ab); // final ᆫ
+  });
+
+  test("does not affect prepareLanguage for non-Korean languages", () => {
+    // English passes through unchanged regardless of incidental Hangul.
+    const prepared = prepareLanguage("Hello", "en");
+    expect(prepared).toBe("[en]hello.");
   });
 });
 

@@ -256,6 +256,47 @@ export function puncNorm(text: string): string {
   return out;
 }
 
+/** Korean syllable → Jamo decomposition. Port of upstream
+ *  `korean_normalize`. The BPE vocab indexes Hangul Jamo letters
+ *  (U+1100 / U+1161 / U+11A7 ranges), not the precomposed syllables
+ *  in U+AC00–U+D7AF. Without decomposition, Hangul inputs encode as
+ *  out-of-vocab and the model produces silence or garbage.
+ *
+ *  Algorithmic, no external data. See Unicode Annex 29 for the
+ *  decomposition formula. */
+export function koreanNormalize(text: string): string {
+  let out = "";
+  for (const ch of text) {
+    const code = ch.codePointAt(0)!;
+    if (code < 0xac00 || code > 0xd7af) {
+      out += ch;
+      continue;
+    }
+    const base = code - 0xac00;
+    const initial = String.fromCodePoint(0x1100 + Math.floor(base / (21 * 28)));
+    const medial = String.fromCodePoint(0x1161 + Math.floor((base % (21 * 28)) / 28));
+    const final = base % 28 > 0 ? String.fromCodePoint(0x11a7 + (base % 28)) : "";
+    out += initial + medial + final;
+  }
+  return out.trim();
+}
+
+/** Dispatch the upstream language-specific preprocessor that runs after
+ *  lowercase/NFKD and before the `[lang]` tag is prepended.
+ *
+ *  Implemented:  ko (Hangul → Jamo)
+ *  Pending:      zh (Cangjie5), ja (kakasi hiragana), he (dicta diacritics),
+ *                ru (stress marking) — those produce degraded output until
+ *                their preprocessors are ported. */
+function applyLanguagePreprocessor(text: string, lang: string): string {
+  switch (lang) {
+    case "ko":
+      return koreanNormalize(text);
+    default:
+      return text;
+  }
+}
+
 export function prepareLanguage(text: string, languageId: string): string {
   const lang = languageId.toLowerCase();
   if (!SUPPORTED_LANGUAGES.has(lang)) {
@@ -264,6 +305,7 @@ export function prepareLanguage(text: string, languageId: string): string {
     );
   }
   const punctuated = puncNorm(text);
-  const preprocessed = punctuated.toLowerCase().normalize("NFKD");
-  return `[${lang}]${preprocessed}`;
+  const normalized = punctuated.toLowerCase().normalize("NFKD");
+  const langPreprocessed = applyLanguagePreprocessor(normalized, lang);
+  return `[${lang}]${langPreprocessed}`;
 }

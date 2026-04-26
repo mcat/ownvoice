@@ -191,12 +191,38 @@ function puncNorm(text) {
   return out;
 }
 
+/** Korean Hangul → Jamo decomposition (mirror of koreanNormalize in
+ *  src/models/multilingualTokenizer.ts). The BPE vocab indexes Jamo
+ *  letters (U+1100 / U+1161 / U+11A7), not the precomposed syllables
+ *  in U+AC00..U+D7AF. */
+function koreanNormalize(text) {
+  let out = "";
+  for (const ch of text) {
+    const code = ch.codePointAt(0);
+    if (code < 0xac00 || code > 0xd7af) { out += ch; continue; }
+    const base = code - 0xac00;
+    const initial = String.fromCodePoint(0x1100 + Math.floor(base / (21 * 28)));
+    const medial = String.fromCodePoint(0x1161 + Math.floor((base % (21 * 28)) / 28));
+    const final = base % 28 > 0 ? String.fromCodePoint(0x11a7 + (base % 28)) : "";
+    out += initial + medial + final;
+  }
+  return out.trim();
+}
+
+function applyLanguagePreprocessor(text, lang) {
+  switch (lang) {
+    case "ko": return koreanNormalize(text);
+    default: return text;
+  }
+}
+
 /** Mirror upstream MTLTokenizer.encode() preprocessing — see the matching
  *  comment in src/models/multilingualTokenizer.ts. Adds lowercase + NFKD
  *  normalization before prepending [lang]; missing this caused "Yes" to
  *  tokenize differently than upstream and degraded clone fidelity.
  *  punc_norm runs first to ensure terminal punctuation is part of the
- *  BPE input. */
+ *  BPE input. Per-language preprocessing (zh/ja/he/ko/ru) runs after
+ *  lowercase/NFKD and before the [lang] tag. */
 function prepareLanguage(text, languageId) {
   const lang = languageId.toLowerCase();
   if (!SUPPORTED_LANGUAGES.has(lang)) {
@@ -205,8 +231,9 @@ function prepareLanguage(text, languageId) {
     );
   }
   const punctuated = puncNorm(text);
-  const preprocessed = punctuated.toLowerCase().normalize("NFKD");
-  return `[${lang}]${preprocessed}`;
+  const normalized = punctuated.toLowerCase().normalize("NFKD");
+  const langPreprocessed = applyLanguagePreprocessor(normalized, lang);
+  return `[${lang}]${langPreprocessed}`;
 }
 
 function applyBPE(chars, mergeRanks) {
