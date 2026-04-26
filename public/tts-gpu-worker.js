@@ -606,9 +606,9 @@ async function handleInit(modelUrl) {
   ]);
   embedTokensSession = embed;
 
-  languageModelSession = await stage("language_model_q4f16 (WebGPU)", () =>
+  languageModelSession = await stage("language_model_q4 (WebGPU)", () =>
     createSession(
-      baseUrl + "language_model_q4f16.onnx",
+      baseUrl + "language_model_q4.onnx",
       true,
       false,
       { preferredOutputLocation: kvCacheOnGpu() },

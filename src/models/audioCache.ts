@@ -89,7 +89,14 @@ import { recordHash } from "../stores/patientIndex";
 //            "Please wait" mispronouncing as "Nice wait" until the
 //            terminal period was included. Token id 9 (period) now appears
 //            in the encoded sequence right before EOS for these phrases.
-const CACHE_DIR = "audio-cache-v18";
+// v18 → v19: bumped LM from language_model_q4f16 (305 MB, int4 weights +
+//            fp16 activations) → language_model_q4 (354 MB, int4 weights +
+//            fp32 activations). Activation precision matters less than
+//            weight precision for LM quality, but compounds across 30
+//            transformer layers × ~50 autoregressive steps. Modest fidelity
+//            bump for +49 MB download. q4f16 audio is now stale; v19 forces
+//            a clean re-render under the bumped LM.
+const CACHE_DIR = "audio-cache-v19";
 const SAMPLE_RATE = 24000; // Chatterbox conditional decoder output rate (S3GEN_SR)
 const INT16_SCALE = 32767;
 
