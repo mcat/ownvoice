@@ -47,14 +47,7 @@ const HEAD_DIM = 64;
 const TEMPERATURE = 0.6;
 const TOP_K = 1000;
 const TOP_P = 0.95;
-// 2.0 is upstream chatterbox-multilingual default (Turbo uses 1.2). Llama
-// LM has wider attractors than Turbo's GPT-2, so the same logit landscape
-// needs stronger repeat suppression. An earlier attempt to bump this alone
-// caused "No No Pie" runaway because once the LM lands on a repeat
-// attractor, rep_penalty 2.0 pushes it toward unusual codes that produce
-// nonsense audio. Pairing with the token-repetition guard below: if a
-// runaway pattern starts anyway (last 2 tokens equal), force loop exit.
-const REPETITION_PENALTY = 2.0;
+const REPETITION_PENALTY = 1.2;
 const MIN_NEW_TOKENS = 10; // Don't allow STOP before this many speech tokens
 
 // Use the full Chatterbox Turbo sampling pipeline
@@ -748,24 +741,6 @@ async function handleSynthesize(text, speakerData, id, languageId, exaggeration 
       break;
     }
     generatedTokens.push(maxIdx);
-
-    // Token-repetition guard — port of upstream AlignmentStreamAnalyzer.step:
-    //   token_repetition = (
-    //     len(self.generated_tokens) >= 3 and
-    //     len(set(self.generated_tokens[-2:])) == 1
-    //   )
-    // Once we've generated 2+ speech tokens AND the last two are equal,
-    // we're on a repeat attractor that rep_penalty 2.0 alone can't escape.
-    // Upstream forces EOS via logits clobbering on the next step; we
-    // accomplish the same end by exiting the loop here. Audio rendered
-    // from generatedTokens-so-far still ends cleanly — the conditional
-    // decoder pads three SILENCE tokens regardless of how the speech
-    // sequence ended.
-    if (generatedTokens.length >= 3 &&
-        generatedTokens[generatedTokens.length - 1] === generatedTokens[generatedTokens.length - 2]) {
-      console.log(`${LOG} Token-repetition guard fired at token ${step + 1} (repeated ${maxIdx})`);
-      break;
-    }
 
     // Embed next speech token (batch=1) and broadcast to batch=2 by copy.
     // Upstream zeros only the original text_emb, not subsequent speech embeds —

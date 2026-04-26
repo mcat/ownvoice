@@ -392,18 +392,11 @@ describe("ttsWorker — message protocol", () => {
       expect.objectContaining({ type: "audio", sampleRate: 24000 }),
       expect.anything(),
     );
-    // After step 3 the mock collapses to "STOP at index 6562" but STOP is
-    // masked until MIN_NEW_TOKENS=10. With rep_penalty=2.0 applied to seen
-    // tokens (which here all have logit 0), every other index also has
-    // logit 0, so argmax picks index 0 deterministically. The token-
-    // repetition guard fires when index 0 is picked twice in a row →
-    // generation halts at LM call 5 (tokens 100, 200, 300, 0, 0).
-    // embedTokensRun is called once for the text prefill, then once
-    // before each non-final LM step. The guard fires AFTER the 5th LM
-    // call's token is pushed but BEFORE its next-token embed runs, so
-    // embedTokens is called 5 times (1 prefill + 4 next-token embeds).
-    expect(lmCallCount).toBe(5);
-    expect(embedTokensRun).toHaveBeenCalledTimes(5);
+    // The worker masks STOP until MIN_NEW_TOKENS=10, so STOP actually fires
+    // at step 10 → total 11 LM calls.
+    expect(lmCallCount).toBe(11);
+    // embedTokens runs once per LM step (text prefill on step 0, single-token embed on steps 1+).
+    expect(embedTokensRun).toHaveBeenCalledTimes(11);
     // Conditional decoder was called once with all speech tokens
     expect(conditionalDecoderRun).toHaveBeenCalledTimes(1);
   });
