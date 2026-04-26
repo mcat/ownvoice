@@ -603,6 +603,8 @@ const en = {
   "ui.provider.voice_capture.err_timeout": "Voice processing took too long. Tap Retry to try again.",
   "ui.provider.voice_capture.err_mic_denied": "Microphone access is blocked. Enable it in your browser settings or upload a file instead.",
   "ui.provider.voice_capture.err_generic": "We couldn't finish preparing your voice. Tap Retry to try again.",
+  "ui.provider.voice_capture.err_too_short": "That recording was too short. Speak through the whole countdown, then tap Retry.",
+  "ui.provider.voice_capture.err_too_noisy": "Background was too loud for a clean clone. Move somewhere quieter and tap Retry.",
   "ui.provider.voice_capture.err_mic_denied_raw": "Microphone access denied. Try uploading a file instead.",
   "ui.provider.voice_capture.err_playback": "Could not play audio.",
 

@@ -65,9 +65,14 @@
           "magic": null
         },
         {
-          "name": "speech_encoder_q4f16.onnx",
-          "size": 178452361,
+          "name": "speech_encoder_fp16.onnx",
+          "size": 1189888,
           "magic": "onnx"
+        },
+        {
+          "name": "speech_encoder_fp16.onnx_data",
+          "size": 522307136,
+          "magic": null
         },
         {
           "name": "tokenizer.json",

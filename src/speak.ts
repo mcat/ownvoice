@@ -169,7 +169,7 @@ function spectralDenoise(audio: Float32Array, sampleRate: number): void {
  * Apply a 2nd-order Butterworth biquad filter (low-pass or high-pass).
  * Modifies `buf` in place.
  */
-function applyBiquad(
+export function applyBiquad(
   buf: Float32Array,
   sampleRate: number,
   cutoff: number,
@@ -240,10 +240,11 @@ export function postProcessAudio(raw: Float32Array, sampleRate: number): Float32
   // 2. High-pass at 80 Hz (removes decoder rumble)
   applyBiquad(audio, sampleRate, 80, "hp");
 
-  // 3. Two cascaded low-pass stages at 7 kHz for steeper rolloff
-  //    (~24 dB/oct total — cleans broadband q4f16 noise above speech band)
-  applyBiquad(audio, sampleRate, 7000, "lp");
-  applyBiquad(audio, sampleRate, 7000, "lp");
+  // 3. Single low-pass at 9 kHz. Sibilance (/s/, /sh/, /f/) lives in the
+  //    3–8 kHz band, so cutting at 7 kHz with two stages noticeably softens
+  //    consonants. One stage at 9 kHz keeps the speech band intact and still
+  //    drops the worst of the q4f16 high-frequency noise above ~10 kHz.
+  applyBiquad(audio, sampleRate, 9000, "lp");
 
   // 4. Spectral subtraction — removes in-band noise that rides under speech
   spectralDenoise(audio, sampleRate);

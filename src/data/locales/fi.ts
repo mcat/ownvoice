@@ -634,6 +634,10 @@ const fi: LocaleStrings = {
     "Mikrofonin käyttö on estetty. Ota se käyttöön selaimen asetuksista tai lataa tiedosto.",
   "ui.provider.voice_capture.err_generic":
     "Äänen valmistelu epäonnistui. Napauta Yritä uudelleen.",
+  "ui.provider.voice_capture.err_too_short":
+    "Nauhoitus oli liian lyhyt. Puhu koko lähtölaskennan ajan ja napauta sitten Yritä uudelleen.",
+  "ui.provider.voice_capture.err_too_noisy":
+    "Taustamelu oli liian kovaa äänen kloonaamiseen. Siirry hiljaisempaan paikkaan ja napauta Yritä uudelleen.",
   "ui.provider.voice_capture.err_mic_denied_raw":
     "Mikrofonin käyttö estetty. Kokeile ladata tiedosto.",
   "ui.provider.voice_capture.err_playback":

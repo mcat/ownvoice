@@ -660,6 +660,10 @@ const vi: LocaleStrings = {
     "Quyền truy cập micro bị chặn. Bật trong cài đặt trình duyệt hoặc tải lên tệp.",
   "ui.provider.voice_capture.err_generic":
     "Không thể hoàn tất chuẩn bị giọng nói. Chạm Thử lại để thử lại.",
+  "ui.provider.voice_capture.err_too_short":
+    "Bản ghi quá ngắn. Hãy nói trong suốt thời gian đếm ngược, sau đó chạm Thử lại.",
+  "ui.provider.voice_capture.err_too_noisy":
+    "Tiếng ồn xung quanh quá lớn để tạo bản sao giọng nói rõ ràng. Di chuyển đến nơi yên tĩnh hơn và chạm Thử lại.",
   "ui.provider.voice_capture.err_mic_denied_raw":
     "Quyền truy cập micro bị từ chối. Hãy thử tải lên tệp.",
   "ui.provider.voice_capture.err_playback":

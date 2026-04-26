@@ -644,6 +644,10 @@ const tr: LocaleStrings = {
     "Mikrofon erişimi engellendi. Tarayıcı ayarlarından etkinleştirin veya dosya yükleyin.",
   "ui.provider.voice_capture.err_generic":
     "Sesinizi hazırlamayı tamamlayamadık. Tekrar denemek için Tekrar Dene düğmesine dokunun.",
+  "ui.provider.voice_capture.err_too_short":
+    "Kayıt çok kısaydı. Geri sayım boyunca konuşun, ardından Tekrar Dene düğmesine dokunun.",
+  "ui.provider.voice_capture.err_too_noisy":
+    "Arka plan gürültüsü temiz bir ses klonu için çok yüksekti. Daha sessiz bir yere geçin ve Tekrar Dene düğmesine dokunun.",
   "ui.provider.voice_capture.err_mic_denied_raw":
     "Mikrofon erişimi reddedildi. Dosya yüklemeyi deneyin.",
   "ui.provider.voice_capture.err_playback":

@@ -639,6 +639,10 @@ const ja: LocaleStrings = {
     "マイクへのアクセスがブロックされています。ブラウザの設定で有効にするか、ファイルをアップロードしてください。",
   "ui.provider.voice_capture.err_generic":
     "音声の準備を完了できませんでした。再試行をタップしてください。",
+  "ui.provider.voice_capture.err_too_short":
+    "録音が短すぎました。カウントダウンの間ずっと話してから、再試行をタップしてください。",
+  "ui.provider.voice_capture.err_too_noisy":
+    "周囲の騒音が大きすぎて音声を正しく複製できませんでした。静かな場所に移動して再試行をタップしてください。",
   "ui.provider.voice_capture.err_mic_denied_raw":
     "マイクへのアクセスが拒否されました。ファイルをアップロードしてみてください。",
   "ui.provider.voice_capture.err_playback":

@@ -606,6 +606,10 @@ const zh: LocaleStrings = {
     "麦克风权限被拒绝。请在浏览器设置中启用，或上传文件。",
   "ui.provider.voice_capture.err_generic":
     "无法完成语音准备。点击重试再试一次。",
+  "ui.provider.voice_capture.err_too_short":
+    "录音时间太短。请在整个倒计时期间持续说话，然后点击重试。",
+  "ui.provider.voice_capture.err_too_noisy":
+    "背景噪音太大，无法获得清晰的语音克隆。请移到更安静的地方，然后点击重试。",
   "ui.provider.voice_capture.err_mic_denied_raw":
     "麦克风权限被拒绝。请尝试上传文件。",
   "ui.provider.voice_capture.err_playback": "无法播放音频。",

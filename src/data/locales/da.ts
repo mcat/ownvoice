@@ -647,6 +647,10 @@ const da: LocaleStrings = {
     "Mikrofontilgang er blokeret. Aktivér den i browserindstillingerne, eller upload en fil i stedet.",
   "ui.provider.voice_capture.err_generic":
     "Vi kunne ikke gøre din stemme klar. Tryk Prøv igen for at forsøge igen.",
+  "ui.provider.voice_capture.err_too_short":
+    "Optagelsen var for kort. Tal under hele nedtællingen, og tryk derefter Prøv igen.",
+  "ui.provider.voice_capture.err_too_noisy":
+    "Baggrundsstøjen var for høj til en ren stemmekloning. Flyt til et roligere sted, og tryk Prøv igen.",
   "ui.provider.voice_capture.err_mic_denied_raw":
     "Mikrofontilgang nægtet. Prøv at uploade en fil i stedet.",
   "ui.provider.voice_capture.err_playback":

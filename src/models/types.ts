@@ -43,11 +43,13 @@ export type WorkerResponse =
   | { type: "error"; message: string };
 
 /**
- * Chatterbox Turbo ONNX files (q4f16 variant).
+ * Chatterbox Turbo ONNX files.
  * 4-component pipeline: speech_encoder (setup only) + embed_tokens + language_model + conditional_decoder.
+ * Speech encoder is fp16 (one-time enrollment, embedding quality is permanent).
+ * Runtime models are q4f16 (loaded continuously; size matters more than precision).
  */
 export const CHATTERBOX_FILES = {
-  speechEncoder: { onnx: "speech_encoder_q4f16.onnx", data: "speech_encoder_q4f16.onnx_data" },
+  speechEncoder: { onnx: "speech_encoder_fp16.onnx", data: "speech_encoder_fp16.onnx_data" },
   embedTokens: { onnx: "embed_tokens_q4f16.onnx", data: "embed_tokens_q4f16.onnx_data" },
   languageModel: { onnx: "language_model_q4f16.onnx", data: "language_model_q4f16.onnx_data" },
   conditionalDecoder: { onnx: "conditional_decoder_q4f16.onnx", data: "conditional_decoder_q4f16.onnx_data" },

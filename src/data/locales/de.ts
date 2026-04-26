@@ -652,6 +652,10 @@ const de: LocaleStrings = {
     "Der Mikrofonzugriff ist blockiert. Aktivieren Sie ihn in den Browsereinstellungen oder laden Sie stattdessen eine Datei hoch.",
   "ui.provider.voice_capture.err_generic":
     "Wir konnten die Vorbereitung Ihrer Stimme nicht abschließen. Tippen Sie auf Erneut versuchen.",
+  "ui.provider.voice_capture.err_too_short":
+    "Die Aufnahme war zu kurz. Sprechen Sie den gesamten Countdown durch und tippen Sie dann auf Erneut versuchen.",
+  "ui.provider.voice_capture.err_too_noisy":
+    "Die Hintergrundgeräusche waren zu laut für einen sauberen Stimmklon. Gehen Sie an einen ruhigeren Ort und tippen Sie auf Erneut versuchen.",
   "ui.provider.voice_capture.err_mic_denied_raw":
     "Mikrofonzugriff verweigert. Versuchen Sie, stattdessen eine Datei hochzuladen.",
   "ui.provider.voice_capture.err_playback":

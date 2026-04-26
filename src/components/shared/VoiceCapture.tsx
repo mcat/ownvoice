@@ -4,6 +4,7 @@ import { useSettingsStore } from "../../stores/settingsStore";
 import { Btn } from "./Btn";
 import { getModelManager } from "../../models/modelManager";
 import { getRecordingScript } from "../../data/recordingScripts";
+import { preprocessEnrollment } from "../../models/enrollmentAudio";
 
 /**
  * Voice clone processing status — shown in the UI so the user
@@ -139,6 +140,12 @@ export function friendlyVoiceError(raw: string, locale = "en"): string {
   }
   if (m.includes("denied") || m.includes("permission")) {
     return resolvePhrase("ui.provider.voice_capture.err_mic_denied", locale);
+  }
+  if (m.includes("too short")) {
+    return resolvePhrase("ui.provider.voice_capture.err_too_short", locale);
+  }
+  if (m.includes("too noisy") || m.includes("snr")) {
+    return resolvePhrase("ui.provider.voice_capture.err_too_noisy", locale);
   }
   return resolvePhrase("ui.provider.voice_capture.err_generic", locale);
 }
@@ -347,8 +354,14 @@ export function VoiceCapture({
     setCloneStatus("extracting");
     setError(null);
     try {
-      const audio = await decodeAudio(blob);
-      const embedding = await extractEmbedding(audio);
+      const rawAudio = await decodeAudio(blob);
+      const prep = preprocessEnrollment(rawAudio, 24000);
+      if (!prep.acceptable) {
+        setError(prep.rejectionReason ?? "Recording quality too low.");
+        setCloneStatus("failed");
+        return;
+      }
+      const embedding = await extractEmbedding(prep.audio);
       if (embedding) {
         setCloneStatus("ready");
         onCapture(blob, embedding);
@@ -367,8 +380,17 @@ export function VoiceCapture({
     setCloneStatus("extracting");
     setError(null);
     try {
-      const audio = await decodeAudio(blob);
-      const embedding = await extractEmbedding(audio);
+      const rawAudio = await decodeAudio(blob);
+      const prep = preprocessEnrollment(rawAudio, 24000);
+      if (!prep.acceptable) {
+        // Save the blob so the user can preview what they captured before retrying.
+        setSavedBlob(blob);
+        setError(prep.rejectionReason ?? "Recording quality too low.");
+        setCloneStatus("failed");
+        onCapture(blob);
+        return;
+      }
+      const embedding = await extractEmbedding(prep.audio);
       setSavedBlob(blob);
 
       if (embedding) {
@@ -672,6 +694,7 @@ export function VoiceCapture({
     // whole Settings sheet below it) to jump. 220px comfortably fits the
     // peak-scale breath circle (~160px) and the 112px countdown numeral.
     const contentHeight = compact ? 180 : 220;
+    const countdownScript = getRecordingScript(locale);
 
     return (
       <div
@@ -690,6 +713,21 @@ export function VoiceCapture({
         }}
       >
         {fileInput}
+        {/* Persistent tone hint above the breathing/countdown content so the
+            user sees it during their preparation window — that's when they
+            can actually adjust their delivery, not after recording starts. */}
+        <p
+          style={{
+            margin: 0,
+            fontSize: compact ? 13 : 14,
+            lineHeight: 1.4,
+            color: "#92400E", // amber-900
+            fontWeight: 500,
+            maxWidth: compact ? 280 : 360,
+          }}
+        >
+          {countdownScript.toneHint}
+        </p>
         <div
           style={{
             height: contentHeight,
@@ -851,6 +889,22 @@ export function VoiceCapture({
         }}
       >
         {fileInput}
+        {/* Tone hint — visible at the top of the recording card so the user
+            can adjust delivery while they speak. Shown to passage AND
+            free-speak modes uniformly. The clone copies their delivery, so
+            a calm/even reference produces a calm/even clone. */}
+        <p
+          style={{
+            margin: 0,
+            marginBottom: compact ? 10 : 12,
+            fontSize: compact ? 13 : 14,
+            lineHeight: 1.4,
+            color: "#92400E", // amber-900
+            fontWeight: 500,
+          }}
+        >
+          {script.toneHint}
+        </p>
         <div style={{ display: "flex", alignItems: "center", gap: compact ? 8 : 12 }}>
           <span
             aria-hidden="true"

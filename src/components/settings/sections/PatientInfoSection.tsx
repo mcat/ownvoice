@@ -146,6 +146,7 @@ export function PatientInfoSection({
         />
       </div>
 
+
       <div style={{ marginTop: 20 }}>
         <div style={labelStyle(t)}>{resolvePhrase("ui.provider.settings.patient_info.backup_voice_label", caregiverLang)}</div>
         <p style={{ fontSize: 13, color: t.muted, margin: "0 0 10px" }}>

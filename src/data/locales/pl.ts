@@ -683,6 +683,10 @@ const pl: LocaleStrings = {
     "Dostęp do mikrofonu jest zablokowany. Włącz go w ustawieniach przeglądarki lub prześlij plik.",
   "ui.provider.voice_capture.err_generic":
     "Nie udało się przygotować głosu. Dotknij Ponów, aby spróbować ponownie.",
+  "ui.provider.voice_capture.err_too_short":
+    "Nagranie było zbyt krótkie. Mów przez cały czas odliczania, a potem dotknij Ponów.",
+  "ui.provider.voice_capture.err_too_noisy":
+    "Hałas w tle był zbyt głośny, by uzyskać czysty klon głosu. Przejdź w cichsze miejsce i dotknij Ponów.",
   "ui.provider.voice_capture.err_mic_denied_raw":
     "Dostęp do mikrofonu odrzucony. Spróbuj przesłać plik.",
   "ui.provider.voice_capture.err_playback":

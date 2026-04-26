@@ -1,5 +1,6 @@
 /**
- * TTS Web Worker — Chatterbox Turbo (350M, Resemble AI, MIT, 23 languages)
+ * TTS Web Worker — Chatterbox Turbo (350M, Resemble AI, MIT, English only).
+ * Multilingual support requires switching to ChatterboxMultilingualTTS (separate model).
  *
  * 4-component ONNX pipeline:
  *   1. Speech Encoder:      audio_values → cond_emb, prompt_token, speaker_embeddings, speaker_features
@@ -49,17 +50,23 @@ const START_SPEECH_TOKEN = 6561;
 const STOP_SPEECH_TOKEN = 6562;
 const SILENCE_TOKEN = 4299;
 const EOT_TOKEN = 50256; // <|endoftext|> — appended to text tokens; embed_tokens converts to START via Where op
-const MAX_NEW_TOKENS = 300; // WASM fallback — slower than GPU, 300 is a practical ceiling
+// Match the GPU worker's cap. WASM is slower per token, but silent truncation
+// mid-sentence is a worse UX than a longer pre-gen latency on the rare phrase
+// that runs long. Pre-gen happens off the user's critical path.
+const MAX_NEW_TOKENS = 768;
 
 // GPT-2 LM dimensions (from config.json) — needed for KV cache initialization
 const NUM_LAYERS = 24;
 const NUM_HEADS = 16;
 const HEAD_DIM = 64; // n_embd (1024) / n_head (16)
 
-// Sampling parameters — must match the reference Chatterbox Turbo implementation
-// (resemble-ai/chatterbox tts_turbo.py + generation_config.json).
+// Sampling parameters — repetition_penalty matches the model's
+// generation_config.json. Temperature lowered from upstream's 0.8 to 0.6 to
+// tighten the output distribution: 0.8 was producing prosody that read as
+// theatrical/sarcastic on conversational phrases. 0.6 is still well within
+// the sampling regime (greedy is unsafe — see USE_GREEDY note in the GPU worker).
 // Processing order: repetition penalty → temperature → top-k → top-p → sample.
-const TEMPERATURE = 0.8;
+const TEMPERATURE = 0.6;
 const TOP_K = 1000;
 const TOP_P = 0.95;
 const REPETITION_PENALTY = 1.2;
