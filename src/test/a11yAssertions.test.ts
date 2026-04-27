@@ -26,6 +26,7 @@ import {
   assertGridStructure,
   assertGroupContainersHaveLabels,
   assertNoAriaHiddenAncestorOnFocusables,
+  assertRovingTabindex,
 } from "./a11yAssertions";
 
 describe("assertNoAriaHiddenAncestorOnFocusables", () => {
@@ -147,5 +148,36 @@ describe("assertGridStructure", () => {
       </div>
     `);
     expect(() => assertGridStructure(root)).toThrow(/row without role="gridcell"/);
+  });
+});
+
+describe("assertRovingTabindex", () => {
+  it("passes when exactly one cell has tabindex=0 and rest are -1", () => {
+    const root = buildRoot(`
+      <button tabindex="0">A</button>
+      <button tabindex="-1">B</button>
+      <button tabindex="-1">C</button>
+    `);
+    expect(() => assertRovingTabindex(root, "button")).not.toThrow();
+  });
+
+  it("fails when zero cells are tabbable", () => {
+    const root = buildRoot(`
+      <button tabindex="-1">A</button>
+      <button tabindex="-1">B</button>
+    `);
+    expect(() => assertRovingTabindex(root, "button")).toThrow(
+      /exactly one tabindex="0".*found 0/,
+    );
+  });
+
+  it("fails when multiple cells are tabbable", () => {
+    const root = buildRoot(`
+      <button tabindex="0">A</button>
+      <button tabindex="0">B</button>
+    `);
+    expect(() => assertRovingTabindex(root, "button")).toThrow(
+      /exactly one tabindex="0".*found 2/,
+    );
   });
 });

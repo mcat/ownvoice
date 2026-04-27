@@ -159,3 +159,30 @@ export function assertGridStructure(root: Element): void {
     );
   }
 }
+
+/**
+ * Roving tabindex pattern: exactly one element matching the selector
+ * should have tabindex="0" (in tab order); the rest should have
+ * tabindex="-1" (programmatically focusable only). Used by PhraseGrid
+ * to keep the grid as a single tab stop regardless of cell count.
+ */
+export function assertRovingTabindex(root: Element, selector: string): void {
+  const all = root.querySelectorAll(selector);
+  let zeros = 0;
+  let missing = 0;
+  for (const el of all) {
+    const v = el.getAttribute("tabindex");
+    if (v === "0") zeros++;
+    else if (v !== "-1") missing++;
+  }
+  if (zeros !== 1) {
+    throw new Error(
+      `roving tabindex: expected exactly one tabindex="0" among "${selector}", found ${zeros} (and ${missing} elements with neither 0 nor -1)`,
+    );
+  }
+  if (missing > 0) {
+    throw new Error(
+      `roving tabindex: ${missing} element(s) matching "${selector}" lack explicit tabindex (must be 0 or -1)`,
+    );
+  }
+}
