@@ -263,7 +263,8 @@ export function Setup({ mode = "first-run", onFirstRunDone, onAddPatientDone, on
       </div>
 
       {/* Progress bar */}
-      <div
+      <nav
+        aria-label={resolvePhrase("ui.provider.setup.progress_aria", caregiverLang)}
         style={{
           width: "100%",
           maxWidth: 700,
@@ -296,7 +297,7 @@ export function Setup({ mode = "first-run", onFirstRunDone, onAddPatientDone, on
             </div>
           </div>
         ))}
-      </div>
+      </nav>
 
       {/* Step content — scrollable; extra scroll-padding-bottom ensures focused
           inputs aren't obscured by the fixed bottom action bar (2.4.12 AAA). */}
@@ -471,8 +472,10 @@ function StepPatient({
       />
 
       {/* "Language" labels a group of buttons, not a single input — use <div> */}
-      <div style={{ ...labelStyle, marginTop: 20 }}>{resolvePhrase("ui.provider.setup.step0.language_label", caregiverLang)}</div>
+      <div id="setup-lang-label" style={{ ...labelStyle, marginTop: 20 }}>{resolvePhrase("ui.provider.setup.step0.language_label", caregiverLang)}</div>
       <div
+        role="radiogroup"
+        aria-labelledby="setup-lang-label"
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
@@ -483,6 +486,8 @@ function StepPatient({
         {LANGS.map((l) => (
           <button
             key={l.code}
+            role="radio"
+            aria-checked={lang === l.code}
             onClick={() => setLang(l.code)}
             style={{
               display: "flex",
@@ -710,6 +715,8 @@ function StepCareTeam({
             </button>
             {showEmojiPicker && (
               <div
+                role="radiogroup"
+                aria-labelledby="setup-provider-icon-label"
                 style={{
                   position: "absolute",
                   top: "100%",
@@ -729,6 +736,8 @@ function StepCareTeam({
                 {EMOJIS.map((e) => (
                   <button
                     key={e}
+                    role="radio"
+                    aria-checked={newProvEmoji === e}
                     onClick={() => {
                       setNewProvEmoji(e);
                       setShowEmojiPicker(false);
