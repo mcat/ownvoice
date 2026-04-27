@@ -69,7 +69,7 @@ OPFS is the authoritative store for model weights after the primer runs. The ser
 - **`loadManifest()` → `ModelsManifest`** — fetched once on boot (`cache: "no-store"`)
 - **`primeOffline(manifest)`** — async generator yielding `PrimerEvent`s; invoked from Settings "Prepare for offline"
 - **`verifyAllOnBoot()`** — cheap parallel integrity pass run at app start; populates `offlineStore.verified`
-- **SW strategy split** — stale-while-revalidate for `/`, `/index.html`, `/src/*`, `/models-manifest.json`; OPFS proxy for `/models/*`; cache-first-immutable for everything else. Bump `CACHE_NAME` in `public/sw.js` on every SW change.
+- **SW strategy split** — service worker is scoped to `/app/` (registered with `scope: "/app/"`; granted via the `Service-Worker-Allowed: /app/` header on `/sw.js` from `public/_headers`). Within scope: stale-while-revalidate for `/app/`, `/app/index.html`, `/src/*` (dev-mode module fetches), and `/models-manifest.json`; OPFS proxy for `/models/*`; cache-first-immutable for everything else. Bump `CACHE_NAME` in `public/sw.js` on every SW change.
 
 Clinicians use the "Prepare for offline" button in Settings before shifts to guarantee offline readiness. `navigator.storage.persist()` is called once by `ModelManager.init` to protect the whole origin from eviction.
 
