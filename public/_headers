@@ -1,0 +1,6 @@
+/sw.js
+  Service-Worker-Allowed: /app/
+
+/app/*
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Embedder-Policy: credentialless
