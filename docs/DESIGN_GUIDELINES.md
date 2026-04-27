@@ -32,7 +32,7 @@ Patients using OwnVoice may be experiencing one or more of the following:
 - **Fear and anxiety.** Up to 90% of communication-impaired ICU patients report extreme distress, with associated anxiety, panic, anger, and sleeplessness.[^2] The inability to call for help, ask what's happening, or express pain creates a state of learned helplessness.
 - **Frustration and anger.** Failed communication attempts compound over time. Inadequate communication may result in impaired symptom identification and reduced participation in care decisions.[^2] If the app is difficult to use, it adds to this frustration rather than relieving it. Every unnecessary tap, confusing label, or slow response is an emotional injury.
 - **Loneliness and isolation.** Particularly during night shifts, patients may be alone for extended periods. Sensory deprivation through prolonged immobilization and isolation from loved ones are identified precipitating factors for ICU delirium.[^6] The app may be the patient's only tool for connection.
-- **Loss of identity.** Being non-verbal in an institution strips away personhood. The patient's own voice speaking through the app directly addresses this loss.
+- **Loss of identity.** Being unable to speak in an institutional setting strips away personhood. The patient's own voice speaking through the app directly addresses this loss.
 
 ### 1.4 Environmental conditions
 
@@ -390,7 +390,7 @@ The Phase 3 clinical pilot described in the PRD should be structured not as vali
 ### 12.2 Shared device considerations
 
 - No patient data should persist visually after a reset.
-- No login or authentication for the patient. Authentication barriers are incompatible with a non-verbal patient.
+- No login or authentication for the patient. Authentication barriers are incompatible with a patient who cannot speak.
 - Caregiver features may optionally be protected by a simple PIN.
 
 ### 12.3 Night mode
