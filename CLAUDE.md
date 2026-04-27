@@ -30,9 +30,12 @@ Stack: TypeScript + Preact + Vite + Vitest. ESLint with `typescript-eslint` and 
 The app is decomposed into focused modules. Colocated `*.test.ts(x)` files live alongside their source.
 
 ### File layout
-- `index.html` — PWA entry point with meta tags
-- `src/main.tsx` — Preact mount point; wires theme side effects
-- `src/App.tsx` — Root component: setup gate, tab routing, overlay orchestration
+- `index.html` — Homepage entry (`/`); minimal head, no PWA registration
+- `app/index.html` — App entry (`/app/`); PWA manifest link + service-worker registration with scope `/app/`
+- `src/main-app.tsx` — Preact mount point for the app at `/app/`; wires theme side effects
+- `src/main-homepage.tsx` — Preact mount point for the homepage at `/`; loads the placeholder/research surfaces (built as a separate Vite entry to keep ML deps out of the homepage bundle)
+- `src/homepage/` — Homepage components (currently `PlaceholderApp.tsx`; expanded by Plan C)
+- `src/App.tsx` — Root component for the app: setup gate, tab routing, overlay orchestration
 - `src/speak.ts` — Single audio pathway. Priority: cloned-TTS (GPU → WASM) → Web Speech → confirmation tone. Owns the Web Audio post-processing pipeline (DC removal, biquads, spectral denoise, gate, normalize, limiter, fade).
 - `src/store.ts` — Legacy IndexedDB helper (`clearAll()` only). State lives in Zustand stores below.
 - `src/types.ts` — Shared TypeScript types (`Speaker`, `AppSettings`, `Category`, etc.)
