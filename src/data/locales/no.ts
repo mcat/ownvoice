@@ -505,6 +505,9 @@ const no: LocaleStrings = {
   "ui.provider.nav.theme.light": "Lys",
   "ui.provider.nav.theme.dark": "Mørk",
   "ui.patient.tabbar.say_more": "Si mer",
+  "ui.patient.subcategory.aria_label": "Subcategory in {cat}",
+  "ui.patient.suggestions.time_of_day_aria": "Time-of-day suggestions",
+  "ui.patient.toolbar.aria_label": "Patient toolbar",
 
   // ── UI chrome: PainFlow ────────────────────────────────────────
   "ui.dual.pain.heading.severity": "Hvor mye vondt gjør det?",
@@ -513,11 +516,13 @@ const no: LocaleStrings = {
   "ui.patient.pain.step_of": "Steg {n} av {total}",
   "ui.patient.pain.back_to": "Gå tilbake til {label}",
   "ui.patient.pain.level_aria": "Smertenivå {n}, {label}",
+  "ui.patient.pain.breadcrumb_aria": "Pain wizard steps",
 
   // ── UI chrome: MyWishes ────────────────────────────────────────
   "ui.patient.wishes.completion_title": "{name}s ønsker",
   "ui.patient.wishes.my_wishes": "Mine ønsker",
   "ui.patient.wishes.step_of": "Steg {n} av {total}",
+  "ui.patient.wishes.progress_aria": "Wishes wizard progress",
   "ui.patient.wishes.none_shared": "Ingen ønsker ble delt.",
   "ui.patient.wishes.share_all_again": "Del alle ønsker på nytt",
   "ui.patient.wishes.close": "Lukk",
@@ -539,6 +544,7 @@ const no: LocaleStrings = {
 
   // ── UI chrome: Thread ──────────────────────────────────────────
   "ui.dual.thread.repeat_aria": "Gjenta: {text}",
+  "ui.dual.thread.aria_label": "Conversation",
 
   // ── UI chrome: ProviderPanel ───────────────────────────────────
   "ui.provider.care_team.title": "Behandlingsteam",
@@ -549,6 +555,18 @@ const no: LocaleStrings = {
   "ui.provider.select_provider": "Velg {name}",
   "ui.provider.show_category": "Vis {key}",
   "ui.provider.speak_phrase": "Si: {phrase}",
+  "ui.provider.speaking_as_aria": "Speaking as",
+  "ui.provider.section_aria": "Phrase category",
+  "ui.provider.phrases_aria": "{section} phrases",
+  "ui.provider.listen.capture_aria": "Voice capture",
+  "ui.provider.setup.progress_aria": "Setup progress",
+  "ui.provider.settings.aria_label": "Settings",
+  "ui.provider.settings.reset.aria_label": "Reset actions",
+  "ui.provider.patients.list_aria": "Patients",
+  "ui.provider.fallback_voice.recommended_aria": "Recommended voices",
+  "ui.provider.fallback_voice.other_aria": "Other voices",
+  "ui.provider.fallback_voice.all_aria": "Available voices",
+  "ui.provider.pin_gate.keypad_aria": "PIN keypad",
 
   // ── UI chrome: ListenPanel ─────────────────────────────────────
   "ui.provider.listen.title": "Lytt",

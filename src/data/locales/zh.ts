@@ -490,6 +490,9 @@ const zh: LocaleStrings = {
   "ui.provider.nav.theme.light": "浅色",
   "ui.provider.nav.theme.dark": "深色",
   "ui.patient.tabbar.say_more": "说更多",
+  "ui.patient.subcategory.aria_label": "Subcategory in {cat}",
+  "ui.patient.suggestions.time_of_day_aria": "Time-of-day suggestions",
+  "ui.patient.toolbar.aria_label": "Patient toolbar",
 
   // ── UI chrome: PainFlow ────────────────────────────────────────
   "ui.dual.pain.heading.severity": "您有多痛？",
@@ -498,11 +501,13 @@ const zh: LocaleStrings = {
   "ui.patient.pain.step_of": "第{n}步，共{total}步",
   "ui.patient.pain.back_to": "返回{label}",
   "ui.patient.pain.level_aria": "疼痛等级{n}，{label}",
+  "ui.patient.pain.breadcrumb_aria": "Pain wizard steps",
 
   // ── UI chrome: MyWishes ────────────────────────────────────────
   "ui.patient.wishes.completion_title": "{name}的心愿",
   "ui.patient.wishes.my_wishes": "我的心愿",
   "ui.patient.wishes.step_of": "第{n}步，共{total}步",
+  "ui.patient.wishes.progress_aria": "Wishes wizard progress",
   "ui.patient.wishes.none_shared": "没有分享心愿。",
   "ui.patient.wishes.share_all_again": "再次分享所有心愿",
   "ui.patient.wishes.close": "关闭",
@@ -523,6 +528,7 @@ const zh: LocaleStrings = {
 
   // ── UI chrome: Thread ──────────────────────────────────────────
   "ui.dual.thread.repeat_aria": "重复：{text}",
+  "ui.dual.thread.aria_label": "Conversation",
 
   // ── UI chrome: ProviderPanel ───────────────────────────────────
   "ui.provider.care_team.title": "医疗团队",
@@ -533,6 +539,18 @@ const zh: LocaleStrings = {
   "ui.provider.select_provider": "选择{name}",
   "ui.provider.show_category": "显示{key}",
   "ui.provider.speak_phrase": "说：{phrase}",
+  "ui.provider.speaking_as_aria": "Speaking as",
+  "ui.provider.section_aria": "Phrase category",
+  "ui.provider.phrases_aria": "{section} phrases",
+  "ui.provider.listen.capture_aria": "Voice capture",
+  "ui.provider.setup.progress_aria": "Setup progress",
+  "ui.provider.settings.aria_label": "Settings",
+  "ui.provider.settings.reset.aria_label": "Reset actions",
+  "ui.provider.patients.list_aria": "Patients",
+  "ui.provider.fallback_voice.recommended_aria": "Recommended voices",
+  "ui.provider.fallback_voice.other_aria": "Other voices",
+  "ui.provider.fallback_voice.all_aria": "Available voices",
+  "ui.provider.pin_gate.keypad_aria": "PIN keypad",
 
   // ── UI chrome: ListenPanel ─────────────────────────────────────
   "ui.provider.listen.title": "聆听",

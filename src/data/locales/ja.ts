@@ -509,6 +509,9 @@ const ja: LocaleStrings = {
   "ui.provider.nav.theme.light": "ライト",
   "ui.provider.nav.theme.dark": "ダーク",
   "ui.patient.tabbar.say_more": "もっと伝える",
+  "ui.patient.subcategory.aria_label": "Subcategory in {cat}",
+  "ui.patient.suggestions.time_of_day_aria": "Time-of-day suggestions",
+  "ui.patient.toolbar.aria_label": "Patient toolbar",
 
   // ── UI chrome: PainFlow ────────────────────────────────────────
   "ui.dual.pain.heading.severity": "痛みはどのくらいですか？",
@@ -517,11 +520,13 @@ const ja: LocaleStrings = {
   "ui.patient.pain.step_of": "ステップ {n}/{total}",
   "ui.patient.pain.back_to": "{label}に戻る",
   "ui.patient.pain.level_aria": "痛みレベル {n}、{label}",
+  "ui.patient.pain.breadcrumb_aria": "Pain wizard steps",
 
   // ── UI chrome: MyWishes ────────────────────────────────────────
   "ui.patient.wishes.completion_title": "{name}さんの望み",
   "ui.patient.wishes.my_wishes": "わたしの望み",
   "ui.patient.wishes.step_of": "ステップ {n}/{total}",
+  "ui.patient.wishes.progress_aria": "Wishes wizard progress",
   "ui.patient.wishes.none_shared": "まだ望みは共有されていません。",
   "ui.patient.wishes.share_all_again": "すべての望みをもう一度共有する",
   "ui.patient.wishes.close": "閉じる",
@@ -543,6 +548,7 @@ const ja: LocaleStrings = {
 
   // ── UI chrome: Thread ──────────────────────────────────────────
   "ui.dual.thread.repeat_aria": "もう一度: {text}",
+  "ui.dual.thread.aria_label": "Conversation",
 
   // ── UI chrome: ProviderPanel ───────────────────────────────────
   "ui.provider.care_team.title": "ケアチーム",
@@ -553,6 +559,18 @@ const ja: LocaleStrings = {
   "ui.provider.select_provider": "{name}を選択",
   "ui.provider.show_category": "{key}を表示",
   "ui.provider.speak_phrase": "発話: {phrase}",
+  "ui.provider.speaking_as_aria": "Speaking as",
+  "ui.provider.section_aria": "Phrase category",
+  "ui.provider.phrases_aria": "{section} phrases",
+  "ui.provider.listen.capture_aria": "Voice capture",
+  "ui.provider.setup.progress_aria": "Setup progress",
+  "ui.provider.settings.aria_label": "Settings",
+  "ui.provider.settings.reset.aria_label": "Reset actions",
+  "ui.provider.patients.list_aria": "Patients",
+  "ui.provider.fallback_voice.recommended_aria": "Recommended voices",
+  "ui.provider.fallback_voice.other_aria": "Other voices",
+  "ui.provider.fallback_voice.all_aria": "Available voices",
+  "ui.provider.pin_gate.keypad_aria": "PIN keypad",
 
   // ── UI chrome: ListenPanel ─────────────────────────────────────
   "ui.provider.listen.title": "聞く",

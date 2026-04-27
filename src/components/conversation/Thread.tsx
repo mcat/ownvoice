@@ -67,7 +67,13 @@ export function Thread({ messages, t, onRepeat }: ThreadProps) {
 
   return (
     <div style={wrapperStyle}>
-      <div style={scrollStyle}>
+      <div
+        role="log"
+        aria-label={resolvePhrase("ui.dual.thread.aria_label", patientLang)}
+        aria-live="polite"
+        aria-relevant="additions text"
+        style={scrollStyle}
+      >
       {messages.map((msg, idx) => {
         const isPatient = msg.from === "patient";
         const isRepeating = repeatingIdx === idx;

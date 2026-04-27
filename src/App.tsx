@@ -314,14 +314,20 @@ export function App() {
             activeIndex={sub}
             onSelect={setSub}
             t={t}
+            ariaLabel={resolvePhrase("ui.patient.subcategory.aria_label", patientLang).replace("{cat}", cat.label)}
           />
-          <PhraseGrid phrases={cat.subs[sub].phrases} onTap={speakAsPatient} t={t} />
+          <PhraseGrid
+            phrases={cat.subs[sub].phrases}
+            onTap={speakAsPatient}
+            t={t}
+            ariaLabel={`${cat.label}: ${cat.subs[sub].label}`}
+          />
         </div>
       );
     }
 
     if (cat?.phrases) {
-      return <PhraseGrid phrases={cat.phrases} onTap={speakAsPatient} t={t} />;
+      return <PhraseGrid phrases={cat.phrases} onTap={speakAsPatient} t={t} ariaLabel={cat.label} />;
     }
 
     return null;
@@ -386,6 +392,8 @@ export function App() {
           {tab === "quick" && !builderOpen && (
             <div style={{ marginBottom: 16, flexShrink: 0 }}>
               <div
+                role="group"
+                aria-label={resolvePhrase("ui.patient.suggestions.time_of_day_aria", patientLang)}
                 style={{
                   display: "flex",
                   gap: 10,

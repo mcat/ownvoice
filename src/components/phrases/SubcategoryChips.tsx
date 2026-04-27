@@ -10,6 +10,8 @@ interface SubcategoryChipsProps {
   activeIndex: number;
   onSelect: (index: number) => void;
   t: ThemeTokens;
+  /** Accessible name for the radiogroup. */
+  ariaLabel?: string;
 }
 
 export function SubcategoryChips({
@@ -17,6 +19,7 @@ export function SubcategoryChips({
   activeIndex,
   onSelect,
   t,
+  ariaLabel,
 }: SubcategoryChipsProps) {
   const { theme } = useTheme();
   const assistive = useSettingsStore((s) => s.cfg?.assistiveInput === true);
@@ -34,6 +37,8 @@ export function SubcategoryChips({
 
   return (
     <div
+      role="radiogroup"
+      aria-label={ariaLabel ?? "Subcategory"}
       style={{
         display: "flex",
         gap: 4,
@@ -54,6 +59,8 @@ export function SubcategoryChips({
             onClick={() => onSelect(i)}
             onPointerEnter={onEnter(i)}
             onPointerLeave={onLeave}
+            role="radio"
+            aria-checked={active}
             style={{
               background: active ? t.card : hovered ? hoverBg : "transparent",
               color: active ? t.text : t.sub,

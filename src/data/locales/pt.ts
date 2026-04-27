@@ -508,6 +508,9 @@ const pt: LocaleStrings = {
   "ui.provider.nav.theme.light": "Claro",
   "ui.provider.nav.theme.dark": "Escuro",
   "ui.patient.tabbar.say_more": "Dizer mais",
+  "ui.patient.subcategory.aria_label": "Subcategory in {cat}",
+  "ui.patient.suggestions.time_of_day_aria": "Time-of-day suggestions",
+  "ui.patient.toolbar.aria_label": "Patient toolbar",
 
   // ── UI chrome: PainFlow ────────────────────────────────────────
   "ui.dual.pain.heading.severity": "Quanta dor você tem?",
@@ -516,11 +519,13 @@ const pt: LocaleStrings = {
   "ui.patient.pain.step_of": "Passo {n} de {total}",
   "ui.patient.pain.back_to": "Voltar para {label}",
   "ui.patient.pain.level_aria": "Nível de dor {n}, {label}",
+  "ui.patient.pain.breadcrumb_aria": "Pain wizard steps",
 
   // ── UI chrome: MyWishes ────────────────────────────────────────
   "ui.patient.wishes.completion_title": "Desejos de {name}",
   "ui.patient.wishes.my_wishes": "Meus desejos",
   "ui.patient.wishes.step_of": "Passo {n} de {total}",
+  "ui.patient.wishes.progress_aria": "Wishes wizard progress",
   "ui.patient.wishes.none_shared": "Nenhum desejo foi compartilhado.",
   "ui.patient.wishes.share_all_again": "Compartilhar todos os desejos novamente",
   "ui.patient.wishes.close": "Fechar",
@@ -542,6 +547,7 @@ const pt: LocaleStrings = {
 
   // ── UI chrome: Thread ──────────────────────────────────────────
   "ui.dual.thread.repeat_aria": "Repetir: {text}",
+  "ui.dual.thread.aria_label": "Conversation",
 
   // ── UI chrome: ProviderPanel ───────────────────────────────────
   "ui.provider.care_team.title": "Equipe de cuidados",
@@ -552,6 +558,18 @@ const pt: LocaleStrings = {
   "ui.provider.select_provider": "Selecionar {name}",
   "ui.provider.show_category": "Mostrar {key}",
   "ui.provider.speak_phrase": "Falar: {phrase}",
+  "ui.provider.speaking_as_aria": "Speaking as",
+  "ui.provider.section_aria": "Phrase category",
+  "ui.provider.phrases_aria": "{section} phrases",
+  "ui.provider.listen.capture_aria": "Voice capture",
+  "ui.provider.setup.progress_aria": "Setup progress",
+  "ui.provider.settings.aria_label": "Settings",
+  "ui.provider.settings.reset.aria_label": "Reset actions",
+  "ui.provider.patients.list_aria": "Patients",
+  "ui.provider.fallback_voice.recommended_aria": "Recommended voices",
+  "ui.provider.fallback_voice.other_aria": "Other voices",
+  "ui.provider.fallback_voice.all_aria": "Available voices",
+  "ui.provider.pin_gate.keypad_aria": "PIN keypad",
 
   // ── UI chrome: ListenPanel ─────────────────────────────────────
   "ui.provider.listen.title": "Ouvir",

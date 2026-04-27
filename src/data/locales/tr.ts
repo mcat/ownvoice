@@ -514,6 +514,9 @@ const tr: LocaleStrings = {
   "ui.provider.nav.theme.light": "Açık",
   "ui.provider.nav.theme.dark": "Koyu",
   "ui.patient.tabbar.say_more": "Daha Fazla Söyle",
+  "ui.patient.subcategory.aria_label": "Subcategory in {cat}",
+  "ui.patient.suggestions.time_of_day_aria": "Time-of-day suggestions",
+  "ui.patient.toolbar.aria_label": "Patient toolbar",
 
   // ── UI chrome: PainFlow ────────────────────────────────────────
   "ui.dual.pain.heading.severity": "Ne kadar ağrınız var?",
@@ -522,11 +525,13 @@ const tr: LocaleStrings = {
   "ui.patient.pain.step_of": "Adım {n} / {total}",
   "ui.patient.pain.back_to": "{label} adımına geri dön",
   "ui.patient.pain.level_aria": "Ağrı düzeyi {n}, {label}",
+  "ui.patient.pain.breadcrumb_aria": "Pain wizard steps",
 
   // ── UI chrome: MyWishes ────────────────────────────────────────
   "ui.patient.wishes.completion_title": "{name} — Dilekler",
   "ui.patient.wishes.my_wishes": "Dileklerim",
   "ui.patient.wishes.step_of": "Adım {n} / {total}",
+  "ui.patient.wishes.progress_aria": "Wishes wizard progress",
   "ui.patient.wishes.none_shared": "Hiç dilek paylaşılmadı.",
   "ui.patient.wishes.share_all_again": "Tüm dilekleri tekrar paylaş",
   "ui.patient.wishes.close": "Kapat",
@@ -548,6 +553,7 @@ const tr: LocaleStrings = {
 
   // ── UI chrome: Thread ──────────────────────────────────────────
   "ui.dual.thread.repeat_aria": "Tekrarla: {text}",
+  "ui.dual.thread.aria_label": "Conversation",
 
   // ── UI chrome: ProviderPanel ───────────────────────────────────
   "ui.provider.care_team.title": "Bakım Ekibi",
@@ -558,6 +564,18 @@ const tr: LocaleStrings = {
   "ui.provider.select_provider": "{name} seç",
   "ui.provider.show_category": "{key} göster",
   "ui.provider.speak_phrase": "Söyle: {phrase}",
+  "ui.provider.speaking_as_aria": "Speaking as",
+  "ui.provider.section_aria": "Phrase category",
+  "ui.provider.phrases_aria": "{section} phrases",
+  "ui.provider.listen.capture_aria": "Voice capture",
+  "ui.provider.setup.progress_aria": "Setup progress",
+  "ui.provider.settings.aria_label": "Settings",
+  "ui.provider.settings.reset.aria_label": "Reset actions",
+  "ui.provider.patients.list_aria": "Patients",
+  "ui.provider.fallback_voice.recommended_aria": "Recommended voices",
+  "ui.provider.fallback_voice.other_aria": "Other voices",
+  "ui.provider.fallback_voice.all_aria": "Available voices",
+  "ui.provider.pin_gate.keypad_aria": "PIN keypad",
 
   // ── UI chrome: ListenPanel ─────────────────────────────────────
   "ui.provider.listen.title": "Dinle",

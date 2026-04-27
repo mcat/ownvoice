@@ -505,6 +505,9 @@ const it: LocaleStrings = {
   "ui.provider.nav.theme.light": "Chiaro",
   "ui.provider.nav.theme.dark": "Scuro",
   "ui.patient.tabbar.say_more": "Altro",
+  "ui.patient.subcategory.aria_label": "Subcategory in {cat}",
+  "ui.patient.suggestions.time_of_day_aria": "Time-of-day suggestions",
+  "ui.patient.toolbar.aria_label": "Patient toolbar",
 
   // ── UI chrome: PainFlow ────────────────────────────────────────
   "ui.dual.pain.heading.severity": "Quanto dolore ha?",
@@ -513,11 +516,13 @@ const it: LocaleStrings = {
   "ui.patient.pain.step_of": "Passo {n} di {total}",
   "ui.patient.pain.back_to": "Torna a {label}",
   "ui.patient.pain.level_aria": "Livello di dolore {n}, {label}",
+  "ui.patient.pain.breadcrumb_aria": "Pain wizard steps",
 
   // ── UI chrome: MyWishes ────────────────────────────────────────
   "ui.patient.wishes.completion_title": "Desideri di {name}",
   "ui.patient.wishes.my_wishes": "I miei desideri",
   "ui.patient.wishes.step_of": "Passo {n} di {total}",
+  "ui.patient.wishes.progress_aria": "Wishes wizard progress",
   "ui.patient.wishes.none_shared": "Nessun desiderio condiviso.",
   "ui.patient.wishes.share_all_again": "Condividi tutti i desideri di nuovo",
   "ui.patient.wishes.close": "Chiudi",
@@ -539,6 +544,7 @@ const it: LocaleStrings = {
 
   // ── UI chrome: Thread ──────────────────────────────────────────
   "ui.dual.thread.repeat_aria": "Ripeti: {text}",
+  "ui.dual.thread.aria_label": "Conversation",
 
   // ── UI chrome: ProviderPanel ───────────────────────────────────
   "ui.provider.care_team.title": "Team di cura",
@@ -549,6 +555,18 @@ const it: LocaleStrings = {
   "ui.provider.select_provider": "Seleziona {name}",
   "ui.provider.show_category": "Mostra {key}",
   "ui.provider.speak_phrase": "Pronuncia: {phrase}",
+  "ui.provider.speaking_as_aria": "Speaking as",
+  "ui.provider.section_aria": "Phrase category",
+  "ui.provider.phrases_aria": "{section} phrases",
+  "ui.provider.listen.capture_aria": "Voice capture",
+  "ui.provider.setup.progress_aria": "Setup progress",
+  "ui.provider.settings.aria_label": "Settings",
+  "ui.provider.settings.reset.aria_label": "Reset actions",
+  "ui.provider.patients.list_aria": "Patients",
+  "ui.provider.fallback_voice.recommended_aria": "Recommended voices",
+  "ui.provider.fallback_voice.other_aria": "Other voices",
+  "ui.provider.fallback_voice.all_aria": "Available voices",
+  "ui.provider.pin_gate.keypad_aria": "PIN keypad",
 
   // ── UI chrome: ListenPanel ─────────────────────────────────────
   "ui.provider.listen.title": "Ascolta",

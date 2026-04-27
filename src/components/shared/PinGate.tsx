@@ -164,6 +164,8 @@ export function PinGate({ pin, onSuccess, onClose, t, theme }: PinGateProps) {
 
         {/* Keypad */}
         <div
+          role="group"
+          aria-label={resolvePhrase("ui.provider.pin_gate.keypad_aria", caregiverLang)}
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(3, 1fr)",

@@ -71,7 +71,11 @@ export function SettingsPanel({
         </BottomSheet.Header>
 
         <BottomSheet.Body>
-          <div style={{ padding: "0 4px", display: "flex", flexDirection: "column", gap: 10 }}>
+          <div
+            role="group"
+            aria-label={resolvePhrase("ui.provider.settings.aria_label", caregiverLang)}
+            style={{ padding: "0 4px", display: "flex", flexDirection: "column", gap: 10 }}
+          >
             <SettingsNavRow
               icon={"👥"}
               label={resolvePhrase("ui.provider.patients.title", caregiverLang)}

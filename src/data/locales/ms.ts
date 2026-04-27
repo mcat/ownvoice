@@ -518,6 +518,9 @@ const ms: LocaleStrings = {
   "ui.provider.nav.theme.light": "Cerah",
   "ui.provider.nav.theme.dark": "Gelap",
   "ui.patient.tabbar.say_more": "Kata Lagi",
+  "ui.patient.subcategory.aria_label": "Subcategory in {cat}",
+  "ui.patient.suggestions.time_of_day_aria": "Time-of-day suggestions",
+  "ui.patient.toolbar.aria_label": "Patient toolbar",
 
   // ── UI chrome: PainFlow ────────────────────────────────────────
   "ui.dual.pain.heading.severity": "Berapa sakit anda rasa?",
@@ -526,11 +529,13 @@ const ms: LocaleStrings = {
   "ui.patient.pain.step_of": "Langkah {n} daripada {total}",
   "ui.patient.pain.back_to": "Kembali ke {label}",
   "ui.patient.pain.level_aria": "Tahap sakit {n}, {label}",
+  "ui.patient.pain.breadcrumb_aria": "Pain wizard steps",
 
   // ── UI chrome: MyWishes ────────────────────────────────────────
   "ui.patient.wishes.completion_title": "Hasrat {name}",
   "ui.patient.wishes.my_wishes": "Hasrat saya",
   "ui.patient.wishes.step_of": "Langkah {n} daripada {total}",
+  "ui.patient.wishes.progress_aria": "Wishes wizard progress",
   "ui.patient.wishes.none_shared": "Tiada hasrat yang dikongsi.",
   "ui.patient.wishes.share_all_again": "Kongsi semua hasrat sekali lagi",
   "ui.patient.wishes.close": "Tutup",
@@ -552,6 +557,7 @@ const ms: LocaleStrings = {
 
   // ── UI chrome: Thread ──────────────────────────────────────────
   "ui.dual.thread.repeat_aria": "Ulang: {text}",
+  "ui.dual.thread.aria_label": "Conversation",
 
   // ── UI chrome: ProviderPanel ───────────────────────────────────
   "ui.provider.care_team.title": "Pasukan penjagaan",
@@ -562,6 +568,18 @@ const ms: LocaleStrings = {
   "ui.provider.select_provider": "Pilih {name}",
   "ui.provider.show_category": "Tunjuk {key}",
   "ui.provider.speak_phrase": "Sebut: {phrase}",
+  "ui.provider.speaking_as_aria": "Speaking as",
+  "ui.provider.section_aria": "Phrase category",
+  "ui.provider.phrases_aria": "{section} phrases",
+  "ui.provider.listen.capture_aria": "Voice capture",
+  "ui.provider.setup.progress_aria": "Setup progress",
+  "ui.provider.settings.aria_label": "Settings",
+  "ui.provider.settings.reset.aria_label": "Reset actions",
+  "ui.provider.patients.list_aria": "Patients",
+  "ui.provider.fallback_voice.recommended_aria": "Recommended voices",
+  "ui.provider.fallback_voice.other_aria": "Other voices",
+  "ui.provider.fallback_voice.all_aria": "Available voices",
+  "ui.provider.pin_gate.keypad_aria": "PIN keypad",
 
   // ── UI chrome: ListenPanel ─────────────────────────────────────
   "ui.provider.listen.title": "Dengar",

@@ -149,9 +149,13 @@ export function CareTeamSection({
         </p>
       )}
 
-      {providers.map((p, i) => (
+      {providers.map((p, i) => {
+        const nameId = `careteam-provider-${i}-name`;
+        return (
         <div
           key={i}
+          role="group"
+          aria-labelledby={nameId}
           style={{
             padding: "10px 0",
             borderBottom:
@@ -162,7 +166,7 @@ export function CareTeamSection({
             <span style={{ fontSize: 24 }}>
               {p.emoji ?? "\uD83E\uDDD1\u200D\u2695\uFE0F"}
             </span>
-            <span style={{ flex: 1, fontSize: 16, fontWeight: 500, color: t.text }}>
+            <span id={nameId} style={{ flex: 1, fontSize: 16, fontWeight: 500, color: t.text }}>
               {p.name}
             </span>
             <Btn
@@ -201,7 +205,8 @@ export function CareTeamSection({
             />
           </div>
         </div>
-      ))}
+        );
+      })}
 
       {/* Add provider form */}
       <div
@@ -237,6 +242,8 @@ export function CareTeamSection({
             </button>
             {showEmojiPicker && (
               <div
+                role="radiogroup"
+                aria-labelledby="new-provider-icon-label"
                 style={{
                   position: "absolute", bottom: "100%", left: 0, marginBottom: 4,
                   background: isDark ? "#2C2C2E" : "#FFFFFF", borderRadius: 12,
@@ -248,6 +255,8 @@ export function CareTeamSection({
                 {EMOJIS.map((e) => (
                   <button
                     key={e}
+                    role="radio"
+                    aria-checked={newProvEmoji === e}
                     onClick={() => {
                       setNewProvEmoji(e);
                       setShowEmojiPicker(false);

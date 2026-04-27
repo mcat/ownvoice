@@ -520,6 +520,9 @@ const ko: LocaleStrings = {
   "ui.provider.nav.theme.light": "밝게",
   "ui.provider.nav.theme.dark": "어둡게",
   "ui.patient.tabbar.say_more": "더 말하기",
+  "ui.patient.subcategory.aria_label": "Subcategory in {cat}",
+  "ui.patient.suggestions.time_of_day_aria": "Time-of-day suggestions",
+  "ui.patient.toolbar.aria_label": "Patient toolbar",
 
   // ── UI chrome: PainFlow ────────────────────────────────────────
   "ui.dual.pain.heading.severity": "얼마나 아프십니까?",
@@ -528,11 +531,13 @@ const ko: LocaleStrings = {
   "ui.patient.pain.step_of": "{total}단계 중 {n}단계",
   "ui.patient.pain.back_to": "{label}(으)로 돌아가기",
   "ui.patient.pain.level_aria": "통증 수준 {n}, {label}",
+  "ui.patient.pain.breadcrumb_aria": "Pain wizard steps",
 
   // ── UI chrome: MyWishes ────────────────────────────────────────
   "ui.patient.wishes.completion_title": "{name}의 바람",
   "ui.patient.wishes.my_wishes": "나의 바람",
   "ui.patient.wishes.step_of": "{total}단계 중 {n}단계",
+  "ui.patient.wishes.progress_aria": "Wishes wizard progress",
   "ui.patient.wishes.none_shared": "공유된 바람이 없습니다.",
   "ui.patient.wishes.share_all_again": "모든 바람 다시 공유하기",
   "ui.patient.wishes.close": "닫기",
@@ -554,6 +559,7 @@ const ko: LocaleStrings = {
 
   // ── UI chrome: Thread ──────────────────────────────────────────
   "ui.dual.thread.repeat_aria": "반복: {text}",
+  "ui.dual.thread.aria_label": "Conversation",
 
   // ── UI chrome: ProviderPanel ───────────────────────────────────
   "ui.provider.care_team.title": "의료진",
@@ -564,6 +570,18 @@ const ko: LocaleStrings = {
   "ui.provider.select_provider": "{name} 선택",
   "ui.provider.show_category": "{key} 표시",
   "ui.provider.speak_phrase": "말하기: {phrase}",
+  "ui.provider.speaking_as_aria": "Speaking as",
+  "ui.provider.section_aria": "Phrase category",
+  "ui.provider.phrases_aria": "{section} phrases",
+  "ui.provider.listen.capture_aria": "Voice capture",
+  "ui.provider.setup.progress_aria": "Setup progress",
+  "ui.provider.settings.aria_label": "Settings",
+  "ui.provider.settings.reset.aria_label": "Reset actions",
+  "ui.provider.patients.list_aria": "Patients",
+  "ui.provider.fallback_voice.recommended_aria": "Recommended voices",
+  "ui.provider.fallback_voice.other_aria": "Other voices",
+  "ui.provider.fallback_voice.all_aria": "Available voices",
+  "ui.provider.pin_gate.keypad_aria": "PIN keypad",
 
   // ── UI chrome: ListenPanel ─────────────────────────────────────
   "ui.provider.listen.title": "듣기",

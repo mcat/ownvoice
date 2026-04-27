@@ -503,6 +503,9 @@ const fi: LocaleStrings = {
   "ui.provider.nav.theme.light": "Vaalea",
   "ui.provider.nav.theme.dark": "Tumma",
   "ui.patient.tabbar.say_more": "Sano lisää",
+  "ui.patient.subcategory.aria_label": "Subcategory in {cat}",
+  "ui.patient.suggestions.time_of_day_aria": "Time-of-day suggestions",
+  "ui.patient.toolbar.aria_label": "Patient toolbar",
 
   // ── UI chrome: PainFlow ────────────────────────────────────────
   "ui.dual.pain.heading.severity": "Kuinka kovaa kipua sinulla on?",
@@ -511,11 +514,13 @@ const fi: LocaleStrings = {
   "ui.patient.pain.step_of": "Vaihe {n}/{total}",
   "ui.patient.pain.back_to": "Takaisin: {label}",
   "ui.patient.pain.level_aria": "Kiputaso {n}, {label}",
+  "ui.patient.pain.breadcrumb_aria": "Pain wizard steps",
 
   // ── UI chrome: MyWishes ────────────────────────────────────────
   "ui.patient.wishes.completion_title": "Toiveet: {name}",
   "ui.patient.wishes.my_wishes": "Toiveeni",
   "ui.patient.wishes.step_of": "Vaihe {n}/{total}",
+  "ui.patient.wishes.progress_aria": "Wishes wizard progress",
   "ui.patient.wishes.none_shared": "Toiveita ei jaettu.",
   "ui.patient.wishes.share_all_again": "Jaa kaikki toiveet uudelleen",
   "ui.patient.wishes.close": "Sulje",
@@ -537,6 +542,7 @@ const fi: LocaleStrings = {
 
   // ── UI chrome: Thread ──────────────────────────────────────────
   "ui.dual.thread.repeat_aria": "Toista: {text}",
+  "ui.dual.thread.aria_label": "Conversation",
 
   // ── UI chrome: ProviderPanel ───────────────────────────────────
   "ui.provider.care_team.title": "Hoitotiimi",
@@ -547,6 +553,18 @@ const fi: LocaleStrings = {
   "ui.provider.select_provider": "Valitse {name}",
   "ui.provider.show_category": "Näytä {key}",
   "ui.provider.speak_phrase": "Sano: {phrase}",
+  "ui.provider.speaking_as_aria": "Speaking as",
+  "ui.provider.section_aria": "Phrase category",
+  "ui.provider.phrases_aria": "{section} phrases",
+  "ui.provider.listen.capture_aria": "Voice capture",
+  "ui.provider.setup.progress_aria": "Setup progress",
+  "ui.provider.settings.aria_label": "Settings",
+  "ui.provider.settings.reset.aria_label": "Reset actions",
+  "ui.provider.patients.list_aria": "Patients",
+  "ui.provider.fallback_voice.recommended_aria": "Recommended voices",
+  "ui.provider.fallback_voice.other_aria": "Other voices",
+  "ui.provider.fallback_voice.all_aria": "Available voices",
+  "ui.provider.pin_gate.keypad_aria": "PIN keypad",
 
   // ── UI chrome: ListenPanel ─────────────────────────────────────
   "ui.provider.listen.title": "Kuuntele",

@@ -504,6 +504,9 @@ const hi: LocaleStrings = {
   "ui.provider.nav.theme.light": "लाइट",
   "ui.provider.nav.theme.dark": "डार्क",
   "ui.patient.tabbar.say_more": "और कहें",
+  "ui.patient.subcategory.aria_label": "Subcategory in {cat}",
+  "ui.patient.suggestions.time_of_day_aria": "Time-of-day suggestions",
+  "ui.patient.toolbar.aria_label": "Patient toolbar",
 
   // ── UI chrome: PainFlow ────────────────────────────────────────
   "ui.dual.pain.heading.severity": "कितना दर्द हो रहा है?",
@@ -512,11 +515,13 @@ const hi: LocaleStrings = {
   "ui.patient.pain.step_of": "चरण {n} / {total}",
   "ui.patient.pain.back_to": "{label} पर वापस जाएँ",
   "ui.patient.pain.level_aria": "दर्द स्तर {n}, {label}",
+  "ui.patient.pain.breadcrumb_aria": "Pain wizard steps",
 
   // ── UI chrome: MyWishes ────────────────────────────────────────
   "ui.patient.wishes.completion_title": "{name} की इच्छाएँ",
   "ui.patient.wishes.my_wishes": "मेरी इच्छाएँ",
   "ui.patient.wishes.step_of": "चरण {n} / {total}",
+  "ui.patient.wishes.progress_aria": "Wishes wizard progress",
   "ui.patient.wishes.none_shared": "कोई इच्छा साझा नहीं की गई।",
   "ui.patient.wishes.share_all_again": "सभी इच्छाएँ दोबारा साझा करें",
   "ui.patient.wishes.close": "बंद करें",
@@ -538,6 +543,7 @@ const hi: LocaleStrings = {
 
   // ── UI chrome: Thread ──────────────────────────────────────────
   "ui.dual.thread.repeat_aria": "दोहराएँ: {text}",
+  "ui.dual.thread.aria_label": "Conversation",
 
   // ── UI chrome: ProviderPanel ───────────────────────────────────
   "ui.provider.care_team.title": "देखभाल टीम",
@@ -548,6 +554,18 @@ const hi: LocaleStrings = {
   "ui.provider.select_provider": "{name} चुनें",
   "ui.provider.show_category": "{key} दिखाएँ",
   "ui.provider.speak_phrase": "बोलें: {phrase}",
+  "ui.provider.speaking_as_aria": "Speaking as",
+  "ui.provider.section_aria": "Phrase category",
+  "ui.provider.phrases_aria": "{section} phrases",
+  "ui.provider.listen.capture_aria": "Voice capture",
+  "ui.provider.setup.progress_aria": "Setup progress",
+  "ui.provider.settings.aria_label": "Settings",
+  "ui.provider.settings.reset.aria_label": "Reset actions",
+  "ui.provider.patients.list_aria": "Patients",
+  "ui.provider.fallback_voice.recommended_aria": "Recommended voices",
+  "ui.provider.fallback_voice.other_aria": "Other voices",
+  "ui.provider.fallback_voice.all_aria": "Available voices",
+  "ui.provider.pin_gate.keypad_aria": "PIN keypad",
 
   // ── UI chrome: ListenPanel ─────────────────────────────────────
   "ui.provider.listen.title": "सुनें",

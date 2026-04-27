@@ -3,6 +3,12 @@ import { useSettingsStore } from "./stores/settingsStore";
 import { useUIStore } from "./stores/uiStore";
 import { useConversationStore } from "./stores/conversationStore";
 import { makeTestCfg } from "./test/makeCfg";
+import {
+  assertFocusOrderMatchesDomOrder,
+  assertGroupContainersHaveLabels,
+  assertNoAriaHiddenAncestorOnFocusables,
+  assertNoFixedOcclusionAtScrollStop,
+} from "./test/a11yAssertions";
 import type { AppSettings } from "./types";
 
 // Mock useTheme
@@ -542,6 +548,40 @@ describe("App", () => {
       capturedProgressCb!();
       capturedProgressCb!();
       expect(audioCacheRunner.runPreGeneration).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("a11y assertions across patient surfaces", () => {
+    // Reuses the App suite's fixture. Each top-level patient surface gets
+    // a smoke test that runs the full assertion suite. If any of these
+    // fail, an earlier markup task introduced a regression.
+    it("Quick tab — assertions pass", () => {
+      useSettingsStore.setState({ _hasHydrated: true, cfg: makeCfg() });
+      const { container } = render(<App />);
+      assertNoAriaHiddenAncestorOnFocusables(container);
+      assertGroupContainersHaveLabels(container);
+      assertFocusOrderMatchesDomOrder(container);
+      assertNoFixedOcclusionAtScrollStop(container);
+    });
+
+    it("Pain tab — assertions pass", () => {
+      useSettingsStore.setState({ _hasHydrated: true, cfg: makeCfg() });
+      useUIStore.setState({ tab: "pain" });
+      const { container } = render(<App />);
+      assertNoAriaHiddenAncestorOnFocusables(container);
+      assertGroupContainersHaveLabels(container);
+      assertFocusOrderMatchesDomOrder(container);
+      assertNoFixedOcclusionAtScrollStop(container);
+    });
+
+    it("Comfort tab (with subcategories) — assertions pass", () => {
+      useSettingsStore.setState({ _hasHydrated: true, cfg: makeCfg() });
+      useUIStore.setState({ tab: "comfort" });
+      const { container } = render(<App />);
+      assertNoAriaHiddenAncestorOnFocusables(container);
+      assertGroupContainersHaveLabels(container);
+      assertFocusOrderMatchesDomOrder(container);
+      assertNoFixedOcclusionAtScrollStop(container);
     });
   });
 });
