@@ -205,20 +205,62 @@ export function applyBiquad(
 }
 
 /**
+ * Locate the first 10 ms window whose RMS exceeds `threshold`. Returns
+ * the sample offset of the speech onset, capped at `maxTrimSamples`.
+ * If no window crosses the threshold within the cap, returns 0 (don't trim).
+ *
+ * Used by postProcessAudio to clean leading "breath/gasp" frames produced
+ * by the q4 LM on certain phrases — the LM occasionally emits 5-10 leading
+ * speech codes that decode as audible breath before the actual phonemes.
+ * Threshold is set above sustained breath RMS but below typical voiced
+ * onset, with a one-window safety buffer so soft consonant attacks aren't
+ * clipped. The cap prevents catastrophic over-trim if a phrase happens
+ * to be uniformly quiet.
+ */
+function findSpeechOnsetSample(
+  audio: Float32Array,
+  sampleRate: number,
+  threshold: number,
+  maxTrimSamples: number,
+): number {
+  const windowSamples = Math.max(1, Math.floor((sampleRate * 10) / 1000));
+  const scanLimit = Math.min(audio.length, maxTrimSamples + windowSamples);
+  for (let start = 0; start + windowSamples <= scanLimit; start += windowSamples) {
+    let sumSq = 0;
+    for (let j = 0; j < windowSamples; j++) {
+      const s = audio[start + j];
+      sumSq += s * s;
+    }
+    const rms = Math.sqrt(sumSq / windowSamples);
+    if (rms >= threshold) {
+      // Leave one window of pre-onset content so a soft consonant attack
+      // (initial /F/ /S/ /Sh/ that builds gradually) isn't clipped at its
+      // very start.
+      return Math.max(0, Math.min(start - windowSamples, maxTrimSamples));
+    }
+  }
+  // No onset within the cap — leave the audio alone rather than risk
+  // trimming an entire quiet phrase.
+  return 0;
+}
+
+/**
  * Post-process raw TTS audio to remove artifacts from quantized neural
- * models (Chatterbox Turbo q4f16).
+ * models (Chatterbox Multilingual q4).
  *
  * Pipeline:
  *   1. DC offset removal — prevents static hiss from decoder bias
- *   2. High-pass at 80 Hz — removes sub-bass rumble from decoder
- *   3. Two-stage low-pass at 7 kHz — steep rolloff removes broadband
- *      HF quantization noise while keeping all speech content
- *   4. Spectral subtraction — estimates noise profile from leading
- *      silence, subtracts it from every STFT frame to remove in-band noise
- *   5. Noise gate — mutes samples below threshold in inter-word gaps
- *   6. Peak normalization to 0.85 — consistent volume with headroom
- *   7. Soft limiter — tanh saturation prevents clipping on transients
- *   8. Cosine fade-in/out (5 ms) — prevents start/end clicks
+ *   2. Leading breath/silence trim — removes audible "gasp" frames
+ *      that the q4 LM occasionally emits before voiced content
+ *   3. High-pass at 80 Hz — removes sub-bass rumble from decoder
+ *   4. Single low-pass at 9 kHz — keeps sibilance, drops HF noise
+ *   5. Spectral subtraction — removes in-band noise under speech
+ *   6. Noise gate — mutes samples below threshold in inter-word gaps;
+ *      noise floor = minimum-RMS window across the whole clip
+ *      (more robust than first-10ms heuristic, especially after the trim)
+ *   7. Peak normalization to 0.85 — consistent volume with headroom
+ *   8. Soft limiter — tanh saturation prevents clipping on transients
+ *   9. Cosine fade-in/out (5 ms) — prevents start/end clicks
  *
  * Exported so the audio-cache pre-gen path can apply it once at write time
  * rather than re-running the FFT pipeline on every playback. Cached audio
@@ -226,36 +268,63 @@ export function applyBiquad(
  * non-cached paths (currently none, reserved for future live-synth).
  */
 export function postProcessAudio(raw: Float32Array, sampleRate: number): Float32Array {
-  const n = raw.length;
-  if (n === 0) return raw;
+  const n0 = raw.length;
+  if (n0 === 0) return raw;
 
-  const audio = new Float32Array(n);
-
-  // 1. DC offset removal
+  // 1. DC offset removal (in-place into a working buffer the same size as raw)
+  const dcWork = new Float32Array(n0);
   let dcSum = 0;
-  for (let i = 0; i < n; i++) dcSum += raw[i];
-  const dc = dcSum / n;
-  for (let i = 0; i < n; i++) audio[i] = raw[i] - dc;
+  for (let i = 0; i < n0; i++) dcSum += raw[i];
+  const dc = dcSum / n0;
+  for (let i = 0; i < n0; i++) dcWork[i] = raw[i] - dc;
 
-  // 2. High-pass at 80 Hz (removes decoder rumble)
+  // 2. Leading breath/silence trim — operate on the DC-corrected buffer so
+  //    RMS detection isn't biased by a constant offset. Threshold of 0.015
+  //    (~−36 dBFS) sits above sustained-breath RMS but below typical voiced
+  //    speech onset. Cap at 250 ms so a phrase that happens to start with a
+  //    quiet phoneme can't be more than 250 ms shorter than expected.
+  const TRIM_RMS_THRESHOLD = 0.015;
+  const TRIM_MAX_MS = 250;
+  const trimMaxSamples = Math.floor((sampleRate * TRIM_MAX_MS) / 1000);
+  const trimOffset = findSpeechOnsetSample(
+    dcWork,
+    sampleRate,
+    TRIM_RMS_THRESHOLD,
+    trimMaxSamples,
+  );
+
+  const audio = trimOffset > 0 ? dcWork.slice(trimOffset) : dcWork;
+  const n = audio.length;
+
+  // 3. High-pass at 80 Hz (removes decoder rumble)
   applyBiquad(audio, sampleRate, 80, "hp");
 
-  // 3. Single low-pass at 9 kHz. Sibilance (/s/, /sh/, /f/) lives in the
+  // 4. Single low-pass at 9 kHz. Sibilance (/s/, /sh/, /f/) lives in the
   //    3–8 kHz band, so cutting at 7 kHz with two stages noticeably softens
   //    consonants. One stage at 9 kHz keeps the speech band intact and still
-  //    drops the worst of the q4f16 high-frequency noise above ~10 kHz.
+  //    drops the worst of the high-frequency noise above ~10 kHz.
   applyBiquad(audio, sampleRate, 9000, "lp");
 
-  // 4. Spectral subtraction — removes in-band noise that rides under speech
+  // 5. Spectral subtraction — removes in-band noise that rides under speech
   spectralDenoise(audio, sampleRate);
 
-  // 5. Noise gate — estimate RMS from first 10 ms (post-denoise residual),
-  //    gate samples whose local energy falls below 3× that floor.
-  //    Uses 2 ms RMS windows with smooth gain transitions.
-  const noiseWindowSamples = Math.min(Math.floor(sampleRate * 0.01), Math.floor(n / 4));
-  let noiseEnergy = 0;
-  for (let i = 0; i < noiseWindowSamples; i++) noiseEnergy += audio[i] * audio[i];
-  const noiseRms = Math.sqrt(noiseEnergy / noiseWindowSamples);
+  // 6. Noise gate — noise floor = minimum RMS across non-overlapping 10 ms
+  //    windows (typically a tail-end pause). Robust to the leading-trim
+  //    above (the previous "first 10 ms" heuristic became invalid once we
+  //    removed leading silence). Gate samples whose 2 ms local RMS falls
+  //    below 3× the floor.
+  const noiseWindowSamples = Math.max(1, Math.floor(sampleRate * 0.01));
+  let minWindowRms = Infinity;
+  for (let i = 0; i + noiseWindowSamples <= n; i += noiseWindowSamples) {
+    let we = 0;
+    for (let j = 0; j < noiseWindowSamples; j++) {
+      const s = audio[i + j];
+      we += s * s;
+    }
+    const wrms = Math.sqrt(we / noiseWindowSamples);
+    if (wrms < minWindowRms) minWindowRms = wrms;
+  }
+  const noiseRms = isFinite(minWindowRms) ? minWindowRms : 0;
   const gateThreshold = noiseRms * 3;
 
   if (gateThreshold > 0.0001) {
@@ -276,7 +345,7 @@ export function postProcessAudio(raw: Float32Array, sampleRate: number): Float32
     }
   }
 
-  // 6. Peak normalization to 0.85 (headroom for soft limiter)
+  // 7. Peak normalization to 0.85 (headroom for soft limiter)
   let maxAbs = 0;
   for (let i = 0; i < n; i++) {
     const abs = Math.abs(audio[i]);
@@ -287,7 +356,7 @@ export function postProcessAudio(raw: Float32Array, sampleRate: number): Float32
     for (let i = 0; i < n; i++) audio[i] *= gain;
   }
 
-  // 7. Soft limiter (tanh saturation above ±0.9)
+  // 8. Soft limiter (tanh saturation above ±0.9)
   for (let i = 0; i < n; i++) {
     const s = audio[i];
     if (s > 0.9 || s < -0.9) {
@@ -295,7 +364,7 @@ export function postProcessAudio(raw: Float32Array, sampleRate: number): Float32
     }
   }
 
-  // 8. Cosine fade-in/out (5 ms) to prevent start/end clicks
+  // 9. Cosine fade-in/out (5 ms) to prevent start/end clicks
   const fadeLen = Math.min(Math.floor(sampleRate * 0.005), Math.floor(n / 2));
   for (let i = 0; i < fadeLen; i++) {
     const t = 0.5 * (1 - Math.cos((Math.PI * i) / fadeLen));
