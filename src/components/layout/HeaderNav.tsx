@@ -75,7 +75,11 @@ export function HeaderNav({ onOpenSettings }: HeaderNavProps) {
   const themeLabel = resolvePhrase(themeLabelKey, caregiverLang);
 
   return (
-    <div style={{ display: "flex", gap: 12 }}>
+    <div
+      role="toolbar"
+      aria-label={resolvePhrase("ui.patient.toolbar.aria_label", caregiverLang)}
+      style={{ display: "flex", gap: 12 }}
+    >
       <Btn key="theme" onClick={onToggleTheme} aria-label={`Theme: ${themeLabel}`} style={btnStyle(t, themeIcon)}>
         <span>{themeIcon}</span>
         <span style={labelStyle(t)}>{themeLabel}</span>
