@@ -19,7 +19,7 @@ export default defineConfig({
     maxForks: 4,
     server: {
       deps: {
-        inline: ["zustand"],
+        inline: ["zustand", "markdown-to-jsx"],
       },
     },
     coverage: {
