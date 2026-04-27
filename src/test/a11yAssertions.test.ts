@@ -23,6 +23,7 @@ describe("buildRoot test fixture builder", () => {
 
 import {
   assertFocusOrderMatchesDomOrder,
+  assertGridStructure,
   assertGroupContainersHaveLabels,
   assertNoAriaHiddenAncestorOnFocusables,
 } from "./a11yAssertions";
@@ -111,5 +112,40 @@ describe("assertGroupContainersHaveLabels", () => {
       <div role="grid"></div>
     `);
     expect(() => assertGroupContainersHaveLabels(root)).toThrow(/3 grouping container/);
+  });
+});
+
+describe("assertGridStructure", () => {
+  it("passes for a well-formed grid", () => {
+    const root = buildRoot(`
+      <div role="grid" aria-label="Phrases">
+        <div role="row">
+          <button role="gridcell">A</button>
+          <button role="gridcell">B</button>
+        </div>
+        <div role="row">
+          <button role="gridcell">C</button>
+        </div>
+      </div>
+    `);
+    expect(() => assertGridStructure(root)).not.toThrow();
+  });
+
+  it("fails when grid has no rows", () => {
+    const root = buildRoot(`
+      <div role="grid" aria-label="Phrases">
+        <button role="gridcell">A</button>
+      </div>
+    `);
+    expect(() => assertGridStructure(root)).toThrow(/no \[role="row"\]/);
+  });
+
+  it("fails when row has no gridcells", () => {
+    const root = buildRoot(`
+      <div role="grid" aria-label="Phrases">
+        <div role="row"><span>nothing</span></div>
+      </div>
+    `);
+    expect(() => assertGridStructure(root)).toThrow(/row without role="gridcell"/);
   });
 });

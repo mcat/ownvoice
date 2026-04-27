@@ -128,3 +128,34 @@ export function assertGroupContainersHaveLabels(root: Element): void {
     );
   }
 }
+
+/**
+ * Verify any [role="grid"] in the container has [role="row"] descendants
+ * and each row contains at least one [role="gridcell"]. Catches
+ * structural drift in PhraseGrid (a refactor that flattens the row
+ * wrappers and silently disables row-column scanning).
+ */
+export function assertGridStructure(root: Element): void {
+  const violations: string[] = [];
+  const grids = root.querySelectorAll('[role="grid"]');
+  for (const grid of grids) {
+    const rows = grid.querySelectorAll('[role="row"]');
+    if (rows.length === 0) {
+      violations.push(`${describe(grid)} has no [role="row"] descendants`);
+      continue;
+    }
+    for (const row of rows) {
+      const cells = row.querySelectorAll('[role="gridcell"]');
+      if (cells.length === 0) {
+        violations.push(
+          `${describe(row)} is a row without role="gridcell" descendants`,
+        );
+      }
+    }
+  }
+  if (violations.length > 0) {
+    throw new Error(
+      `${violations.length} grid structure issue(s):\n  ${violations.join("\n  ")}`,
+    );
+  }
+}
