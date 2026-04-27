@@ -1,5 +1,5 @@
 import { useState } from "preact/hooks";
-import type { JSX } from "preact";
+import type { JSX, AriaRole } from "preact";
 import { Btn } from "../shared/Btn";
 import { useSettingsStore } from "../../stores/settingsStore";
 import type { Phrase } from "../../types";
@@ -11,7 +11,7 @@ interface PhraseButtonProps {
   onTap: (text: string, opts?: { key?: PhraseKey }) => void;
   t: ThemeTokens;
   /** Override role — used by PhraseGrid to set role="gridcell". */
-  role?: string;
+  role?: AriaRole;
   /** Roving-tabindex value. PhraseGrid sets 0 on the active cell, -1 on the rest. */
   tabIndex?: number;
 }
