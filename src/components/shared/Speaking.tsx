@@ -82,6 +82,7 @@ export function Speaking({
     <div
       role="status"
       aria-live="polite"
+      aria-atomic="true"
       aria-label={resolvePhrase("ui.dual.speaking.aria_label", patientLang).replace("{text}", text)}
       style={{
         position: "fixed",
