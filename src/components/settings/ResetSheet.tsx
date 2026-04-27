@@ -104,7 +104,11 @@ export function ResetSheet({ onResetEverything, t }: Props) {
       overlay="reset"
       t={t}
     >
-      <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 8 }}>
+      <div
+        role="group"
+        aria-label={resolvePhrase("ui.provider.settings.reset.aria_label", caregiverLang)}
+        style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 8 }}
+      >
         {ACTIONS.map((action) => {
           const count = action.count({
             patients: Array(patientCount),

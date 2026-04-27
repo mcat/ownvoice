@@ -196,7 +196,7 @@ export function PatientsScreen({ open, onClose, t: tokens, theme }: PatientsScre
           </button>
 
           {/* Patient list — plain list with two-button rows. */}
-          <ul style={listStyle}>
+          <ul aria-label={resolvePhrase("ui.provider.patients.list_aria", caregiverLang)} style={listStyle}>
             {sorted.map((patient) => {
               const isActive = patient.id === activePatientId;
               const lang = langInfo(patient.patientLang);
