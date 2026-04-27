@@ -315,13 +315,18 @@ export function App() {
             onSelect={setSub}
             t={t}
           />
-          <PhraseGrid phrases={cat.subs[sub].phrases} onTap={speakAsPatient} t={t} />
+          <PhraseGrid
+            phrases={cat.subs[sub].phrases}
+            onTap={speakAsPatient}
+            t={t}
+            ariaLabel={`${cat.label}: ${cat.subs[sub].label}`}
+          />
         </div>
       );
     }
 
     if (cat?.phrases) {
-      return <PhraseGrid phrases={cat.phrases} onTap={speakAsPatient} t={t} />;
+      return <PhraseGrid phrases={cat.phrases} onTap={speakAsPatient} t={t} ariaLabel={cat.label} />;
     }
 
     return null;
