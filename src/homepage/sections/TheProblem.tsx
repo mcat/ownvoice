@@ -4,6 +4,8 @@ import { homepageTheme as t } from "../theme";
  * §1 — The problem. Three stat cards backed by citations. Numbers come
  * from docs/ownvoice-research-plan.md §2.1 (Zubow & Hurtig 2013;
  * Freeman-Sanderson 2019; Happ et al. 2011).
+ *
+ * Each citation links to the canonical DOI (Crossref-verified).
  */
 export function TheProblem() {
   return (
@@ -48,16 +50,19 @@ export function TheProblem() {
             stat="~33%"
             text="of ICU patients meet AAC candidacy criteria"
             cite="Zubow & Hurtig, 2013"
+            doi="10.1044/aac22.2.79"
           />
           <StatCard
             stat="11%"
             text="of stay involves any alternative communication"
             cite="Freeman-Sanderson et al., 2019"
+            doi="10.1016/j.aucc.2018.09.002"
           />
           <StatCard
             stat="35%"
             text="of staff report difficulty understanding patients"
             cite="Happ et al., 2011"
+            doi="10.4037/ajcc2011433"
           />
         </div>
       </div>
@@ -65,7 +70,17 @@ export function TheProblem() {
   );
 }
 
-function StatCard({ stat, text, cite }: { stat: string; text: string; cite: string }) {
+function StatCard({
+  stat,
+  text,
+  cite,
+  doi,
+}: {
+  stat: string;
+  text: string;
+  cite: string;
+  doi: string;
+}) {
   return (
     <div
       style={{
@@ -83,7 +98,15 @@ function StatCard({ stat, text, cite }: { stat: string; text: string; cite: stri
           marginTop: 6,
         }}
       >
-        {text} <span style={{ color: t.color.muted }}>({cite})</span>
+        {text}{" "}
+        <a
+          href={`https://doi.org/${doi}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: t.color.muted, textDecoration: "underline", textUnderlineOffset: 2 }}
+        >
+          ({cite})
+        </a>
       </div>
     </div>
   );

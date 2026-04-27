@@ -35,6 +35,9 @@ export function Footer() {
           <a href="/research" style={{ color: "#a8a29e", textDecoration: "none" }}>
             Research plan
           </a>
+          <a href="/bibliography" style={{ color: "#a8a29e", textDecoration: "none" }}>
+            Bibliography
+          </a>
         </div>
       </div>
     </footer>

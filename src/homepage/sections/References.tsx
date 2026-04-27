@@ -132,13 +132,17 @@ export function References() {
           }}
         >
           Full bibliography:{" "}
+          <a href="/bibliography" style={{ color: t.color.text }}>
+            ownvoice.icu/bibliography
+          </a>{" "}
+          (or the source on{" "}
           <a
             href="https://github.com/mcat/ownvoice/blob/main/docs/BIBLIOGRAPHY.md"
             style={{ color: t.color.text }}
           >
-            docs/BIBLIOGRAPHY.md
-          </a>{" "}
-          on GitHub.
+            GitHub
+          </a>
+          ).
         </div>
       </div>
     </section>
