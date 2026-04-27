@@ -26,6 +26,7 @@ import {
   assertGridStructure,
   assertGroupContainersHaveLabels,
   assertNoAriaHiddenAncestorOnFocusables,
+  assertNoFixedOcclusionAtScrollStop,
   assertRovingTabindex,
 } from "./a11yAssertions";
 
@@ -179,5 +180,27 @@ describe("assertRovingTabindex", () => {
     expect(() => assertRovingTabindex(root, "button")).toThrow(
       /exactly one tabindex="0".*found 2/,
     );
+  });
+});
+
+describe("assertNoFixedOcclusionAtScrollStop", () => {
+  it("passes with no fixed elements", () => {
+    const root = buildRoot(`<div style="overflow-y: auto"><button>A</button></div>`);
+    expect(() => assertNoFixedOcclusionAtScrollStop(root)).not.toThrow();
+  });
+
+  it("warns when fixed-position element is a sibling of a scroll region", () => {
+    const root = buildRoot(`
+      <div style="overflow-y: auto"><button>A</button></div>
+      <div style="position: fixed; bottom: 0">Floating menu</div>
+    `);
+    expect(() => assertNoFixedOcclusionAtScrollStop(root)).toThrow(
+      /sibling of scroll region/,
+    );
+  });
+
+  it("ignores when there are no scroll regions", () => {
+    const root = buildRoot(`<div style="position: fixed; bottom: 0">Floating</div>`);
+    expect(() => assertNoFixedOcclusionAtScrollStop(root)).not.toThrow();
   });
 });

@@ -186,3 +186,47 @@ export function assertRovingTabindex(root: Element, selector: string): void {
     );
   }
 }
+
+/**
+ * Static-analysis approximation of Wandke flag 2: floating menus
+ * occluding scrollable content. jsdom doesn't compute layout, so we
+ * scan the DOM for `position: fixed` inline styles co-located with
+ * scrollable regions (`overflow-y: auto|scroll`). If a fixed element
+ * is a sibling/ancestor of a scroll region within the audited
+ * container, flag it — the tester should manually verify in a real
+ * browser that it doesn't occlude the scroll region's bottom edge.
+ *
+ * False positives are acceptable; this is a tripwire, not a strict gate.
+ */
+export function assertNoFixedOcclusionAtScrollStop(root: Element): void {
+  function isFixed(el: Element): boolean {
+    const inline = el.getAttribute("style") ?? "";
+    return /position\s*:\s*fixed/i.test(inline);
+  }
+  function isScrollable(el: Element): boolean {
+    const inline = el.getAttribute("style") ?? "";
+    return /overflow(-y)?\s*:\s*(auto|scroll)/i.test(inline);
+  }
+
+  const allElements = Array.from(root.querySelectorAll("*"));
+  const fixed = allElements.filter(isFixed);
+  const scroll = allElements.filter(isScrollable);
+  if (fixed.length === 0 || scroll.length === 0) return;
+
+  const violations: string[] = [];
+  for (const f of fixed) {
+    for (const s of scroll) {
+      if (f.contains(s) || s.contains(f) || f.parentElement === s.parentElement) {
+        violations.push(
+          `${describe(f)} (fixed) is sibling of scroll region ${describe(s)}`,
+        );
+        break;
+      }
+    }
+  }
+  if (violations.length > 0) {
+    throw new Error(
+      `${violations.length} fixed-position element(s) co-located with scroll regions:\n  ${violations.join("\n  ")}\n\nManual verification required: confirm in a real browser that the fixed element does not occlude the scroll region's bottom edge at any scroll position.`,
+    );
+  }
+}
