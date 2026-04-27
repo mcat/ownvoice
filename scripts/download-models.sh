@@ -27,7 +27,7 @@ echo "==> Chatterbox Multilingual (TTS)"
 for f in tokenizer.json Cangjie5_TC.json; do
   [ -f "$DIR/$f" ] && echo "  $f (cached)" || { echo "  $f"; curl -sL -o "$DIR/$f" "$REPO/$f"; }
 done
-for model in speech_encoder embed_tokens language_model_q4f16 conditional_decoder; do
+for model in speech_encoder embed_tokens language_model_q4 conditional_decoder; do
   for ext in onnx onnx_data; do
     f="${model}.${ext}"
     [ -f "$DIR/$f" ] && echo "  $f (cached)" || { echo "  $f ..."; curl -L -o "$DIR/$f" "$REPO/onnx/$f" 2>/dev/null; }

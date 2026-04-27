@@ -11,7 +11,7 @@
  *   outputs: audio_features, audio_tokens (int64), speaker_embeddings (fp32 [batch, 192]),
  *            speaker_features (fp32 [batch, feat, 80])
  *
- * language_model_q4f16.onnx (Llama, 30 layers)
+ * language_model_q4.onnx (Llama, 30 layers, int4 weights + fp32 activations)
  *   inputs:  inputs_embeds (fp32 [batch, seq, 1024]), attention_mask (int64),
  *            past_key_values.0..29.{key,value} (fp16 [batch, 16, past, 64])
  *   outputs: logits (fp32 [batch, seq, 8194]),
@@ -78,12 +78,14 @@ export type WorkerResponse =
  * Chatterbox-Multilingual ONNX files.
  * 4-component pipeline: speech_encoder (setup only) + embed_tokens + language_model + conditional_decoder.
  * Speech encoder is fp32 (one-time enrollment, embedding quality is permanent).
- * Language model is q4f16; embed_tokens and conditional_decoder are unquantised.
+ * Language model is q4 (int4 weights + fp32 activations) — bumped from
+ * q4f16 to recover activation precision across 30 layers; embed_tokens and
+ * conditional_decoder are unquantised.
  */
 export const CHATTERBOX_FILES = {
   speechEncoder: { onnx: "speech_encoder.onnx", data: "speech_encoder.onnx_data" },
   embedTokens: { onnx: "embed_tokens.onnx", data: "embed_tokens.onnx_data" },
-  languageModel: { onnx: "language_model_q4f16.onnx", data: "language_model_q4f16.onnx_data" },
+  languageModel: { onnx: "language_model_q4.onnx", data: "language_model_q4.onnx_data" },
   conditionalDecoder: { onnx: "conditional_decoder.onnx", data: "conditional_decoder.onnx_data" },
   tokenizer: "tokenizer.json",
 } as const;

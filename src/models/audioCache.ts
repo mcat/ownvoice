@@ -89,7 +89,25 @@ import { recordHash } from "../stores/patientIndex";
 //            "Please wait" mispronouncing as "Nice wait" until the
 //            terminal period was included. Token id 9 (period) now appears
 //            in the encoded sequence right before EOS for these phrases.
-const CACHE_DIR = "audio-cache-v18";
+// v18 → v19: bumped LM from language_model_q4f16 (305 MB, int4 weights +
+//            fp16 activations) → language_model_q4 (354 MB, int4 weights +
+//            fp32 activations). Activation precision matters less than
+//            weight precision for LM quality, but compounds across 30
+//            transformer layers × ~50 autoregressive steps. Modest fidelity
+//            bump for +49 MB download. q4f16 audio is now stale; v19 forces
+//            a clean re-render under the bumped LM.
+// v19 → v20: added leading-silence trim to postProcessAudio. The q4 LM
+//            occasionally emits 5-10 leading "breath/gasp" speech codes
+//            before voiced content (observed on "Please wait" — 8 extra
+//            tokens, ~330 ms of audible gasp at the start). The trim
+//            scans 10 ms RMS windows up to a 250 ms cap, advances past
+//            sustained sub-threshold (-36 dBFS) frames, and leaves a
+//            one-window safety buffer so soft consonant onsets aren't
+//            clipped. Also reworked the noise-gate floor from "first
+//            10 ms RMS" to "minimum RMS across all 10 ms windows" so
+//            the gate isn't fooled by speech in the first window after
+//            the trim.
+const CACHE_DIR = "audio-cache-v20";
 const SAMPLE_RATE = 24000; // Chatterbox conditional decoder output rate (S3GEN_SR)
 const INT16_SCALE = 32767;
 

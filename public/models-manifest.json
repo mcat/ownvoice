@@ -25,13 +25,13 @@
           "magic": null
         },
         {
-          "name": "language_model_q4f16.onnx",
-          "size": 229388,
+          "name": "language_model_q4.onnx",
+          "size": 227911,
           "magic": "onnx"
         },
         {
-          "name": "language_model_q4f16.onnx_data",
-          "size": 304737408,
+          "name": "language_model_q4.onnx_data",
+          "size": 353621248,
           "magic": null
         },
         {
