@@ -1,4 +1,4 @@
-# OwnVoice: On-Device Voice-Cloning AAC with Goals-of-Care Integration for Nonverbal ICU Patients
+# OwnVoice: On-Device Voice-Cloning AAC with Goals-of-Care Integration for ICU Patients Without Functional Speech
 
 ## A Clinical Validation Research Plan
 
@@ -8,7 +8,7 @@
 
 ## 1. Abstract
 
-This document describes the research plan for a clinical validation study of OwnVoice, a Progressive Web Application that provides augmentative and alternative communication (AAC) for nonverbal ICU patients using on-device voice cloning, a validated emoji pain scale, contextual sentence building powered by on-device language models, and structured goals-of-care conversations based on the Serious Illness Conversation Guide (SICG). The study is a prospective, mixed-methods clinical trial conducted in a single-center ICU. The primary aim is to evaluate whether OwnVoice improves patient-reported communication satisfaction compared to standard-of-care communication methods. Secondary aims assess the impact of voice cloning on patient identity and emotional wellbeing, the feasibility and clinical utility of tablet-based SICG conversations with nonverbal patients, on-device inference latency and reliability in the clinical environment, and nursing workflow integration. The study design, participant criteria, outcome measures, data collection instruments, analysis plan, and ethical considerations are described.
+This document describes the research plan for a clinical validation study of OwnVoice, a Progressive Web Application that provides augmentative and alternative communication (AAC) for ICU patients without functional speech, using on-device voice cloning, a validated emoji pain scale, contextual sentence building powered by on-device language models, and structured goals-of-care conversations based on the Serious Illness Conversation Guide (SICG). The study is a prospective, mixed-methods clinical trial conducted in a single-center ICU. The primary aim is to evaluate whether OwnVoice improves patient-reported communication satisfaction compared to standard-of-care communication methods. Secondary aims assess the impact of voice cloning on patient identity and emotional wellbeing, the feasibility and clinical utility of tablet-based SICG conversations with patients without functional speech, on-device inference latency and reliability in the clinical environment, and nursing workflow integration. The study design, participant criteria, outcome measures, data collection instruments, analysis plan, and ethical considerations are described.
 
 ---
 
@@ -26,9 +26,9 @@ Loss of voice is consistently reported as one of the most distressing aspects of
 
 **Recording protocol.** OwnVoice captures 15 seconds of audio and extracts a 192-dim x-vector speaker embedding using Chatterbox Turbo's CAMPPlus encoder (Resemble AI, 2025). Because this is a statistical embedding — spectral envelope, pitch statistics, and formant structure averaged across the clip — phonetic and prosodic coverage of the reference audio directly shapes clone quality (Casanova et al., 2022; Wang et al., 2023). The English-locale recording protocol therefore prompts the patient to read the opening two sentences of the Rainbow Passage (Fairbanks, 1960), the canonical phonetically balanced passage used in the VCTK corpus (Veaux et al., 2019). Full rationale and citations in `docs/BIBLIOGRAPHY.md` §9.
 
-### 2.3 Goals-of-Care Conversations with Nonverbal Patients
+### 2.3 Goals-of-Care Conversations with Patients Who Cannot Speak
 
-The Serious Illness Conversation Guide (SICG) from Ariadne Labs has demonstrated significant improvements in goals-of-care communication: more conversations about values and goals (89% vs. 44%), earlier conversations (5 months vs. 2.5 months before death), increased documentation (61% vs. 11%), and reduced anxiety and depression (Bernacki et al., 2019; Paladino et al., 2019). However, the SICG was designed for patients who can speak. No published study has examined whether structured goals-of-care conversations can be conducted effectively with nonverbal patients using AAC technology.
+The Serious Illness Conversation Guide (SICG) from Ariadne Labs has demonstrated significant improvements in goals-of-care communication: more conversations about values and goals (89% vs. 44%), earlier conversations (5 months vs. 2.5 months before death), increased documentation (61% vs. 11%), and reduced anxiety and depression (Bernacki et al., 2019; Paladino et al., 2019). However, the SICG was designed for patients who can speak. No published study has examined whether structured goals-of-care conversations can be conducted effectively with patients without functional speech, using AAC technology.
 
 ### 2.4 On-Device Inference
 
@@ -40,7 +40,7 @@ OwnVoice runs entirely on-device using WebGPU-accelerated neural inference (ONNX
 
 ### 3.1 Primary Aim
 
-Evaluate whether OwnVoice improves patient-reported communication satisfaction compared to standard-of-care AAC methods in nonverbal ICU patients.
+Evaluate whether OwnVoice improves patient-reported communication satisfaction compared to standard-of-care AAC methods in ICU patients without functional speech.
 
 **H1:** Patients using OwnVoice will report significantly higher communication satisfaction scores (CSRI) than patients using standard-of-care communication methods.
 
@@ -50,7 +50,7 @@ Evaluate whether OwnVoice improves patient-reported communication satisfaction c
 
 **H2:** Patients whose communications are spoken in their cloned voice will report higher scores on the voice identity subscale (custom instrument) than patients using a generic TTS voice.
 
-**Aim 3 — Goals-of-Care Feasibility:** Determine the feasibility and clinical utility of conducting SICG-structured goals-of-care conversations with nonverbal ICU patients via OwnVoice.
+**Aim 3 — Goals-of-Care Feasibility:** Determine the feasibility and clinical utility of conducting SICG-structured goals-of-care conversations with ICU patients without functional speech, via OwnVoice.
 
 **H3:** A clinically meaningful proportion (≥50%) of eligible patients will complete ≥4 of 7 SICG EXPLORE topics using the My Wishes feature.
 
@@ -84,11 +84,11 @@ Prospective, single-center, two-phase mixed-methods study.
 
 ### 4.2 Setting
 
-Single academic medical center ICU (medical-surgical, 20–30 beds). Selected for: adequate patient volume of nonverbal patients, existing palliative care consultation service (for SICG component), institutional Wi-Fi infrastructure (for initial app deployment; the app operates offline after first load), and prior experience with AAC research or clinical implementation.
+Single academic medical center ICU (medical-surgical, 20–30 beds). Selected for: adequate volume of AAC-eligible patients, existing palliative care consultation service (for SICG component), institutional Wi-Fi infrastructure (for initial app deployment; the app operates offline after first load), and prior experience with AAC research or clinical implementation.
 
 ### 4.3 Duration
 
-Total study duration: 6 months (1 month setup/training, 1 month Phase 1, 4 months Phase 2). Patient participation: duration of nonverbal ICU stay (typically 2–14 days).
+Total study duration: 6 months (1 month setup/training, 1 month Phase 1, 4 months Phase 2). Patient participation: duration of ICU stay without functional speech (typically 2–14 days).
 
 ---
 
@@ -98,10 +98,10 @@ Total study duration: 6 months (1 month setup/training, 1 month Phase 1, 4 month
 
 - Age ≥ 18 years
 - Admitted to the study ICU
-- Nonverbal due to endotracheal intubation, tracheostomy, or other condition preventing functional speech
+- Without functional speech due to endotracheal intubation, tracheostomy, or other qualifying condition
 - Alert and oriented to person (CAM-ICU negative or ≤1 feature positive)
 - Able to interact with a tablet via touch (direct touch, stylus, or switch access)
-- Expected nonverbal period ≥ 24 hours
+- Expected period without functional speech ≥ 24 hours
 - English-speaking or one of OwnVoice's 13 supported languages
 
 ### 5.2 Exclusion Criteria
@@ -121,7 +121,7 @@ Total study duration: 6 months (1 month setup/training, 1 month Phase 1, 4 month
 
 ### 5.4 Recruitment and Consent
 
-A trained research coordinator will screen ICU admissions daily. For patients who meet inclusion criteria, informed consent will be obtained from the patient (if capable of written or gestural consent) or from the legally authorized representative (LAR). Assent will be obtained from the patient whenever possible, even when LAR consent is required. The consent process will accommodate nonverbal communication (written, gestural, or AAC-assisted).
+A trained research coordinator will screen ICU admissions daily. For patients who meet inclusion criteria, informed consent will be obtained from the patient (if capable of written or gestural consent) or from the legally authorized representative (LAR). Assent will be obtained from the patient whenever possible, even when LAR consent is required. The consent process will accommodate non-spoken communication (written, gestural, or AAC-assisted).
 
 ---
 
@@ -149,15 +149,15 @@ For patients with an anticipated ICU stay ≥72 hours and a serious illness traj
 
 ### 7.1 Primary Outcome
 
-**Communication Satisfaction:** Patient-reported communication satisfaction measured using the Communication Satisfaction Rating Instrument (CSRI; Happ et al., 2014), a validated 16-item instrument for nonverbal ICU patients. Administered at 24 hours post-enrollment and at ICU discharge or return of speech (whichever is first). The CSRI is designed for nonverbal administration using a visual analog response format.
+**Communication Satisfaction:** Patient-reported communication satisfaction measured using the Communication Satisfaction Rating Instrument (CSRI; Happ et al., 2014), a validated 16-item instrument for ICU patients without functional speech. Administered at 24 hours post-enrollment and at ICU discharge or return of speech (whichever is first). The CSRI is designed for administration to patients who cannot speak, using a visual analog response format.
 
 ### 7.2 Secondary Outcomes
 
 **Voice Identity and Emotional Wellbeing**
 
 - Custom Voice Identity Scale (VIS): A 6-item instrument developed for this study measuring the patient's sense of being "heard," identity preservation, and emotional response to hearing their own voice. Items rated on a 5-point visual scale (faces or thumbs-up/down). To be validated in Phase 1.
-- Hospital Anxiety and Depression Scale (HADS): Administered at enrollment and discharge. Adapted for nonverbal administration with AAC.
-- Patient experience interviews (qualitative): Semi-structured interviews conducted after return of speech or via OwnVoice if still nonverbal.
+- Hospital Anxiety and Depression Scale (HADS): Administered at enrollment and discharge. Adapted for administration via AAC.
+- Patient experience interviews (qualitative): Semi-structured interviews conducted after return of speech, or via OwnVoice if the patient still cannot speak.
 
 **Goals-of-Care Feasibility**
 
@@ -273,7 +273,7 @@ These metrics are logged on-device in a separate storage partition from the clin
 
 ### 9.1 Primary Analysis
 
-The primary outcome (CSRI score) will be analyzed using a generalized linear mixed model (GLMM) with fixed effects for intervention condition (OwnVoice vs. standard-of-care), time period, and cluster, and random effects for patient nested within cluster. The stepped-wedge design requires adjustment for time trends. The model will control for patient age, APACHE III severity score, reason for nonverbal status (intubation vs. tracheostomy vs. neurological), and ICU length of stay at enrollment. Analysis will follow intention-to-treat principles.
+The primary outcome (CSRI score) will be analyzed using a generalized linear mixed model (GLMM) with fixed effects for intervention condition (OwnVoice vs. standard-of-care), time period, and cluster, and random effects for patient nested within cluster. The stepped-wedge design requires adjustment for time trends. The model will control for patient age, APACHE III severity score, cause of impaired speech (intubation vs. tracheostomy vs. neurological), and ICU length of stay at enrollment. Analysis will follow intention-to-treat principles.
 
 ### 9.2 Secondary Analyses
 
@@ -301,7 +301,7 @@ Multiple imputation will be used for missing CSRI and HADS data (expected source
 
 The study protocol, consent documents, and all data collection instruments will be submitted for review and approval by the institutional review board (IRB) prior to any participant enrollment.
 
-### 10.2 Consent for Nonverbal Patients
+### 10.2 Consent for Patients Who Cannot Speak
 
 Informed consent presents a specific challenge for this population. The study will use a tiered consent model:
 
@@ -326,7 +326,7 @@ The study will document instances where My Wishes conversations led to changes i
 
 ### 10.5 Vulnerable Population Protections
 
-Critically ill nonverbal patients are a vulnerable population. Additional protections include:
+Critically ill patients without functional speech are a vulnerable population. Additional protections include:
 
 - Daily assessment of continued willingness to participate (via app interaction or nurse assessment)
 - Immediate withdrawal without consequence if the patient shows distress related to the device
@@ -377,9 +377,9 @@ Critically ill nonverbal patients are a vulnerable population. Additional protec
 This study would contribute:
 
 1. **First clinical evidence** for voice cloning in AAC for critically ill patients, including its impact on patient identity, emotional wellbeing, and family experience.
-2. **First application** of the Serious Illness Conversation Guide with nonverbal ICU patients via AAC technology, with feasibility and effectiveness data.
+2. **First application** of the Serious Illness Conversation Guide with ICU patients who cannot speak, via AAC technology, with feasibility and effectiveness data.
 3. **Technical validation** of multi-model on-device neural inference (TTS + LLM + STT) running simultaneously on consumer tablet hardware in a clinical environment.
-4. **Open-source validated instruments** for measuring voice identity preservation and communication satisfaction in nonverbal ICU populations.
+4. **Open-source validated instruments** for measuring voice identity preservation and communication satisfaction in ICU populations without functional speech.
 5. **Design guidelines** for AAC applications in acute care, informed by codesign with patients, families, and clinicians.
 
 ---
@@ -390,9 +390,9 @@ This study would contribute:
 |---|---|
 | Single-center design limits generalizability | Study site selected for demographic diversity; multi-center follow-up study planned |
 | Stepped-wedge design may introduce time-period confounding | Time-period fixed effects in GLMM; sensitivity analysis for temporal trends |
-| Nonverbal patient self-report may be unreliable | Use of validated instruments designed for nonverbal populations; triangulation with nursing assessments and observational data |
+| Self-report from patients without functional speech may be unreliable | Use of validated instruments designed for these populations; triangulation with nursing assessments and observational data |
 | Voice sample availability varies | Analysis stratified by voice condition (cloned vs. default TTS); pre-illness samples from family encouraged |
-| Short ICU stays may limit exposure | Inclusion criterion of ≥24 hours nonverbal period; subgroup analysis by exposure duration |
+| Short ICU stays may limit exposure | Inclusion criterion of ≥24 hours without functional speech; subgroup analysis by exposure duration |
 | Hawthorne effect | Stepped-wedge design provides within-cluster comparison; research observers trained in unobtrusive observation |
 | Delirium fluctuation may change eligibility during enrollment | Daily CAM-ICU screening; data analyzed for interaction between delirium status and outcomes |
 
@@ -404,7 +404,7 @@ This study would contribute:
 
 - **Primary manuscript:** Clinical outcomes (CSRI, HADS, nursing outcomes). Target: Critical Care Medicine or American Journal of Respiratory and Critical Care Medicine.
 - **Technical manuscript:** On-device inference performance, architecture, and open-source implementation. Target: arXiv (cs.HC), then JMIR or CHI.
-- **Goals-of-care manuscript:** My Wishes feasibility, SICG adaptation for nonverbal patients, and care plan impact. Target: Journal of Palliative Medicine or JAMA Internal Medicine.
+- **Goals-of-care manuscript:** My Wishes feasibility, SICG adaptation for patients who cannot speak, and care plan impact. Target: Journal of Palliative Medicine or JAMA Internal Medicine.
 - **Voice identity manuscript:** Voice cloning impact on patient identity and family experience. Target: Patient Education and Counseling or Annals of Internal Medicine.
 
 ### 15.2 Open Science
