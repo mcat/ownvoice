@@ -1,4 +1,4 @@
 import { render } from "preact";
-import { PlaceholderApp } from "./homepage/PlaceholderApp";
+import { HomepageApp } from "./homepage/HomepageApp";
 
-render(<PlaceholderApp />, document.getElementById("root")!);
+render(<HomepageApp />, document.getElementById("root")!);

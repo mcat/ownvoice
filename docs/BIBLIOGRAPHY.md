@@ -23,7 +23,7 @@ These are validated instruments or protocols that OwnVoice implements directly. 
 
 ### Emoji Faces Pain Scale (Emoji-FPS)
 
-> Li, L., et al. (2023). Development of the Emoji Faces Pain Scale and its validation on mobile devices in adult surgery patients. *Journal of Medical Internet Research*, 25, e41189.
+> Li, L., Wu, S., Wang, J., et al. (2023). Development of the Emoji Faces Pain Scale and Its Validation on Mobile Devices in Adult Surgery Patients: Longitudinal Observational Study. *Journal of Medical Internet Research*, 25, e41189. [doi.org/10.2196/41189](https://doi.org/10.2196/41189)
 
 **What it is:** A 6-face emoji pain scale at levels 0/2/4/6/8/10, validated against Wong-Baker FACES, NRS, VAS, and FPS-R in adult surgery patients (Spearman ρ 0.91–0.95). Cross-platform consistency validated across iOS, Android, Microsoft, and OpenMoji (weighted κ 0.96–0.97). Most preferred scale among study patients. Licensed CC-BY 4.0.
 
@@ -44,9 +44,9 @@ These are validated instruments or protocols that OwnVoice implements directly. 
 
 ### Serious Illness Conversation Guide (SICG)
 
-> Bernacki, R., et al. (2019). Effect of a Serious Illness Communication Program on surrogate decision-making. *JAMA Internal Medicine*, 179(10), 1334–1341.
+> Bernacki, R., Paladino, J., Neville, B. A., et al. (2019). Effect of the Serious Illness Care Program in Outpatient Oncology: A Cluster Randomized Clinical Trial. *JAMA Internal Medicine*, 179(6), 751–759. [doi.org/10.1001/jamainternmed.2019.0077](https://doi.org/10.1001/jamainternmed.2019.0077)
 >
-> Paladino, J., et al. (2019). Patient and clinician experience of a serious illness conversation guide. *Annals of Internal Medicine*, 170(10), 681–688.
+> Paladino, J., Bernacki, R., Neville, B. A., et al. (2019). Evaluating an Intervention to Improve Communication Between Oncology Clinicians and Patients With Life-Limiting Cancer: A Cluster Randomized Clinical Trial of the Serious Illness Care Program. *JAMA Oncology*, 5(6), 801–809. [doi.org/10.1001/jamaoncol.2019.0292](https://doi.org/10.1001/jamaoncol.2019.0292)
 
 **What it is:** A structured conversation framework from Ariadne Labs (Brigham and Women's Hospital / Harvard T.H. Chan School of Public Health / Dana-Farber Cancer Institute) for goals-of-care conversations. 7 EXPLORE topics. Used in over 1.8 million conversations worldwide. Clinical trials showed: more documented values conversations (89% vs. 44%), earlier conversations (5 months vs. 2.5 months before death), greater documentation of goals (61% vs. 11%), and reductions in moderate-to-severe anxiety (10.2% → 5.0%) and depression (20.8% → 10.6%). Licensed CC-BY-NC-SA 4.0.
 
@@ -71,7 +71,7 @@ Research that shaped the phrase library, communication categories, and emotional
 
 ### Psychoemotional Distress in Mechanically Ventilated Patients
 
-> Khalaila, R., et al. (2011). Communication difficulties and psychoemotional distress in patients receiving mechanical ventilation. *American Journal of Critical Care*, 20(6), 470–479.
+> Khalaila, R., Zbidat, W., Anwar, K., et al. (2011). Communication difficulties and psychoemotional distress in patients receiving mechanical ventilation. *American Journal of Critical Care*, 20(6), 470–479. [doi.org/10.4037/ajcc2011989](https://doi.org/10.4037/ajcc2011989)
 
 **Finding:** Mechanically ventilated patients experience significant psychoemotional distress directly associated with communication difficulties. Distress manifests as anxiety, frustration, fear, anger, and feelings of helplessness.
 
@@ -87,9 +87,9 @@ Research that shaped the phrase library, communication categories, and emotional
 
 ### Nurse-Patient Communication in the ICU
 
-> Happ, M. B., et al. (2011). Nurse-patient communication interactions in the ICU. *American Journal of Critical Care*, 20(2), e28–e40.
+> Happ, M. B., Garrett, K., Thomas, D. D., et al. (2011). Nurse-Patient Communication Interactions in the Intensive Care Unit. *American Journal of Critical Care*, 20(2), e28–e40. [doi.org/10.4037/ajcc2011433](https://doi.org/10.4037/ajcc2011433)
 >
-> Happ, M. B., et al. (2014). Effect of a multi-level intervention on nurse-patient communication in the ICU: Results of the SPEACS-2 trial. *Heart & Lung*, 43(2), 89–98.
+> Happ, M. B., Garrett, K., Tate, J., et al. (2014). Effect of a multi-level intervention on nurse-patient communication in the intensive care unit: Results of the SPEACS-2 trial. *Heart & Lung*, 43(2), 89–98. [doi.org/10.1016/j.hrtlng.2013.11.010](https://doi.org/10.1016/j.hrtlng.2013.11.010)
 
 **Finding:** SPEACS-2 identified frequency categories of nurse-patient ICU communication: pain reporting, physical needs (water, repositioning, bathroom), emotional expression, and questions about care plans. Communication attempts were often unsuccessful due to tool limitations. The study developed the Communication Satisfaction Rating Instrument (CSRI) for ICU patients without functional speech.
 
@@ -107,7 +107,7 @@ Research that shaped the phrase library, communication categories, and emotional
 
 ### The Lived Experience of Nonverbal Ventilated Patients
 
-> Carroll, S. M. (2007). Silent, slow lifeworld: The communication experience of nonvocal ventilated patients. *Qualitative Health Research*, 17(9), 1165–1177.
+> Carroll, S. M. (2007). Silent, Slow Lifeworld: The Communication Experience of Nonvocal Ventilated Patients. *Qualitative Health Research*, 17(9), 1165–1177. [doi.org/10.1177/1049732307307334](https://doi.org/10.1177/1049732307307334)
 
 **Finding:** Ventilated patients without functional speech describe their experience as a "silent, slow lifeworld" — marked by lost agency, time distortion, difficulty initiating communication, and emotional isolation. Patients reported that the inability to express emotions was as distressing as the inability to report physical symptoms.
 
@@ -124,7 +124,7 @@ Research that shaped the phrase library, communication categories, and emotional
 
 ### AAC Needs in Hospital Settings
 
-> Zubow, L., & Hurtig, R. (2013). A demographic study of AAC/AT needs in a large university hospital. *Perspectives on Augmentative and Alternative Communication*, 22(2), 79–86.
+> Zubow, L., & Hurtig, R. (2013). A Demographic Study of AAC/AT Needs in Hospitalized Patients. *Perspectives on Augmentative and Alternative Communication*, 22(2), 79–90. [doi.org/10.1044/aac22.2.79](https://doi.org/10.1044/aac22.2.79)
 
 **Finding:** Surveyed AAC needs across a large university hospital. Identified that the most common communication needs were: pain reporting, basic needs (water, bathroom, repositioning), emotional expression, and questions about care timeline. Also documented the demographic diversity of patients needing AAC, supporting the case for multilingual support.
 
@@ -140,7 +140,7 @@ Research that shaped the phrase library, communication categories, and emotional
 
 ### iPad-Based AAC in Critically Ill Patients
 
-> Dind, A.J., Starr, J.S., & Arora, S. (2021). iPad-based Apps to Facilitate Communication in Critically Ill Patients with Impaired Ability to Communicate: A Preclinical Analysis. *Indian Journal of Critical Care Medicine*, 25(11), 1232–1240.
+> Dind, A. J., Starr, J. S., & Arora, S. (2021). iPad-based Apps to Facilitate Communication in Critically Ill Patients with Impaired Ability to Communicate: A Preclinical Analysis. *Indian Journal of Critical Care Medicine*, 25(11), 1232–1240. [doi.org/10.5005/jp-journals-10071-24019](https://doi.org/10.5005/jp-journals-10071-24019)
 
 **Finding:** Physical access to the device is a primary barrier to AAC adoption in ICUs. Up to 90% of communication-impaired ICU patients report extreme distress. Inadequate communication may result in impaired symptom identification and reduced participation in care decisions.
 
@@ -157,7 +157,7 @@ Research that shaped the phrase library, communication categories, and emotional
 
 ### ICU Communication Challenges
 
-> Freeman-Sanderson, A., et al. (2019). Challenges of patient communication in the ICU. *Australian Critical Care*, 32(S1), 36.
+> Freeman-Sanderson, A., Morris, K., & Elkins, M. (2019). Characteristics of patient communication and prevalence of communication difficulty in the intensive care unit: An observational study. *Australian Critical Care*, 32(5), 373–377. [doi.org/10.1016/j.aucc.2018.09.002](https://doi.org/10.1016/j.aucc.2018.09.002)
 
 **Finding:** Summarizes the persistent challenges of ICU patient communication: tool limitations, nurse workflow constraints, and the gap between patient communication needs and available AAC solutions.
 
@@ -171,9 +171,9 @@ Research that shaped touch target sizes, debouncing, and interaction model.
 
 ### Motor-Impaired Touchscreen Interaction
 
-> Naftali, M., & Findlater, L. (2014). Accessibility in Context: Understanding the Truly Mobile Experience of Smartphone Users with Motor Impairments. *ASSETS '14: ACM SIGACCESS Conference on Computers and Accessibility*.
+> Naftali, M., & Findlater, L. (2014). Accessibility in Context: Understanding the Truly Mobile Experience of Smartphone Users with Motor Impairments. *Proceedings of the 16th International ACM SIGACCESS Conference on Computers & Accessibility (ASSETS '14)*, 209–216. [doi.org/10.1145/2661334.2661372](https://doi.org/10.1145/2661334.2661372)
 >
-> Vendome, C., et al. (2024). MotorEase: Automated Detection of Motor Impairment Accessibility Issues in Mobile App UIs. *arXiv:2403.13690*.
+> Krishna Vajjala, A., Mansur, S. M., Jose, J., Vendome, C., & Moran, K. (2024). MotorEase: Automated Detection of Motor Impairment Accessibility Issues in Mobile App UIs. *Proceedings of the IEEE/ACM 46th International Conference on Software Engineering (ICSE 2024)*, 1–13. [doi.org/10.1145/3597503.3639167](https://doi.org/10.1145/3597503.3639167) (preprint: [arXiv:2403.13690](https://arxiv.org/abs/2403.13690))
 
 **Finding:** Tap drift of 10–20mm from intended targets is common in motor-impaired users. Complex gestures (double-tap, long-press, swipe, pinch) are primary barriers for users with limited motor control.
 
@@ -192,7 +192,7 @@ Research that shaped touch target sizes, debouncing, and interaction model.
 
 ### ICU-Acquired Weakness
 
-> Appleton, R.T., Kinsella, J., & Quasim, T. (2015). The incidence of intensive care unit-acquired weakness syndromes: A systematic review. *Journal of the Intensive Care Society*, 16(2), 126–136.
+> Appleton, R. T., Kinsella, J., & Quasim, T. (2015). The incidence of intensive care unit-acquired weakness syndromes: A systematic review. *Journal of the Intensive Care Society*, 16(2), 126–136. [doi.org/10.1177/1751143714563016](https://doi.org/10.1177/1751143714563016)
 
 **Finding:** ICU-acquired weakness affects up to 80% of mechanically ventilated patients, causing reduced grip strength, impaired fine motor control, and exhaustion from sustained arm elevation.
 
@@ -228,7 +228,7 @@ Research that shaped cognitive load limits, external memory features, and interf
 
 ### PADIS Clinical Practice Guidelines
 
-> Devlin, J.W., Skrobik, Y., Gélinas, C., et al. (2018). Clinical Practice Guidelines for the Prevention and Management of Pain, Agitation/Sedation, Delirium, Immobility, and Sleep Disruption in Adult Patients in the ICU. *Critical Care Medicine*, 46(9), e825–e873.
+> Devlin, J. W., Skrobik, Y., Gélinas, C., et al. (2018). Clinical Practice Guidelines for the Prevention and Management of Pain, Agitation/Sedation, Delirium, Immobility, and Sleep Disruption in Adult Patients in the ICU. *Critical Care Medicine*, 46(9), e825–e873. [doi.org/10.1097/CCM.0000000000003299](https://doi.org/10.1097/CCM.0000000000003299)
 
 **Finding:** The PADIS guidelines document that even light sedation slows processing speed, reduces attention span, and impairs decision-making. Sleep disruption is identified as a distinct clinical concern alongside pain, agitation, and delirium.
 
@@ -246,9 +246,9 @@ Research that shaped cognitive load limits, external memory features, and interf
 
 ### ICU Delirium
 
-> Ely, E.W., Shintani, A., Truman, B., et al. (2004). Delirium as a predictor of mortality in mechanically ventilated patients in the intensive care unit. *JAMA*, 291(14), 1753–1762.
+> Ely, E. W., Shintani, A., Truman, B., et al. (2004). Delirium as a Predictor of Mortality in Mechanically Ventilated Patients in the Intensive Care Unit. *JAMA*, 291(14), 1753–1762. [doi.org/10.1001/jama.291.14.1753](https://doi.org/10.1001/jama.291.14.1753)
 >
-> Girard, T.D., et al. (2008). Efficacy and safety of a paired sedation and ventilator weaning protocol. *The Lancet*, 371(9607), 126–134.
+> Girard, T. D., Kress, J. P., Fuchs, B. D., et al. (2008). Efficacy and safety of a paired sedation and ventilator weaning protocol for mechanically ventilated patients in intensive care (Awakening and Breathing Controlled trial): a randomised controlled trial. *The Lancet*, 371(9607), 126–134. [doi.org/10.1016/S0140-6736(08)60105-1](https://doi.org/10.1016/S0140-6736(08)60105-1)
 
 **Finding:** Delirium occurs in 60–80% of mechanically ventilated ICU patients. Causes fluctuating attention, disorganized thinking, and altered consciousness. A patient may be lucid one moment and confused the next. Sensory deprivation and isolation are precipitating factors.
 
@@ -268,7 +268,7 @@ Research that shaped cognitive load limits, external memory features, and interf
 
 ### ICU Sound Levels
 
-> Darbyshire, J.L. & Young, J.D. (2013). An investigation of sound levels on intensive care units with reference to the WHO guidelines. *Critical Care*, 17(5), R187.
+> Darbyshire, J. L., & Young, J. D. (2013). An investigation of sound levels on intensive care units with reference to the WHO guidelines. *Critical Care*, 17(5), R187. [doi.org/10.1186/cc12870](https://doi.org/10.1186/cc12870)
 
 **Finding:** ICU baseline ambient noise levels typically range from 50–75 dB, with alarm peaks reaching 80–90 dB. The WHO guideline of 35 dB for patient areas is routinely exceeded.
 
@@ -283,7 +283,7 @@ Research that shaped cognitive load limits, external memory features, and interf
 
 ### Alarm Fatigue
 
-> Ruskin, K.J. & Hueske-Kraus, D. (2015). Alarm fatigue: impacts on patient safety. *Current Opinion in Anesthesiology*, 28(6), 685–690.
+> Ruskin, K. J., & Hueske-Kraus, D. (2015). Alarm fatigue: impacts on patient safety. *Current Opinion in Anaesthesiology*, 28(6), 685–690. [doi.org/10.1097/ACO.0000000000000260](https://doi.org/10.1097/ACO.0000000000000260)
 
 **Finding:** Clinicians override 93–96% of clinical alarms due to alarm fatigue. Audio signals from non-clinical devices should not resemble clinical alarms.
 
@@ -295,7 +295,7 @@ Research that shaped cognitive load limits, external memory features, and interf
 
 ### WCAG 2.1
 
-> W3C. Web Content Accessibility Guidelines (WCAG) 2.1. w3.org/TR/WCAG21.
+> W3C. Web Content Accessibility Guidelines (WCAG) 2.1. [w3.org/TR/WCAG21](https://www.w3.org/TR/WCAG21/)
 
 **Where it's applied:**
 
@@ -310,7 +310,7 @@ Research that shaped cognitive load limits, external memory features, and interf
 
 ### Healthcare App Accessibility
 
-> Boundev. (2026). Healthcare App Accessibility and WCAG Compliance Guide. boundev.com/blog.
+> Boundev. (2026). Healthcare App Accessibility and WCAG Compliance Guide. [boundev.com/blog](https://boundev.com/blog)
 
 **Finding:** Recommends touch targets of at least 48×48dp with 8dp spacing for motor-impaired and elderly users.
 
@@ -320,7 +320,7 @@ Research that shaped cognitive load limits, external memory features, and interf
 
 ### Atkinson Hyperlegible
 
-> Braille Institute. Atkinson Hyperlegible Font. brailleinstitute.org/freefont.
+> Braille Institute. Atkinson Hyperlegible Font. [brailleinstitute.org/freefont](https://www.brailleinstitute.org/freefont/)
 
 **What it is:** A typeface designed specifically for low-vision readability. Characters like I/l/1, O/0, and rn/m are visually distinct. Free and open-source.
 
@@ -338,7 +338,7 @@ Research that shaped cognitive load limits, external memory features, and interf
 
 ### Health Design Thinking
 
-> Ku, B. & Lupton, E. (2022). *Health Design Thinking: Creating Products and Services for Better Health*, 2nd ed. MIT Press / Cooper Hewitt, Smithsonian Design Museum.
+> Ku, B., & Lupton, E. (2022). *Health Design Thinking: Creating Products and Services for Better Health*, 2nd ed. MIT Press / Cooper Hewitt, Smithsonian Design Museum. [doi.org/10.7551/mitpress/14494.001.0001](https://doi.org/10.7551/mitpress/14494.001.0001)
 
 **Finding:** Articulates the "hard to use wrong" principle (from the Firefly phototherapy device case study). Emphasizes co-design over pure empathy — patients are experts on their own condition. Warns against infantilizing adult patients. Treats narrative as central to health design.
 
@@ -355,7 +355,7 @@ Research that shaped cognitive load limits, external memory features, and interf
 
 ### Usability Heuristics
 
-> Nielsen, J. (1994). 10 Usability Heuristics for User Interface Design. Nielsen Norman Group.
+> Nielsen, J. (1994). 10 Usability Heuristics for User Interface Design. Nielsen Norman Group. [nngroup.com/articles/ten-usability-heuristics/](https://www.nngroup.com/articles/ten-usability-heuristics/)
 
 **Finding:** Recognition over recall — minimize the user's memory load by making objects, actions, and options visible.
 
@@ -373,11 +373,11 @@ Research that shaped cognitive load limits, external memory features, and interf
 
 These instruments are referenced for the planned clinical validation study, not implemented in the app itself.
 
-> Brooke, J. (1996). SUS: A "quick and dirty" usability scale. *Usability Evaluation in Industry*, 189, 4–7.
+> Brooke, J. (1996). SUS: A "quick and dirty" usability scale. In P. W. Jordan, B. Thomas, B. A. Weerdmeester, & A. L. McClelland (Eds.), *Usability Evaluation in Industry* (pp. 189–194). Taylor & Francis. [doi.org/10.1201/9781498710411-35](https://doi.org/10.1201/9781498710411-35)
 
 Used in Phase 2 evaluation — administered to nurses at end of study participation.
 
-> Braun, V., & Clarke, V. (2019). Reflecting on reflexive thematic analysis. *Qualitative Research in Sport, Exercise and Health*, 11(4), 589–597.
+> Braun, V., & Clarke, V. (2019). Reflecting on reflexive thematic analysis. *Qualitative Research in Sport, Exercise and Health*, 11(4), 589–597. [doi.org/10.1080/2159676X.2019.1628806](https://doi.org/10.1080/2159676X.2019.1628806)
 
 Methodology for qualitative analysis of interview data in the research plan.
 
@@ -413,13 +413,13 @@ Research informing the recording-capture UX: what the patient sees while we capt
 
 ### Zero-Shot Voice Cloning and Reference-Audio Requirements
 
-> Casanova, E., et al. (2022). YourTTS: Towards Zero-Shot Multi-Speaker TTS and Zero-Shot Voice Conversion for everyone. *ICML 2022*.
+> Casanova, E., Weber, J., Shulby, C. D., Junior, A. C., Gölge, E., & Ponti, M. A. (2022). YourTTS: Towards Zero-Shot Multi-Speaker TTS and Zero-Shot Voice Conversion for Everyone. *Proceedings of the 39th International Conference on Machine Learning (ICML 2022)*. [arxiv.org/abs/2112.02418](https://arxiv.org/abs/2112.02418)
 >
-> Wang, C., et al. (2023). Neural Codec Language Models are Zero-Shot Text to Speech Synthesizers (VALL-E). *arXiv:2301.02111*.
+> Wang, C., Chen, S., Wu, Y., Zhang, Z., Zhou, L., Liu, S., et al. (2023). Neural Codec Language Models are Zero-Shot Text to Speech Synthesizers (VALL-E). *arXiv preprint*. [arxiv.org/abs/2301.02111](https://arxiv.org/abs/2301.02111) (journal version: [doi.org/10.1109/TASLPRO.2025.3530270](https://doi.org/10.1109/TASLPRO.2025.3530270))
 >
-> Coqui AI. XTTS-v2 model card and documentation.
+> Coqui AI. XTTS-v2 model card and documentation. [huggingface.co/coqui/XTTS-v2](https://huggingface.co/coqui/XTTS-v2)
 >
-> Veaux, C., Yamagishi, J., & MacDonald, K. (2019). CSTR VCTK Corpus: English Multi-speaker Corpus for CSTR Voice Cloning Toolkit (version 0.92). University of Edinburgh.
+> Veaux, C., Yamagishi, J., & MacDonald, K. (2019). CSTR VCTK Corpus: English Multi-speaker Corpus for CSTR Voice Cloning Toolkit (version 0.92). University of Edinburgh, Centre for Speech Technology Research. [doi.org/10.7488/ds/2645](https://doi.org/10.7488/ds/2645)
 
 **Finding:** Across the zero-shot voice-cloning literature and community documentation, there is convergent guidance on reference audio:
 
@@ -441,7 +441,7 @@ Research informing the recording-capture UX: what the patient sees while we capt
 
 ### Chatterbox Turbo Speaker Encoder (CAMPPlus)
 
-> Wang, H., et al. (2023). CAM++: A Fast and Efficient Network for Speaker Verification Using Context-Aware Masking. *Interspeech 2023*.
+> Wang, H., Zheng, S., Chen, Y., Cheng, L., & Chen, Q. (2023). CAM++: A Fast and Efficient Network for Speaker Verification Using Context-Aware Masking. *Proceedings of Interspeech 2023*, 5301–5305. [doi.org/10.21437/Interspeech.2023-1513](https://doi.org/10.21437/Interspeech.2023-1513)
 >
 > Resemble AI. Chatterbox Turbo. <https://huggingface.co/ResembleAI/chatterbox-turbo>
 >
@@ -513,9 +513,9 @@ AMN Healthcare's 2023 study of 204 million minutes of interpretation services ac
 
 The only US multi-patient ICU language study identified is Barwise et al. (2018) at Mayo Clinic — 779 LEP ICU admissions out of 27,523 total. Distribution: Arabic 26.4%, Spanish 26.3%, **Somali 8.7%**, Cambodian 4.4%, Vietnamese 2.8%, Lao 2.6%, **Hmong 2.4%**. LEP patients had 0.6-day longer ICU stays and 2.7-day longer hospital stays (p<.001). The sample is single-site and reflects local refugee populations; it's the best evidence that ICU linguistic profiles diverge from the general LEP census.
 
-> Barwise, A.K., Jaramillo, C., Novotny, P., et al. (2018). Differences in code status and end-of-life decision making in patients with limited English proficiency in the intensive care unit. *Mayo Clinic Proceedings*, 93(9), 1271–1281.
+> Barwise, A. K., Jaramillo, C., Novotny, P., et al. (2018). Differences in Code Status and End-of-Life Decision Making in Patients With Limited English Proficiency in the Intensive Care Unit. *Mayo Clinic Proceedings*, 93(9), 1271–1281. [doi.org/10.1016/j.mayocp.2018.04.021](https://doi.org/10.1016/j.mayocp.2018.04.021)
 
-> Barwise, A.K., Nyquist, C.A., Espinosa Suarez, N.R., et al. (2019). End of life decision making for ICU patients with limited English proficiency: A qualitative study of healthcare team insights. *Critical Care Medicine*, 47(10), 1380–1387.
+> Barwise, A. K., Nyquist, C. A., Espinoza Suarez, N. R., et al. (2019). End-of-Life Decision-Making for ICU Patients With Limited English Proficiency: A Qualitative Study of Healthcare Team Insights. *Critical Care Medicine*, 47(10), 1380–1387. [doi.org/10.1097/CCM.0000000000003920](https://doi.org/10.1097/CCM.0000000000003920)
 
 ### Policy context
 
@@ -523,15 +523,15 @@ The Joint Commission's 2026 National Performance Goals require US hospitals to s
 
 > Joint Commission. (2026). *Language access and interpreter services — understanding the requirements.* Standards FAQ.
 
-> CMS. (2025). *HCAHPS: Patients' perspectives of care survey.*
+> CMS. (2025). *HCAHPS: Patients' perspectives of care survey.* [hcahpsonline.org](https://hcahpsonline.org/)
 
 ### Supporting reviews
 
-> Twersky, S.E., Jefferson, R., Garcia-Ortiz, L., et al. (2024). The impact of limited English proficiency on healthcare access and outcomes in the U.S.: A scoping review. *Healthcare (Basel)*, 12(3), 364.
+> Twersky, S. E., Jefferson, R., Garcia-Ortiz, L., et al. (2024). The Impact of Limited English Proficiency on Healthcare Access and Outcomes in the U.S.: A Scoping Review. *Healthcare*, 12(3), 364. [doi.org/10.3390/healthcare12030364](https://doi.org/10.3390/healthcare12030364)
 
-> Sliwinski, K., Kutney-Lee, A., McHugh, M.D., Lasater, K.B. (2024). A review of disparities in outcomes of hospitalized patients with limited English proficiency: The importance of nursing resources. *Journal of Health Care for the Poor and Underserved*, 35(1), 359–374.
+> Sliwinski, K., Kutney-Lee, A., McHugh, M. D., & Lasater, K. B. (2024). A Review of Disparities in Outcomes of Hospitalized Patients with Limited English Proficiency: The Importance of Nursing Resources. *Journal of Health Care for the Poor and Underserved*, 35(1), 359–374. [doi.org/10.1353/hpu.2024.a919823](https://doi.org/10.1353/hpu.2024.a919823)
 
-> Lehman, R., Moriarty, H. (2024). Limited English proficiency and outcomes in the intensive care unit: An integrated review. *Clinical Nurse Specialist*, 38(2), 85–94.
+> Lehman, R., & Moriarty, H. (2024). Limited English Proficiency and Outcomes in the Intensive Care Unit: An Integrated Review. *Journal of Transcultural Nursing*, 35(3), 226–236. [doi.org/10.1177/10436596241229485](https://doi.org/10.1177/10436596241229485)
 
 ### Evidence-informed roadmap priorities
 
