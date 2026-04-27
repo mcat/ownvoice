@@ -392,6 +392,8 @@ export function App() {
           {tab === "quick" && !builderOpen && (
             <div style={{ marginBottom: 16, flexShrink: 0 }}>
               <div
+                role="group"
+                aria-label={resolvePhrase("ui.patient.suggestions.time_of_day_aria", patientLang)}
                 style={{
                   display: "flex",
                   gap: 10,
