@@ -43,7 +43,7 @@ describe("ProviderPanel", () => {
     render(<ProviderPanel {...baseProps} />);
     const sectionKeys = Object.keys(PROVIDER_CATEGORIES);
     for (const key of sectionKeys) {
-      expect(screen.getByRole("button", { name: `Show ${key}` })).toBeInTheDocument();
+      expect(screen.getByRole("radio", { name: `Show ${key}` })).toBeInTheDocument();
     }
   });
 
@@ -66,7 +66,7 @@ describe("ProviderPanel", () => {
   it("switching sections shows different phrases", () => {
     render(<ProviderPanel {...baseProps} />);
     // Switch to questions section
-    fireEvent.click(screen.getByRole("button", { name: "Show questions" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Show questions" }));
     const questions = PROVIDER_CATEGORIES["questions"];
     expect(screen.getByText(questions[0])).toBeInTheDocument();
   });
@@ -113,10 +113,10 @@ describe("ProviderPanel", () => {
   it("renders provider selector chips when multiple providers exist", () => {
     render(<ProviderPanel {...baseProps} />);
     expect(
-      screen.getByRole("button", { name: "Select Dr. Smith" }),
+      screen.getByRole("radio", { name: "Select Dr. Smith" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Select Nurse Lee" }),
+      screen.getByRole("radio", { name: "Select Nurse Lee" }),
     ).toBeInTheDocument();
   });
 
@@ -125,7 +125,7 @@ describe("ProviderPanel", () => {
     render(
       <ProviderPanel {...baseProps} onSelectProvider={onSelectProvider} />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Select Nurse Lee" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Select Nurse Lee" }));
     expect(onSelectProvider).toHaveBeenCalledWith(1);
   });
 });

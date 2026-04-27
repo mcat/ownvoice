@@ -559,6 +559,10 @@ const ja: LocaleStrings = {
   "ui.provider.select_provider": "{name}を選択",
   "ui.provider.show_category": "{key}を表示",
   "ui.provider.speak_phrase": "発話: {phrase}",
+  "ui.provider.speaking_as_aria": "Speaking as",
+  "ui.provider.section_aria": "Phrase category",
+  "ui.provider.phrases_aria": "{section} phrases",
+  "ui.provider.listen.capture_aria": "Voice capture",
 
   // ── UI chrome: ListenPanel ─────────────────────────────────────
   "ui.provider.listen.title": "聞く",

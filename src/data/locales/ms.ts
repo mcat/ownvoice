@@ -568,6 +568,10 @@ const ms: LocaleStrings = {
   "ui.provider.select_provider": "Pilih {name}",
   "ui.provider.show_category": "Tunjuk {key}",
   "ui.provider.speak_phrase": "Sebut: {phrase}",
+  "ui.provider.speaking_as_aria": "Speaking as",
+  "ui.provider.section_aria": "Phrase category",
+  "ui.provider.phrases_aria": "{section} phrases",
+  "ui.provider.listen.capture_aria": "Voice capture",
 
   // ── UI chrome: ListenPanel ─────────────────────────────────────
   "ui.provider.listen.title": "Dengar",

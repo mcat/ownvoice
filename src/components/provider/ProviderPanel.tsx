@@ -131,14 +131,19 @@ export function ProviderPanel({
 
       <BottomSheet.Body>
         {cfg.providers.length > 1 && (
-          <div style={chipRowStyle}>
+          <div
+            role="radiogroup"
+            aria-label={resolvePhrase("ui.provider.speaking_as_aria", caregiverLang)}
+            style={chipRowStyle}
+          >
             {cfg.providers.map((prov, idx) => (
               <Btn
                 key={idx}
                 onClick={() => onSelectProvider(idx)}
                 style={chipStyle(idx === activeProvIdx, providerGreen)}
                 aria-label={resolvePhrase("ui.provider.select_provider", caregiverLang).replace("{name}", prov.name)}
-                aria-pressed={idx === activeProvIdx}
+                role="radio"
+                aria-checked={idx === activeProvIdx}
               >
                 {prov.emoji ? `${prov.emoji} ` : ""}
                 {prov.name}
@@ -147,21 +152,29 @@ export function ProviderPanel({
           </div>
         )}
 
-        <div style={chipRowStyle}>
+        <div
+          role="radiogroup"
+          aria-label={resolvePhrase("ui.provider.section_aria", caregiverLang)}
+          style={chipRowStyle}
+        >
           {SECTION_KEYS.map((key) => (
             <Btn
               key={key}
               onClick={() => setActiveSection(key)}
               style={chipStyle(key === activeSection, blueText)}
               aria-label={resolvePhrase("ui.provider.show_category", caregiverLang).replace("{key}", key)}
-              aria-pressed={key === activeSection}
+              role="radio"
+              aria-checked={key === activeSection}
             >
               {key}
             </Btn>
           ))}
         </div>
 
-        <div>
+        <div
+          role="group"
+          aria-label={resolvePhrase("ui.provider.phrases_aria", caregiverLang).replace("{section}", activeSection)}
+        >
           {phrases.map((item, idx) => (
             <Btn
               key={idx}

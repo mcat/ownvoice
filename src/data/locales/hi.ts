@@ -554,6 +554,10 @@ const hi: LocaleStrings = {
   "ui.provider.select_provider": "{name} चुनें",
   "ui.provider.show_category": "{key} दिखाएँ",
   "ui.provider.speak_phrase": "बोलें: {phrase}",
+  "ui.provider.speaking_as_aria": "Speaking as",
+  "ui.provider.section_aria": "Phrase category",
+  "ui.provider.phrases_aria": "{section} phrases",
+  "ui.provider.listen.capture_aria": "Voice capture",
 
   // ── UI chrome: ListenPanel ─────────────────────────────────────
   "ui.provider.listen.title": "सुनें",
