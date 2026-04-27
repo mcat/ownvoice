@@ -234,9 +234,10 @@ export function FallbackVoicePicker({
     const enhanced = isEnhancedVoice(v);
 
     return (
+      <div role="listitem" key={v.voiceURI}>
       <button
-        key={v.voiceURI}
         onClick={() => handleSelect(v)}
+        aria-pressed={isSelected}
         style={{
           display: "flex",
           alignItems: "center",
@@ -317,12 +318,20 @@ export function FallbackVoicePicker({
           </span>
         )}
       </button>
+      </div>
     );
   }
 
   return (
     <div>
       <div
+        role="list"
+        aria-label={resolvePhrase(
+          hasRecommended
+            ? "ui.provider.fallback_voice.recommended_aria"
+            : "ui.provider.fallback_voice.all_aria",
+          caregiverLang,
+        )}
         style={{
           display: "flex",
           flexDirection: "column",
@@ -370,6 +379,8 @@ export function FallbackVoicePicker({
           {showOther && (
             <div
               id="fallback-voice-other-list"
+              role="list"
+              aria-label={resolvePhrase("ui.provider.fallback_voice.other_aria", caregiverLang)}
               style={{
                 marginTop: 10,
                 display: "flex",
