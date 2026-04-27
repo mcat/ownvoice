@@ -527,16 +527,18 @@ async function handleSynthesize(
     [maskName]: attentionMask,
   };
 
-  // Seed empty KV cache for all 30 layers × key/value.
+  // Seed empty KV cache for all 30 layers × key/value. The q4 LM uses
+  // fp32 KV cache (q4f16 used fp16; the f16 suffix marks activation
+  // precision). When swapping LM variants this dtype must match.
   for (let i = 0; i < NUM_LAYERS; i++) {
     lmInputs[`past_key_values.${i}.key`] = new ort.Tensor(
-      "float16",
-      new Uint16Array(0),
+      "float32",
+      new Float32Array(0),
       [1, NUM_HEADS, 0, HEAD_DIM],
     );
     lmInputs[`past_key_values.${i}.value`] = new ort.Tensor(
-      "float16",
-      new Uint16Array(0),
+      "float32",
+      new Float32Array(0),
       [1, NUM_HEADS, 0, HEAD_DIM],
     );
   }

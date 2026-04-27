@@ -704,8 +704,8 @@ async function warmupLanguageModel() {
     attention_mask: new ort.Tensor("int64", BigInt64Array.from({ length: batch * totalLen }, () => 1n), [batch, totalLen]),
   };
   for (let i = 0; i < NUM_LAYERS; i++) {
-    passA[`past_key_values.${i}.key`] = new ort.Tensor("float16", new Uint16Array(0), [batch, NUM_HEADS, 0, HEAD_DIM]);
-    passA[`past_key_values.${i}.value`] = new ort.Tensor("float16", new Uint16Array(0), [batch, NUM_HEADS, 0, HEAD_DIM]);
+    passA[`past_key_values.${i}.key`] = new ort.Tensor("float32", new Float32Array(0), [batch, NUM_HEADS, 0, HEAD_DIM]);
+    passA[`past_key_values.${i}.value`] = new ort.Tensor("float32", new Float32Array(0), [batch, NUM_HEADS, 0, HEAD_DIM]);
   }
   const resultA = await languageModelSession.run(passA);
 
@@ -833,8 +833,8 @@ async function handleSynthesize(text, speakerData, id, languageId, exaggeration 
     attention_mask: new ort.Tensor("int64", BigInt64Array.from({ length: batch * totalLen }, () => 1n), [batch, totalLen]),
   };
   for (let i = 0; i < NUM_LAYERS; i++) {
-    lmInputs[`past_key_values.${i}.key`] = new ort.Tensor("float16", new Uint16Array(0), [batch, NUM_HEADS, 0, HEAD_DIM]);
-    lmInputs[`past_key_values.${i}.value`] = new ort.Tensor("float16", new Uint16Array(0), [batch, NUM_HEADS, 0, HEAD_DIM]);
+    lmInputs[`past_key_values.${i}.key`] = new ort.Tensor("float32", new Float32Array(0), [batch, NUM_HEADS, 0, HEAD_DIM]);
+    lmInputs[`past_key_values.${i}.value`] = new ort.Tensor("float32", new Float32Array(0), [batch, NUM_HEADS, 0, HEAD_DIM]);
   }
 
   const generatedTokens = [START_SPEECH_TOKEN];
