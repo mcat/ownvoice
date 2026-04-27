@@ -216,11 +216,17 @@ export function PainFlow({ onSelect, t, theme }: PainFlowProps) {
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(3, 1fr)",
+            // Two rows share whatever vertical space the parent flex column
+            // grants. minmax(80px, 1fr) keeps each row at the WCAG touch
+            // floor on tiny viewports while expanding to fill on larger ones.
+            gridTemplateRows: "repeat(2, minmax(80px, 1fr))",
             gap: 12,
             flex: 1,
             minHeight: 0,
+            // overflowY:auto remains as a safety net: if even the 80px
+            // row floor doesn't fit (extreme zoom, very short viewport),
+            // the grid can scroll rather than clip behind the nav.
             overflowY: "auto",
-            alignContent: "start",
             // Breathing room so focus rings on edge buttons aren't clipped
             // by the scroll container's overflow boundary (WCAG 2.4.11/2.4.13).
             padding: 4,
@@ -242,23 +248,23 @@ export function PainFlow({ onSelect, t, theme }: PainFlowProps) {
                 alignItems: "center",
                 justifyContent: "center",
                 minWidth: 80,
-                minHeight: 80,
                 background: isHovered ? hoverBg : t.card,
                 border: `3px solid ${painColors[face.n]}`,
                 borderRadius: 16,
-                padding: 8,
+                padding: "10px 8px",
                 cursor: "pointer",
                 transition: "background 0.12s ease",
               }}
             >
-              <span style={{ fontSize: 36, lineHeight: 1 }}>{face.face}</span>
+              <span style={{ fontSize: 52, lineHeight: 1 }}>{face.face}</span>
               <span
                 class="font-sans"
                 style={{
-                  fontSize: 14,
+                  fontSize: 24,
                   color: t.text,
-                  marginTop: 4,
-                  fontWeight: 600,
+                  marginTop: 6,
+                  fontWeight: 700,
+                  lineHeight: 1,
                 }}
               >
                 {face.n}
@@ -266,10 +272,11 @@ export function PainFlow({ onSelect, t, theme }: PainFlowProps) {
               <span
                 class="font-sans"
                 style={{
-                  fontSize: 12,
+                  fontSize: 18,
                   color: t.sub,
-                  marginTop: 2,
+                  marginTop: 4,
                   textAlign: "center",
+                  fontWeight: 500,
                 }}
               >
                 {resolvePhrase(face.labelKey, patientLang)}
@@ -375,11 +382,14 @@ export function PainFlow({ onSelect, t, theme }: PainFlowProps) {
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(3, 1fr)",
+          // 9 descriptors → 3 rows. Same shared-space pattern as severity:
+          // rows divide available vertical space, with an 80px touch floor.
+          gridTemplateRows: "repeat(3, minmax(80px, 1fr))",
           gap: 12,
           flex: 1,
           minHeight: 0,
+          // Safety net for viewports too short to fit even the floor.
           overflowY: "auto",
-          alignContent: "start",
           padding: 4,
         }}
       >
@@ -398,7 +408,6 @@ export function PainFlow({ onSelect, t, theme }: PainFlowProps) {
               alignItems: "center",
               justifyContent: "center",
               minWidth: 64,
-              minHeight: 64,
               background: isHovered ? hoverBg : t.card,
               border: `2px solid ${t.border}`,
               borderRadius: 12,

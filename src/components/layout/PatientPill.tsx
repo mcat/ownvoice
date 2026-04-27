@@ -27,7 +27,6 @@ export function PatientPill({
   theme,
 }: Props) {
   const isDark = theme === "dark";
-  const blue = isDark ? "#60A5FA" : "#2563EB";
   // Show the trailing › only when staff is authenticated. To the patient,
   // the pill is purely informational; the chevron's "tap to edit" affordance
   // would be misleading since the PIN gate would block them anyway.
@@ -84,22 +83,6 @@ export function PatientPill({
       {patient.bed && (
         <span style={bedStyle}>
           {"·"} {resolvePhrase("ui.patient.header.bed_prefix", patient.patientLang)}{patient.bed}
-        </span>
-      )}
-      {patient.hasVoice && (
-        <span
-          aria-hidden="true"
-          style={{
-            fontSize: 11,
-            fontWeight: 700,
-            color: blue,
-            background: isDark ? "#1E3A5F" : "#EFF6FF",
-            borderRadius: 6,
-            padding: "2px 7px",
-            marginInlineStart: 4,
-          }}
-        >
-          {"🎤"}
         </span>
       )}
       {staffAuthed && (
