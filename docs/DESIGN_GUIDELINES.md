@@ -425,7 +425,7 @@ Before any screen ships, verify:
 - [ ] Are all touch targets at least 64×64 CSS pixels with 12px spacing?
 - [ ] Can every interactive element be used with a single, imprecise tap?
 - [ ] Is the screen usable with only one hand, from a semi-reclined position?
-- [ ] Has this screen been tested with iPadOS Switch Control?
+- [ ] Has this screen passed the manual switch-testing protocol? See [docs/switch-testing-protocol.md](./switch-testing-protocol.md) — the macOS Switch Control proxy is the v0.1 verification bar; iPadOS hardware verification is deferred to A2.
 
 **Cognitive accessibility:**
 - [ ] Can the screen be understood by a person who just woke from sedation?
