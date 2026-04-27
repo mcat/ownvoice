@@ -507,6 +507,7 @@ const zh: LocaleStrings = {
   "ui.patient.wishes.completion_title": "{name}的心愿",
   "ui.patient.wishes.my_wishes": "我的心愿",
   "ui.patient.wishes.step_of": "第{n}步，共{total}步",
+  "ui.patient.wishes.progress_aria": "Wishes wizard progress",
   "ui.patient.wishes.none_shared": "没有分享心愿。",
   "ui.patient.wishes.share_all_again": "再次分享所有心愿",
   "ui.patient.wishes.close": "关闭",

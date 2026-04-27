@@ -527,6 +527,7 @@ const fr: LocaleStrings = {
   "ui.patient.wishes.completion_title": "Souhaits de {name}",
   "ui.patient.wishes.my_wishes": "Mes souhaits",
   "ui.patient.wishes.step_of": "Étape {n} sur {total}",
+  "ui.patient.wishes.progress_aria": "Wishes wizard progress",
   "ui.patient.wishes.none_shared": "Aucun souhait n'a été partagé.",
   "ui.patient.wishes.share_all_again": "Partager tous les souhaits à nouveau",
   "ui.patient.wishes.close": "Fermer",

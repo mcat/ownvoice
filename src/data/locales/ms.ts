@@ -535,6 +535,7 @@ const ms: LocaleStrings = {
   "ui.patient.wishes.completion_title": "Hasrat {name}",
   "ui.patient.wishes.my_wishes": "Hasrat saya",
   "ui.patient.wishes.step_of": "Langkah {n} daripada {total}",
+  "ui.patient.wishes.progress_aria": "Wishes wizard progress",
   "ui.patient.wishes.none_shared": "Tiada hasrat yang dikongsi.",
   "ui.patient.wishes.share_all_again": "Kongsi semua hasrat sekali lagi",
   "ui.patient.wishes.close": "Tutup",

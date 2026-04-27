@@ -213,7 +213,10 @@ export function MyWishes({
       <BottomSheet.Header>
         <BottomSheet.Title>{resolvePhrase("ui.patient.wishes.my_wishes", patientLang)}</BottomSheet.Title>
         <BottomSheet.CloseButton aria-label={resolvePhrase("ui.patient.wishes.close", patientLang)} />
-        <div style={{ flexBasis: "100%" }}>
+        <nav
+          aria-label={resolvePhrase("ui.patient.wishes.progress_aria", patientLang)}
+          style={{ flexBasis: "100%" }}
+        >
           <div
             class="font-sans"
             style={{ fontSize: 13, color: t.muted, marginBottom: 6 }}
@@ -248,13 +251,14 @@ export function MyWishes({
               );
             })}
           </div>
-        </div>
+        </nav>
       </BottomSheet.Header>
 
       <BottomSheet.Body>
         {/* Topic header — question only; emoji & label are used on the
             completion screen, not here. */}
         <h2
+          id="wishes-question-heading"
           style={{
             marginTop: 16,
             marginBottom: 24,
@@ -270,6 +274,8 @@ export function MyWishes({
 
         {/* Response buttons */}
         <div
+          role="group"
+          aria-labelledby="wishes-question-heading"
           style={{
             display: "flex",
             flexDirection: "column",

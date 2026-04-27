@@ -557,6 +557,7 @@ const tl: LocaleStrings = {
   "ui.patient.wishes.completion_title": "Mga gusto ni {name}",
   "ui.patient.wishes.my_wishes": "Mga gusto ko",
   "ui.patient.wishes.step_of": "Hakbang {n} ng {total}",
+  "ui.patient.wishes.progress_aria": "Wishes wizard progress",
   "ui.patient.wishes.none_shared":
     "Walang mga gusto na na-share.",
   "ui.patient.wishes.share_all_again":

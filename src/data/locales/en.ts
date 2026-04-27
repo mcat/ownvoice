@@ -512,6 +512,7 @@ const en = {
   "ui.patient.wishes.completion_title": "{name}'s Wishes",
   "ui.patient.wishes.my_wishes": "My Wishes",
   "ui.patient.wishes.step_of": "Step {n} of {total}",
+  "ui.patient.wishes.progress_aria": "Wishes wizard progress",
   "ui.patient.wishes.none_shared": "No wishes were shared.",
   "ui.patient.wishes.share_all_again": "Share all wishes again",
   "ui.patient.wishes.close": "Close",

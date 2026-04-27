@@ -526,6 +526,7 @@ const ja: LocaleStrings = {
   "ui.patient.wishes.completion_title": "{name}さんの望み",
   "ui.patient.wishes.my_wishes": "わたしの望み",
   "ui.patient.wishes.step_of": "ステップ {n}/{total}",
+  "ui.patient.wishes.progress_aria": "Wishes wizard progress",
   "ui.patient.wishes.none_shared": "まだ望みは共有されていません。",
   "ui.patient.wishes.share_all_again": "すべての望みをもう一度共有する",
   "ui.patient.wishes.close": "閉じる",

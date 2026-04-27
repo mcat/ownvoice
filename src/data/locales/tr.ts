@@ -531,6 +531,7 @@ const tr: LocaleStrings = {
   "ui.patient.wishes.completion_title": "{name} — Dilekler",
   "ui.patient.wishes.my_wishes": "Dileklerim",
   "ui.patient.wishes.step_of": "Adım {n} / {total}",
+  "ui.patient.wishes.progress_aria": "Wishes wizard progress",
   "ui.patient.wishes.none_shared": "Hiç dilek paylaşılmadı.",
   "ui.patient.wishes.share_all_again": "Tüm dilekleri tekrar paylaş",
   "ui.patient.wishes.close": "Kapat",

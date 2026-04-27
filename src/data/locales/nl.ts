@@ -535,6 +535,7 @@ const nl: LocaleStrings = {
   "ui.patient.wishes.completion_title": "Wensen van {name}",
   "ui.patient.wishes.my_wishes": "Mijn wensen",
   "ui.patient.wishes.step_of": "Stap {n} van {total}",
+  "ui.patient.wishes.progress_aria": "Wishes wizard progress",
   "ui.patient.wishes.none_shared": "Er zijn geen wensen gedeeld.",
   "ui.patient.wishes.share_all_again": "Alle wensen opnieuw delen",
   "ui.patient.wishes.close": "Sluiten",

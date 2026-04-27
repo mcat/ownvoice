@@ -542,6 +542,7 @@ const he: LocaleStrings = {
   "ui.patient.wishes.completion_title": "המשאלות של {name}",
   "ui.patient.wishes.my_wishes": "המשאלות שלי",
   "ui.patient.wishes.step_of": "שלב {n} מתוך {total}",
+  "ui.patient.wishes.progress_aria": "Wishes wizard progress",
   "ui.patient.wishes.none_shared": "לא שותפו משאלות.",
   "ui.patient.wishes.share_all_again": "שתף את כל המשאלות שוב",
   "ui.patient.wishes.close": "סגור",

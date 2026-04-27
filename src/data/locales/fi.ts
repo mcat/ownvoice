@@ -520,6 +520,7 @@ const fi: LocaleStrings = {
   "ui.patient.wishes.completion_title": "Toiveet: {name}",
   "ui.patient.wishes.my_wishes": "Toiveeni",
   "ui.patient.wishes.step_of": "Vaihe {n}/{total}",
+  "ui.patient.wishes.progress_aria": "Wishes wizard progress",
   "ui.patient.wishes.none_shared": "Toiveita ei jaettu.",
   "ui.patient.wishes.share_all_again": "Jaa kaikki toiveet uudelleen",
   "ui.patient.wishes.close": "Sulje",

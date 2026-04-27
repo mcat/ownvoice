@@ -542,6 +542,7 @@ const el: LocaleStrings = {
   "ui.patient.wishes.completion_title": "Επιθυμίες — {name}",
   "ui.patient.wishes.my_wishes": "Οι επιθυμίες μου",
   "ui.patient.wishes.step_of": "Βήμα {n} από {total}",
+  "ui.patient.wishes.progress_aria": "Wishes wizard progress",
   "ui.patient.wishes.none_shared": "Δεν μοιράστηκαν επιθυμίες.",
   "ui.patient.wishes.share_all_again": "Μοιράσου ξανά όλες τις επιθυμίες",
   "ui.patient.wishes.close": "Κλείσιμο",

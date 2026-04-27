@@ -570,6 +570,7 @@ const pl: LocaleStrings = {
   "ui.patient.wishes.completion_title": "Życzenia — {name}",
   "ui.patient.wishes.my_wishes": "Moje życzenia",
   "ui.patient.wishes.step_of": "Krok {n} z {total}",
+  "ui.patient.wishes.progress_aria": "Wishes wizard progress",
   "ui.patient.wishes.none_shared": "Nie udostępniono żadnych życzeń.",
   "ui.patient.wishes.share_all_again": "Udostępnij wszystkie życzenia ponownie",
   "ui.patient.wishes.close": "Zamknij",

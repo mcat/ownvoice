@@ -539,6 +539,7 @@ const vi: LocaleStrings = {
   "ui.patient.wishes.completion_title": "Mong muốn của {name}",
   "ui.patient.wishes.my_wishes": "Mong muốn của tôi",
   "ui.patient.wishes.step_of": "Bước {n} / {total}",
+  "ui.patient.wishes.progress_aria": "Wishes wizard progress",
   "ui.patient.wishes.none_shared": "Chưa chia sẻ mong muốn nào.",
   "ui.patient.wishes.share_all_again":
     "Chia sẻ lại tất cả mong muốn",

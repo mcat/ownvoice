@@ -521,6 +521,7 @@ const ar: LocaleStrings = {
   "ui.patient.wishes.completion_title": "رغبات {name}",
   "ui.patient.wishes.my_wishes": "رغباتي",
   "ui.patient.wishes.step_of": "خطوة {n} من {total}",
+  "ui.patient.wishes.progress_aria": "Wishes wizard progress",
   "ui.patient.wishes.none_shared": "لم تتم مشاركة أي رغبات.",
   "ui.patient.wishes.share_all_again": "مشاركة جميع الرغبات مرة أخرى",
   "ui.patient.wishes.close": "إغلاق",

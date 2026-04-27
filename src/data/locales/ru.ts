@@ -525,6 +525,7 @@ const ru: LocaleStrings = {
   "ui.patient.wishes.completion_title": "Пожелания: {name}",
   "ui.patient.wishes.my_wishes": "Мои пожелания",
   "ui.patient.wishes.step_of": "Шаг {n} из {total}",
+  "ui.patient.wishes.progress_aria": "Wishes wizard progress",
   "ui.patient.wishes.none_shared": "Пожелания не были озвучены.",
   "ui.patient.wishes.share_all_again": "Озвучить все пожелания снова",
   "ui.patient.wishes.close": "Закрыть",

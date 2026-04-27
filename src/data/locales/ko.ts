@@ -537,6 +537,7 @@ const ko: LocaleStrings = {
   "ui.patient.wishes.completion_title": "{name}의 바람",
   "ui.patient.wishes.my_wishes": "나의 바람",
   "ui.patient.wishes.step_of": "{total}단계 중 {n}단계",
+  "ui.patient.wishes.progress_aria": "Wishes wizard progress",
   "ui.patient.wishes.none_shared": "공유된 바람이 없습니다.",
   "ui.patient.wishes.share_all_again": "모든 바람 다시 공유하기",
   "ui.patient.wishes.close": "닫기",

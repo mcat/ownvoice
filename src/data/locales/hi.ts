@@ -521,6 +521,7 @@ const hi: LocaleStrings = {
   "ui.patient.wishes.completion_title": "{name} की इच्छाएँ",
   "ui.patient.wishes.my_wishes": "मेरी इच्छाएँ",
   "ui.patient.wishes.step_of": "चरण {n} / {total}",
+  "ui.patient.wishes.progress_aria": "Wishes wizard progress",
   "ui.patient.wishes.none_shared": "कोई इच्छा साझा नहीं की गई।",
   "ui.patient.wishes.share_all_again": "सभी इच्छाएँ दोबारा साझा करें",
   "ui.patient.wishes.close": "बंद करें",

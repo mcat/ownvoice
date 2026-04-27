@@ -534,6 +534,7 @@ const sw: LocaleStrings = {
   "ui.patient.wishes.completion_title": "Matakwa ya {name}",
   "ui.patient.wishes.my_wishes": "Matakwa Yangu",
   "ui.patient.wishes.step_of": "Hatua {n} ya {total}",
+  "ui.patient.wishes.progress_aria": "Wishes wizard progress",
   "ui.patient.wishes.none_shared": "Hakuna matakwa yaliyoshirikiwa.",
   "ui.patient.wishes.share_all_again": "Shiriki matakwa yote tena",
   "ui.patient.wishes.close": "Funga",

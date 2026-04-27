@@ -522,6 +522,7 @@ const no: LocaleStrings = {
   "ui.patient.wishes.completion_title": "{name}s ønsker",
   "ui.patient.wishes.my_wishes": "Mine ønsker",
   "ui.patient.wishes.step_of": "Steg {n} av {total}",
+  "ui.patient.wishes.progress_aria": "Wishes wizard progress",
   "ui.patient.wishes.none_shared": "Ingen ønsker ble delt.",
   "ui.patient.wishes.share_all_again": "Del alle ønsker på nytt",
   "ui.patient.wishes.close": "Lukk",

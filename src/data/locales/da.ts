@@ -534,6 +534,7 @@ const da: LocaleStrings = {
   "ui.patient.wishes.completion_title": "{name}s ønsker",
   "ui.patient.wishes.my_wishes": "Mine ønsker",
   "ui.patient.wishes.step_of": "Trin {n} af {total}",
+  "ui.patient.wishes.progress_aria": "Wishes wizard progress",
   "ui.patient.wishes.none_shared": "Ingen ønsker blev delt.",
   "ui.patient.wishes.share_all_again": "Del alle ønsker igen",
   "ui.patient.wishes.close": "Luk",
