@@ -1,9 +1,10 @@
 // OwnVoice Service Worker
 //
-// Strategy map:
+// Strategy map (SW is scoped to /app/; only fetches initiated by pages
+// under /app/ pass through this worker):
 //   /models/*       → OPFS proxy (authoritative after primer runs); falls
 //                      through to network if missing (pre-primer boot)
-//   /, /index.html, /src/*, /models-manifest.json
+//   /app/, /app/index.html, /src/*, /models-manifest.json
 //                   → stale-while-revalidate (ship bugfixes without
 //                      re-downloading model bytes)
 //   everything else (ORT WASM, fonts, manifest.json, static images)
@@ -11,8 +12,8 @@
 //
 // Cache name bumps on every shipped SW change. Old caches are cleaned on activate.
 
-const CACHE_NAME = "ownvoice-v6";
-const SHELL_ASSETS = ["/", "/index.html"];
+const CACHE_NAME = "ownvoice-v7";
+const SHELL_ASSETS = ["/app/", "/app/index.html"];
 
 /**
  * Headers required to make `crossOriginIsolated === true`, which is the
@@ -78,7 +79,10 @@ async function opfsLookup(pathname) {
 }
 
 function isShellAsset(url) {
-  if (url.pathname === "/" || url.pathname === "/index.html") return true;
+  if (url.pathname === "/app/" || url.pathname === "/app/index.html") return true;
+  // Dev-mode module fetches: Vite serves /src/* unmolested; the SW (only
+  // active for pages under /app/) still sees these requests because controlled
+  // pages route all fetches through their controller, regardless of target.
   if (url.pathname.startsWith("/src/")) return true;
   if (url.pathname === "/models-manifest.json") return true;
   return false;
