@@ -157,14 +157,19 @@ export function ListenPanel({
 
       <BottomSheet.Body>
         {providers.length > 1 ? (
-          <div style={chipRowStyle}>
+          <div
+            role="radiogroup"
+            aria-label={resolvePhrase("ui.provider.speaking_as_aria", caregiverLang)}
+            style={chipRowStyle}
+          >
             {providers.map((prov, idx) => (
               <Btn
                 key={idx}
                 onClick={() => onSelectProvider(idx)}
                 style={chipStyle(idx === activeProvIdx)}
                 aria-label={resolvePhrase("ui.provider.select_provider", caregiverLang).replace("{name}", prov.name)}
-                aria-pressed={idx === activeProvIdx}
+                role="radio"
+                aria-checked={idx === activeProvIdx}
               >
                 {prov.emoji ? `${prov.emoji} ` : ""}
                 {prov.name}
@@ -178,7 +183,11 @@ export function ListenPanel({
           </div>
         )}
 
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 20 }}>
+        <div
+          role="group"
+          aria-label={resolvePhrase("ui.provider.listen.capture_aria", caregiverLang)}
+          style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 20 }}
+        >
           <Btn
             onClick={() => {
               if (listening) {

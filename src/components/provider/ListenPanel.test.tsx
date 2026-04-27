@@ -112,10 +112,10 @@ describe("ListenPanel", () => {
   it("renders provider selector chips when multiple providers exist", () => {
     render(<ListenPanel {...baseProps} />);
     expect(
-      screen.getByRole("button", { name: "Select Dr. Smith" }),
+      screen.getByRole("radio", { name: "Select Dr. Smith" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Select Nurse Lee" }),
+      screen.getByRole("radio", { name: "Select Nurse Lee" }),
     ).toBeInTheDocument();
   });
 
@@ -124,7 +124,7 @@ describe("ListenPanel", () => {
     render(
       <ListenPanel {...baseProps} onSelectProvider={onSelectProvider} />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Select Nurse Lee" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Select Nurse Lee" }));
     expect(onSelectProvider).toHaveBeenCalledWith(1);
   });
 
