@@ -30,9 +30,12 @@ Stack: TypeScript + Preact + Vite + Vitest. ESLint with `typescript-eslint` and 
 The app is decomposed into focused modules. Colocated `*.test.ts(x)` files live alongside their source.
 
 ### File layout
-- `index.html` — PWA entry point with meta tags
-- `src/main.tsx` — Preact mount point; wires theme side effects
-- `src/App.tsx` — Root component: setup gate, tab routing, overlay orchestration
+- `index.html` — Homepage entry (`/`); minimal head, no PWA registration
+- `app/index.html` — App entry (`/app/`); PWA manifest link + service-worker registration with scope `/app/`
+- `src/main-app.tsx` — Preact mount point for the app at `/app/`; wires theme side effects
+- `src/main-homepage.tsx` — Preact mount point for the homepage at `/`; loads the placeholder/research surfaces (built as a separate Vite entry to keep ML deps out of the homepage bundle)
+- `src/homepage/` — Homepage components (currently `PlaceholderApp.tsx`; expanded by Plan C)
+- `src/App.tsx` — Root component for the app: setup gate, tab routing, overlay orchestration
 - `src/speak.ts` — Single audio pathway. Priority: cloned-TTS (GPU → WASM) → Web Speech → confirmation tone. Owns the Web Audio post-processing pipeline (DC removal, biquads, spectral denoise, gate, normalize, limiter, fade).
 - `src/store.ts` — Legacy IndexedDB helper (`clearAll()` only). State lives in Zustand stores below.
 - `src/types.ts` — Shared TypeScript types (`Speaker`, `AppSettings`, `Category`, etc.)
@@ -66,7 +69,7 @@ OPFS is the authoritative store for model weights after the primer runs. The ser
 - **`loadManifest()` → `ModelsManifest`** — fetched once on boot (`cache: "no-store"`)
 - **`primeOffline(manifest)`** — async generator yielding `PrimerEvent`s; invoked from Settings "Prepare for offline"
 - **`verifyAllOnBoot()`** — cheap parallel integrity pass run at app start; populates `offlineStore.verified`
-- **SW strategy split** — stale-while-revalidate for `/`, `/index.html`, `/src/*`, `/models-manifest.json`; OPFS proxy for `/models/*`; cache-first-immutable for everything else. Bump `CACHE_NAME` in `public/sw.js` on every SW change.
+- **SW strategy split** — service worker is scoped to `/app/` (registered with `scope: "/app/"`; granted via the `Service-Worker-Allowed: /app/` header on `/sw.js` from `public/_headers`). Within scope: stale-while-revalidate for `/app/`, `/app/index.html`, `/src/*` (dev-mode module fetches), and `/models-manifest.json`; OPFS proxy for `/models/*`; cache-first-immutable for everything else. Bump `CACHE_NAME` in `public/sw.js` on every SW change.
 
 Clinicians use the "Prepare for offline" button in Settings before shifts to guarantee offline readiness. `navigator.storage.persist()` is called once by `ModelManager.init` to protect the whole origin from eviction.
 

@@ -26,7 +26,8 @@ export default defineConfig({
       provider: "v8",
       include: ["src/**/*.{ts,tsx}"],
       exclude: [
-        "src/main.tsx",
+        "src/main-app.tsx",
+        "src/main-homepage.tsx",
         "src/OwnVoice.jsx",
         "src/__tests__/**",
         "src/env.d.ts",
