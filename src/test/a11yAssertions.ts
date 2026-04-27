@@ -84,3 +84,47 @@ export function assertFocusOrderMatchesDomOrder(root: Element): void {
     );
   }
 }
+
+const GROUPING_ROLES = [
+  "group",
+  "radiogroup",
+  "toolbar",
+  "tablist",
+  "grid",
+  "list",
+  "log",
+] as const;
+
+/**
+ * Every container with a grouping role must have an accessible name —
+ * either `aria-label` or `aria-labelledby` pointing to an existing
+ * element. Unlabeled groups make Switch Control's drill-in stops
+ * announce as just "group" with no context.
+ */
+export function assertGroupContainersHaveLabels(root: Element): void {
+  const violations: string[] = [];
+  const selector = GROUPING_ROLES.map((r) => `[role="${r}"]`).join(", ");
+  const groups = root.querySelectorAll(selector);
+  for (const group of groups) {
+    const label = group.getAttribute("aria-label");
+    const labelledby = group.getAttribute("aria-labelledby");
+    if (label && label.trim().length > 0) continue;
+    if (labelledby) {
+      const ids = labelledby.split(/\s+/).filter(Boolean);
+      const allFound = ids.every((id) =>
+        root.querySelector(`#${CSS.escape(id)}`),
+      );
+      if (allFound) continue;
+      violations.push(
+        `${describe(group)} has dangling aria-labelledby="${labelledby}"`,
+      );
+      continue;
+    }
+    violations.push(`${describe(group)} has no accessible name`);
+  }
+  if (violations.length > 0) {
+    throw new Error(
+      `${violations.length} grouping container(s) missing accessible name:\n  ${violations.join("\n  ")}`,
+    );
+  }
+}

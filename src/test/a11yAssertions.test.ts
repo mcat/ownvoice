@@ -23,6 +23,7 @@ describe("buildRoot test fixture builder", () => {
 
 import {
   assertFocusOrderMatchesDomOrder,
+  assertGroupContainersHaveLabels,
   assertNoAriaHiddenAncestorOnFocusables,
 } from "./a11yAssertions";
 
@@ -76,5 +77,39 @@ describe("assertFocusOrderMatchesDomOrder", () => {
       <button tabindex="-1">C</button>
     `);
     expect(() => assertFocusOrderMatchesDomOrder(root)).not.toThrow();
+  });
+});
+
+describe("assertGroupContainersHaveLabels", () => {
+  it("passes when group has aria-label", () => {
+    const root = buildRoot(`<div role="group" aria-label="Comfort phrases"></div>`);
+    expect(() => assertGroupContainersHaveLabels(root)).not.toThrow();
+  });
+
+  it("passes when group has aria-labelledby pointing to existing element", () => {
+    const root = buildRoot(`
+      <h2 id="h">Pain Severity</h2>
+      <div role="radiogroup" aria-labelledby="h"></div>
+    `);
+    expect(() => assertGroupContainersHaveLabels(root)).not.toThrow();
+  });
+
+  it("fails when group has no label", () => {
+    const root = buildRoot(`<div role="group"></div>`);
+    expect(() => assertGroupContainersHaveLabels(root)).toThrow(/no accessible name/);
+  });
+
+  it("fails when aria-labelledby points to nonexistent id", () => {
+    const root = buildRoot(`<div role="radiogroup" aria-labelledby="missing"></div>`);
+    expect(() => assertGroupContainersHaveLabels(root)).toThrow(/dangling aria-labelledby/);
+  });
+
+  it("checks all grouping roles", () => {
+    const root = buildRoot(`
+      <div role="toolbar"></div>
+      <div role="tablist"></div>
+      <div role="grid"></div>
+    `);
+    expect(() => assertGroupContainersHaveLabels(root)).toThrow(/3 grouping container/);
   });
 });
