@@ -152,7 +152,7 @@ All copy uses the new patient-framing rule (§9). No "nonverbal" anywhere on the
 
 ### 6.1 What the researcher sees
 
-A fully-configured app within ~3 seconds of clicking "Try a demo." Patient is "Demo (Mark)" with `sample-voices/mark-voice.m4a` as the voice sample. Default English locale. One default provider ("Care Team") with no voice. ICU phrase library loaded. A small unobtrusive banner: *"You're trying a demo. Settings → Reset to start fresh."*
+A fully-configured app within ~3 seconds of clicking "Try a demo." Patient is "Demo Patient (Sally)" with `sample-voices/mark-voice.m4a` as the underlying voice sample (the patient name is generic; the recording filename does not need to match). Default English locale. One default provider ("Care Team") with no voice. ICU phrase library loaded. A small unobtrusive banner: *"You're trying a demo. Settings → Reset to start fresh."*
 
 ### 6.2 Demo seed data
 
@@ -172,7 +172,7 @@ useEffect: detect ?demo=1 in URL
   if (no demo patient already in IDB) {
     fetch /demo/speakerdata.json
     settingsStore.addPatient({
-      name: "Demo (Mark)",
+      name: "Demo Patient (Sally)",
       bed: "—",
       patientLang: "en",
       caregiverLang: "en",
