@@ -520,6 +520,9 @@ const ko: LocaleStrings = {
   "ui.provider.nav.theme.light": "밝게",
   "ui.provider.nav.theme.dark": "어둡게",
   "ui.patient.tabbar.say_more": "더 말하기",
+  "ui.patient.subcategory.aria_label": "Subcategory in {cat}",
+  "ui.patient.suggestions.time_of_day_aria": "Time-of-day suggestions",
+  "ui.patient.toolbar.aria_label": "Patient toolbar",
 
   // ── UI chrome: PainFlow ────────────────────────────────────────
   "ui.dual.pain.heading.severity": "얼마나 아프십니까?",

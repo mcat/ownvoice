@@ -525,6 +525,9 @@ const he: LocaleStrings = {
   "ui.provider.nav.theme.light": "בהיר",
   "ui.provider.nav.theme.dark": "כהה",
   "ui.patient.tabbar.say_more": "להגיד עוד",
+  "ui.patient.subcategory.aria_label": "Subcategory in {cat}",
+  "ui.patient.suggestions.time_of_day_aria": "Time-of-day suggestions",
+  "ui.patient.toolbar.aria_label": "Patient toolbar",
 
   // ── UI chrome: PainFlow ────────────────────────────────────────
   "ui.dual.pain.heading.severity": "כמה כואב לך?",

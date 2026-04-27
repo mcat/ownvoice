@@ -508,6 +508,9 @@ const ru: LocaleStrings = {
   "ui.provider.nav.theme.light": "Светлая",
   "ui.provider.nav.theme.dark": "Тёмная",
   "ui.patient.tabbar.say_more": "Сказать ещё",
+  "ui.patient.subcategory.aria_label": "Subcategory in {cat}",
+  "ui.patient.suggestions.time_of_day_aria": "Time-of-day suggestions",
+  "ui.patient.toolbar.aria_label": "Patient toolbar",
 
   // ── UI chrome: PainFlow ────────────────────────────────────────
   "ui.dual.pain.heading.severity": "Насколько сильная боль?",

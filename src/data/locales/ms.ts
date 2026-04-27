@@ -518,6 +518,9 @@ const ms: LocaleStrings = {
   "ui.provider.nav.theme.light": "Cerah",
   "ui.provider.nav.theme.dark": "Gelap",
   "ui.patient.tabbar.say_more": "Kata Lagi",
+  "ui.patient.subcategory.aria_label": "Subcategory in {cat}",
+  "ui.patient.suggestions.time_of_day_aria": "Time-of-day suggestions",
+  "ui.patient.toolbar.aria_label": "Patient toolbar",
 
   // ── UI chrome: PainFlow ────────────────────────────────────────
   "ui.dual.pain.heading.severity": "Berapa sakit anda rasa?",

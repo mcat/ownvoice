@@ -13,6 +13,23 @@ beforeEach(() => {
 });
 
 describe("SubcategoryChips", () => {
+  it("renders as radiogroup with one radio aria-checked", () => {
+    const { container } = render(
+      <SubcategoryChips
+        labels={["A", "B", "C"]}
+        activeIndex={1}
+        onSelect={vi.fn()}
+        t={light}
+        ariaLabel="Test"
+      />,
+    );
+    expect(container.querySelector('[role="radiogroup"]')).not.toBeNull();
+    const radios = container.querySelectorAll('[role="radio"]');
+    expect(radios.length).toBe(3);
+    expect(radios[1].getAttribute("aria-checked")).toBe("true");
+    expect(radios[0].getAttribute("aria-checked")).toBe("false");
+  });
+
   it("renders all chip labels", () => {
     render(
       <SubcategoryChips
@@ -36,7 +53,7 @@ describe("SubcategoryChips", () => {
         t={light}
       />,
     );
-    expect(screen.getAllByRole("button")).toHaveLength(4);
+    expect(screen.getAllByRole("radio")).toHaveLength(4);
   });
 
   it("active chip has distinct background color", () => {

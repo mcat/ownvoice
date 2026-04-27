@@ -503,6 +503,9 @@ const fi: LocaleStrings = {
   "ui.provider.nav.theme.light": "Vaalea",
   "ui.provider.nav.theme.dark": "Tumma",
   "ui.patient.tabbar.say_more": "Sano lisää",
+  "ui.patient.subcategory.aria_label": "Subcategory in {cat}",
+  "ui.patient.suggestions.time_of_day_aria": "Time-of-day suggestions",
+  "ui.patient.toolbar.aria_label": "Patient toolbar",
 
   // ── UI chrome: PainFlow ────────────────────────────────────────
   "ui.dual.pain.heading.severity": "Kuinka kovaa kipua sinulla on?",

@@ -525,6 +525,9 @@ const el: LocaleStrings = {
   "ui.provider.nav.theme.light": "Φωτεινό",
   "ui.provider.nav.theme.dark": "Σκοτεινό",
   "ui.patient.tabbar.say_more": "Πες περισσότερα",
+  "ui.patient.subcategory.aria_label": "Subcategory in {cat}",
+  "ui.patient.suggestions.time_of_day_aria": "Time-of-day suggestions",
+  "ui.patient.toolbar.aria_label": "Patient toolbar",
 
   // ── UI chrome: PainFlow ────────────────────────────────────────
   "ui.dual.pain.heading.severity": "Πόσο πονάτε;",

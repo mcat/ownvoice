@@ -522,6 +522,9 @@ const de: LocaleStrings = {
   "ui.provider.nav.theme.light": "Hell",
   "ui.provider.nav.theme.dark": "Dunkel",
   "ui.patient.tabbar.say_more": "Mehr sagen",
+  "ui.patient.subcategory.aria_label": "Subcategory in {cat}",
+  "ui.patient.suggestions.time_of_day_aria": "Time-of-day suggestions",
+  "ui.patient.toolbar.aria_label": "Patient toolbar",
 
   // ── UI chrome: PainFlow ────────────────────────────────────────
   "ui.dual.pain.heading.severity": "Wie stark sind Ihre Schmerzen?",

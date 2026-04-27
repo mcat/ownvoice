@@ -514,6 +514,9 @@ const tr: LocaleStrings = {
   "ui.provider.nav.theme.light": "Açık",
   "ui.provider.nav.theme.dark": "Koyu",
   "ui.patient.tabbar.say_more": "Daha Fazla Söyle",
+  "ui.patient.subcategory.aria_label": "Subcategory in {cat}",
+  "ui.patient.suggestions.time_of_day_aria": "Time-of-day suggestions",
+  "ui.patient.toolbar.aria_label": "Patient toolbar",
 
   // ── UI chrome: PainFlow ────────────────────────────────────────
   "ui.dual.pain.heading.severity": "Ne kadar ağrınız var?",

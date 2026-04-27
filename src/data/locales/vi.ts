@@ -522,6 +522,9 @@ const vi: LocaleStrings = {
   "ui.provider.nav.theme.light": "Sáng",
   "ui.provider.nav.theme.dark": "Tối",
   "ui.patient.tabbar.say_more": "Nói thêm",
+  "ui.patient.subcategory.aria_label": "Subcategory in {cat}",
+  "ui.patient.suggestions.time_of_day_aria": "Time-of-day suggestions",
+  "ui.patient.toolbar.aria_label": "Patient toolbar",
 
   // ── UI chrome: PainFlow ────────────────────────────────────────
   "ui.dual.pain.heading.severity": "Bạn đau bao nhiêu?",

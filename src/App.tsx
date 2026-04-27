@@ -314,6 +314,7 @@ export function App() {
             activeIndex={sub}
             onSelect={setSub}
             t={t}
+            ariaLabel={resolvePhrase("ui.patient.subcategory.aria_label", patientLang).replace("{cat}", cat.label)}
           />
           <PhraseGrid
             phrases={cat.subs[sub].phrases}

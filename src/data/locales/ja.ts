@@ -509,6 +509,9 @@ const ja: LocaleStrings = {
   "ui.provider.nav.theme.light": "ライト",
   "ui.provider.nav.theme.dark": "ダーク",
   "ui.patient.tabbar.say_more": "もっと伝える",
+  "ui.patient.subcategory.aria_label": "Subcategory in {cat}",
+  "ui.patient.suggestions.time_of_day_aria": "Time-of-day suggestions",
+  "ui.patient.toolbar.aria_label": "Patient toolbar",
 
   // ── UI chrome: PainFlow ────────────────────────────────────────
   "ui.dual.pain.heading.severity": "痛みはどのくらいですか？",

@@ -505,6 +505,9 @@ const no: LocaleStrings = {
   "ui.provider.nav.theme.light": "Lys",
   "ui.provider.nav.theme.dark": "Mørk",
   "ui.patient.tabbar.say_more": "Si mer",
+  "ui.patient.subcategory.aria_label": "Subcategory in {cat}",
+  "ui.patient.suggestions.time_of_day_aria": "Time-of-day suggestions",
+  "ui.patient.toolbar.aria_label": "Patient toolbar",
 
   // ── UI chrome: PainFlow ────────────────────────────────────────
   "ui.dual.pain.heading.severity": "Hvor mye vondt gjør det?",
