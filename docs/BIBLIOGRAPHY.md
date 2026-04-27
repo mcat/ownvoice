@@ -91,7 +91,7 @@ Research that shaped the phrase library, communication categories, and emotional
 >
 > Happ, M. B., et al. (2014). Effect of a multi-level intervention on nurse-patient communication in the ICU: Results of the SPEACS-2 trial. *Heart & Lung*, 43(2), 89–98.
 
-**Finding:** SPEACS-2 identified frequency categories of nurse-patient ICU communication: pain reporting, physical needs (water, repositioning, bathroom), emotional expression, and questions about care plans. Communication attempts were often unsuccessful due to tool limitations. The study developed the Communication Satisfaction Rating Instrument (CSRI) for nonverbal ICU patients.
+**Finding:** SPEACS-2 identified frequency categories of nurse-patient ICU communication: pain reporting, physical needs (water, repositioning, bathroom), emotional expression, and questions about care plans. Communication attempts were often unsuccessful due to tool limitations. The study developed the Communication Satisfaction Rating Instrument (CSRI) for ICU patients without functional speech.
 
 **Where it's applied:**
 
@@ -109,7 +109,7 @@ Research that shaped the phrase library, communication categories, and emotional
 
 > Carroll, S. M. (2007). Silent, slow lifeworld: The communication experience of nonvocal ventilated patients. *Qualitative Health Research*, 17(9), 1165–1177.
 
-**Finding:** Nonverbal ventilated patients describe their experience as a "silent, slow lifeworld" — marked by lost agency, time distortion, difficulty initiating communication, and emotional isolation. Patients reported that the inability to express emotions was as distressing as the inability to report physical symptoms.
+**Finding:** Ventilated patients without functional speech describe their experience as a "silent, slow lifeworld" — marked by lost agency, time distortion, difficulty initiating communication, and emotional isolation. Patients reported that the inability to express emotions was as distressing as the inability to report physical symptoms.
 
 **Where it's applied:**
 
