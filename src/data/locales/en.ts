@@ -503,6 +503,7 @@ const en = {
   "ui.patient.pain.step_of": "Step {n} of {total}",
   "ui.patient.pain.back_to": "Go back to {label}",
   "ui.patient.pain.level_aria": "Pain level {n}, {label}",
+  "ui.patient.pain.breadcrumb_aria": "Pain wizard steps",
 
   // ── UI chrome: MyWishes ────────────────────────────────────────
   "ui.patient.wishes.completion_title": "{name}'s Wishes",

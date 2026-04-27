@@ -498,6 +498,7 @@ const zh: LocaleStrings = {
   "ui.patient.pain.step_of": "第{n}步，共{total}步",
   "ui.patient.pain.back_to": "返回{label}",
   "ui.patient.pain.level_aria": "疼痛等级{n}，{label}",
+  "ui.patient.pain.breadcrumb_aria": "Pain wizard steps",
 
   // ── UI chrome: MyWishes ────────────────────────────────────────
   "ui.patient.wishes.completion_title": "{name}的心愿",

@@ -513,6 +513,7 @@ const it: LocaleStrings = {
   "ui.patient.pain.step_of": "Passo {n} di {total}",
   "ui.patient.pain.back_to": "Torna a {label}",
   "ui.patient.pain.level_aria": "Livello di dolore {n}, {label}",
+  "ui.patient.pain.breadcrumb_aria": "Pain wizard steps",
 
   // ── UI chrome: MyWishes ────────────────────────────────────────
   "ui.patient.wishes.completion_title": "Desideri di {name}",

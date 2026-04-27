@@ -526,6 +526,7 @@ const nl: LocaleStrings = {
   "ui.patient.pain.step_of": "Stap {n} van {total}",
   "ui.patient.pain.back_to": "Terug naar {label}",
   "ui.patient.pain.level_aria": "Pijnniveau {n}, {label}",
+  "ui.patient.pain.breadcrumb_aria": "Pain wizard steps",
 
   // ── UI chrome: MyWishes ────────────────────────────────────────
   "ui.patient.wishes.completion_title": "Wensen van {name}",

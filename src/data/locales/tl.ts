@@ -548,6 +548,7 @@ const tl: LocaleStrings = {
   "ui.patient.pain.step_of": "Hakbang {n} ng {total}",
   "ui.patient.pain.back_to": "Bumalik sa {label}",
   "ui.patient.pain.level_aria": "Antas ng sakit {n}, {label}",
+  "ui.patient.pain.breadcrumb_aria": "Pain wizard steps",
 
   // ── UI chrome: MyWishes ────────────────────────────────────────
   "ui.patient.wishes.completion_title": "Mga gusto ni {name}",

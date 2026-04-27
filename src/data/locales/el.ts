@@ -533,6 +533,7 @@ const el: LocaleStrings = {
   "ui.patient.pain.step_of": "Βήμα {n} από {total}",
   "ui.patient.pain.back_to": "Πίσω στο {label}",
   "ui.patient.pain.level_aria": "Επίπεδο πόνου {n}, {label}",
+  "ui.patient.pain.breadcrumb_aria": "Pain wizard steps",
 
   // ── UI chrome: MyWishes ────────────────────────────────────────
   "ui.patient.wishes.completion_title": "Επιθυμίες — {name}",

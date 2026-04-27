@@ -525,6 +525,7 @@ const sw: LocaleStrings = {
   "ui.patient.pain.step_of": "Hatua {n} ya {total}",
   "ui.patient.pain.back_to": "Rudi kwa {label}",
   "ui.patient.pain.level_aria": "Kiwango cha maumivu {n}, {label}",
+  "ui.patient.pain.breadcrumb_aria": "Pain wizard steps",
 
   // ── UI chrome: MyWishes ────────────────────────────────────────
   "ui.patient.wishes.completion_title": "Matakwa ya {name}",

@@ -512,6 +512,7 @@ const hi: LocaleStrings = {
   "ui.patient.pain.step_of": "चरण {n} / {total}",
   "ui.patient.pain.back_to": "{label} पर वापस जाएँ",
   "ui.patient.pain.level_aria": "दर्द स्तर {n}, {label}",
+  "ui.patient.pain.breadcrumb_aria": "Pain wizard steps",
 
   // ── UI chrome: MyWishes ────────────────────────────────────────
   "ui.patient.wishes.completion_title": "{name} की इच्छाएँ",

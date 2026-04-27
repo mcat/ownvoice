@@ -530,6 +530,7 @@ const vi: LocaleStrings = {
   "ui.patient.pain.step_of": "Bước {n} / {total}",
   "ui.patient.pain.back_to": "Quay lại {label}",
   "ui.patient.pain.level_aria": "Mức đau {n}, {label}",
+  "ui.patient.pain.breadcrumb_aria": "Pain wizard steps",
 
   // ── UI chrome: MyWishes ────────────────────────────────────────
   "ui.patient.wishes.completion_title": "Mong muốn của {name}",

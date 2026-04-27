@@ -516,6 +516,7 @@ const ru: LocaleStrings = {
   "ui.patient.pain.step_of": "Шаг {n} из {total}",
   "ui.patient.pain.back_to": "Вернуться к: {label}",
   "ui.patient.pain.level_aria": "Уровень боли {n}, {label}",
+  "ui.patient.pain.breadcrumb_aria": "Pain wizard steps",
 
   // ── UI chrome: MyWishes ────────────────────────────────────────
   "ui.patient.wishes.completion_title": "Пожелания: {name}",

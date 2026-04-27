@@ -517,6 +517,7 @@ const ja: LocaleStrings = {
   "ui.patient.pain.step_of": "ステップ {n}/{total}",
   "ui.patient.pain.back_to": "{label}に戻る",
   "ui.patient.pain.level_aria": "痛みレベル {n}、{label}",
+  "ui.patient.pain.breadcrumb_aria": "Pain wizard steps",
 
   // ── UI chrome: MyWishes ────────────────────────────────────────
   "ui.patient.wishes.completion_title": "{name}さんの望み",

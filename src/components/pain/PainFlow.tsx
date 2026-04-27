@@ -118,7 +118,10 @@ export function PainFlow({ onSelect, t, theme }: PainFlowProps) {
   // Inactive step label uses theme.muted which is AAA-contrast on both themes
   const inactiveText = t.muted;
   const breadcrumb = (
-    <>
+    <nav
+      aria-label={resolvePhrase("ui.patient.pain.breadcrumb_aria", patientLang)}
+      style={{ marginBottom: 16 }}
+    >
       {/* Visible step-of-total cue + SR-accessible aria-current below */}
       <div
         class="font-sans"
@@ -126,7 +129,7 @@ export function PainFlow({ onSelect, t, theme }: PainFlowProps) {
       >
         {resolvePhrase("ui.patient.pain.step_of", patientLang).replace("{n}", String(currentIndex + 1)).replace("{total}", String(STEPS.length))}
       </div>
-      <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
+      <div style={{ display: "flex", gap: 6 }}>
         {STEPS.map((s, i) => {
           const isPast = i < currentIndex;
           const isCurrent = s === step;
@@ -187,7 +190,7 @@ export function PainFlow({ onSelect, t, theme }: PainFlowProps) {
           );
         })}
       </div>
-    </>
+    </nav>
   );
 
   // Back navigation is available via the breadcrumb — past steps are
@@ -209,10 +212,12 @@ export function PainFlow({ onSelect, t, theme }: PainFlowProps) {
         }}
       >
         {breadcrumb}
-        <h2 class="font-sans" style={{ color: t.sub, margin: "0 0 16px", flexShrink: 0 }}>
+        <h2 id="pain-severity-heading" class="font-sans" style={{ color: t.sub, margin: "0 0 16px", flexShrink: 0 }}>
           <DualLocaleText variant="co-read" primaryKey="ui.dual.pain.heading.severity" primaryLocale={patientLang} glossLocale={caregiverLang} style={{ fontSize: 18, fontWeight: 600 }} />
         </h2>
         <div
+          role="radiogroup"
+          aria-labelledby="pain-severity-heading"
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(3, 1fr)",
@@ -241,6 +246,8 @@ export function PainFlow({ onSelect, t, theme }: PainFlowProps) {
               onClick={() => handleSeverity(face.n)}
               onPointerEnter={onTileEnter(key)}
               onPointerLeave={onTileLeave}
+              role="radio"
+              aria-checked={severity === face.n}
               aria-label={resolvePhrase("ui.patient.pain.level_aria", patientLang).replace("{n}", String(face.n)).replace("{label}", resolvePhrase(face.labelKey, patientLang))}
               style={{
                 display: "flex",
@@ -303,10 +310,12 @@ export function PainFlow({ onSelect, t, theme }: PainFlowProps) {
         }}
       >
         {breadcrumb}
-        <h2 class="font-sans" style={{ color: t.sub, margin: "0 0 16px", flexShrink: 0 }}>
+        <h2 id="pain-location-heading" class="font-sans" style={{ color: t.sub, margin: "0 0 16px", flexShrink: 0 }}>
           <DualLocaleText variant="co-read" primaryKey="ui.dual.pain.heading.location" primaryLocale={patientLang} glossLocale={caregiverLang} style={{ fontSize: 18, fontWeight: 600 }} />
         </h2>
         <div
+          role="radiogroup"
+          aria-labelledby="pain-location-heading"
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(3, 1fr)",
@@ -329,6 +338,8 @@ export function PainFlow({ onSelect, t, theme }: PainFlowProps) {
               onClick={() => handleLocation(region.key)}
               onPointerEnter={onTileEnter(hk)}
               onPointerLeave={onTileLeave}
+              role="radio"
+              aria-checked={location === region.key}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -375,10 +386,12 @@ export function PainFlow({ onSelect, t, theme }: PainFlowProps) {
       }}
     >
       {breadcrumb}
-      <h2 class="font-sans" style={{ color: t.sub, margin: "0 0 16px", flexShrink: 0 }}>
+      <h2 id="pain-descriptor-heading" class="font-sans" style={{ color: t.sub, margin: "0 0 16px", flexShrink: 0 }}>
         <DualLocaleText variant="co-read" primaryKey="ui.dual.pain.heading.descriptor" primaryLocale={patientLang} glossLocale={caregiverLang} style={{ fontSize: 18, fontWeight: 600 }} />
       </h2>
       <div
+        role="radiogroup"
+        aria-labelledby="pain-descriptor-heading"
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(3, 1fr)",
@@ -402,6 +415,8 @@ export function PainFlow({ onSelect, t, theme }: PainFlowProps) {
             onClick={() => handleDescriptor(desc.key)}
             onPointerEnter={onTileEnter(hk)}
             onPointerLeave={onTileLeave}
+            role="radio"
+            aria-checked={false}
             style={{
               display: "flex",
               flexDirection: "column",

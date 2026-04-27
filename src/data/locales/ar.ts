@@ -512,6 +512,7 @@ const ar: LocaleStrings = {
   "ui.patient.pain.step_of": "خطوة {n} من {total}",
   "ui.patient.pain.back_to": "العودة إلى {label}",
   "ui.patient.pain.level_aria": "مستوى الألم {n}، {label}",
+  "ui.patient.pain.breadcrumb_aria": "Pain wizard steps",
 
   // ── UI chrome: MyWishes ────────────────────────────────────────
   "ui.patient.wishes.completion_title": "رغبات {name}",

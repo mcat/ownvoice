@@ -526,6 +526,7 @@ const ms: LocaleStrings = {
   "ui.patient.pain.step_of": "Langkah {n} daripada {total}",
   "ui.patient.pain.back_to": "Kembali ke {label}",
   "ui.patient.pain.level_aria": "Tahap sakit {n}, {label}",
+  "ui.patient.pain.breadcrumb_aria": "Pain wizard steps",
 
   // ── UI chrome: MyWishes ────────────────────────────────────────
   "ui.patient.wishes.completion_title": "Hasrat {name}",

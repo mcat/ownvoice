@@ -528,6 +528,7 @@ const ko: LocaleStrings = {
   "ui.patient.pain.step_of": "{total}단계 중 {n}단계",
   "ui.patient.pain.back_to": "{label}(으)로 돌아가기",
   "ui.patient.pain.level_aria": "통증 수준 {n}, {label}",
+  "ui.patient.pain.breadcrumb_aria": "Pain wizard steps",
 
   // ── UI chrome: MyWishes ────────────────────────────────────────
   "ui.patient.wishes.completion_title": "{name}의 바람",

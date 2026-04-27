@@ -533,6 +533,7 @@ const he: LocaleStrings = {
   "ui.patient.pain.step_of": "שלב {n} מתוך {total}",
   "ui.patient.pain.back_to": "חזור ל{label}",
   "ui.patient.pain.level_aria": "רמת כאב {n}, {label}",
+  "ui.patient.pain.breadcrumb_aria": "Pain wizard steps",
 
   // ── UI chrome: MyWishes ────────────────────────────────────────
   "ui.patient.wishes.completion_title": "המשאלות של {name}",

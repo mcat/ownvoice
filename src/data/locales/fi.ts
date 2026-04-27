@@ -511,6 +511,7 @@ const fi: LocaleStrings = {
   "ui.patient.pain.step_of": "Vaihe {n}/{total}",
   "ui.patient.pain.back_to": "Takaisin: {label}",
   "ui.patient.pain.level_aria": "Kiputaso {n}, {label}",
+  "ui.patient.pain.breadcrumb_aria": "Pain wizard steps",
 
   // ── UI chrome: MyWishes ────────────────────────────────────────
   "ui.patient.wishes.completion_title": "Toiveet: {name}",

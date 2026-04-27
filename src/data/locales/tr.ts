@@ -522,6 +522,7 @@ const tr: LocaleStrings = {
   "ui.patient.pain.step_of": "Adım {n} / {total}",
   "ui.patient.pain.back_to": "{label} adımına geri dön",
   "ui.patient.pain.level_aria": "Ağrı düzeyi {n}, {label}",
+  "ui.patient.pain.breadcrumb_aria": "Pain wizard steps",
 
   // ── UI chrome: MyWishes ────────────────────────────────────────
   "ui.patient.wishes.completion_title": "{name} — Dilekler",
