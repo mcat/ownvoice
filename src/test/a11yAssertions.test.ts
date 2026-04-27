@@ -21,7 +21,10 @@ describe("buildRoot test fixture builder", () => {
   });
 });
 
-import { assertNoAriaHiddenAncestorOnFocusables } from "./a11yAssertions";
+import {
+  assertFocusOrderMatchesDomOrder,
+  assertNoAriaHiddenAncestorOnFocusables,
+} from "./a11yAssertions";
 
 describe("assertNoAriaHiddenAncestorOnFocusables", () => {
   it("passes when no focusable has aria-hidden ancestor", () => {
@@ -42,5 +45,36 @@ describe("assertNoAriaHiddenAncestorOnFocusables", () => {
     // which is the Wandke-paper flag-3 pattern.
     const root = buildRoot(`<button aria-hidden="true">Click me</button>`);
     expect(() => assertNoAriaHiddenAncestorOnFocusables(root)).not.toThrow();
+  });
+});
+
+describe("assertFocusOrderMatchesDomOrder", () => {
+  it("passes when no element has positive tabindex", () => {
+    const root = buildRoot(`
+      <button>A</button>
+      <button>B</button>
+      <button>C</button>
+    `);
+    expect(() => assertFocusOrderMatchesDomOrder(root)).not.toThrow();
+  });
+
+  it("fails when a positive tabindex disrupts DOM order", () => {
+    const root = buildRoot(`
+      <button tabindex="2">A</button>
+      <button>B</button>
+      <button tabindex="1">C</button>
+    `);
+    expect(() => assertFocusOrderMatchesDomOrder(root)).toThrow(
+      /positive tabindex/,
+    );
+  });
+
+  it("allows roving tabindex (one 0, rest -1)", () => {
+    const root = buildRoot(`
+      <button tabindex="0">A</button>
+      <button tabindex="-1">B</button>
+      <button tabindex="-1">C</button>
+    `);
+    expect(() => assertFocusOrderMatchesDomOrder(root)).not.toThrow();
   });
 });

@@ -60,3 +60,27 @@ export function assertNoAriaHiddenAncestorOnFocusables(root: Element): void {
     );
   }
 }
+
+/**
+ * Fail if any element uses a positive tabindex (>= 1), which disrupts
+ * DOM-order traversal in ways that surprise switch users. tabindex="0"
+ * (in tab order) and tabindex="-1" (programmatically focusable, not in
+ * tab order) are both fine.
+ */
+export function assertFocusOrderMatchesDomOrder(root: Element): void {
+  const violations: string[] = [];
+  const all = root.querySelectorAll("[tabindex]");
+  for (const el of all) {
+    const v = el.getAttribute("tabindex");
+    if (v == null) continue;
+    const n = parseInt(v, 10);
+    if (Number.isFinite(n) && n >= 1) {
+      violations.push(`${describe(el)} has positive tabindex="${v}"`);
+    }
+  }
+  if (violations.length > 0) {
+    throw new Error(
+      `positive tabindex on ${violations.length} element(s) (use 0 or -1):\n  ${violations.join("\n  ")}`,
+    );
+  }
+}
