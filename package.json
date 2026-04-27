@@ -15,8 +15,10 @@
     "manifest:check": "node scripts/regenerate-manifest.mjs --check"
   },
   "dependencies": {
+    "markdown-to-jsx": "^7.7.17",
     "onnxruntime-web": "^1.24.3",
     "preact": "^10.29.1",
+    "preact-iso": "^2.11.1",
     "zustand": "^5.0.12"
   },
   "devDependencies": {
