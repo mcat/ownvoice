@@ -31,7 +31,7 @@ The gap is not just technological — it's human. Patients in these settings exp
 
 ## 3. Target Users
 
-### Primary: Non-verbal patients in acute care
+### Primary: Patients in acute care who cannot speak
 
 - Post-intubation / ventilator patients
 - Post-surgical patients (throat, jaw, neurological)
@@ -283,11 +283,11 @@ A freeform drawing canvas with pen, eraser, and clear functions. Accessible from
 
 ### 6.8 My Wishes — Goals of Care Conversations (SICG Framework)
 
-OwnVoice integrates the Serious Illness Conversation Guide (SICG) from Ariadne Labs (Brigham and Women's Hospital / Harvard T.H. Chan School of Public Health, in collaboration with Dana-Farber Cancer Institute) to give nonverbal patients a voice in the most consequential conversations about their care. The SICG is licensed under CC-BY-NC-SA 4.0.
+OwnVoice integrates the Serious Illness Conversation Guide (SICG) from Ariadne Labs (Brigham and Women's Hospital / Harvard T.H. Chan School of Public Health, in collaboration with Dana-Farber Cancer Institute) to give patients without functional speech a voice in the most consequential conversations about their care. The SICG is licensed under CC-BY-NC-SA 4.0.
 
 The SICG has been used in over 1.8 million conversations worldwide. In clinical trials, it resulted in more conversations about values and goals (89% vs. 44%), conversations earlier in the illness course (5 months vs. 2.5 months before death), greater documentation of patient goals in the medical record (61% vs. 11%), and reductions in moderate to severe anxiety (10.2% control vs. 5.0% intervention) and depression (20.8% control vs. 10.6% intervention).
 
-**The problem OwnVoice addresses:** Existing AAC tools focus on immediate physical needs — water, pain, bathroom, medication. None address the deeper communication layer: a patient's values, goals, fears, hopes, and treatment preferences. A nonverbal patient in the ICU is excluded from the most important conversation of their life. Their autonomy — the right to decide what happens to their own body — is functionally erased. Not because anyone intends it, but because the communication tools don't exist.
+**The problem OwnVoice addresses:** Existing AAC tools focus on immediate physical needs — water, pain, bathroom, medication. None address the deeper communication layer: a patient's values, goals, fears, hopes, and treatment preferences. An ICU patient who cannot speak is excluded from the most important conversation of their life. Their autonomy — the right to decide what happens to their own body — is functionally erased. Not because anyone intends it, but because the communication tools don't exist.
 
 **How it works:**
 
@@ -313,7 +313,7 @@ Each response is spoken aloud in the patient's cloned voice when tapped, and add
 
 - **The patient controls the conversation.** They choose which topics to address, in any order, and can skip any question. No topic is mandatory. The flow auto-advances but never forces progression.
 - **Speak at any point.** Every response is spoken immediately — the patient doesn't have to complete the full flow to be heard.
-- **Not an advance directive.** This feature is a communication tool, not a legal document. It helps a nonverbal patient participate in goals-of-care conversations. Formal advance directives, POLST forms, and healthcare proxy decisions remain separate legal processes.
+- **Not an advance directive.** This feature is a communication tool, not a legal document. It helps a patient who cannot speak participate in goals-of-care conversations. Formal advance directives, POLST forms, and healthcare proxy decisions remain separate legal processes.
 - **Voice cloning is profound here.** Hearing a patient express "I want to focus on being comfortable" in their own voice — to their family, their nurse, their doctor — carries a weight that a synthesized voice or a text message cannot. This is the patient reclaiming their identity and agency.
 - **The clinician's role is preserved.** The provider panel includes SICG-aligned prompts ("I would like to talk about what matters most to you," "What are your most important goals right now?") so the clinician can initiate the conversation using the validated SICG framework. OwnVoice gives the patient the tools to respond, not to replace the clinician.
 
