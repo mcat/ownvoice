@@ -100,6 +100,15 @@ describe("PhraseButton", () => {
     vi.useRealTimers();
   });
 
+  it("forwards role and tabIndex props to the underlying button", () => {
+    const { container } = render(
+      <PhraseButton phrase={phrase} onTap={vi.fn()} t={light} role="gridcell" tabIndex={-1} />
+    );
+    const cell = container.querySelector('[role="gridcell"]');
+    expect(cell).not.toBeNull();
+    expect(cell?.getAttribute("tabindex")).toBe("-1");
+  });
+
   it("applies lit highlight after click, then reverts", async () => {
     vi.useFakeTimers();
     render(<PhraseButton phrase={phrase} onTap={vi.fn()} t={light} />);

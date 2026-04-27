@@ -10,6 +10,10 @@ interface PhraseButtonProps {
   phrase: Phrase;
   onTap: (text: string, opts?: { key?: PhraseKey }) => void;
   t: ThemeTokens;
+  /** Override role — used by PhraseGrid to set role="gridcell". */
+  role?: string;
+  /** Roving-tabindex value. PhraseGrid sets 0 on the active cell, -1 on the rest. */
+  tabIndex?: number;
 }
 
 /** 64px+ touch target with icon + label. Single tap speaks the phrase.
@@ -22,7 +26,7 @@ interface PhraseButtonProps {
  *  + stronger shadow) and stretches the post-tap "lit" highlight from
  *  500 ms to 1000 ms so patients with slow motor control can confirm
  *  what they selected before the visual clears. */
-export function PhraseButton({ phrase, onTap, t }: PhraseButtonProps) {
+export function PhraseButton({ phrase, onTap, t, role, tabIndex }: PhraseButtonProps) {
   const [lit, setLit] = useState(false);
   const [hover, setHover] = useState(false);
   const assistiveInput = useSettingsStore((s) => s.cfg?.assistiveInput === true);
@@ -60,6 +64,8 @@ export function PhraseButton({ phrase, onTap, t }: PhraseButtonProps) {
       onPointerEnter={onPointerEnter}
       onPointerLeave={onPointerLeave}
       aria-label={phrase.text}
+      role={role}
+      tabIndex={tabIndex}
       style={{
         background: lit ? "#2563EB" : t.card,
         color: lit ? "#FFF" : t.text,
