@@ -583,6 +583,7 @@ const tl: LocaleStrings = {
 
   // ── UI chrome: Thread ──────────────────────────────────────────
   "ui.dual.thread.repeat_aria": "Ulitin: {text}",
+  "ui.dual.thread.aria_label": "Conversation",
 
   // ── UI chrome: ProviderPanel ───────────────────────────────────
   "ui.provider.care_team.title": "Care team",
