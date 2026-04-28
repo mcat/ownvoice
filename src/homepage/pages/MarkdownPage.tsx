@@ -132,7 +132,7 @@ const overrides = {
 
 export function MarkdownPage({ content }: { content: string }) {
   return (
-    <article
+    <main
       style={{
         fontFamily: t.font,
         color: t.color.body,
@@ -140,7 +140,7 @@ export function MarkdownPage({ content }: { content: string }) {
         padding: "48px 32px 96px",
       }}
     >
-      <div
+      <article
         style={{
           maxWidth: t.bodyMaxWidth,
           margin: "0 auto",
@@ -149,7 +149,7 @@ export function MarkdownPage({ content }: { content: string }) {
         }}
       >
         <Markdown options={{ overrides }}>{content}</Markdown>
-      </div>
-    </article>
+      </article>
+    </main>
   );
 }
