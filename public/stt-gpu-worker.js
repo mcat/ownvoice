@@ -21,7 +21,8 @@
  *   { type: "error", message: string }
  */
 
-import * as ort from "/ort/ort.webgpu.min.mjs";
+// Versioned to match wasmPaths below. See tts-gpu-worker.js for rationale.
+import * as ort from "/ort/v1.24.3/ort.webgpu.min.mjs";
 
 const LOG = "[OwnVoice:STT:GPU]";
 
