@@ -12,7 +12,7 @@
 //
 // Cache name bumps on every shipped SW change. Old caches are cleaned on activate.
 
-const CACHE_NAME = "ownvoice-v7";
+const CACHE_NAME = "ownvoice-v8";
 const SHELL_ASSETS = ["/app/", "/app/index.html"];
 
 /**
