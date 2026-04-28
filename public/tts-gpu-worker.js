@@ -23,10 +23,13 @@
  *   responses from timed-out synths it no longer cares about.
  */
 
-// Import ORT from /ort/ (copies of the dist files in public/).
-// This ensures the dynamic import of the JSEP shim resolves correctly
-// relative to this file's location — both are served from the same /ort/ path.
-import * as ort from "/ort/ort.webgpu.min.mjs";
+// Import ORT from the versioned dist path. The version segment matches
+// src/models/assetVersions.ts ORT_VERSION. ORT's internal dynamic
+// imports for the JSEP/asyncify shim resolve relative to wasmPaths
+// (set below to the same /ort/v<X>/ prefix), so the .mjs and .wasm
+// must live at that same path. Update both this URL and the wasmPaths
+// string when bumping ORT_VERSION.
+import * as ort from "/ort/v1.24.3/ort.webgpu.min.mjs";
 
 const LOG = "[OwnVoice:TTS:GPU]";
 const SAMPLE_RATE = 24000;

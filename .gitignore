@@ -42,7 +42,9 @@ Thumbs.db
 # Large asset files — too big for git. Download with: npm run assets:download
 # (see scripts/download-assets.sh)
 public/models/
-public/ort/v*/
+# ORT versioned dir: ignore the large .wasm bytes only; keep the small .mjs
+# glue tracked so a fresh checkout has the JS shims without downloading.
+public/ort/v*/*.wasm
 
 # Pipeline-verify script outputs — regenerated on each run
 scripts/pipeline-verify/*.wav

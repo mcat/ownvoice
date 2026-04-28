@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "description": "Exclude small static .mjs glue files under /ort/ from Pages Functions so they're served as static assets from dist/. The Function at /ort/[[path]].ts proxies R2 for the large .wasm bytes; .mjs glue stays in dist/ and is served directly.",
+  "description": "Exclude the small ORT .mjs glue files from Pages Functions so they're served as static assets from dist/. The Function at /ort/[[path]].ts proxies R2 for the large .wasm bytes; .mjs glue lives in dist/ at the same versioned path (e.g. dist/ort/v1.24.3/foo.mjs) and is served directly.",
   "include": ["/*"],
-  "exclude": ["/ort/*.mjs"]
+  "exclude": ["/ort/v*/*.mjs"]
 }
