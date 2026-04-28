@@ -13,10 +13,37 @@
  * Range requests are not currently supported by the binding's `get()`
  * method; ORT loads the WASM as a single GET, so this is fine. If
  * future code uses Range, switch to `env.BUCKET.get(key, { range })`.
+ *
+ * Content-Type override: R2 stores whatever Content-Type was set at
+ * upload time, and our upload script doesn't set one — so R2 defaults
+ * to `text/html`. Combined with Cloudflare's default `nosniff` header,
+ * browsers strictly refuse to interpret WASM bytes as HTML and fail
+ * to instantiate. Override based on file extension before responding.
  */
 
 interface Env {
   BUCKET: R2Bucket;
+}
+
+const CONTENT_TYPE_BY_EXT: Record<string, string> = {
+  wasm: "application/wasm",
+  mjs: "application/javascript",
+  js: "application/javascript",
+  json: "application/json",
+  jinja: "text/plain; charset=utf-8",
+  // ONNX model files: not a registered MIME type. octet-stream forces the
+  // browser to treat as binary so streaming/range fetches don't try to
+  // text-decode.
+  onnx: "application/octet-stream",
+  onnx_data: "application/octet-stream",
+};
+
+function contentTypeForKey(key: string): string {
+  // Match the LAST dot-separated component to handle names like
+  // "model_q4.onnx_data" (extension is "onnx_data", not "data").
+  const m = key.match(/\.([^./]+)$/);
+  const ext = m?.[1]?.toLowerCase();
+  return (ext && CONTENT_TYPE_BY_EXT[ext]) || "application/octet-stream";
 }
 
 export const onRequestGet: PagesFunction<Env> = async ({ params, env }) => {
@@ -31,6 +58,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ params, env }) => {
   }
   const headers = new Headers();
   object.writeHttpMetadata(headers);
+  headers.set("content-type", contentTypeForKey(key));
   headers.set("etag", object.httpEtag);
   // 1 year + immutable: paths are versioned, so the bytes never change
   // for a given URL.

@@ -71,9 +71,35 @@ async function existsWithSize(key, sizeBytes) {
   }
 }
 
+// Mirrors the override in functions/{ort,models}/[[path]].ts. Uploading with
+// the right Content-Type means even direct R2 reads (or future Functions
+// that don't override) get the correct type.
+const CONTENT_TYPE_BY_EXT = {
+  wasm: "application/wasm",
+  mjs: "application/javascript",
+  js: "application/javascript",
+  json: "application/json",
+  jinja: "text/plain; charset=utf-8",
+  onnx: "application/octet-stream",
+  onnx_data: "application/octet-stream",
+};
+
+function contentTypeForKey(key) {
+  const m = key.match(/\.([^./]+)$/);
+  const ext = m?.[1]?.toLowerCase();
+  return (ext && CONTENT_TYPE_BY_EXT[ext]) || "application/octet-stream";
+}
+
 async function uploadOne(key, localPath) {
   const body = await readFile(localPath);
-  await s3.send(new PutObjectCommand({ Bucket, Key: key, Body: body }));
+  await s3.send(
+    new PutObjectCommand({
+      Bucket,
+      Key: key,
+      Body: body,
+      ContentType: contentTypeForKey(key),
+    }),
+  );
   console.log(`  ✓ ${key} (${body.byteLength.toLocaleString()} B)`);
 }
 
