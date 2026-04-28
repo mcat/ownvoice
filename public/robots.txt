@@ -1,0 +1,16 @@
+# Block all crawlers from indexing the site.
+#
+# OwnVoice is a v0.1 prototype (not for clinical use) and the homepage
+# content is still in flux; we don't want search engines surfacing it
+# yet. Revisit before any public launch.
+#
+# Note: this prevents *crawling*, not strictly indexing. Compliant
+# crawlers (Googlebot, Bingbot, GPTBot, ClaudeBot, CCBot, PerplexityBot,
+# etc.) honor this; URLs may still appear in search results without a
+# snippet if linked from elsewhere. To fully suppress indexing, add a
+# `noindex` meta tag or `X-Robots-Tag: noindex` header — but those
+# require the page to be crawlable, so they're mutually exclusive with
+# the directives below.
+
+User-agent: *
+Disallow: /
