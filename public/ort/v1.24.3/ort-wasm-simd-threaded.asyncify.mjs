@@ -1,3 +1,7 @@
+// build:2026-04-28-coep-cachebust — single-line marker prepended to bump
+// ETag so CF edge cache misses on this deploy and serves the response
+// with the new COEP/CORP headers from _headers. See PR #126 for the
+// pattern, #125 for why we need COEP on worker-loaded scripts.
 async function ortWasmThreaded(moduleArg={}){var moduleRtn;var g=moduleArg,aa=!!globalThis.window,ba=!!globalThis.WorkerGlobalScope,l=globalThis.process?.versions?.node&&"renderer"!=globalThis.process?.type,n=ba&&self.name?.startsWith("em-pthread");if(l){const {createRequire:a}=await import("module");var require=a(import.meta.url),ca=require("worker_threads");global.Worker=ca.Worker;n=(ba=!ca.Je)&&"em-pthread"==ca.workerData}g.mountExternalData=(a,b)=>{a.startsWith("./")&&(a=a.substring(2));(g.Zc||(g.Zc=new Map)).set(a,b)};
 g.unmountExternalData=()=>{delete g.Zc};var SharedArrayBuffer=globalThis.SharedArrayBuffer??(new WebAssembly.Memory({initial:0,maximum:0,Me:!0})).buffer.constructor;
 let ea=()=>{const a=b=>(...c)=>{const d=r;c=b(...c);return r!=d?da():c};(b=>{for(const c of b)g[c]=a(g[c])})(["_OrtAppendExecutionProvider","_OrtCreateSession","_OrtRun","_OrtRunWithBinding","_OrtBindInput"]);"undefined"!==typeof jsepRunAsync&&(g._OrtRun=jsepRunAsync(g._OrtRun),g._OrtRunWithBinding=jsepRunAsync(g._OrtRunWithBinding));ea=void 0};g.asyncInit=()=>{ea?.()};var fa="./this.program",ha=(a,b)=>{throw b;},ia=import.meta.url,ja="",ka,la;

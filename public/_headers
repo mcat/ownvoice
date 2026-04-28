@@ -41,5 +41,19 @@
 /ort/*
   Cache-Control: public, max-age=31536000, immutable
 
+# ORT's `simd-threaded` build spawns sub-workers that re-import the .mjs
+# glue from a worker context. Sub-worker entry-point scripts loaded into
+# a crossOriginIsolated page strictly require their response to carry a
+# COEP header — same constraint we hit for /tts-gpu-worker.js in #125.
+# Without these, Chrome surfaces it in DevTools as
+# "(blocked:COEP-framed resource needs COEP header)".
+#
+# `_routes.json` excludes /ort/v*/*.mjs from the Pages Function, so these
+# are served as static assets by CF Pages. _headers is the right place
+# to attach the policy.
+/ort/v*/*.mjs
+  Cross-Origin-Embedder-Policy: credentialless
+  Cross-Origin-Resource-Policy: cross-origin
+
 /models/*
   Cache-Control: public, max-age=31536000, immutable
