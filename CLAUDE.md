@@ -73,6 +73,17 @@ OPFS is the authoritative store for model weights after the primer runs. The ser
 
 Clinicians use the "Prepare for offline" button in Settings before shifts to guarantee offline readiness. `navigator.storage.persist()` is called once by `ModelManager.init` to protect the whole origin from eviction.
 
+### Asset hosting (R2 + Pages Functions)
+
+Large assets (ORT WASM, model weights) are hosted in the Cloudflare R2 bucket `ownvoice-static`. Pages Functions at `functions/ort/[[path]].ts` and `functions/models/[[path]].ts` proxy R2 reads to same-origin URLs (`/ort/*`, `/models/*`) so the existing service worker continues to OPFS-proxy them without changes.
+
+- **Asset versioning** lives in `src/models/assetVersions.ts`. `ORT_VERSION` (npm version of `onnxruntime-web`) and `MODELS_RELEASE` (human-readable label) drive the path segments in R2 and locally. Bumping a constant is the trigger for a new upload.
+- **Local layout mirrors R2**: `public/ort/v<X>/*.wasm` and `public/models/<release>/<group>/...`. Same path structure as the R2 keys, so dev URLs, manifest:check, and R2 reads all resolve consistently.
+- **Download**: `npm run assets:download` (`scripts/download-assets.sh`) populates `public/ort/` and `public/models/` from npm/HuggingFace. Both directories are gitignored — they're build inputs, not source.
+- **Upload**: `npm run assets:upload` syncs local files to R2 at the matching keys. Idempotent.
+- **Prune**: `npm run assets:prune` (`--dry-run` variant available) removes any R2 object not referenced by main or any open PR's branch, with a 24-hour grace for in-flight uploads. Runs automatically via `.github/workflows/prune-r2.yml` on every successful production deploy plus a daily 04:17 UTC schedule.
+- **Build output**: `dist/` does NOT contain WASM or model files. The postbuild stripper (`scripts/strip-dist-large.mjs`) removes anything over 20 MiB as a safety net against the Cloudflare Pages 25 MiB per-file limit; the `/ort/*` and `/models/*` Pages Functions serve them at runtime from R2.
+
 ### Inline styling is intentional (for now)
 
 Components use inline style objects with tokens from the `theme` module. This keeps theming dynamic and dependency-free. Production may move to CSS modules or equivalent.
