@@ -93,14 +93,20 @@ async function main() {
   console.log(`  Models release: ${modelsRelease}`);
   console.log("");
 
-  // ORT WASM
+  // The local layout mirrors the remote R2 key layout (under public/ort/ and
+  // public/models/, the version segment is part of the path: e.g.
+  // public/ort/v1.24.3/foo.wasm uploads to ort/v1.24.3/foo.wasm). The version
+  // constants are read above only to print a helpful banner; the actual key
+  // is the relative-path mirror.
+
+  // ORT WASM (recurse, .wasm only)
   const ortDir = join(ROOT, "public/ort");
-  const ortFiles = (await readdir(ortDir)).filter((f) => f.endsWith(".wasm"));
+  const ortFiles = (await walk(ortDir)).filter((p) => p.endsWith(".wasm"));
   console.log(`ORT WASM files (${ortFiles.length}):`);
-  for (const f of ortFiles) {
-    const local = join(ortDir, f);
+  for (const local of ortFiles) {
+    const rel = relative(ortDir, local);
     const size = (await stat(local)).size;
-    const key = `ort/${ortVersion}/${f}`;
+    const key = `ort/${rel}`;
     if (!FORCE && (await existsWithSize(key, size))) {
       console.log(`  · ${key} (cached)`);
       continue;
@@ -115,7 +121,7 @@ async function main() {
   for (const local of modelFiles) {
     const rel = relative(modelsDir, local);
     const size = (await stat(local)).size;
-    const key = `models/${modelsRelease}/${rel}`;
+    const key = `models/${rel}`;
     if (!FORCE && (await existsWithSize(key, size))) {
       console.log(`  · ${key} (cached)`);
       continue;

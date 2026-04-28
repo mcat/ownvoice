@@ -2,7 +2,7 @@
   "version": 1,
   "models": {
     "tts": {
-      "baseUrl": "/models/chatterbox-multilingual/",
+      "baseUrl": "/models/chatterbox-multilingual-2026-04/chatterbox-multilingual/",
       "files": [
         {
           "name": "speech_encoder.onnx",
@@ -57,7 +57,7 @@
       ]
     },
     "llm": {
-      "baseUrl": "/models/lfm2-1.2b-instruct/",
+      "baseUrl": "/models/chatterbox-multilingual-2026-04/lfm2-1.2b-instruct/",
       "files": [
         {
           "name": "model_q4.onnx",
@@ -87,7 +87,7 @@
       ]
     },
     "stt": {
-      "baseUrl": "/models/whisper-small/",
+      "baseUrl": "/models/chatterbox-multilingual-2026-04/whisper-small/",
       "files": [
         {
           "name": "encoder_model_q4.onnx",
