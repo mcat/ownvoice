@@ -10,16 +10,43 @@
  * Asset paths are versioned (see `src/models/assetVersions.ts`), so
  * the URL never changes for the same bytes — `immutable` is safe.
  *
- * Range requests are not currently supported by the binding's `get()`
- * method; ORT loads the WASM as a single GET, so this is fine. If
- * future code uses Range, switch to `env.BUCKET.get(key, { range })`.
+ * Content-Type is set explicitly per file extension. We do NOT call
+ * R2's writeHttpMetadata() because the upload script defaults R2's
+ * stored Content-Type to text/html, which combined with Cloudflare's
+ * nosniff header blocks WASM/ONNX from instantiating in the browser.
+ *
+ * IMPORTANT: this exports `onRequest` (any method), NOT
+ * `onRequestGet`. In our deploys, `onRequestGet` did not reliably
+ * bind to the catch-all route (`[[path]]`) — requests fell through
+ * to Pages' SPA fallback (returning index.html). Using `onRequest`
+ * fixes the binding.
  */
 
 interface Env {
   BUCKET: R2Bucket;
 }
 
-export const onRequestGet: PagesFunction<Env> = async ({ params, env }) => {
+const CONTENT_TYPE_BY_EXT: Record<string, string> = {
+  wasm: "application/wasm",
+  mjs: "application/javascript",
+  js: "application/javascript",
+  json: "application/json",
+  jinja: "text/plain; charset=utf-8",
+  // ONNX model files: not a registered MIME type. octet-stream forces the
+  // browser to treat as binary so streaming/range fetches don't text-decode.
+  onnx: "application/octet-stream",
+  onnx_data: "application/octet-stream",
+};
+
+function contentTypeForKey(key: string): string {
+  // Match the LAST dot-separated component to handle names like
+  // "model_q4.onnx_data" (extension is "onnx_data", not "data").
+  const m = key.match(/\.([^./]+)$/);
+  const ext = m?.[1]?.toLowerCase();
+  return (ext && CONTENT_TYPE_BY_EXT[ext]) || "application/octet-stream";
+}
+
+export const onRequest: PagesFunction<Env> = async ({ params, env }) => {
   const subpath = Array.isArray(params.path) ? params.path.join("/") : params.path;
   if (typeof subpath !== "string" || subpath.length === 0) {
     return new Response("Not found", { status: 404 });
@@ -29,14 +56,12 @@ export const onRequestGet: PagesFunction<Env> = async ({ params, env }) => {
   if (!object) {
     return new Response(`R2 object not found: ${key}`, { status: 404 });
   }
-  const headers = new Headers();
-  object.writeHttpMetadata(headers);
-  headers.set("etag", object.httpEtag);
-  // 1 year + immutable: paths are versioned, so the bytes never change
-  // for a given URL.
-  headers.set("cache-control", "public, max-age=31536000, immutable");
-  // CORP cross-origin so a different scheme/origin in dev tools or
-  // a hypothetical iframe can still load the asset.
-  headers.set("cross-origin-resource-policy", "cross-origin");
-  return new Response(object.body, { headers });
+  return new Response(object.body, {
+    headers: {
+      "Content-Type": contentTypeForKey(key),
+      "Cache-Control": "public, max-age=31536000, immutable",
+      "Cross-Origin-Resource-Policy": "cross-origin",
+      "ETag": object.httpEtag,
+    },
+  });
 };
