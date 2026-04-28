@@ -1162,7 +1162,11 @@ preview."
 **Files:**
 - Create: `.github/workflows/prune-r2.yml`
 
-The workflow runs on every push to `main` and once daily.
+The workflow runs on two triggers:
+1. **`deployment_status`** — fires when Cloudflare Pages updates a GitHub Deployment to `success`. We filter to `environment == "Production"` so only successful main deploys trigger prune (PR previews don't, to keep the Actions tab quiet). This is the primary trigger: prune happens after we know the new bytes are live and working.
+2. **Daily schedule** — backup catch for the edge case where reachability changed without a deploy (e.g., a closed-without-merge PR's branch went away after main's last deploy).
+
+`workflow_dispatch` allows manual runs from the Actions tab.
 
 - [ ] **Step 1: Create the workflow file**
 
@@ -1170,8 +1174,7 @@ The workflow runs on every push to `main` and once daily.
 name: Prune R2
 
 on:
-  push:
-    branches: [main]
+  deployment_status:
   schedule:
     # 04:17 UTC daily — odd minute to avoid the top-of-hour load
     - cron: "17 4 * * *"
@@ -1179,12 +1182,25 @@ on:
 
 jobs:
   prune:
+    # Only run on successful production deploys, the daily schedule, or manual.
+    if: |
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'deployment_status' &&
+       github.event.deployment_status.state == 'success' &&
+       github.event.deployment.environment == 'Production')
     runs-on: ubuntu-latest
     permissions:
       contents: read
       pull-requests: read
+      deployments: read
     steps:
       - uses: actions/checkout@v4
+        with:
+          # On deployment_status, checkout the SHA that was deployed
+          # (otherwise we'd checkout whatever main currently is, which
+          # could be ahead of the deploy if rapid commits landed).
+          ref: ${{ github.event.deployment.sha || github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
@@ -1203,11 +1219,14 @@ jobs:
 
 ```bash
 git add .github/workflows/prune-r2.yml
-git commit -m "ci(r2): prune workflow on push:main + daily
+git commit -m "ci(r2): prune workflow on deploy-success + daily
 
-Runs assets:prune on every merge to main and once a day. Daily
+Triggers on Cloudflare Pages deployment_status (filtered to
+production successes) plus a 04:17 UTC daily schedule. Pruning
+after a successful deploy ensures the bytes the new deploy needed
+are confirmed-live before we consider deletion candidates. Daily
 schedule catches edge cases where reachability changed without a
-merge (e.g., a closed-without-merge PR's branch went away)."
+deploy (e.g., a closed-without-merge PR branch went away)."
 ```
 
 ---
