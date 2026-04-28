@@ -1,0 +1,42 @@
+name: Prune R2
+
+on:
+  deployment_status:
+  schedule:
+    # 04:17 UTC daily — odd minute to avoid the top-of-hour load
+    - cron: "17 4 * * *"
+  workflow_dispatch: # allow manual runs from the Actions tab
+
+jobs:
+  prune:
+    # Only run on successful production deploys, the daily schedule, or manual.
+    if: |
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'deployment_status' &&
+       github.event.deployment_status.state == 'success' &&
+       github.event.deployment.environment == 'Production')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+      deployments: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # On deployment_status, checkout the SHA that was deployed
+          # (otherwise we'd checkout whatever main currently is, which
+          # could be ahead of the deploy if rapid commits landed).
+          ref: ${{ github.event.deployment.sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+      - run: npm ci
+      - name: Prune unreferenced R2 objects
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          GH_TOKEN: ${{ github.token }}
+        run: npm run assets:prune
