@@ -87,7 +87,7 @@ export function TheStakes() {
             <CiteLink href="https://doi.org/10.4037/ajcc2011433">
               (Happ et al., 2011)
             </CiteLink>
-            . Visual-interface AAC reliably reduces that distress once it&rsquo;s in place{" "}
+            . Visual-interface AAC reliably reduces that distress once in place{" "}
             <CiteLink href="https://doi.org/10.1044/2024_AJSLP-23-00310">
               (LaValley et al., 2024)
             </CiteLink>
