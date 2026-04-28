@@ -2,9 +2,8 @@
 
 /**
  * Pages Function: serves any `/models/*` request from the R2 bucket
- * `ownvoice-static` at key `models/<...>`. Same caching strategy as
- * `/ort/*`. See ../ort/[[path]].ts for the rationale, including why
- * we override Content-Type per extension.
+ * `ownvoice-static` at key `models/<...>`. Same shape as `/ort/*` —
+ * see ../ort/[[path]].ts for the rationale.
  */
 
 interface Env {
@@ -37,11 +36,13 @@ export const onRequestGet: PagesFunction<Env> = async ({ params, env }) => {
   if (!object) {
     return new Response(`R2 object not found: ${key}`, { status: 404 });
   }
-  const headers = new Headers();
-  object.writeHttpMetadata(headers);
-  headers.set("content-type", contentTypeForKey(key));
-  headers.set("etag", object.httpEtag);
-  headers.set("cache-control", "public, max-age=31536000, immutable");
-  headers.set("cross-origin-resource-policy", "cross-origin");
-  return new Response(object.body, { headers });
+  return new Response(object.body, {
+    headers: {
+      "Content-Type": contentTypeForKey(key),
+      "Cache-Control": "public, max-age=31536000, immutable",
+      "Cross-Origin-Resource-Policy": "cross-origin",
+      "ETag": object.httpEtag,
+      "X-Ov-Function": "models",
+    },
+  });
 };
