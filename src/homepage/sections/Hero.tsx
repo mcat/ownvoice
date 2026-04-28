@@ -48,7 +48,7 @@ export function Hero() {
           }}
         >
           OwnVoice is a browser-based AAC application for ICU patients who are temporarily
-          unable to speak &mdash; typically due to tracheostomy, intubation, or post-surgical
+          unable to speak &mdash; typically from tracheostomy, intubation, or post-surgical
           recovery. On-device voice cloning, validated pain assessment, structured
           goals-of-care.
         </p>

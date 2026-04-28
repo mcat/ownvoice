@@ -81,8 +81,8 @@ export function TheProblem() {
             maxWidth: t.bodyMaxWidth,
           }}
         >
-          And the eligible population is widening. As ICU practice has shifted from heavy
-          continuous sedation toward light-sedation and early-mobilization protocols{" "}
+          And the eligible population keeps widening. As ICU practice has shifted from
+          heavy continuous sedation toward light-sedation and early-mobilization protocols{" "}
           <a
             href="https://doi.org/10.1097/CCM.0000000000003299"
             target="_blank"
@@ -91,9 +91,9 @@ export function TheProblem() {
           >
             (PADIS, 2018)
           </a>
-          , more mechanically ventilated patients are kept awake and interactive — exactly
-          the population AAC is designed for, and exactly the gap that's still going
-          un-addressed at the bedside.
+          , more mechanically ventilated patients stay awake and interactive — exactly
+          the population AAC was built to serve, and exactly the gap still unmet at the
+          bedside.
         </p>
       </div>
     </section>
