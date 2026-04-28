@@ -11,28 +11,26 @@
 # `credentialless` matches the parent page; CORP same-origin keeps the
 # scripts un-embeddable cross-origin.
 #
-# EXPERIMENT for issue #127: the previous `Cache-Control: no-cache` was
-# silently dropped by CF Pages on these static-asset paths (the COEP/CORP
-# headers from the same block applied correctly). Trying the semantically
-# equivalent `public, max-age=0, must-revalidate` form to learn whether
-# the bug is specific to the `no-cache` token or whether CF Pages drops
-# all Cache-Control overrides on static assets. Result will be recorded
-# in #127.
+# Note on Cache-Control: do NOT add `Cache-Control:` here. CF Pages
+# unconditionally substitutes its default (`public, max-age=14400,
+# must-revalidate`) for static-asset Cache-Control at serve time,
+# ignoring whatever `_headers` specifies — confirmed empirically in
+# PR #131 and tracked in issue #127. The same `_headers` block does
+# apply COOP/COEP/CORP correctly to these files; only Cache-Control
+# is silently dropped on static assets.
 #
-# Both values mean "may cache, must revalidate before each use" per
-# RFC 9111. Response bodies are cacheable; freshness check is mandatory.
-# This means future header-only changes (e.g., tighter COEP) propagate
-# on the next reload instead of being shadowed by stale edge entries
-# that 304 against a byte-identical origin response.
+# Practical consequence: a future header-only change to these files
+# (e.g., tightening COEP) will be shadowed by edge-cache entries
+# revalidating with 304 against unchanged file bodies. Workaround:
+# bump the worker file body in the same commit (a one-line marker
+# comment is enough) — see PR #126 for the pattern.
 /tts-gpu-worker.js
   Cross-Origin-Embedder-Policy: credentialless
   Cross-Origin-Resource-Policy: same-origin
-  Cache-Control: public, max-age=0, must-revalidate
 
 /stt-gpu-worker.js
   Cross-Origin-Embedder-Policy: credentialless
   Cross-Origin-Resource-Policy: same-origin
-  Cache-Control: public, max-age=0, must-revalidate
 
 # Vite emits the bundled WASM workers (ttsWorker, sttWorker, llmWorker) under
 # /assets/. Same COEP requirement as the GPU workers when loaded from /app/.
