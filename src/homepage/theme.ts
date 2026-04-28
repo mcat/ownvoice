@@ -14,7 +14,11 @@ export const homepageTheme = {
     surface: "#fafaf8",
     text: "#0f172a",
     body: "#44403c",
-    muted: "#78716c",
+    // stone-600. Was stone-500 (#78716c, ~5.1:1 on white — AA only).
+    // CLAUDE.md targets 7:1 (AAA) project-wide; this hits ~7.9:1.
+    // Used in section eyebrows, citation links, "Status:" label,
+    // and every bibliography blockquote.
+    muted: "#57534e",
     border: "#e7e5e4",
     accent: "#0f172a",
     heroBg: "linear-gradient(180deg, #0f172a 0%, #1e293b 100%)",

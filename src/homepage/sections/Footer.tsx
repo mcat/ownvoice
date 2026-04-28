@@ -10,7 +10,7 @@ export function Footer() {
       style={{
         padding: "24px 32px",
         background: "#1c1917",
-        color: "#a8a29e",
+        color: "#d6d3d1",
         fontSize: 12,
       }}
     >
@@ -28,14 +28,14 @@ export function Footer() {
         <div style={{ display: "flex", gap: 16 }}>
           <a
             href="https://github.com/mcat/ownvoice"
-            style={{ color: "#a8a29e", textDecoration: "none" }}
+            style={{ color: "#d6d3d1", textDecoration: "none" }}
           >
             GitHub
           </a>
-          <a href="/research" style={{ color: "#a8a29e", textDecoration: "none" }}>
+          <a href="/research" style={{ color: "#d6d3d1", textDecoration: "none" }}>
             Research plan
           </a>
-          <a href="/bibliography" style={{ color: "#a8a29e", textDecoration: "none" }}>
+          <a href="/bibliography" style={{ color: "#d6d3d1", textDecoration: "none" }}>
             Bibliography
           </a>
         </div>
