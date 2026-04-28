@@ -2,11 +2,15 @@ import type { ComponentChildren } from "preact";
 import { homepageTheme as t } from "../theme";
 
 /**
- * §2 — The stakes. What changes at the bedside when AAC actually works.
- * Three outcome statements with primary citations, plus a lead paragraph
- * on the family experience. Sits between TheProblem (what's wrong) and
- * TheSystem (what we built) so the page tells: problem → why fixing it
- * matters → how we fix it → how we'll prove it.
+ * §2 — The stakes. What's actually at stake at the bedside when AAC
+ * doesn't work — grounded in the SPEACS catalog of failed communication
+ * categories (Happ et al., 2011: pain, physical needs, emotional state,
+ * care-plan questions) and Carroll's lived-experience finding (Carroll,
+ * 2007). Each outcome card pairs a SPEACS content category that fails
+ * without AAC with the outcome AAC delivers.
+ *
+ * Sits between TheProblem (what's wrong) and TheSystem (what we built):
+ * problem → why fixing it matters → how we fix it → how we'll prove it.
  */
 export function TheStakes() {
   return (
@@ -50,10 +54,15 @@ export function TheStakes() {
           }}
         >
           Families are usually unprepared for a loved one&rsquo;s loss of voice and end up
-          guessing at lip movements across the rails. When the bedside tool fits, that
-          guesswork falls away &mdash; patients can flag pain accurately, conversations
-          about goals of care happen <em>with</em> the patient instead of around them, and
-          the nurse&rsquo;s role shifts from interpreter to collaborator{" "}
+          guessing at lip movements across the rails. The SPEACS program catalogued what
+          specifically goes un-said in those gaps: pain reports, basic physical needs
+          (water, repositioning, bathroom), emotional state, and questions about the care
+          plan{" "}
+          <CiteLink href="https://doi.org/10.4037/ajcc2011433">
+            (Happ et al., 2011)
+          </CiteLink>
+          . With a tool that fits, the nurse&rsquo;s role shifts from interpreter to
+          collaborator{" "}
           <CiteLink href="https://doi.org/10.4037/ajcc2021666">(Happ, 2021)</CiteLink>.
         </p>
         <ul
@@ -67,36 +76,50 @@ export function TheStakes() {
             maxWidth: t.bodyMaxWidth,
           }}
         >
-          <Outcome title="Lower patient anxiety">
-            Communication failure is a primary driver of psycho-emotional distress in
-            mechanically ventilated patients{" "}
+          <Outcome title="Emotional state, not just physical symptoms">
+            Communication failure is itself a primary driver of psycho-emotional distress
+            in mechanically ventilated patients{" "}
             <CiteLink href="https://doi.org/10.4037/ajcc2011989">
               (Khalaila et al., 2011)
             </CiteLink>
-            ; recent intervention evidence shows visual-interface AAC reliably reduces
-            patient anxiety{" "}
+            , and emotional expression is one of the four SPEACS-catalogued bedside needs
+            most often left un-said{" "}
+            <CiteLink href="https://doi.org/10.4037/ajcc2011433">
+              (Happ et al., 2011)
+            </CiteLink>
+            . Visual-interface AAC reliably reduces that distress once it&rsquo;s in place{" "}
             <CiteLink href="https://doi.org/10.1044/2024_AJSLP-23-00310">
               (LaValley et al., 2024)
             </CiteLink>
             .
           </Outcome>
-          <Outcome title="Accurate pain and symptom self-reporting">
-            Without a working tool, staff infer; with one, patients report. Symptom
-            self-reporting accuracy is among the most reliably documented outcomes of AAC
-            interventions in critical care{" "}
+          <Outcome title="The bedside specifics — pain, water, repositioning">
+            SPEACS ranked these as the bedside needs most likely to go un-spoken without a
+            working tool, alongside basic toileting and comfort requests{" "}
+            <CiteLink href="https://doi.org/10.4037/ajcc2011433">
+              (Happ et al., 2011)
+            </CiteLink>
+            . Without an interface, staff infer; with one, patients report &mdash; and
+            symptom self-reporting accuracy is among the most reliably documented outcomes
+            of AAC interventions in critical care{" "}
             <CiteLink href="https://doi.org/10.1044/2024_AJSLP-23-00310">
               (LaValley et al., 2024)
             </CiteLink>
             .
           </Outcome>
-          <Outcome title="A voice in goals-of-care decisions">
+          <Outcome title="Questions about their own care">
             Patients without functional speech describe a &ldquo;silent, slow
-            lifeworld&rdquo; with diminished agency{" "}
+            lifeworld&rdquo; of diminished agency{" "}
             <CiteLink href="https://doi.org/10.1177/1049732307307334">
               (Carroll, 2007)
             </CiteLink>
-            . AAC restores the ability to participate in their own care &mdash; the
-            difference between being treated and being included.
+            , and &ldquo;questions about the care plan&rdquo; is one of the four SPEACS
+            categories of failed bedside communication{" "}
+            <CiteLink href="https://doi.org/10.4037/ajcc2011433">
+              (Happ et al., 2011)
+            </CiteLink>
+            . AAC restores the ability to ask &mdash; the difference between being treated
+            and being included.
           </Outcome>
         </ul>
       </div>

@@ -22,6 +22,11 @@ export function References() {
     },
     {
       text:
+        "Carroll, S. M. (2007). Silent, Slow Lifeworld: The Communication Experience of Nonvocal Ventilated Patients. Qualitative Health Research, 17(9), 1165–1177.",
+      doi: "10.1177/1049732307307334",
+    },
+    {
+      text:
         "Freeman-Sanderson, A., Morris, K., & Elkins, M. (2019). Characteristics of patient communication and prevalence of communication difficulty in the intensive care unit: An observational study. Australian Critical Care, 32(5), 373–377.",
       doi: "10.1016/j.aucc.2018.09.002",
     },
@@ -44,6 +49,11 @@ export function References() {
       text:
         "IJssennagger, C. E., Ten Hoorn, S., Van Wijk, A., Van den Broek, J. M., Girbes, A. R., & Tuinman, P. R. (2018). Caregivers' perceptions towards communication with mechanically ventilated patients: The results of a multicenter survey. Journal of Critical Care, 48, 263–268.",
       doi: "10.1016/j.jcrc.2018.08.036",
+    },
+    {
+      text:
+        "Khalaila, R., Zbidat, W., Anwar, K., Bayya, A., Linton, D. M., & Sviri, S. (2011). Communication difficulties and psychoemotional distress in patients receiving mechanical ventilation. American Journal of Critical Care, 20(6), 470–479.",
+      doi: "10.4037/ajcc2011989",
     },
     {
       text:
