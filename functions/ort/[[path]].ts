@@ -3,7 +3,7 @@
 /**
  * Pages Function: serves any `/ort/*` request from the R2 bucket
  * `ownvoice-static` at key `ort/<...>`. The function reads the object
- * via the `ASSETS` binding and streams the response with a long
+ * via the `BUCKET` binding and streams the response with a long
  * immutable Cache-Control so Cloudflare's edge caches it across
  * requests.
  *
@@ -12,11 +12,11 @@
  *
  * Range requests are not currently supported by the binding's `get()`
  * method; ORT loads the WASM as a single GET, so this is fine. If
- * future code uses Range, switch to `env.ASSETS.get(key, { range })`.
+ * future code uses Range, switch to `env.BUCKET.get(key, { range })`.
  */
 
 interface Env {
-  ASSETS: R2Bucket;
+  BUCKET: R2Bucket;
 }
 
 export const onRequestGet: PagesFunction<Env> = async ({ params, env }) => {
@@ -25,7 +25,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ params, env }) => {
     return new Response("Not found", { status: 404 });
   }
   const key = `ort/${subpath}`;
-  const object = await env.ASSETS.get(key);
+  const object = await env.BUCKET.get(key);
   if (!object) {
     return new Response(`R2 object not found: ${key}`, { status: 404 });
   }

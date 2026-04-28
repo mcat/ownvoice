@@ -7,7 +7,7 @@
  */
 
 interface Env {
-  ASSETS: R2Bucket;
+  BUCKET: R2Bucket;
 }
 
 export const onRequestGet: PagesFunction<Env> = async ({ params, env }) => {
@@ -16,7 +16,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ params, env }) => {
     return new Response("Not found", { status: 404 });
   }
   const key = `models/${subpath}`;
-  const object = await env.ASSETS.get(key);
+  const object = await env.BUCKET.get(key);
   if (!object) {
     return new Response(`R2 object not found: ${key}`, { status: 404 });
   }
