@@ -38,9 +38,6 @@
   Cross-Origin-Embedder-Policy: credentialless
   Cross-Origin-Resource-Policy: same-origin
 
-/ort/*
-  Cache-Control: public, max-age=31536000, immutable
-
 # ORT's `simd-threaded` build spawns sub-workers that re-import the .mjs
 # glue from a worker context. Sub-worker entry-point scripts loaded into
 # a crossOriginIsolated page strictly require their response to carry a
@@ -48,10 +45,15 @@
 # Without these, Chrome surfaces it in DevTools as
 # "(blocked:COEP-framed resource needs COEP header)".
 #
-# `_routes.json` excludes /ort/v*/*.mjs from the Pages Function, so these
-# are served as static assets by CF Pages. _headers is the right place
-# to attach the policy.
-/ort/v*/*.mjs
+# Applied to /ort/* rather than narrowed to /ort/v*/*.mjs because
+# _headers' multi-splat patterns appear not to bind reliably (the
+# narrower form was tried in #134 and didn't apply — investigated and
+# documented in #135). For .wasm files in this dir served by the Pages
+# Function (functions/ort/[[path]].ts), the Function's own headers take
+# precedence per-header — Function sets CORP, _headers adds COEP since
+# Function doesn't.
+/ort/*
+  Cache-Control: public, max-age=31536000, immutable
   Cross-Origin-Embedder-Policy: credentialless
   Cross-Origin-Resource-Policy: cross-origin
 
