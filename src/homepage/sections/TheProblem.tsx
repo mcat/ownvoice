@@ -1,9 +1,10 @@
 import { homepageTheme as t } from "../theme";
 
 /**
- * §1 — The problem. Three stat cards backed by citations. Numbers come
- * from docs/ownvoice-research-plan.md §2.1 (Zubow & Hurtig 2013;
- * Freeman-Sanderson 2019; Happ et al. 2011).
+ * §1 — The problem. Four stat cards backed by citations: AAC candidacy
+ * (Zubow & Hurtig 2013; Happ et al. 2014), AAC delivery
+ * (Freeman-Sanderson et al. 2019), and staff impact
+ * (IJssennagger et al. 2018).
  *
  * Each citation links to the canonical DOI (Crossref-verified).
  */
@@ -41,7 +42,7 @@ export function TheProblem() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
             gap: 14,
             marginTop: 24,
           }}
@@ -53,18 +54,47 @@ export function TheProblem() {
             doi="10.1044/aac22.2.79"
           />
           <StatCard
+            stat="54%"
+            text="of mechanically ventilated ICU patients are awake and alert enough to use AAC"
+            cite="Happ et al., 2014"
+            doi="10.1016/j.hrtlng.2014.08.010"
+          />
+          <StatCard
             stat="11%"
             text="of stay involves any alternative communication"
             cite="Freeman-Sanderson et al., 2019"
             doi="10.1016/j.aucc.2018.09.002"
           />
           <StatCard
-            stat="35%"
-            text="of staff report difficulty understanding patients"
-            cite="Happ et al., 2011"
-            doi="10.4037/ajcc2011433"
+            stat="75%"
+            text="of ICU staff say communication failures harm patient care"
+            cite="IJssennagger et al., 2018"
+            doi="10.1016/j.jcrc.2018.08.036"
           />
         </div>
+        <p
+          style={{
+            marginTop: 22,
+            fontSize: 14,
+            lineHeight: 1.6,
+            color: t.color.body,
+            maxWidth: t.bodyMaxWidth,
+          }}
+        >
+          And the eligible population is widening. As ICU practice has shifted from heavy
+          continuous sedation toward light-sedation and early-mobilization protocols{" "}
+          <a
+            href="https://doi.org/10.1097/CCM.0000000000003299"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: t.color.muted, textDecoration: "underline", textUnderlineOffset: 2 }}
+          >
+            (PADIS, 2018)
+          </a>
+          , more mechanically ventilated patients are kept awake and interactive — exactly
+          the population AAC is designed for, and exactly the gap that's still going
+          un-addressed at the bedside.
+        </p>
       </div>
     </section>
   );

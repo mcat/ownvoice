@@ -105,6 +105,74 @@ Research that shaped the phrase library, communication categories, and emotional
 
 ---
 
+### AAC Candidacy Among Mechanically Ventilated Patients
+
+> Happ, M. B., Seaman, J. B., Nilsen, M. L., Sciulli, A., Tate, J. A., Saul, M., & Barnato, A. E. (2014). The number of mechanically ventilated ICU patients meeting communication criteria. *Heart & Lung*, 44(1), 45–49. [doi.org/10.1016/j.hrtlng.2014.08.010](https://doi.org/10.1016/j.hrtlng.2014.08.010)
+
+**Finding:** Across 6 ICUs in 2 hospitals, 1,440 of 2,671 mechanically ventilated patients (53.9%) met basic communication criteria — defined as awake, alert, and responsive to verbal communication for at least one 12-hour nursing shift while receiving MV ≥ 2 consecutive days. The proportion ranged from 40.8% in the neurological ICU to 70.0% in the trauma ICU. This is the strongest population-specific candidacy estimate for the patient group OwnVoice serves.
+
+**Where it's applied:**
+
+| Decision | Implementation |
+|---|---|
+| Homepage problem section uses 54% as the candidacy stat for OwnVoice's specific target population (vented ICU patients) | `src/homepage/sections/TheProblem.tsx` — second stat card |
+| Phase 1 inclusion criteria use the same alertness/responsiveness threshold as the screening study | `docs/ownvoice-research-plan.md` Phase 1 inclusion |
+
+**Validation status:** Primary source for the 53.9% figure. Single multi-site study within one health system; the per-ICU range (40.8%–70.0%) suggests the underlying clinical pattern is robust to ICU type, but external validity to other US health systems and to non-US ICUs is an open question.
+
+---
+
+### Communication Program of Research Overview
+
+> Happ, M. B. (2021). Giving Voice: Nurse-Patient Communication in the Intensive Care Unit. *American Journal of Critical Care*, 30(4), 256–265. [doi.org/10.4037/ajcc2021666](https://doi.org/10.4037/ajcc2021666)
+
+**Finding:** Lecture summary of a 23-year program of research on nurse-patient communication in critical care, with explicit COVID-era framing on visitor restrictions and PPE-driven communication breakdowns. Synthesizes findings across the SPEACS, SPEACS-2, and Bedside-Patient-Provider Communication trials and positions nurse-led, multimodal AAC interventions (training + tools + assessment) as the demonstrated path to better patient communication — not tools alone.
+
+**Where it's applied:**
+
+| Decision | Implementation |
+|---|---|
+| Two-way design — provider has first-class tools, not a thin admin surface | `src/components/provider/ProviderPanel.tsx`, `src/components/provider/ListenPanel.tsx` |
+| Combination intervention (tooling + structured prompts + assessment cues) shipped as a single bundle | App ships phrase library + provider prompts + pain assessment workflow + voice cloning together |
+| Phase 2 outcomes include nurse-side measures, not just patient-side | `docs/ownvoice-research-plan.md` Phase 2 outcomes |
+
+---
+
+### Recent Scoping Review of AAC Interventions in MV/Trach Patients
+
+> LaValley, M., Chavers-Edgar, T., Wu, M., Schlosser, R., & Koul, R. (2024). Augmentative and Alternative Communication Interventions in Critical and Acute Care With Mechanically Ventilated and Tracheostomy Patients: A Scoping Review. *American Journal of Speech-Language Pathology*. Advance online publication. [doi.org/10.1044/2024_AJSLP-23-00310](https://doi.org/10.1044/2024_AJSLP-23-00310)
+
+**Finding:** Maps the AAC intervention literature for mechanically ventilated and tracheostomy patients in critical and acute care. Reports small-to-large treatment effect sizes for high-tech and no-tech visual-interface interventions, and for systematic nurse-training interventions, with patient outcomes spanning anxiety reduction, communication satisfaction, comfort, accurate symptom self-reporting, and changes in nursing practice. Concludes that high-quality AAC intervention research in this population remains scarce — most evidence is small-N, observational, or single-site.
+
+**Where it's applied:**
+
+| Decision | Implementation |
+|---|---|
+| Visual-interface as the primary modality (categorized phrase grids, pain scale, sentence builder), not text-input or speech-recognition | `src/components/phrases/PhraseGrid.tsx`; `src/components/pain/PainFlow.tsx`; `src/components/builder/SentenceBuilder.tsx` |
+| Phase 2 design treats AAC adoption as a "complex intervention" — bundled tooling + provider-side prompts + clinical staff onboarding — rather than a tool-only handoff | `docs/ownvoice-research-plan.md` Phase 2 protocol |
+| Patient-reported outcomes (anxiety, communication satisfaction, symptom reporting accuracy) prioritized as primary endpoints because the scoping review identifies these as where existing interventions show the most defensible effect sizes | `docs/ownvoice-research-plan.md` Phase 2 outcomes |
+
+**Validation status:** A scoping review that synthesises the existing literature; informs design priorities and study endpoints rather than constraining specific implementation choices.
+
+---
+
+### Multi-Site Survey of Staff Communication Difficulty
+
+> IJssennagger, C. E., Ten Hoorn, S., Van Wijk, A., Van den Broek, J. M., Girbes, A. R., & Tuinman, P. R. (2018). Caregivers' perceptions towards communication with mechanically ventilated patients: The results of a multicenter survey. *Journal of Critical Care*, 48, 263–268. [doi.org/10.1016/j.jcrc.2018.08.036](https://doi.org/10.1016/j.jcrc.2018.08.036)
+
+**Finding:** Multi-site survey of ICU caregivers across 5 hospitals; 457 of 1,740 invited staff responded. Communication difficulties were experienced in roughly half of all interactions with mechanically ventilated patients. Over 75% of respondents indicated patient care was negatively affected by these difficulties; 43% reported negative job-satisfaction impact, with feelings of unfulfillment (76%) and frustration (72%) the most common emotions. Replaces the older single-site Happ 2011 figure as the homepage's primary "staff impact" stat.
+
+**Where it's applied:**
+
+| Decision | Implementation |
+|---|---|
+| Homepage problem section uses the 75% figure as the staff-impact stat | `src/homepage/sections/TheProblem.tsx` — fourth stat card |
+| Frames the design priority on provider-side tooling: communication failure isn't just a patient-experience issue, it measurably degrades the care staff can deliver | `src/components/provider/ProviderPanel.tsx`, `src/components/provider/ListenPanel.tsx` |
+
+**Validation status:** Multi-site Dutch ICU sample; the underlying directional finding (most ICU staff say communication failures harm care) is consistent with prior single-site work going back to the SPEACS program, but US-specific replication would strengthen this.
+
+---
+
 ### The Lived Experience of Nonverbal Ventilated Patients
 
 > Carroll, S. M. (2007). Silent, Slow Lifeworld: The Communication Experience of Nonvocal Ventilated Patients. *Qualitative Health Research*, 17(9), 1165–1177. [doi.org/10.1177/1049732307307334](https://doi.org/10.1177/1049732307307334)

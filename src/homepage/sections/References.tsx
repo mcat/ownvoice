@@ -2,7 +2,7 @@ import { useState } from "preact/hooks";
 import { homepageTheme as t } from "../theme";
 
 /**
- * §5 — References & citing this work. Selected citations with hanging
+ * §6 — References & citing this work. Selected citations with hanging
  * indents, BibTeX block, links to GitHub + bibliography.
  *
  * Each citation is paired with the canonical DOI. Citations were verified
@@ -22,6 +22,11 @@ export function References() {
     },
     {
       text:
+        "Carroll, S. M. (2007). Silent, Slow Lifeworld: The Communication Experience of Nonvocal Ventilated Patients. Qualitative Health Research, 17(9), 1165–1177.",
+      doi: "10.1177/1049732307307334",
+    },
+    {
+      text:
         "Freeman-Sanderson, A., Morris, K., & Elkins, M. (2019). Characteristics of patient communication and prevalence of communication difficulty in the intensive care unit: An observational study. Australian Critical Care, 32(5), 373–377.",
       doi: "10.1016/j.aucc.2018.09.002",
     },
@@ -29,6 +34,31 @@ export function References() {
       text:
         "Happ, M. B., Garrett, K., Thomas, D. D., et al. (2011). Nurse-Patient Communication Interactions in the Intensive Care Unit. American Journal of Critical Care, 20(2), e28–e40.",
       doi: "10.4037/ajcc2011433",
+    },
+    {
+      text:
+        "Happ, M. B., Seaman, J. B., Nilsen, M. L., et al. (2014). The number of mechanically ventilated ICU patients meeting communication criteria. Heart & Lung, 44(1), 45–49.",
+      doi: "10.1016/j.hrtlng.2014.08.010",
+    },
+    {
+      text:
+        "Happ, M. B. (2021). Giving Voice: Nurse-Patient Communication in the Intensive Care Unit. American Journal of Critical Care, 30(4), 256–265.",
+      doi: "10.4037/ajcc2021666",
+    },
+    {
+      text:
+        "IJssennagger, C. E., Ten Hoorn, S., Van Wijk, A., Van den Broek, J. M., Girbes, A. R., & Tuinman, P. R. (2018). Caregivers' perceptions towards communication with mechanically ventilated patients: The results of a multicenter survey. Journal of Critical Care, 48, 263–268.",
+      doi: "10.1016/j.jcrc.2018.08.036",
+    },
+    {
+      text:
+        "Khalaila, R., Zbidat, W., Anwar, K., Bayya, A., Linton, D. M., & Sviri, S. (2011). Communication difficulties and psychoemotional distress in patients receiving mechanical ventilation. American Journal of Critical Care, 20(6), 470–479.",
+      doi: "10.4037/ajcc2011989",
+    },
+    {
+      text:
+        "LaValley, M., Chavers-Edgar, T., Wu, M., Schlosser, R., & Koul, R. (2024). Augmentative and Alternative Communication Interventions in Critical and Acute Care With Mechanically Ventilated and Tracheostomy Patients: A Scoping Review. American Journal of Speech-Language Pathology. Advance online publication.",
+      doi: "10.1044/2024_AJSLP-23-00310",
     },
     {
       text:
@@ -86,7 +116,7 @@ export function References() {
             color: t.color.muted,
           }}
         >
-          §5 &middot; References & citing this work
+          §6 &middot; References & citing this work
         </div>
         <ul
           style={{

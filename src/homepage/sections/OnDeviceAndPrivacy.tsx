@@ -1,7 +1,7 @@
 import { homepageTheme as t } from "../theme";
 
 /**
- * §4 — On-device & privacy. Single paragraph reinforcing the
+ * §5 — On-device & privacy. Single paragraph reinforcing the
  * privacy-by-design posture for IRB readers.
  */
 export function OnDeviceAndPrivacy() {
@@ -22,7 +22,7 @@ export function OnDeviceAndPrivacy() {
             color: t.color.muted,
           }}
         >
-          §4 &middot; On-device & privacy
+          §5 &middot; On-device & privacy
         </div>
         <h2
           style={{
