@@ -13,6 +13,7 @@
     "test:mutation": "stryker run",
     "manifest:regen": "node scripts/regenerate-manifest.mjs",
     "manifest:check": "node scripts/regenerate-manifest.mjs --check",
+    "assets:download": "./scripts/download-assets.sh",
     "assets:upload": "node scripts/upload-r2-assets.mjs",
     "assets:prune": "node scripts/prune-r2.mjs",
     "assets:prune:dry": "node scripts/prune-r2.mjs --dry-run"

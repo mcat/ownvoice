@@ -39,9 +39,10 @@ Thumbs.db
 !.vscode/settings.json
 !.vscode/extensions.json
 
-# Model files — too large for git (~600+ MB)
-# Download with: ./scripts/download-models.sh
+# Large asset files — too big for git. Download with: npm run assets:download
+# (see scripts/download-assets.sh)
 public/models/
+public/ort/v*/
 
 # Pipeline-verify script outputs — regenerated on each run
 scripts/pipeline-verify/*.wav
