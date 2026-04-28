@@ -42,6 +42,11 @@ export function References() {
     },
     {
       text:
+        "IJssennagger, C. E., Ten Hoorn, S., Van Wijk, A., Van den Broek, J. M., Girbes, A. R., & Tuinman, P. R. (2018). Caregivers' perceptions towards communication with mechanically ventilated patients: The results of a multicenter survey. Journal of Critical Care, 48, 263–268.",
+      doi: "10.1016/j.jcrc.2018.08.036",
+    },
+    {
+      text:
         "LaValley, M., Chavers-Edgar, T., Wu, M., Schlosser, R., & Koul, R. (2024). Augmentative and Alternative Communication Interventions in Critical and Acute Care With Mechanically Ventilated and Tracheostomy Patients: A Scoping Review. American Journal of Speech-Language Pathology. Advance online publication.",
       doi: "10.1044/2024_AJSLP-23-00310",
     },

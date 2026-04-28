@@ -1,9 +1,10 @@
 import { homepageTheme as t } from "../theme";
 
 /**
- * §1 — The problem. Four stat cards backed by citations. Numbers come
- * from docs/ownvoice-research-plan.md §2.1 (Zubow & Hurtig 2013;
- * Happ et al. 2014; Freeman-Sanderson 2019; Happ et al. 2011).
+ * §1 — The problem. Four stat cards backed by citations: AAC candidacy
+ * (Zubow & Hurtig 2013; Happ et al. 2014), AAC delivery
+ * (Freeman-Sanderson et al. 2019), and staff impact
+ * (IJssennagger et al. 2018).
  *
  * Each citation links to the canonical DOI (Crossref-verified).
  */
@@ -65,10 +66,10 @@ export function TheProblem() {
             doi="10.1016/j.aucc.2018.09.002"
           />
           <StatCard
-            stat="35%"
-            text="of staff report difficulty understanding patients"
-            cite="Happ et al., 2011"
-            doi="10.4037/ajcc2011433"
+            stat="75%"
+            text="of ICU staff say communication failures harm patient care"
+            cite="IJssennagger et al., 2018"
+            doi="10.1016/j.jcrc.2018.08.036"
           />
         </div>
         <p

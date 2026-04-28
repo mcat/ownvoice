@@ -156,6 +156,23 @@ Research that shaped the phrase library, communication categories, and emotional
 
 ---
 
+### Multi-Site Survey of Staff Communication Difficulty
+
+> IJssennagger, C. E., Ten Hoorn, S., Van Wijk, A., Van den Broek, J. M., Girbes, A. R., & Tuinman, P. R. (2018). Caregivers' perceptions towards communication with mechanically ventilated patients: The results of a multicenter survey. *Journal of Critical Care*, 48, 263–268. [doi.org/10.1016/j.jcrc.2018.08.036](https://doi.org/10.1016/j.jcrc.2018.08.036)
+
+**Finding:** Multi-site survey of ICU caregivers across 5 hospitals; 457 of 1,740 invited staff responded. Communication difficulties were experienced in roughly half of all interactions with mechanically ventilated patients. Over 75% of respondents indicated patient care was negatively affected by these difficulties; 43% reported negative job-satisfaction impact, with feelings of unfulfillment (76%) and frustration (72%) the most common emotions. Replaces the older single-site Happ 2011 figure as the homepage's primary "staff impact" stat.
+
+**Where it's applied:**
+
+| Decision | Implementation |
+|---|---|
+| Homepage problem section uses the 75% figure as the staff-impact stat | `src/homepage/sections/TheProblem.tsx` — fourth stat card |
+| Frames the design priority on provider-side tooling: communication failure isn't just a patient-experience issue, it measurably degrades the care staff can deliver | `src/components/provider/ProviderPanel.tsx`, `src/components/provider/ListenPanel.tsx` |
+
+**Validation status:** Multi-site Dutch ICU sample; the underlying directional finding (most ICU staff say communication failures harm care) is consistent with prior single-site work going back to the SPEACS program, but US-specific replication would strengthen this.
+
+---
+
 ### The Lived Experience of Nonverbal Ventilated Patients
 
 > Carroll, S. M. (2007). Silent, Slow Lifeworld: The Communication Experience of Nonvocal Ventilated Patients. *Qualitative Health Research*, 17(9), 1165–1177. [doi.org/10.1177/1049732307307334](https://doi.org/10.1177/1049732307307334)
