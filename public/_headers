@@ -10,13 +10,21 @@
 # instantiate the worker (DevTools: "Cross-Origin-Embedder-Policy: NOT-SET").
 # `credentialless` matches the parent page; CORP same-origin keeps the
 # scripts un-embeddable cross-origin.
+#
+# Cache-Control: no-cache forces the browser and CF edge to revalidate every
+# request. Response bodies are still cacheable; only the freshness check is
+# mandatory. This means future header-only changes (e.g., tighter COEP)
+# propagate on the next reload instead of being shadowed by stale edge
+# entries that 304 against a byte-identical origin response.
 /tts-gpu-worker.js
   Cross-Origin-Embedder-Policy: credentialless
   Cross-Origin-Resource-Policy: same-origin
+  Cache-Control: no-cache
 
 /stt-gpu-worker.js
   Cross-Origin-Embedder-Policy: credentialless
   Cross-Origin-Resource-Policy: same-origin
+  Cache-Control: no-cache
 
 # Vite emits the bundled WASM workers (ttsWorker, sttWorker, llmWorker) under
 # /assets/. Same COEP requirement as the GPU workers when loaded from /app/.

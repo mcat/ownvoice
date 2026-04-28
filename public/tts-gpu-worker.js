@@ -1,3 +1,4 @@
+// build: 2026-04-28-coep-cachebust
 /**
  * WebGPU TTS Worker — Chatterbox Multilingual (23 languages) via ONNX Runtime WebGPU EP.
  *
