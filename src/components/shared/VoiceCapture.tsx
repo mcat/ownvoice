@@ -163,9 +163,16 @@ async function decodeAudio(blob: Blob): Promise<Float32Array> {
  * Extract speaker embedding from audio via the TTS worker.
  * Returns the embedding data, or null if the model isn't ready.
  * Throws on extraction failure.
+ *
+ * The worker lazy-loads the ~591 MB speech encoder external-data file on
+ * the first embed call. On slow networks this can take minutes; the
+ * worker emits an "embed-progress" message when it begins the model
+ * load so the caller can surface a "loading model" indicator. After
+ * OPFS caches the bytes, subsequent embeds run in seconds.
  */
 async function extractEmbedding(
   audio: Float32Array,
+  onLoadingModel?: () => void,
 ): Promise<unknown | null> {
   const mgr = getModelManager();
   const worker = mgr.getWorker("tts");
@@ -175,15 +182,23 @@ async function extractEmbedding(
   }
 
   return new Promise<unknown>((resolve, reject) => {
+    // 5-minute outer bound. Covers the worst realistic first-load:
+    // 591 MB of external data + ORT WASM init + inference. The
+    // "loading-model" progress event drives UI feedback; without it,
+    // a 5-minute spinner would be indistinguishable from a hang.
     const timeout = setTimeout(
       () => reject(new Error("Voice processing timed out. Please try again.")),
-      30000,
+      5 * 60 * 1000,
     );
     const handler = (e: MessageEvent) => {
       if (e.data.type === "embedding") {
         clearTimeout(timeout);
         worker.removeEventListener("message", handler);
         resolve(e.data.data); // Return the actual embedding data
+      } else if (e.data.type === "embed-progress" && e.data.stage === "loading-model") {
+        // Worker is fetching the speech encoder; surface in UI.
+        // Don't clear the timeout — it still bounds the full operation.
+        onLoadingModel?.();
       } else if (e.data.type === "error") {
         clearTimeout(timeout);
         worker.removeEventListener("message", handler);
@@ -365,7 +380,7 @@ export function VoiceCapture({
         setCloneStatus("failed");
         return;
       }
-      const embedding = await extractEmbedding(rawAudio);
+      const embedding = await extractEmbedding(rawAudio, () => setCloneStatus("model-loading"));
       if (embedding) {
         setCloneStatus("ready");
         onCapture(blob, embedding);
@@ -395,7 +410,7 @@ export function VoiceCapture({
         onCapture(blob);
         return;
       }
-      const embedding = await extractEmbedding(rawAudio);
+      const embedding = await extractEmbedding(rawAudio, () => setCloneStatus("model-loading"));
       setSavedBlob(blob);
 
       if (embedding) {

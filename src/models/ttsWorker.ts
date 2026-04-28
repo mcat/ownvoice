@@ -375,6 +375,11 @@ async function handleEmbed(audio: Float32Array, _sampleRate: number): Promise<vo
   audioRms = Math.sqrt(audioRms / audio.length);
   console.log(`${LOG} Extracting speaker embedding from ${(audio.length / SAMPLE_RATE).toFixed(1)}s audio (max=${audioMax.toFixed(4)}, rms=${audioRms.toFixed(4)})`);
 
+  // The speech encoder external data is ~591 MB. First load can take
+  // minutes on slow networks; after OPFS caches it, subsequent loads
+  // are near-instant. Notify the UI so it can switch to a "model
+  // loading" indicator instead of a generic spinner.
+  _postMessage({ type: "embed-progress", stage: "loading-model" });
   console.log(`${LOG} Loading speech_encoder (on-demand, WASM)...`);
   const speechEncoderSession = await createSession(baseUrl + CHATTERBOX_FILES.speechEncoder.onnx, true, true);
 
