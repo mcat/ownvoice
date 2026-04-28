@@ -5,6 +5,25 @@
   Cross-Origin-Opener-Policy: same-origin
   Cross-Origin-Embedder-Policy: credentialless
 
+# Workers loaded into the crossOriginIsolated /app/* context need their own
+# COEP header on the script response — without it the browser refuses to
+# instantiate the worker (DevTools: "Cross-Origin-Embedder-Policy: NOT-SET").
+# `credentialless` matches the parent page; CORP same-origin keeps the
+# scripts un-embeddable cross-origin.
+/tts-gpu-worker.js
+  Cross-Origin-Embedder-Policy: credentialless
+  Cross-Origin-Resource-Policy: same-origin
+
+/stt-gpu-worker.js
+  Cross-Origin-Embedder-Policy: credentialless
+  Cross-Origin-Resource-Policy: same-origin
+
+# Vite emits the bundled WASM workers (ttsWorker, sttWorker, llmWorker) under
+# /assets/. Same COEP requirement as the GPU workers when loaded from /app/.
+/assets/*
+  Cross-Origin-Embedder-Policy: credentialless
+  Cross-Origin-Resource-Policy: same-origin
+
 /ort/*
   Cache-Control: public, max-age=31536000, immutable
 
