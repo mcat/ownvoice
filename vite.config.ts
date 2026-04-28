@@ -11,6 +11,12 @@ export default defineConfig({
         main: resolve(__dirname, "index.html"),
         app: resolve(__dirname, "app/index.html"),
       },
+      // Don't bundle the ORT WASM into dist/assets/. ORT loads them
+      // at runtime from `wasmPaths` (= /ort/<version>/), so the
+      // bundled copies are dead bytes that violate Pages' 25 MiB cap.
+      external: [
+        /onnxruntime-web\/.*\.wasm$/,
+      ],
     },
   },
   server: {
