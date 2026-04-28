@@ -9,13 +9,15 @@ import { Bibliography } from "./pages/Bibliography";
  *   /research      → <Research />
  *   /bibliography  → <Bibliography />
  *
- * Anything else 404s — the homepage entry doesn't own /app/* (that's
- * a separate Vite entry served from /app/index.html), and we don't
- * have any other top-level routes.
+ * `scope` excludes `/app/*` so the "Set up a real session" link
+ * triggers a real cross-document navigation to the app entry instead
+ * of being SPA-hijacked into a no-match (blank) render.
  */
+const ROUTER_SCOPE = /^(?!\/app(?:$|\/))/;
+
 export function HomepageApp() {
   return (
-    <LocationProvider>
+    <LocationProvider scope={ROUTER_SCOPE}>
       <Router>
         <Route path="/" component={Home} />
         <Route path="/research" component={Research} />
