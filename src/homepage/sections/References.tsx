@@ -32,6 +32,21 @@ export function References() {
     },
     {
       text:
+        "Happ, M. B., Seaman, J. B., Nilsen, M. L., et al. (2014). The number of mechanically ventilated ICU patients meeting communication criteria. Heart & Lung, 44(1), 45–49.",
+      doi: "10.1016/j.hrtlng.2014.08.010",
+    },
+    {
+      text:
+        "Happ, M. B. (2021). Giving Voice: Nurse-Patient Communication in the Intensive Care Unit. American Journal of Critical Care, 30(4), 256–265.",
+      doi: "10.4037/ajcc2021666",
+    },
+    {
+      text:
+        "LaValley, M., Chavers-Edgar, T., Wu, M., Schlosser, R., & Koul, R. (2024). Augmentative and Alternative Communication Interventions in Critical and Acute Care With Mechanically Ventilated and Tracheostomy Patients: A Scoping Review. American Journal of Speech-Language Pathology. Advance online publication.",
+      doi: "10.1044/2024_AJSLP-23-00310",
+    },
+    {
+      text:
         "Li, L., Wu, S., Wang, J., et al. (2023). Development of the Emoji Faces Pain Scale and Its Validation on Mobile Devices in Adult Surgery Patients: Longitudinal Observational Study. Journal of Medical Internet Research, 25, e41189.",
       doi: "10.2196/41189",
     },

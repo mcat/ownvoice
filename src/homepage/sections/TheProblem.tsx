@@ -1,9 +1,9 @@
 import { homepageTheme as t } from "../theme";
 
 /**
- * §1 — The problem. Three stat cards backed by citations. Numbers come
+ * §1 — The problem. Four stat cards backed by citations. Numbers come
  * from docs/ownvoice-research-plan.md §2.1 (Zubow & Hurtig 2013;
- * Freeman-Sanderson 2019; Happ et al. 2011).
+ * Happ et al. 2014; Freeman-Sanderson 2019; Happ et al. 2011).
  *
  * Each citation links to the canonical DOI (Crossref-verified).
  */
@@ -41,7 +41,7 @@ export function TheProblem() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
             gap: 14,
             marginTop: 24,
           }}
@@ -51,6 +51,12 @@ export function TheProblem() {
             text="of ICU patients meet AAC candidacy criteria"
             cite="Zubow & Hurtig, 2013"
             doi="10.1044/aac22.2.79"
+          />
+          <StatCard
+            stat="54%"
+            text="of mechanically ventilated ICU patients are awake and alert enough to use AAC"
+            cite="Happ et al., 2014"
+            doi="10.1016/j.hrtlng.2014.08.010"
           />
           <StatCard
             stat="11%"
