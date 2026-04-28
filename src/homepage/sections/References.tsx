@@ -2,7 +2,7 @@ import { useState } from "preact/hooks";
 import { homepageTheme as t } from "../theme";
 
 /**
- * §5 — References & citing this work. Selected citations with hanging
+ * §6 — References & citing this work. Selected citations with hanging
  * indents, BibTeX block, links to GitHub + bibliography.
  *
  * Each citation is paired with the canonical DOI. Citations were verified
@@ -101,7 +101,7 @@ export function References() {
             color: t.color.muted,
           }}
         >
-          §5 &middot; References & citing this work
+          §6 &middot; References & citing this work
         </div>
         <ul
           style={{

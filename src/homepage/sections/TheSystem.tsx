@@ -2,7 +2,7 @@ import type { ComponentChildren } from "preact";
 import { homepageTheme as t } from "../theme";
 
 /**
- * §2 — The system. Four pillars in a 2×2 grid. Each pillar is one
+ * §3 — The system. Four pillars in a 2×2 grid. Each pillar is one
  * feature plus a short technical detail (model name + license / paper
  * citation) so a researcher can verify what's running. Where a pillar
  * names a paper or canonical resource, the citation is hyperlinked.
@@ -25,7 +25,7 @@ export function TheSystem() {
             color: t.color.muted,
           }}
         >
-          §2 &middot; The system
+          §3 &middot; The system
         </div>
         <h2
           style={{

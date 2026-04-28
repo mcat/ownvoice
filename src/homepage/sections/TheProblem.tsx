@@ -71,6 +71,29 @@ export function TheProblem() {
             doi="10.4037/ajcc2011433"
           />
         </div>
+        <p
+          style={{
+            marginTop: 22,
+            fontSize: 14,
+            lineHeight: 1.6,
+            color: t.color.body,
+            maxWidth: t.bodyMaxWidth,
+          }}
+        >
+          And the eligible population is widening. As ICU practice has shifted from heavy
+          continuous sedation toward light-sedation and early-mobilization protocols{" "}
+          <a
+            href="https://doi.org/10.1097/CCM.0000000000003299"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: t.color.muted, textDecoration: "underline", textUnderlineOffset: 2 }}
+          >
+            (PADIS, 2018)
+          </a>
+          , more mechanically ventilated patients are kept awake and interactive — exactly
+          the population AAC is designed for, and exactly the gap that's still going
+          un-addressed at the bedside.
+        </p>
       </div>
     </section>
   );

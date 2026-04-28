@@ -1,5 +1,6 @@
 import { Hero } from "../sections/Hero";
 import { TheProblem } from "../sections/TheProblem";
+import { TheStakes } from "../sections/TheStakes";
 import { TheSystem } from "../sections/TheSystem";
 import { StudyAtAGlance } from "../sections/StudyAtAGlance";
 import { OnDeviceAndPrivacy } from "../sections/OnDeviceAndPrivacy";
@@ -9,8 +10,8 @@ import { Footer } from "../sections/Footer";
 import { homepageTheme as t } from "../theme";
 
 /**
- * The homepage at `/`. Composes the eight sections in scroll order:
- * hero → problem → system → study → privacy → references → CTA → footer.
+ * The homepage at `/`. Composes the nine sections in scroll order:
+ * hero → problem → stakes → system → study → privacy → references → CTA → footer.
  * No layout logic of its own — each section owns its padding and width.
  */
 export function Home() {
@@ -18,6 +19,7 @@ export function Home() {
     <main style={{ fontFamily: t.font, color: t.color.text, background: t.color.bg }}>
       <Hero />
       <TheProblem />
+      <TheStakes />
       <TheSystem />
       <StudyAtAGlance />
       <OnDeviceAndPrivacy />

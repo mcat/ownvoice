@@ -1,7 +1,7 @@
 import { homepageTheme as t } from "../theme";
 
 /**
- * §3 — Study at a glance. Five aims, study type, status, and a link
+ * §4 — Study at a glance. Five aims, study type, status, and a link
  * to the full research plan at /research. Status string mirrors the
  * spec exactly: "Protocol drafted; not yet IRB-submitted."
  */
@@ -22,7 +22,7 @@ export function StudyAtAGlance() {
             color: t.color.muted,
           }}
         >
-          §3 &middot; Study at a glance
+          §4 &middot; Study at a glance
         </div>
         <h2
           style={{
