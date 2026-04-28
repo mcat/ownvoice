@@ -1,9 +1,10 @@
 import { describe, it, expect } from "vitest";
 import { MODEL_URLS, LFM2_SAMPLING, LFM2_CHAT_TOKENS } from "./types";
+import { MODELS_ASSET_PREFIX } from "./assetVersions";
 
 describe("LFM2 model configuration", () => {
-  it("points llm URL at the LFM2-1.2B-Instruct directory", () => {
-    expect(MODEL_URLS.llm).toBe("/models/lfm2-1.2b-instruct/");
+  it("points llm URL at the LFM2-1.2B-Instruct directory under the versioned prefix", () => {
+    expect(MODEL_URLS.llm).toBe(`/${MODELS_ASSET_PREFIX}/lfm2-1.2b-instruct/`);
   });
 
   it("exposes the LFM2 sampling defaults from the model card", () => {

@@ -30,6 +30,8 @@
  *   max_speech_tokens = 4096
  */
 
+import { MODELS_ASSET_PREFIX } from "./assetVersions";
+
 export type ModelId = "tts" | "tts-encoder" | "llm" | "stt";
 
 export type ModelStatus = "idle" | "downloading" | "loading" | "ready" | "error";
@@ -105,11 +107,17 @@ export const CHATTERBOX_TOKENS = {
   EMBED_DIM: 1024,
 } as const;
 
-/** Base URLs for model downloads. Dev uses local paths, production uses CDN. */
+/**
+ * Base URLs for model downloads. Composed from MODELS_ASSET_PREFIX so a
+ * single bump of MODELS_RELEASE in assetVersions.ts updates worker fetch
+ * paths, the R2 upload key, the manifest baseUrl, and the prune keep-set
+ * together. Both dev (Vite serves public/) and prod (Pages Function reads
+ * R2) resolve the same versioned path.
+ */
 export const MODEL_URLS = {
-  tts: "/models/chatterbox-multilingual/",
-  llm: "/models/lfm2-1.2b-instruct/",
-  stt: "/models/whisper-small/",
+  tts: `/${MODELS_ASSET_PREFIX}/chatterbox-multilingual/`,
+  llm: `/${MODELS_ASSET_PREFIX}/lfm2-1.2b-instruct/`,
+  stt: `/${MODELS_ASSET_PREFIX}/whisper-small/`,
 } as const;
 
 /**
