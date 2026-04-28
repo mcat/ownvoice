@@ -239,6 +239,14 @@ export function FallbackVoicePicker({
         onClick={() => handleSelect(v)}
         aria-pressed={isSelected}
         style={{
+          // width:100% + box-sizing:border-box stretches the button to fill
+          // its wrapping <div role="listitem"> (added in #116 for ARIA list
+          // semantics). Without this, the button defaults to intrinsic
+          // content sizing because it's no longer a direct child of the
+          // outer flex column — `align-items: stretch` only applies to
+          // direct flex children.
+          width: "100%",
+          boxSizing: "border-box",
           display: "flex",
           alignItems: "center",
           gap: 12,
