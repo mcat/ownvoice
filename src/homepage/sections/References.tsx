@@ -1,3 +1,4 @@
+import { useState } from "preact/hooks";
 import { homepageTheme as t } from "../theme";
 
 /**
@@ -9,6 +10,8 @@ import { homepageTheme as t } from "../theme";
  * audited list.
  */
 type Citation = { text: string; doi: string };
+
+type CopyState = "idle" | "copied" | "error";
 
 export function References() {
   const citations: Citation[] = [
@@ -47,9 +50,25 @@ export function References() {
   const bibtex = `@misc{ownvoice2026,
   title = {OwnVoice: On-Device Voice-Cloning AAC for ICU Patients Without Functional Speech},
   year = {2026},
-  url = {https://ownvoice.icu},
+  url = {https://www.ownvoice.icu},
   note = {Clinical validation study protocol}
 }`;
+
+  const [copyState, setCopyState] = useState<CopyState>("idle");
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(bibtex);
+      setCopyState("copied");
+    } catch {
+      setCopyState("error");
+    }
+    // Reset to idle after 2s so the button returns to its default label.
+    setTimeout(() => setCopyState("idle"), 2000);
+  }
+
+  const buttonLabel =
+    copyState === "copied" ? "Copied!" : copyState === "error" ? "Copy failed" : "Copy";
 
   return (
     <section
@@ -108,22 +127,70 @@ export function References() {
         >
           Cite this work
         </h3>
-        <pre
-          style={{
-            marginTop: 8,
-            padding: 14,
-            background: t.color.surface,
-            border: `1px solid ${t.color.border}`,
-            borderRadius: t.radius,
-            fontSize: 12,
-            lineHeight: 1.5,
-            overflowX: "auto",
-            color: t.color.text,
-            fontFamily: "ui-monospace, SFMono-Regular, monospace",
-          }}
-        >
-          {bibtex}
-        </pre>
+        <div style={{ position: "relative", marginTop: 8 }}>
+          <pre
+            style={{
+              margin: 0,
+              padding: 14,
+              paddingRight: 80,
+              background: t.color.surface,
+              border: `1px solid ${t.color.border}`,
+              borderRadius: t.radius,
+              fontSize: 12,
+              lineHeight: 1.5,
+              overflowX: "auto",
+              color: t.color.text,
+              fontFamily: "ui-monospace, SFMono-Regular, monospace",
+            }}
+          >
+            {bibtex}
+          </pre>
+          <button
+            type="button"
+            onClick={handleCopy}
+            aria-label="Copy citation to clipboard"
+            style={{
+              position: "absolute",
+              top: 8,
+              right: 8,
+              padding: "4px 10px",
+              fontSize: 11,
+              fontFamily: t.font,
+              fontWeight: 500,
+              color: t.color.text,
+              background: t.color.bg,
+              border: `1px solid ${t.color.border}`,
+              borderRadius: t.radius - 2,
+              cursor: "pointer",
+            }}
+          >
+            {buttonLabel}
+          </button>
+          {/* Screen-reader-only live region: announces copy result without
+              disrupting visual layout. The visible button label updates too,
+              but a11y trees handle aria-live more reliably than mutated text. */}
+          <span
+            role="status"
+            aria-live="polite"
+            style={{
+              position: "absolute",
+              width: 1,
+              height: 1,
+              padding: 0,
+              margin: -1,
+              overflow: "hidden",
+              clip: "rect(0,0,0,0)",
+              whiteSpace: "nowrap",
+              border: 0,
+            }}
+          >
+            {copyState === "copied"
+              ? "Citation copied to clipboard"
+              : copyState === "error"
+                ? "Copy failed"
+                : ""}
+          </span>
+        </div>
         <div
           style={{
             marginTop: 18,
@@ -133,7 +200,7 @@ export function References() {
         >
           Full bibliography:{" "}
           <a href="/bibliography" style={{ color: t.color.text }}>
-            ownvoice.icu/bibliography
+            www.ownvoice.icu/bibliography
           </a>{" "}
           (or the source on{" "}
           <a
