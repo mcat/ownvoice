@@ -475,7 +475,7 @@ Research informing the recording-capture UX: what the patient sees while we capt
 | Closing cue appears only in the final 3 s of the capture; middle stays quiet | `VoiceCapture.tsx` — recording-state `coaching` logic |
 | Non-English locales fall back to free-speak coaching until a native-speaker-reviewed passage is added | `src/data/recordingScripts.ts` — `freeSpeakFallback` |
 
-**Validation status:** The *use* of the Rainbow Passage is well-validated for English phonetic balance in speech research. Its *efficacy specifically for Chatterbox Turbo embedding quality* in an ICU recording context is an educated prediction — see §4 below. Co-design target: native-speaker-reviewed balanced passages for each of the other 22 Chatterbox-supported languages.
+**Validation status:** The *use* of the Rainbow Passage is well-validated for English phonetic balance in speech research. Its *efficacy specifically for Chatterbox Multilingual embedding quality* in an ICU recording context is an educated prediction — see §4 below. Co-design target: native-speaker-reviewed balanced passages for each of the other 22 Chatterbox-supported languages.
 
 ---
 
@@ -507,17 +507,17 @@ Research informing the recording-capture UX: what the patient sees while we capt
 
 ---
 
-### Chatterbox Turbo Speaker Encoder (CAMPPlus)
+### Chatterbox Multilingual Speaker Encoder (CAMPPlus)
 
 > Wang, H., Zheng, S., Chen, Y., Cheng, L., & Chen, Q. (2023). CAM++: A Fast and Efficient Network for Speaker Verification Using Context-Aware Masking. *Proceedings of Interspeech 2023*, 5301–5305. [doi.org/10.21437/Interspeech.2023-1513](https://doi.org/10.21437/Interspeech.2023-1513)
 >
-> Resemble AI. Chatterbox Turbo. <https://huggingface.co/ResembleAI/chatterbox-turbo>
+> Resemble AI. Chatterbox Multilingual. <https://huggingface.co/ResembleAI/chatterbox-multilingual>
 >
 > Resemble AI. Zero-Shot Voice Cloning Guide. <https://www.resemble.ai/zero-shot-voice-cloning-guide/>
 
-**Finding:** Chatterbox Turbo's speaker representation is a 192-dimensional x-vector produced by the CAMPPlus encoder (a variant of CAM++). This is a *statistical* embedding — it summarizes the reference speaker's spectral and prosodic characteristics into a fixed-size vector, which the synthesis model then conditions on. It is **not** an in-context-learning prompt, so what the patient says directly shapes what the clone *can* sound like.
+**Finding:** Chatterbox Multilingual's speaker representation is a 192-dimensional x-vector produced by the CAMPPlus encoder (a variant of CAM++) — the same encoder family used by the original English-only Chatterbox model. This is a *statistical* embedding: it summarizes the reference speaker's spectral and prosodic characteristics into a fixed-size vector, which the synthesis model then conditions on. It is **not** an in-context-learning prompt, so what the patient says directly shapes what the clone *can* sound like.
 
-Resemble AI's product page suggests 5 seconds minimum; community guidance converges on 10–30 seconds with 10–15 seconds optimal. No official Resemble script is published (GitHub issues [#39](https://github.com/resemble-ai/chatterbox/issues/39) and [#411](https://github.com/resemble-ai/chatterbox/issues/411) remain open on this topic as of research date).
+Resemble AI's product page suggests 5 seconds minimum; community guidance converges on 10–30 seconds with 10–15 seconds optimal. No official Resemble script is published.
 
 **Where it's applied:**
 
@@ -527,7 +527,7 @@ Resemble AI's product page suggests 5 seconds minimum; community guidance conver
 | Scripted read chosen to exploit the "statistical embedding" property (patient's full range captured in one pass) | `src/data/recordingScripts.ts`; `docs/PRD.md` §6.1 |
 | Embedding stored as `speakerData` in the settings store, never transmitted | `src/stores/settingsStore.ts` — on-device only |
 
-**Validation status:** The model architecture facts (192-dim, CAMPPlus, statistical averaging) are from Resemble's published materials and the CAM++ paper. The specific claim that the Rainbow Passage produces a *measurably better* Chatterbox embedding than 15 seconds of free speech for the same patient is an educated prediction — consistent with decades of speech-science research but not specifically benchmarked against Chatterbox. A Phase 2 study could quantify this via MOS comparison.
+**Validation status:** The model architecture facts (192-dim, CAMPPlus, statistical averaging) are from Resemble's published materials and the CAM++ paper. The specific claim that the Rainbow Passage produces a *measurably better* Chatterbox Multilingual embedding than 15 seconds of free speech for the same patient is an educated prediction — consistent with decades of speech-science research but not specifically benchmarked against this model. A Phase 2 study could quantify this via MOS comparison.
 
 ---
 
