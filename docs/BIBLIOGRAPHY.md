@@ -7,7 +7,7 @@
 
 ## Purpose
 
-This document traces every research reference used in OwnVoice to the specific design decisions, clinical frameworks, and code that it informs. It serves three audiences:
+This document traces every research reference in OwnVoice to the design decisions, clinical frameworks, and code it informs. It serves three audiences:
 
 1. **Clinical reviewers and IRB** — to demonstrate that design choices are evidence-based, not arbitrary.
 2. **Developers** — to understand *why* a constraint exists before modifying the code that implements it.
@@ -91,7 +91,7 @@ Research that shaped the phrase library, communication categories, and emotional
 >
 > Happ, M. B., Garrett, K., Tate, J., et al. (2014). Effect of a multi-level intervention on nurse-patient communication in the intensive care unit: Results of the SPEACS-2 trial. *Heart & Lung*, 43(2), 89–98. [doi.org/10.1016/j.hrtlng.2013.11.010](https://doi.org/10.1016/j.hrtlng.2013.11.010)
 
-**Finding:** SPEACS-2 identified frequency categories of nurse-patient ICU communication: pain reporting, physical needs (water, repositioning, bathroom), emotional expression, and questions about care plans. Communication attempts were often unsuccessful due to tool limitations. The study developed the Communication Satisfaction Rating Instrument (CSRI) for ICU patients without functional speech.
+**Finding:** SPEACS-2 identified frequency categories of nurse-patient ICU communication: pain reporting, physical needs (water, repositioning, bathroom), emotional expression, and questions about care plans. Tool limitations frequently caused communication attempts to fail. The study developed the Communication Satisfaction Rating Instrument (CSRI) for ICU patients without functional speech.
 
 **Where it's applied:**
 
@@ -160,7 +160,7 @@ Research that shaped the phrase library, communication categories, and emotional
 
 > IJssennagger, C. E., Ten Hoorn, S., Van Wijk, A., Van den Broek, J. M., Girbes, A. R., & Tuinman, P. R. (2018). Caregivers' perceptions towards communication with mechanically ventilated patients: The results of a multicenter survey. *Journal of Critical Care*, 48, 263–268. [doi.org/10.1016/j.jcrc.2018.08.036](https://doi.org/10.1016/j.jcrc.2018.08.036)
 
-**Finding:** Multi-site survey of ICU caregivers across 5 hospitals; 457 of 1,740 invited staff responded. Communication difficulties were experienced in roughly half of all interactions with mechanically ventilated patients. Over 75% of respondents indicated patient care was negatively affected by these difficulties; 43% reported negative job-satisfaction impact, with feelings of unfulfillment (76%) and frustration (72%) the most common emotions. Replaces the older single-site Happ 2011 figure as the homepage's primary "staff impact" stat.
+**Finding:** Multi-site survey of ICU caregivers across 5 hospitals; 457 of 1,740 invited staff responded. Caregivers experienced communication difficulties in roughly half of all interactions with mechanically ventilated patients. Over 75% of respondents reported these difficulties harmed patient care; 43% reported a negative impact on job satisfaction, most often unfulfillment (76%) and frustration (72%). Replaces the older single-site Happ 2011 figure as the homepage's primary "staff impact" stat.
 
 **Where it's applied:**
 
@@ -210,7 +210,7 @@ Research that shaped the phrase library, communication categories, and emotional
 
 > Dind, A. J., Starr, J. S., & Arora, S. (2021). iPad-based Apps to Facilitate Communication in Critically Ill Patients with Impaired Ability to Communicate: A Preclinical Analysis. *Indian Journal of Critical Care Medicine*, 25(11), 1232–1240. [doi.org/10.5005/jp-journals-10071-24019](https://doi.org/10.5005/jp-journals-10071-24019)
 
-**Finding:** Physical access to the device is a primary barrier to AAC adoption in ICUs. Up to 90% of communication-impaired ICU patients report extreme distress. Inadequate communication may result in impaired symptom identification and reduced participation in care decisions.
+**Finding:** Physical access to the device is a primary barrier to AAC adoption in ICUs. Up to 90% of communication-impaired ICU patients report extreme distress. Inadequate communication can impair symptom identification and reduce patient participation in care decisions.
 
 **Where it's applied:**
 
@@ -278,7 +278,7 @@ Research that shaped touch target sizes, debouncing, and interaction model.
 
 > Beukelman, D.R. & Light, J.C. (2020). *Augmentative & Alternative Communication*, 5th ed. Paul H. Brookes Publishing.
 
-**Finding:** The foundational AAC textbook. Documents that users with physical impairments may use fingers, knuckles, toes, styluses, mouth sticks, head tracking, eye gaze, or switches. Recommends positioning devices at an angle, notes that screen positioning significantly affects independent access. Photorealistic images are easier to comprehend than stylized symbols for patients with cognitive impairment.
+**Finding:** The foundational AAC textbook. Documents that users with physical impairments may use fingers, knuckles, toes, styluses, mouth sticks, head tracking, eye gaze, or switches. Recommends positioning devices at an angle and notes that screen angle significantly affects independent access. Photorealistic images are easier to comprehend than stylized symbols for patients with cognitive impairment.
 
 **Where it's applied:**
 
@@ -298,7 +298,7 @@ Research that shaped cognitive load limits, external memory features, and interf
 
 > Devlin, J. W., Skrobik, Y., Gélinas, C., et al. (2018). Clinical Practice Guidelines for the Prevention and Management of Pain, Agitation/Sedation, Delirium, Immobility, and Sleep Disruption in Adult Patients in the ICU. *Critical Care Medicine*, 46(9), e825–e873. [doi.org/10.1097/CCM.0000000000003299](https://doi.org/10.1097/CCM.0000000000003299)
 
-**Finding:** The PADIS guidelines document that even light sedation slows processing speed, reduces attention span, and impairs decision-making. Sleep disruption is identified as a distinct clinical concern alongside pain, agitation, and delirium.
+**Finding:** The PADIS guidelines document that even light sedation slows processing speed, reduces attention span, and impairs decision-making. Sleep disruption joins pain, agitation, and delirium as a distinct clinical concern.
 
 **Where it's applied:**
 
@@ -338,7 +338,7 @@ Research that shaped cognitive load limits, external memory features, and interf
 
 > Darbyshire, J. L., & Young, J. D. (2013). An investigation of sound levels on intensive care units with reference to the WHO guidelines. *Critical Care*, 17(5), R187. [doi.org/10.1186/cc12870](https://doi.org/10.1186/cc12870)
 
-**Finding:** ICU baseline ambient noise levels typically range from 50–75 dB, with alarm peaks reaching 80–90 dB. The WHO guideline of 35 dB for patient areas is routinely exceeded.
+**Finding:** ICU baseline ambient noise levels typically range from 50–75 dB, with alarm peaks reaching 80–90 dB. Alarm peaks routinely exceed the WHO guideline of 35 dB for patient areas.
 
 **Where it's applied:**
 
@@ -353,7 +353,7 @@ Research that shaped cognitive load limits, external memory features, and interf
 
 > Ruskin, K. J., & Hueske-Kraus, D. (2015). Alarm fatigue: impacts on patient safety. *Current Opinion in Anaesthesiology*, 28(6), 685–690. [doi.org/10.1097/ACO.0000000000000260](https://doi.org/10.1097/ACO.0000000000000260)
 
-**Finding:** Clinicians override 93–96% of clinical alarms due to alarm fatigue. Audio signals from non-clinical devices should not resemble clinical alarms.
+**Finding:** Alarm fatigue drives clinicians to override 93–96% of clinical alarms. Audio signals from non-clinical devices should not resemble clinical alarms.
 
 **Where it's applied:** No alarm-like sounds in OwnVoice. Audio output is speech only, distinguishable from clinical monitoring equipment.
 
@@ -475,7 +475,7 @@ Research informing the recording-capture UX: what the patient sees while we capt
 | Closing cue appears only in the final 3 s of the capture; middle stays quiet | `VoiceCapture.tsx` — recording-state `coaching` logic |
 | Non-English locales fall back to free-speak coaching until a native-speaker-reviewed passage is added | `src/data/recordingScripts.ts` — `freeSpeakFallback` |
 
-**Validation status:** The *use* of the Rainbow Passage is well-validated for English phonetic balance in speech research. Its *efficacy specifically for Chatterbox Turbo embedding quality* in an ICU recording context is an educated prediction — see §4 below. Co-design target: native-speaker-reviewed balanced passages for each of the other 22 Chatterbox-supported languages.
+**Validation status:** The *use* of the Rainbow Passage is well-validated for English phonetic balance in speech research. Its *efficacy specifically for Chatterbox Multilingual embedding quality* in an ICU recording context is an educated prediction — see §4 below. Co-design target: native-speaker-reviewed balanced passages for each of the other 22 Chatterbox-supported languages.
 
 ---
 
@@ -507,17 +507,17 @@ Research informing the recording-capture UX: what the patient sees while we capt
 
 ---
 
-### Chatterbox Turbo Speaker Encoder (CAMPPlus)
+### Chatterbox Multilingual Speaker Encoder (CAMPPlus)
 
 > Wang, H., Zheng, S., Chen, Y., Cheng, L., & Chen, Q. (2023). CAM++: A Fast and Efficient Network for Speaker Verification Using Context-Aware Masking. *Proceedings of Interspeech 2023*, 5301–5305. [doi.org/10.21437/Interspeech.2023-1513](https://doi.org/10.21437/Interspeech.2023-1513)
 >
-> Resemble AI. Chatterbox Turbo. <https://huggingface.co/ResembleAI/chatterbox-turbo>
+> Resemble AI. Chatterbox Multilingual. <https://huggingface.co/ResembleAI/chatterbox-multilingual>
 >
 > Resemble AI. Zero-Shot Voice Cloning Guide. <https://www.resemble.ai/zero-shot-voice-cloning-guide/>
 
-**Finding:** Chatterbox Turbo's speaker representation is a 192-dimensional x-vector produced by the CAMPPlus encoder (a variant of CAM++). This is a *statistical* embedding — it summarizes the reference speaker's spectral and prosodic characteristics into a fixed-size vector, which the synthesis model then conditions on. It is **not** an in-context-learning prompt, so what the patient says directly shapes what the clone *can* sound like.
+**Finding:** Chatterbox Multilingual's speaker representation is a 192-dimensional x-vector produced by the CAMPPlus encoder (a variant of CAM++) — the same encoder family used by the original English-only Chatterbox model. This is a *statistical* embedding: it summarizes the reference speaker's spectral and prosodic characteristics into a fixed-size vector, which the synthesis model then conditions on. It is **not** an in-context-learning prompt, so what the patient says directly shapes what the clone *can* sound like.
 
-Resemble AI's product page suggests 5 seconds minimum; community guidance converges on 10–30 seconds with 10–15 seconds optimal. No official Resemble script is published (GitHub issues [#39](https://github.com/resemble-ai/chatterbox/issues/39) and [#411](https://github.com/resemble-ai/chatterbox/issues/411) remain open on this topic as of research date).
+Resemble AI's product page suggests 5 seconds minimum; community guidance converges on 10–30 seconds with 10–15 seconds optimal. No official Resemble script is published.
 
 **Where it's applied:**
 
@@ -527,7 +527,7 @@ Resemble AI's product page suggests 5 seconds minimum; community guidance conver
 | Scripted read chosen to exploit the "statistical embedding" property (patient's full range captured in one pass) | `src/data/recordingScripts.ts`; `docs/PRD.md` §6.1 |
 | Embedding stored as `speakerData` in the settings store, never transmitted | `src/stores/settingsStore.ts` — on-device only |
 
-**Validation status:** The model architecture facts (192-dim, CAMPPlus, statistical averaging) are from Resemble's published materials and the CAM++ paper. The specific claim that the Rainbow Passage produces a *measurably better* Chatterbox embedding than 15 seconds of free speech for the same patient is an educated prediction — consistent with decades of speech-science research but not specifically benchmarked against Chatterbox. A Phase 2 study could quantify this via MOS comparison.
+**Validation status:** The model architecture facts (192-dim, CAMPPlus, statistical averaging) are from Resemble's published materials and the CAM++ paper. The specific claim that the Rainbow Passage produces a *measurably better* Chatterbox Multilingual embedding than 15 seconds of free speech for the same patient is an educated prediction — consistent with decades of speech-science research but not specifically benchmarked against this model. A Phase 2 study could quantify this via MOS comparison.
 
 ---
 
