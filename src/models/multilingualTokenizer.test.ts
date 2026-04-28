@@ -11,7 +11,7 @@ import {
 } from "./multilingualTokenizer";
 
 const TOKENIZER_JSON = JSON.parse(
-  readFileSync("public/models/chatterbox-multilingual-2026-04/chatterbox-multilingual/tokenizer.json", "utf8"),
+  readFileSync("public/models/2026-04-27/chatterbox-multilingual/tokenizer.json", "utf8"),
 );
 
 describe("multilingualTokenizer encode", () => {
@@ -121,7 +121,7 @@ describe("cangjieNormalize (Chinese ideographs → [cj_*] tokens)", () => {
   // tab-separated dataset shipped alongside the tokenizer.
   const cangjieEntries: string[] = JSON.parse(
     readFileSync(
-      "public/models/chatterbox-multilingual-2026-04/chatterbox-multilingual/Cangjie5_TC.json",
+      "public/models/2026-04-27/chatterbox-multilingual/Cangjie5_TC.json",
       "utf8",
     ),
   );
@@ -304,7 +304,7 @@ describe("upstream tokenization parity (byte-for-byte)", () => {
 
   const cangjieEntries: string[] = JSON.parse(
     readFileSync(
-      "public/models/chatterbox-multilingual-2026-04/chatterbox-multilingual/Cangjie5_TC.json",
+      "public/models/2026-04-27/chatterbox-multilingual/Cangjie5_TC.json",
       "utf8",
     ),
   );

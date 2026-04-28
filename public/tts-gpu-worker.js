@@ -116,7 +116,10 @@ const CFG_WEIGHT = 0.5;
 // threads the contention overhead outpaces the parallelism win on WASM
 // convolution workloads (ORT/Emscripten guidance).
 if (ort.env?.wasm) {
-  ort.env.wasm.wasmPaths = "/ort/";
+  // Path matches src/models/assetVersions.ts ORT_VERSION. Versioned because
+  // /ort/v<X>/*.wasm is served by a Pages Function reading R2 in production.
+  // Update this string when bumping ORT_VERSION there.
+  ort.env.wasm.wasmPaths = "/ort/v1.24.3/";
   ort.env.wasm.numThreads = self.crossOriginIsolated
     ? Math.min(navigator.hardwareConcurrency ?? 4, 4)
     : 1;
