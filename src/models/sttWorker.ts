@@ -20,17 +20,18 @@
  */
 
 import * as ort from "onnxruntime-web";
+import { ORT_VERSION } from "./assetVersions";
 
-// No custom wasmPaths — let ORT resolve WASM files relative to its own module
-// location. Vite serves onnxruntime-web from node_modules (excluded from
-// optimizeDeps), so ORT's internal dynamic imports resolve correctly.
-// Setting wasmPaths to /ort/ breaks in Vite workers because Vite transforms
-// dynamic import() calls with ?import suffix, which the public/ files can't handle.
 // Multi-threaded WASM is only available when `crossOriginIsolated` is true
 // (page + SW serve COOP+COEP). Silently fall back to single-thread otherwise.
 ort.env.logLevel = "error";
 // See tts-gpu-worker.js for why this is capped at 4.
 if (ort.env?.wasm) {
+  // ORT loads WASM at runtime from this URL prefix. In production,
+  // /ort/* is served by a Pages Function backed by R2 (see
+  // functions/ort/[[path]].ts). In dev, a Vite middleware (see
+  // vite.config.ts) rewrites /ort/<version>/<file> to public/ort/<file>.
+  ort.env.wasm.wasmPaths = `/ort/${ORT_VERSION}/`;
   ort.env.wasm.numThreads = self.crossOriginIsolated
     ? Math.min(navigator.hardwareConcurrency ?? 4, 4)
     : 1;

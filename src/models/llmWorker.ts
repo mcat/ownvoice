@@ -24,13 +24,18 @@
 import * as ort from "onnxruntime-web/webgpu";
 import { buildBPETokenizer, type BPETokenizer } from "./bpeTokenizer";
 import { LFM2_CHAT_TOKENS, LFM2_SAMPLING, type FewShotExample } from "./types";
+import { ORT_VERSION } from "./assetVersions";
 
 // Multi-threaded WASM is only available when `crossOriginIsolated` is true
 // (page + SW serve COOP+COEP). Silently fall back to single-thread otherwise.
 ort.env.logLevel = "error";
 // See tts-gpu-worker.js for why this is capped at 4.
 if (ort.env?.wasm) {
-  ort.env.wasm.wasmPaths = "/node_modules/onnxruntime-web/dist/";
+  // ORT loads WASM at runtime from this URL prefix. In production,
+  // /ort/* is served by a Pages Function backed by R2 (see
+  // functions/ort/[[path]].ts). In dev, a Vite middleware (see
+  // vite.config.ts) rewrites /ort/<version>/<file> to public/ort/<file>.
+  ort.env.wasm.wasmPaths = `/ort/${ORT_VERSION}/`;
   ort.env.wasm.numThreads = self.crossOriginIsolated
     ? Math.min(navigator.hardwareConcurrency ?? 4, 4)
     : 1;
