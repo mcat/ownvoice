@@ -1,11 +1,5 @@
 /// <reference types="@cloudflare/workers-types" />
 
-/**
- * Pages Function: serves any `/models/*` request from the R2 bucket
- * `ownvoice-static` at key `models/<...>`. Same shape as `/ort/*` —
- * see ../ort/[[path]].ts for the rationale.
- */
-
 interface Env {
   BUCKET: R2Bucket;
 }
@@ -26,15 +20,21 @@ function contentTypeForKey(key: string): string {
   return (ext && CONTENT_TYPE_BY_EXT[ext]) || "application/octet-stream";
 }
 
-export const onRequestGet: PagesFunction<Env> = async ({ params, env }) => {
+export const onRequest: PagesFunction<Env> = async ({ params, env }) => {
   const subpath = Array.isArray(params.path) ? params.path.join("/") : params.path;
   if (typeof subpath !== "string" || subpath.length === 0) {
-    return new Response("Not found", { status: 404 });
+    return new Response("FN_REACHED_BUT_NO_PATH", {
+      status: 404,
+      headers: { "X-Ov-Function": "models", "Content-Type": "text/plain" },
+    });
   }
   const key = `models/${subpath}`;
   const object = await env.BUCKET.get(key);
   if (!object) {
-    return new Response(`R2 object not found: ${key}`, { status: 404 });
+    return new Response(`FN_REACHED_NOT_FOUND key=${key}`, {
+      status: 404,
+      headers: { "X-Ov-Function": "models", "Content-Type": "text/plain" },
+    });
   }
   return new Response(object.body, {
     headers: {
