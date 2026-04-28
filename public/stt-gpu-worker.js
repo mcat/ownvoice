@@ -29,7 +29,10 @@ const LOG = "[OwnVoice:STT:GPU]";
 // (page + SW serve COOP+COEP). Silently fall back to single-thread otherwise.
 // See tts-gpu-worker.js for why this is capped at 4.
 if (ort.env?.wasm) {
-  ort.env.wasm.wasmPaths = "/ort/";
+  // Path matches src/models/assetVersions.ts ORT_VERSION. Versioned because
+  // /ort/v<X>/*.wasm is served by a Pages Function reading R2 in production.
+  // Update this string when bumping ORT_VERSION there.
+  ort.env.wasm.wasmPaths = "/ort/v1.24.3/";
   ort.env.wasm.numThreads = self.crossOriginIsolated
     ? Math.min(navigator.hardwareConcurrency ?? 4, 4)
     : 1;
