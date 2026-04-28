@@ -8,7 +8,7 @@
 
 ## 1. Abstract
 
-This document describes the research plan for a clinical validation study of OwnVoice, a Progressive Web Application that provides augmentative and alternative communication (AAC) for ICU patients without functional speech, using on-device voice cloning, a validated emoji pain scale, contextual sentence building powered by on-device language models, and structured goals-of-care conversations based on the Serious Illness Conversation Guide (SICG). The study is a prospective, mixed-methods clinical trial conducted in a single-center ICU. The primary aim is to evaluate whether OwnVoice improves patient-reported communication satisfaction compared to standard-of-care communication methods. Secondary aims assess the impact of voice cloning on patient identity and emotional wellbeing, the feasibility and clinical utility of tablet-based SICG conversations with patients without functional speech, on-device inference latency and reliability in the clinical environment, and nursing workflow integration. The study design, participant criteria, outcome measures, data collection instruments, analysis plan, and ethical considerations are described.
+This document describes the research plan for a clinical validation study of OwnVoice, a Progressive Web Application that provides augmentative and alternative communication (AAC) for ICU patients without functional speech, using on-device voice cloning, a validated emoji pain scale, contextual sentence building powered by on-device language models, and structured goals-of-care conversations based on the Serious Illness Conversation Guide (SICG). The study is a prospective, mixed-methods clinical trial conducted in a single-center ICU. The primary aim is to evaluate whether OwnVoice improves patient-reported communication satisfaction compared to standard-of-care communication methods. Secondary aims assess the impact of voice cloning on patient identity and emotional wellbeing, the feasibility and clinical utility of tablet-based SICG conversations with patients without functional speech, on-device inference latency and reliability in the clinical environment, and nursing workflow integration.
 
 ---
 
@@ -16,15 +16,15 @@ This document describes the research plan for a clinical validation study of Own
 
 ### 2.1 Communication Failure in the ICU
 
-Approximately 33% of ICU patients meet AAC candidacy criteria due to endotracheal intubation, tracheostomy, or neurological impairment (Zubow & Hurtig, 2013). Despite this prevalence, patients use alternative communication modes during only 11% of their ICU stay, and staff report difficulty communicating with patients 35% of the time (Freeman-Sanderson et al., 2019). Communication failure is associated with increased anxiety, depression, delirium, longer ICU stays, and adverse events (Happ et al., 2011).
+Approximately 33% of ICU patients meet AAC candidacy criteria from endotracheal intubation, tracheostomy, or neurological impairment (Zubow & Hurtig, 2013). Despite this prevalence, patients use alternative communication modes during only 11% of their ICU stay (Freeman-Sanderson et al., 2019), and staff report difficulty communicating with patients 35% of the time (Happ et al., 2011). Communication failure is associated with increased anxiety, depression, delirium, longer ICU stays, and adverse events (Happ et al., 2011).
 
 Existing high-technology AAC tools for the ICU (VidaTalk, CommuniCare, YoDoc) provide pre-built phrase boards for immediate physical needs but do not address three critical gaps: (1) they use generic synthesized voices rather than the patient's own voice, (2) they do not support goals-of-care conversations, and (3) they require cloud connectivity for speech synthesis, raising HIPAA concerns.
 
 ### 2.2 Voice Cloning and Patient Identity
 
-Loss of voice is consistently reported as one of the most distressing aspects of ICU admission (Khalaila et al., 2011; Carroll, 2007). Voice is a core marker of personal identity. Zero-shot voice cloning technology now enables the recreation of an individual's voice characteristics from a 3–10 second audio sample. No published study has examined the effect of hearing one's own cloned voice — versus a generic synthesized voice — on patient emotional wellbeing, identity preservation, and family experience during critical illness.
+Patients consistently report loss of voice as one of the most distressing aspects of ICU admission (Khalaila et al., 2011; Carroll, 2007). Voice is a core marker of personal identity. Zero-shot voice cloning technology now enables the recreation of an individual's voice characteristics from a 3–10 second audio sample. No published study has examined the effect of hearing one's own cloned voice — versus a generic synthesized voice — on patient emotional wellbeing, identity preservation, and family experience during critical illness.
 
-**Recording protocol.** OwnVoice captures 15 seconds of audio and extracts a 192-dim x-vector speaker embedding using Chatterbox Turbo's CAMPPlus encoder (Resemble AI, 2025). Because this is a statistical embedding — spectral envelope, pitch statistics, and formant structure averaged across the clip — phonetic and prosodic coverage of the reference audio directly shapes clone quality (Casanova et al., 2022; Wang et al., 2023). The English-locale recording protocol therefore prompts the patient to read the opening two sentences of the Rainbow Passage (Fairbanks, 1960), the canonical phonetically balanced passage used in the VCTK corpus (Veaux et al., 2019). Full rationale and citations in `docs/BIBLIOGRAPHY.md` §9.
+**Recording protocol.** OwnVoice captures 15 seconds of audio and extracts a 192-dim x-vector speaker embedding using Chatterbox Multilingual's CAMPPlus encoder (Resemble AI, 2025). Because this is a statistical embedding — spectral envelope, pitch statistics, and formant structure averaged across the clip — phonetic and prosodic coverage of the reference audio directly shapes clone quality (Casanova et al., 2022; Wang et al., 2023). The English-locale recording protocol therefore prompts the patient to read the opening two sentences of the Rainbow Passage (Fairbanks, 1960), the canonical phonetically balanced passage used in the VCTK corpus (Veaux et al., 2019). Full rationale and citations in `docs/BIBLIOGRAPHY.md` §9.
 
 ### 2.3 Goals-of-Care Conversations with Patients Who Cannot Speak
 
@@ -68,7 +68,7 @@ Evaluate whether OwnVoice improves patient-reported communication satisfaction c
 - Assess the accuracy and clinical acceptability of on-device Whisper speech-to-text for capturing provider communication
 - Examine family member experience of hearing the patient's cloned voice during goals-of-care conversations
 - Characterize patient phrase usage patterns to inform future phrase library design
-- **Reference-audio protocol efficacy.** Compare clone quality (patient-rated similarity; optionally Mean Opinion Score from blinded raters) between patients who read the Rainbow Passage and those who free-speak for 15 seconds. The scripted-read hypothesis — that phonetic and prosodic balance improves the Chatterbox Turbo speaker embedding in ways patients can perceive — is well-supported in general speech science but unbenchmarked against this specific model and population (ICU patients with possible vocal fatigue)
+- **Reference-audio protocol efficacy.** Compare clone quality (patient-rated similarity; optionally Mean Opinion Score from blinded raters) between patients who read the Rainbow Passage and those who free-speak for 15 seconds. The scripted-read hypothesis — that phonetic and prosodic balance improves the Chatterbox Multilingual speaker embedding in ways patients can perceive — is well-supported in general speech science but unbenchmarked against this specific model and population (ICU patients with possible vocal fatigue)
 
 ---
 
@@ -156,7 +156,7 @@ For patients with an anticipated ICU stay ≥72 hours and a serious illness traj
 **Voice Identity and Emotional Wellbeing**
 
 - Custom Voice Identity Scale (VIS): A 6-item instrument developed for this study measuring the patient's sense of being "heard," identity preservation, and emotional response to hearing their own voice. Items rated on a 5-point visual scale (faces or thumbs-up/down). To be validated in Phase 1.
-- Hospital Anxiety and Depression Scale (HADS): Administered at enrollment and discharge. Adapted for administration via AAC.
+- Hospital Anxiety and Depression Scale (HADS): Administered at enrollment and discharge. Adapted for AAC use.
 - Patient experience interviews (qualitative): Semi-structured interviews conducted after return of speech, or via OwnVoice if the patient still cannot speak.
 
 **Goals-of-Care Feasibility**
@@ -191,7 +191,7 @@ For patients with an anticipated ICU stay ≥72 hours and a serious illness traj
 
 ### 7.3 Exploratory Outcomes
 
-- Family experience: Semi-structured interviews with family members who were present during voice-cloned communications or My Wishes conversations (target: 10–15 family members)
+- Family experience: Semi-structured interviews with family members present during voice-cloned communications or My Wishes conversations (target: 10–15 family members)
 - Category usage patterns: Aggregate frequency and timing distribution of communications by category (not content), analyzed to identify which communication categories are underserved
 - Conversation thread completeness: Proportion of bedside exchanges captured in the app thread, assessed via observational subsample (not app logging)
 
@@ -205,12 +205,12 @@ OwnVoice generates two distinct categories of data. They are governed by differe
 
 **Category 1 — Clinical Communication Record (PHI)**
 
-The conversation thread — the actual text of what the patient and providers said — is protected health information (PHI). It is treated as part of the patient's medical record and governed by the institution's existing HIPAA compliance framework, not by research telemetry.
+The conversation thread — the actual text of what the patient and providers said — is protected health information (PHI). It belongs to the patient's medical record and falls under the institution's existing HIPAA compliance framework, not under research telemetry.
 
-- The conversation thread is stored on-device only, encrypted at rest using iPadOS data protection (AES-256, tied to the device passcode)
-- It is never transmitted over any network. It is never exported to a research database
+- The conversation thread lives on-device only, encrypted at rest using iPadOS data protection (AES-256, tied to the device passcode)
+- It never crosses a network. It never enters a research database
 - At discharge, the clinical team may choose to document a summary of the conversation in the electronic medical record per institutional documentation standards (e.g., a palliative care note summarizing My Wishes responses). This documentation follows existing clinical workflows and is not a research procedure
-- The conversation thread is destroyed during app reset between patients. No content is retained on the device
+- App reset between patients destroys the conversation thread. No content remains on the device
 
 **Category 2 — Aggregate Research Metrics (De-identified)**
 
@@ -273,7 +273,7 @@ These metrics are logged on-device in a separate storage partition from the clin
 
 ### 9.1 Primary Analysis
 
-The primary outcome (CSRI score) will be analyzed using a generalized linear mixed model (GLMM) with fixed effects for intervention condition (OwnVoice vs. standard-of-care), time period, and cluster, and random effects for patient nested within cluster. The stepped-wedge design requires adjustment for time trends. The model will control for patient age, APACHE III severity score, cause of impaired speech (intubation vs. tracheostomy vs. neurological), and ICU length of stay at enrollment. Analysis will follow intention-to-treat principles.
+We will analyze the primary outcome (CSRI score) using a generalized linear mixed model (GLMM) with fixed effects for intervention condition (OwnVoice vs. standard-of-care), time period, and cluster, and random effects for patient nested within cluster. The stepped-wedge design requires adjustment for time trends. The model will control for patient age, APACHE III severity score, cause of impaired speech (intubation vs. tracheostomy vs. neurological), and ICU length of stay at enrollment. Analysis will follow intention-to-treat principles.
 
 ### 9.2 Secondary Analyses
 
@@ -291,7 +291,7 @@ Semi-structured interview transcripts (patient, family, clinician) analyzed usin
 
 ### 9.4 Missing Data
 
-Multiple imputation will be used for missing CSRI and HADS data (expected sources: patient discharge, death, withdrawal, or inability to complete due to clinical deterioration). Sensitivity analyses will compare results under complete-case, last-observation-carried-forward, and worst-case imputation assumptions.
+We will use multiple imputation for missing CSRI and HADS data (expected sources: patient discharge, death, withdrawal, or inability to complete from clinical deterioration). Sensitivity analyses will compare results under complete-case, last-observation-carried-forward, and worst-case imputation assumptions.
 
 ---
 
@@ -299,7 +299,7 @@ Multiple imputation will be used for missing CSRI and HADS data (expected source
 
 ### 10.1 IRB Approval
 
-The study protocol, consent documents, and all data collection instruments will be submitted for review and approval by the institutional review board (IRB) prior to any participant enrollment.
+We will submit the study protocol, consent documents, and all data collection instruments for institutional review board (IRB) review and approval before participant enrollment.
 
 ### 10.2 Consent for Patients Who Cannot Speak
 
@@ -311,7 +311,7 @@ Informed consent presents a specific challenge for this population. The study wi
 
 ### 10.3 Voice Sample Privacy
 
-Voice samples and cloned voice models are stored exclusively on the study tablet. No voice data is transmitted over any network. Voice samples and models are destroyed during app reset between patients. The consent form explicitly addresses voice cloning, including: the nature of voice recreation, that the voice model exists only on the device, that it will be destroyed at discharge, and that no voice recordings will be retained for research purposes beyond the study period.
+Voice samples and cloned voice models live exclusively on the study tablet. No voice data crosses a network. App reset between patients destroys voice samples and models. The consent form explicitly addresses voice cloning, including: the nature of voice recreation, that the voice model exists only on the device, that we destroy it at discharge, and that no voice recordings persist for research beyond the study period.
 
 ### 10.4 My Wishes and Advance Care Planning
 
@@ -335,11 +335,11 @@ Critically ill patients without functional speech are a vulnerable population. A
 
 ### 10.6 Data Security
 
-**On-device clinical data (PHI):** The conversation thread, voice samples, and cloned voice models are encrypted at rest on the iPad via iPadOS data protection (AES-256, hardware-bound). The tablet is configured with a device passcode and Guided Access to prevent access to other apps. Clinical data never leaves the device and is destroyed on app reset between patients. Lost or stolen tablets contain no PHI once reset; prior to reset, the device passcode and encryption protect the data.
+**On-device clinical data (PHI):** The iPad encrypts the conversation thread, voice samples, and cloned voice models at rest via iPadOS data protection (AES-256, hardware-bound). We configure each tablet with a device passcode and Guided Access to prevent access to other apps. Clinical data never leaves the device; app reset between patients destroys it. Lost or stolen tablets contain no PHI once reset; before reset, the device passcode and encryption protect the data.
 
-**Research metrics (de-identified):** Aggregate metrics are exported as a JSON file keyed to a study ID. A two-person verification process confirms the export contains no PHI before it enters the institutional research database. The research database is stored on encrypted, HIPAA-compliant institutional servers with role-based access control.
+**Research metrics (de-identified):** The coordinator exports aggregate metrics as a JSON file keyed to a study ID. A two-person verification process confirms the export contains no PHI before it enters the institutional research database. The research database lives on encrypted, HIPAA-compliant institutional servers with role-based access control.
 
-**Interview recordings:** Qualitative interview audio is recorded on an encrypted institutional device (not the patient's OwnVoice tablet). Recordings are transcribed and de-identified within 48 hours. Audio files are destroyed after transcription verification. Transcripts are stored in the research database under the study ID.
+**Interview recordings:** Qualitative interview audio records on an encrypted institutional device (not the patient's OwnVoice tablet). Within 48 hours, the team transcribes and de-identifies recordings, then destroys the audio files. Transcripts live in the research database under the study ID.
 
 **No research data leaves the institution.** The research database, interview transcripts, and analysis outputs remain on institutional infrastructure. Published results contain only aggregate statistics, representative de-identified quotes from interviews, and no individually identifiable information.
 
