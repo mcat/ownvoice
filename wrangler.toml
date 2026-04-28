@@ -1,0 +1,20 @@
+# Cloudflare Pages configuration for the OwnVoice project.
+#
+# This file declares the R2 binding used by Pages Functions to serve
+# /ort/* and /models/* from the ownvoice-static bucket. The actual
+# binding is configured in the Cloudflare dashboard (or via the API
+# call in plan 2026-04-27-r2-asset-hosting Task 1 Step 2). This file
+# is the source-controlled record of what's expected.
+#
+# Pages does not auto-read this file the way Workers does — it's
+# documentation. Wrangler will use it for `wrangler pages dev` if you
+# choose to test Functions locally.
+
+name = "ownvoice"
+compatibility_date = "2026-04-27"
+pages_build_output_dir = "dist"
+
+[[r2_buckets]]
+binding = "ASSETS"
+bucket_name = "ownvoice-static"
+preview_bucket_name = "ownvoice-static"
