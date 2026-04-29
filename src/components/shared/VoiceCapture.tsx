@@ -165,11 +165,20 @@ async function decodeAudio(blob: Blob): Promise<Float32Array> {
  * Throws on extraction failure.
  *
  * The worker lazy-loads the ~591 MB speech encoder external-data file on
- * the first embed call. On slow networks this can take minutes; the
- * worker emits an "embed-progress" message when it begins the model
- * load so the caller can surface a "loading model" indicator. After
- * OPFS caches the bytes, subsequent embeds run in seconds.
+ * the first embed call. On slow networks this can take many minutes; the
+ * worker emits an "embed-progress" message as bytes arrive so the caller
+ * can surface a "loading model" indicator. After OPFS caches the bytes,
+ * subsequent embeds run in seconds.
+ *
+ * We use an idle watchdog (60s without ANY progress) instead of a hard
+ * outer bound so a slow-but-progressing download never spuriously aborts
+ * (Bug 2). Each `embed` carries a `requestId` and we only resolve on a
+ * matching response so a stale handler doesn't grab a sibling caller's
+ * reply (Bug 6).
  */
+const IDLE_TIMEOUT_MS = 60_000;
+let nextRequestId = 1;
+
 async function extractEmbedding(
   audio: Float32Array,
   onLoadingModel?: () => void,
@@ -181,34 +190,49 @@ async function extractEmbedding(
     return null; // Model not loaded yet
   }
 
+  const requestId = nextRequestId++;
+
   return new Promise<unknown>((resolve, reject) => {
-    // 5-minute outer bound. Covers the worst realistic first-load:
-    // 591 MB of external data + ORT WASM init + inference. The
-    // "loading-model" progress event drives UI feedback; without it,
-    // a 5-minute spinner would be indistinguishable from a hang.
-    const timeout = setTimeout(
-      () => reject(new Error("Voice processing timed out. Please try again.")),
-      5 * 60 * 1000,
-    );
+    let idleTimer: ReturnType<typeof setTimeout> | null = null;
+
+    function resetIdle() {
+      if (idleTimer) clearTimeout(idleTimer);
+      idleTimer = setTimeout(() => {
+        worker!.removeEventListener("message", handler);
+        reject(new Error("This is taking longer than expected. Try again."));
+      }, IDLE_TIMEOUT_MS);
+    }
+
     const handler = (e: MessageEvent) => {
-      if (e.data.type === "embedding") {
-        clearTimeout(timeout);
-        worker.removeEventListener("message", handler);
-        resolve(e.data.data); // Return the actual embedding data
-      } else if (e.data.type === "embed-progress" && e.data.stage === "loading-model") {
-        // Worker is fetching the speech encoder; surface in UI.
-        // Don't clear the timeout — it still bounds the full operation.
+      const msg = e.data;
+      if (msg.type === "embed-progress" && msg.stage === "loading-model") {
         onLoadingModel?.();
-      } else if (e.data.type === "error") {
-        clearTimeout(timeout);
-        worker.removeEventListener("message", handler);
-        reject(new Error(e.data.message || "Voice processing failed"));
+        resetIdle();
+        return;
+      }
+      if (msg.type === "embedding" && msg.requestId === requestId) {
+        if (idleTimer) clearTimeout(idleTimer);
+        worker!.removeEventListener("message", handler);
+        resolve(msg.data);
+      } else if (msg.type === "error" && msg.requestId === requestId) {
+        if (idleTimer) clearTimeout(idleTimer);
+        worker!.removeEventListener("message", handler);
+        reject(new Error(msg.message || "Voice processing failed"));
       }
     };
     worker.addEventListener("message", handler);
-    worker.postMessage({ type: "embed", audio, sampleRate: 24000 });
+    resetIdle();
+    worker.postMessage({
+      type: "embed",
+      audio,
+      sampleRate: 24000,
+      requestId,
+    });
   });
 }
+
+// Test hook — keep at module scope so vitest can call it directly.
+export const __test__extractEmbedding = extractEmbedding;
 
 export function VoiceCapture({
   label,

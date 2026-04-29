@@ -1,18 +1,24 @@
 import { render, screen, fireEvent, act } from "@testing-library/preact";
 import { VoiceCapture, friendlyVoiceError } from "./VoiceCapture";
 
-// Mock getModelManager to avoid model init side effects
+// Mock getModelManager to avoid model init side effects.
+//
+// The mock is a singleton so individual tests can rebind `getWorker` /
+// `isReady` to drive `extractEmbedding` against a fake worker (see
+// `installFakeTTSWorker`). A factory-per-call returning a fresh object would
+// hand the test a different instance from the one the component calls.
+const mockMgr = {
+  init: vi.fn(),
+  getWorker: vi.fn(() => null) as ReturnType<typeof vi.fn>,
+  clearAll: vi.fn(),
+  isReady: vi.fn(() => false) as ReturnType<typeof vi.fn>,
+  onProgress: vi.fn(() => () => {}),
+  getProgress: vi.fn(() => [
+    { model: "tts", status: "idle", loaded: 0, total: 0 },
+  ]),
+};
 vi.mock("../../models/modelManager", () => ({
-  getModelManager: () => ({
-    init: vi.fn(),
-    getWorker: vi.fn(() => null),
-    clearAll: vi.fn(),
-    isReady: vi.fn(() => false),
-    onProgress: vi.fn(() => () => {}),
-    getProgress: vi.fn(() => [
-      { model: "tts", status: "idle", loaded: 0, total: 0 },
-    ]),
-  }),
+  getModelManager: () => mockMgr,
 }));
 
 describe("VoiceCapture", () => {
@@ -260,5 +266,118 @@ describe("friendlyVoiceError — raw error strings must never reach the user", (
     );
     expect(msg.toLowerCase()).toMatch(/quiet|noise|background|loud/);
     expect(msg.toLowerCase()).not.toContain("snr");
+  });
+});
+
+/** Test helper — install a fake TTS worker on the mocked getModelManager.
+ *  Returns the worker harness plus the isReady mock so tests can flip it. */
+function installFakeTTSWorker() {
+  const listeners: Array<(e: MessageEvent) => void> = [];
+  const postedMessages: any[] = [];
+  const worker = {
+    addEventListener: (type: string, h: any) => {
+      if (type === "message") listeners.push(h);
+    },
+    removeEventListener: (type: string, h: any) => {
+      if (type === "message") {
+        const i = listeners.indexOf(h);
+        if (i >= 0) listeners.splice(i, 1);
+      }
+    },
+    postMessage: (m: any) => postedMessages.push(m),
+    postedMessages,
+    dispatchMessage: (data: any) => {
+      const evt = { data } as MessageEvent;
+      for (const l of listeners.slice()) l(evt);
+    },
+  };
+  mockMgr.getWorker = vi.fn().mockReturnValue(worker);
+  const isReady = vi.fn();
+  mockMgr.isReady = isReady;
+  return { worker, isReady };
+}
+
+describe("VoiceCapture — extractEmbedding idle watchdog", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("does not timeout while progress events keep arriving", async () => {
+    const { worker, isReady } = installFakeTTSWorker();
+    isReady.mockReturnValue(true);
+
+    const { __test__extractEmbedding } = await import("./VoiceCapture");
+    const promise = __test__extractEmbedding(new Float32Array(24000), undefined);
+
+    // Capture the embed message to learn what requestId was used.
+    const embedMsg = worker.postedMessages.find((m: any) => m.type === "embed");
+    expect(embedMsg).toBeTruthy();
+    const requestId = (embedMsg as any).requestId;
+
+    // Pulse a progress event every 30s for 10 minutes — never idle 60s.
+    for (let i = 0; i < 20; i++) {
+      vi.advanceTimersByTime(30_000);
+      worker.dispatchMessage({
+        type: "embed-progress",
+        stage: "loading-model",
+        loaded: i + 1,
+        total: 20,
+      });
+    }
+
+    worker.dispatchMessage({
+      type: "embedding",
+      data: { condEmb: [], condEmbShape: [], promptToken: [], promptTokenShape: [], speakerEmbeddings: [], speakerEmbeddingsShape: [], speakerFeatures: [], speakerFeaturesShape: [] },
+      requestId,
+    });
+    await expect(promise).resolves.toBeTruthy();
+  });
+
+  it("times out after 60s of silence", async () => {
+    const { worker, isReady } = installFakeTTSWorker();
+    isReady.mockReturnValue(true);
+
+    const { __test__extractEmbedding } = await import("./VoiceCapture");
+    const promise = __test__extractEmbedding(new Float32Array(24000), undefined);
+
+    worker.dispatchMessage({ type: "embed-progress", stage: "loading-model", loaded: 1, total: 100 });
+    vi.advanceTimersByTime(61_000);
+
+    await expect(promise).rejects.toThrow(/taking longer/i);
+  });
+
+  it("ignores responses with mismatched requestId", async () => {
+    const { worker, isReady } = installFakeTTSWorker();
+    isReady.mockReturnValue(true);
+
+    const { __test__extractEmbedding } = await import("./VoiceCapture");
+    const promise = __test__extractEmbedding(new Float32Array(24000), undefined);
+
+    const embedMsg = worker.postedMessages.find((m: any) => m.type === "embed");
+    const requestId = (embedMsg as any).requestId;
+
+    // Dispatch an embedding for a different requestId — must NOT resolve.
+    worker.dispatchMessage({
+      type: "embedding",
+      data: { condEmb: [], condEmbShape: [], promptToken: [], promptTokenShape: [], speakerEmbeddings: [], speakerEmbeddingsShape: [], speakerFeatures: [], speakerFeaturesShape: [] },
+      requestId: requestId + 9999,
+    });
+    // After a small advance, our promise should still be pending (no idle).
+    vi.advanceTimersByTime(30_000);
+    let settled = false;
+    promise.then(() => { settled = true; }, () => { settled = true; });
+    await Promise.resolve();
+    expect(settled).toBe(false);
+
+    // Now dispatch the matching one and confirm it resolves.
+    worker.dispatchMessage({
+      type: "embedding",
+      data: { condEmb: [], condEmbShape: [], promptToken: [], promptTokenShape: [], speakerEmbeddings: [], speakerEmbeddingsShape: [], speakerFeatures: [], speakerFeaturesShape: [] },
+      requestId,
+    });
+    await expect(promise).resolves.toBeTruthy();
   });
 });
