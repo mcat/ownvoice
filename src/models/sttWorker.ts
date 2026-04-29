@@ -46,8 +46,18 @@ const TARGET_SAMPLE_RATE = 16_000;
 const CHUNK_SECONDS = 30;
 const CHUNK_SAMPLES = TARGET_SAMPLE_RATE * CHUNK_SECONDS;
 
-/** Mel spectrogram parameters for Whisper small */
+/** Mel spectrogram parameters for Whisper small.
+ *
+ * `N_FFT` is the analysis-window size — matches Whisper's reference exactly.
+ * `FFT_SIZE` is the FFT length, padded up to the next power of two so we
+ * can use a fast radix-2 Cooley-Tukey FFT (~50× faster than the naive
+ * O(N²) DFT we used to do here). The filterbank is built against
+ * `FFT_SIZE`, not `N_FFT`, because the frequency-bin spacing depends on
+ * the actual FFT length. Nyquist is unchanged either way, so the mel
+ * features stay within rounding of the reference Whisper preprocessor. */
 const N_FFT = 400;
+const FFT_SIZE = 512;
+const FREQ_BINS = FFT_SIZE / 2 + 1; // 257
 const HOP_LENGTH = 160;
 const N_MELS = 80;
 const MEL_FRAMES = CHUNK_SAMPLES / HOP_LENGTH; // 3000
@@ -135,44 +145,126 @@ function hannWindow(length: number): Float32Array {
 }
 
 /**
+ * Build a closure that computes an in-place radix-2 Cooley-Tukey FFT of
+ * length `size` (must be a power of two). Bit-reversal indices and
+ * per-level twiddle factors are precomputed at construction time so the
+ * hot path inside `stft()` does no trig — just multiplies and adds.
+ */
+function makeFFT(size: number): (re: Float64Array, im: Float64Array) => void {
+  if ((size & (size - 1)) !== 0) {
+    throw new Error(`FFT size must be a power of two; got ${size}`);
+  }
+  const log2N = Math.log2(size) | 0;
+
+  // Bit-reversal lookup
+  const bitReverse = new Uint32Array(size);
+  for (let i = 0; i < size; i++) {
+    let r = 0;
+    let x = i;
+    for (let bit = 0; bit < log2N; bit++) {
+      r = (r << 1) | (x & 1);
+      x >>>= 1;
+    }
+    bitReverse[i] = r;
+  }
+
+  // Twiddle factors per level: for stage `k` (size = 2^(k+1), halfSize = 2^k),
+  // we need W^j = exp(-i·2π·j / size) for j = 0..halfSize-1.
+  const cosTables: Float64Array[] = [];
+  const sinTables: Float64Array[] = [];
+  for (let level = 0; level < log2N; level++) {
+    const stageSize = 2 << level;
+    const halfStage = stageSize >> 1;
+    const cosT = new Float64Array(halfStage);
+    const sinT = new Float64Array(halfStage);
+    for (let j = 0; j < halfStage; j++) {
+      const angle = (-2 * Math.PI * j) / stageSize;
+      cosT[j] = Math.cos(angle);
+      sinT[j] = Math.sin(angle);
+    }
+    cosTables.push(cosT);
+    sinTables.push(sinT);
+  }
+
+  return function fft(re: Float64Array, im: Float64Array): void {
+    // Bit-reverse permute (in-place)
+    for (let i = 0; i < size; i++) {
+      const j = bitReverse[i];
+      if (i < j) {
+        let tmp = re[i]; re[i] = re[j]; re[j] = tmp;
+        tmp = im[i]; im[i] = im[j]; im[j] = tmp;
+      }
+    }
+    // Cooley-Tukey butterflies
+    for (let level = 0; level < log2N; level++) {
+      const stageSize = 2 << level;
+      const halfStage = stageSize >> 1;
+      const cosT = cosTables[level];
+      const sinT = sinTables[level];
+      for (let start = 0; start < size; start += stageSize) {
+        for (let j = 0; j < halfStage; j++) {
+          const cos = cosT[j];
+          const sin = sinT[j];
+          const i1 = start + j;
+          const i2 = i1 + halfStage;
+          const tre = re[i2] * cos - im[i2] * sin;
+          const tim = re[i2] * sin + im[i2] * cos;
+          re[i2] = re[i1] - tre;
+          im[i2] = im[i1] - tim;
+          re[i1] += tre;
+          im[i1] += tim;
+        }
+      }
+    }
+  };
+}
+
+const fftPow2 = makeFFT(FFT_SIZE);
+
+/**
  * Compute power spectrogram using STFT with Hann window.
- * Uses a 400-point DFT (matching Whisper's n_fft=400 exactly).
- * Returns a 2D array: [freqBins][timeFrames].
+ *
+ * Each frame is windowed with a 400-point Hann (matching Whisper's
+ * `n_fft=400`), zero-padded to 512 samples, and run through a radix-2
+ * FFT. The first `FREQ_BINS` (257) bins of the magnitude-squared
+ * spectrum are returned. Per-frame work is `O(FFT_SIZE log FFT_SIZE)`
+ * vs the previous `O(N_FFT × FREQ_BINS)`; for a 30 s chunk that's
+ * ~30 M ops vs ~240 M.
+ *
+ * Returns a 2D array shaped `[FREQ_BINS][MEL_FRAMES]`.
  */
 function stft(audio: Float32Array): Float64Array[] {
   const win = hannWindow(N_FFT);
-  const freqBins = N_FFT / 2 + 1; // 201
-  const numFrames = MEL_FRAMES; // 3000
+  const numFrames = MEL_FRAMES;
 
-  const spectrogram: Float64Array[] = new Array(freqBins);
-  for (let f = 0; f < freqBins; f++) {
+  const spectrogram: Float64Array[] = new Array(FREQ_BINS);
+  for (let f = 0; f < FREQ_BINS; f++) {
     spectrogram[f] = new Float64Array(numFrames);
   }
 
-  // Precompute twiddle factors for each frequency bin
-  const cosTable = new Float64Array(freqBins * N_FFT);
-  const sinTable = new Float64Array(freqBins * N_FFT);
-  for (let f = 0; f < freqBins; f++) {
-    const freqRad = (2 * Math.PI * f) / N_FFT;
-    for (let n = 0; n < N_FFT; n++) {
-      cosTable[f * N_FFT + n] = Math.cos(freqRad * n);
-      sinTable[f * N_FFT + n] = Math.sin(freqRad * n);
-    }
-  }
+  // Reusable per-frame buffers (zeroed once, then per-frame we only
+  // need to overwrite the first N_FFT slots; the tail stays zero).
+  const re = new Float64Array(FFT_SIZE);
+  const im = new Float64Array(FFT_SIZE);
 
   for (let t = 0; t < numFrames; t++) {
     const offset = t * HOP_LENGTH;
-    for (let f = 0; f < freqBins; f++) {
-      let real = 0;
-      let imag = 0;
-      const tIdx = f * N_FFT;
-      for (let n = 0; n < N_FFT; n++) {
-        const sample = offset + n < audio.length ? audio[offset + n] : 0;
-        const windowed = sample * win[n];
-        real += windowed * cosTable[tIdx + n];
-        imag += windowed * sinTable[tIdx + n];
-      }
-      spectrogram[f][t] = real * real + imag * imag;
+
+    // Apply window to the first N_FFT samples; rest is the zero-pad tail.
+    for (let n = 0; n < N_FFT; n++) {
+      const sample = offset + n < audio.length ? audio[offset + n] : 0;
+      re[n] = sample * win[n];
+      im[n] = 0;
+    }
+    for (let n = N_FFT; n < FFT_SIZE; n++) {
+      re[n] = 0;
+      im[n] = 0;
+    }
+
+    fftPow2(re, im);
+
+    for (let f = 0; f < FREQ_BINS; f++) {
+      spectrogram[f][t] = re[f] * re[f] + im[f] * im[f];
     }
   }
 
@@ -181,35 +273,37 @@ function stft(audio: Float32Array): Float64Array[] {
 
 /**
  * Create mel filterbank matrix.
- * Returns [N_MELS][freqBins] weights.
+ *
+ * Bin-index math uses `FFT_SIZE` (not `N_FFT`) because the spectrogram
+ * coming out of `stft()` has `FREQ_BINS = FFT_SIZE / 2 + 1` bins, not
+ * `N_FFT / 2 + 1`. Highest representable frequency is unchanged
+ * (Nyquist = `TARGET_SAMPLE_RATE / 2`); only the bin spacing differs.
+ *
+ * Returns `[N_MELS][FREQ_BINS]` weights.
  */
 function melFilterbank(): Float64Array[] {
-  const freqBins = N_FFT / 2 + 1;
-
   const melHigh = 2595 * Math.log10(1 + TARGET_SAMPLE_RATE / 2 / 700);
   const melLow = 0;
 
-  // N_MELS + 2 evenly spaced points in mel space
   const melPoints = new Float64Array(N_MELS + 2);
   for (let i = 0; i < N_MELS + 2; i++) {
     melPoints[i] = melLow + ((melHigh - melLow) * i) / (N_MELS + 1);
   }
 
-  // Convert mel points back to Hz, then to FFT bin indices
   const binIndices = new Float64Array(N_MELS + 2);
   for (let i = 0; i < N_MELS + 2; i++) {
     const hz = 700 * (Math.pow(10, melPoints[i] / 2595) - 1);
-    binIndices[i] = (hz * N_FFT) / TARGET_SAMPLE_RATE;
+    binIndices[i] = (hz * FFT_SIZE) / TARGET_SAMPLE_RATE;
   }
 
   const filters: Float64Array[] = new Array(N_MELS);
   for (let m = 0; m < N_MELS; m++) {
-    filters[m] = new Float64Array(freqBins);
+    filters[m] = new Float64Array(FREQ_BINS);
     const left = binIndices[m];
     const center = binIndices[m + 1];
     const right = binIndices[m + 2];
 
-    for (let f = 0; f < freqBins; f++) {
+    for (let f = 0; f < FREQ_BINS; f++) {
       if (f >= left && f <= center) {
         filters[m][f] = (f - left) / (center - left);
       } else if (f > center && f <= right) {
@@ -230,13 +324,12 @@ function logMelSpectrogram(audio: Float32Array): Float32Array {
   const powerSpec = stft(padded);
   const filters = melFilterbank();
 
-  const freqBins = N_FFT / 2 + 1;
   const output = new Float32Array(N_MELS * MEL_FRAMES);
 
   for (let m = 0; m < N_MELS; m++) {
     for (let t = 0; t < MEL_FRAMES; t++) {
       let sum = 0;
-      for (let f = 0; f < freqBins; f++) {
+      for (let f = 0; f < FREQ_BINS; f++) {
         sum += filters[m][f] * powerSpec[f][t];
       }
       // Log-mel: log(max(sum, 1e-10))
