@@ -46,19 +46,38 @@ function createMockStream(): MediaStream {
   } as unknown as MediaStream;
 }
 
-// Helper: set up AudioContext to provide createMediaStreamSource + createScriptProcessor
+// Helper: set up AudioContext + AudioWorkletNode mocks. The hook now
+// uses an AudioWorklet (replacing the deprecated ScriptProcessorNode);
+// the mock exposes a `simulateSamples(arr)` helper so tests can drive
+// the same path the worklet's `port.postMessage` would.
 function setupAudioContextMock() {
-  const mockProcessor = {
+  const mockProcessor: {
+    connect: ReturnType<typeof vi.fn>;
+    disconnect: ReturnType<typeof vi.fn>;
+    port: {
+      onmessage: null | ((e: MessageEvent) => void);
+      postMessage: ReturnType<typeof vi.fn>;
+    };
+    simulateSamples: (samples: Float32Array) => void;
+  } = {
     connect: vi.fn(),
     disconnect: vi.fn(),
-    onaudioprocess: null as ((e: unknown) => void) | null,
+    port: {
+      onmessage: null,
+      postMessage: vi.fn(),
+    },
+    simulateSamples(samples: Float32Array) {
+      this.port.onmessage?.({
+        data: { type: "samples", samples },
+      } as MessageEvent);
+    },
   };
   const mockSource = {
     connect: vi.fn(),
   };
   const mockCtx = {
     createMediaStreamSource: vi.fn(() => mockSource),
-    createScriptProcessor: vi.fn(() => mockProcessor),
+    audioWorklet: { addModule: vi.fn(() => Promise.resolve()) },
     destination: {},
     sampleRate: 44100,
     state: "running" as AudioContextState,
@@ -66,16 +85,22 @@ function setupAudioContextMock() {
     resume: vi.fn(),
   };
 
-  // Must be a proper constructor (class-like) so `new AudioContext()` works
   globalThis.AudioContext = class {
     createMediaStreamSource = mockCtx.createMediaStreamSource;
-    createScriptProcessor = mockCtx.createScriptProcessor;
+    audioWorklet = mockCtx.audioWorklet;
     destination = mockCtx.destination;
     sampleRate = mockCtx.sampleRate;
     state = mockCtx.state;
     close = mockCtx.close;
     resume = mockCtx.resume;
   } as unknown as typeof AudioContext;
+
+  globalThis.AudioWorkletNode = class {
+    port = mockProcessor.port;
+    connect = mockProcessor.connect;
+    disconnect = mockProcessor.disconnect;
+    constructor() { /* matches AudioWorkletNode signature */ }
+  } as unknown as typeof AudioWorkletNode;
 
   return { mockCtx, mockProcessor, mockSource };
 }
@@ -422,7 +447,7 @@ describe("useMicrophone", () => {
 
       const samples = new Float32Array(4096).fill(0.05);
       act(() => {
-        mockProcessor.onaudioprocess?.({ inputBuffer: { getChannelData: () => samples } });
+        mockProcessor.simulateSamples(samples);
       });
 
       // Advance well past any historical streaming interval — no transcribe call should happen.
@@ -455,7 +480,7 @@ describe("useMicrophone", () => {
 
       const samples = new Float32Array(4096).fill(0.5);
       act(() => {
-        mockProcessor.onaudioprocess?.({ inputBuffer: { getChannelData: () => samples } });
+        mockProcessor.simulateSamples(samples);
       });
 
       act(() => {
@@ -485,7 +510,7 @@ describe("useMicrophone", () => {
       // Simulate loud audio (accumulate a chunk)
       const loudSamples = new Float32Array(4096).fill(0.5);
       act(() => {
-        mockProcessor.onaudioprocess?.({ inputBuffer: { getChannelData: () => loudSamples } });
+        mockProcessor.simulateSamples(loudSamples);
       });
 
       // Stop capture should flush remaining audio
@@ -660,7 +685,7 @@ describe("useMicrophone", () => {
       // Accumulate some audio
       const samples = new Float32Array(4096).fill(0.5);
       act(() => {
-        mockProcessor.onaudioprocess?.({ inputBuffer: { getChannelData: () => samples } });
+        mockProcessor.simulateSamples(samples);
       });
 
       // Stop capture — flush will try to use the worker but it's gone
@@ -692,7 +717,7 @@ describe("useMicrophone", () => {
       // Trigger silent audio to start the silence timer
       const silentSamples = new Float32Array(4096).fill(0.001);
       act(() => {
-        mockProcessor.onaudioprocess?.({ inputBuffer: { getChannelData: () => silentSamples } });
+        mockProcessor.simulateSamples(silentSamples);
       });
 
       // Don't wait for the timer — stop immediately
