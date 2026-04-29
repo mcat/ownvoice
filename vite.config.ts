@@ -1,10 +1,69 @@
-import { defineConfig } from "vite";
-import { resolve } from "node:path";
+import { defineConfig, type Plugin } from "vite";
+import { resolve, extname, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+import { promises as fs } from "node:fs";
 import preact from "@preact/preset-vite";
 import tailwindcss from "@tailwindcss/vite";
 
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+/**
+ * Serve `/ort/*` requests directly from `public/ort/` in dev — bypassing
+ * Vite's import-analysis transform.
+ *
+ * Why this exists: bundled workers (e.g. `src/models/llmWorker.ts`) import
+ * `onnxruntime-web/webgpu`, whose runtime then dynamically imports
+ * `/ort/v<X>/ort-wasm-simd-threaded.asyncify.mjs` (the ORT WASM glue).
+ * Vite's dev middleware appends `?import` to those URLs and routes them
+ * through its source-transform pipeline, which refuses public-folder
+ * files with: "this file is in /public and will be copied as-is during
+ * build … should not be imported from source code."
+ *
+ * The TTS/STT GPU workers don't trip this because they're plain JS files
+ * in `/public/` (Vite serves them verbatim, so the worker context's
+ * dynamic imports also bypass source-transform). The LLM worker is
+ * Vite-bundled, so it can't.
+ *
+ * Production is unaffected — Pages serves `/ort/*` from R2 via a Pages
+ * Function (`functions/ort/[[path]].ts`), no Vite involvement.
+ */
+function serveOrtFromPublic(): Plugin {
+  return {
+    name: "ownvoice-serve-ort-from-public",
+    apply: "serve",
+    configureServer(server) {
+      server.middlewares.use(async (req, res, next) => {
+        if (!req.url || !req.url.startsWith("/ort/")) return next();
+        const path = req.url.split("?")[0];
+        const filePath = resolve(__dirname, "public", path.replace(/^\//, ""));
+        try {
+          const data = await fs.readFile(filePath);
+          const ext = extname(path);
+          const mime =
+            ext === ".mjs" || ext === ".js"
+              ? "application/javascript"
+              : ext === ".wasm"
+                ? "application/wasm"
+                : "application/octet-stream";
+          res.setHeader("Content-Type", mime);
+          // Match production COEP/COOP headers so cross-origin-isolated
+          // contexts (the dev server sets these page-wide) accept the
+          // module. Mirrors functions/ort/[[path]].ts in production.
+          res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+          res.end(data);
+        } catch {
+          // File not found: fall through (likely a missing
+          // `npm run assets:download`) — Vite's default 404 path
+          // surfaces a clearer error than a silent 0-byte response.
+          next();
+        }
+      });
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [preact(), tailwindcss()],
+  plugins: [preact(), tailwindcss(), serveOrtFromPublic()],
   build: {
     rollupOptions: {
       input: {
