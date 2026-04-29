@@ -34,7 +34,13 @@ import { MODELS_ASSET_PREFIX } from "./assetVersions";
 
 export type ModelId = "tts" | "tts-encoder" | "llm" | "stt";
 
-export type ModelStatus = "idle" | "downloading" | "loading" | "ready" | "error";
+export type ModelStatus =
+  | "idle"
+  | "downloading"
+  | "loading"
+  | "ready"
+  | "warm"
+  | "error";
 
 export interface LoadProgress {
   model: ModelId;
@@ -50,10 +56,29 @@ export interface FewShotExample {
   assistant: string;
 }
 
+/**
+ * Outputs from the Chatterbox-Multilingual speech encoder, stored and reused
+ * for all synthesis calls. All arrays use JSON-safe types (number[]) so the
+ * data can be persisted via zustand's JSON storage. BigInt64Array values
+ * from ONNX are converted to number[] at extraction time and back at
+ * synthesis time.
+ */
+export interface SpeakerData {
+  condEmb: number[];
+  condEmbShape: number[];
+  promptToken: number[];
+  promptTokenShape: number[];
+  speakerEmbeddings: number[];
+  speakerEmbeddingsShape: number[];
+  speakerFeatures: number[];
+  speakerFeaturesShape: number[];
+}
+
 /** Messages sent TO a model worker */
 export type WorkerRequest =
   | { type: "init"; modelUrl: string }
-  | { type: "embed"; audio: Float32Array; sampleRate: number }
+  | { type: "warmup" }
+  | { type: "embed"; audio: Float32Array; sampleRate: number; requestId: number }
   | { type: "synthesize"; text: string; embedding: Float32Array }
   | {
       type: "complete";
@@ -69,12 +94,23 @@ export type WorkerRequest =
 /** Messages sent FROM a model worker */
 export type WorkerResponse =
   | { type: "ready" }
+  | { type: "warm" }
   | { type: "progress"; loaded: number; total: number }
-  | { type: "embedding"; data: Float32Array }
+  | {
+      type: "embed-progress";
+      stage: "loading-model";
+      loaded?: number;
+      total?: number;
+    }
+  | {
+      type: "embedding";
+      data: SpeakerData;
+      requestId: number;
+    }
   | { type: "audio"; data: Float32Array; sampleRate: number }
   | { type: "completions"; data: string[] }
   | { type: "transcript"; text: string }
-  | { type: "error"; message: string };
+  | { type: "error"; message: string; requestId?: number };
 
 /**
  * Chatterbox-Multilingual ONNX files.
