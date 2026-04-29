@@ -87,6 +87,7 @@ export function Setup({ mode = "first-run", onFirstRunDone, onAddPatientDone, on
   const [lang, setLang] = useState("en");
   const [patientVoice, setPatientVoice] = useState(false);
   const [speakerData, setSpeakerData] = useState<unknown>(null);
+  const [pendingBlob, setPendingBlob] = useState<string | null>(null);
   const [fallbackVoice, setFallbackVoice] = useState<FallbackVoice | null>(null);
   const [pin, setPin] = useState("");
   const [providers, setProviders] = useState<Provider[]>([]);
@@ -123,6 +124,7 @@ export function Setup({ mode = "first-run", onFirstRunDone, onAddPatientDone, on
         hasVoice: patientVoice,
         speakerData: speakerData ?? null,
         fallbackVoice,
+        pendingVoiceBlob: pendingBlob,
       });
       onAddPatientDone?.(patient);
     } else {
@@ -135,6 +137,7 @@ export function Setup({ mode = "first-run", onFirstRunDone, onAddPatientDone, on
         hasVoice: patientVoice,
         speakerData: speakerData ?? null,
         fallbackVoice,
+        pendingVoiceBlob: pendingBlob,
         addedAt: now,
         lastActiveAt: now,
       };
@@ -329,6 +332,7 @@ export function Setup({ mode = "first-run", onFirstRunDone, onAddPatientDone, on
             patientVoice={patientVoice}
             setPatientVoice={setPatientVoice}
             setSpeakerData={setSpeakerData}
+            setPendingBlob={setPendingBlob}
             fallbackVoice={fallbackVoice}
             setFallbackVoice={setFallbackVoice}
             lang={lang}
@@ -525,6 +529,7 @@ function StepVoice({
   patientVoice,
   setPatientVoice,
   setSpeakerData,
+  setPendingBlob,
   fallbackVoice,
   setFallbackVoice,
   lang,
@@ -534,6 +539,7 @@ function StepVoice({
   patientVoice: boolean;
   setPatientVoice: (v: boolean) => void;
   setSpeakerData: (data: unknown) => void;
+  setPendingBlob: (b: string | null) => void;
   fallbackVoice: FallbackVoice | null;
   setFallbackVoice: (v: FallbackVoice | null) => void;
   lang: string;
@@ -554,11 +560,16 @@ function StepVoice({
       <VoiceCapture
         label={resolvePhrase("ui.provider.setup.step1.patient_label", caregiverLang)}
         hasVoice={patientVoice}
-        onCapture={(_blob, embedding) => {
+        onCapture={async (blob, embedding) => {
           setPatientVoice(true);
           if (embedding) setSpeakerData(embedding);
+          const base64 = await blobToBase64(blob);
+          setPendingBlob(base64);
         }}
-        onRemove={() => setPatientVoice(false)}
+        onRemove={() => {
+          setPatientVoice(false);
+          setPendingBlob(null);
+        }}
         locale={lang}
       />
 
@@ -972,3 +983,16 @@ const inputStyle: Record<string, string | number> = {
   boxSizing: "border-box",
   fontFamily: "inherit",
 };
+
+async function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const dataUrl = reader.result as string;
+      const base64 = dataUrl.split(",", 2)[1] ?? "";
+      resolve(base64);
+    };
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
+}
