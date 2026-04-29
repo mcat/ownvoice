@@ -1,4 +1,4 @@
-// build: 2026-04-29-kv-cache-respike-doc
+// build: 2026-04-29-mel-log10
 /**
  * WebGPU STT Worker — Whisper small via ONNX Runtime WebGPU EP.
  *
@@ -267,13 +267,17 @@ function logMelSpectrogram(audio) {
   const filters = melFilterbank();
   const output = new Float32Array(N_MELS * MEL_FRAMES);
 
+  // Whisper's reference uses log10; the (x+4)/4 rescale below is
+  // calibrated for log10. Using natural log shifted features by a
+  // factor of ~2.303 — distribution mismatch with what the encoder was
+  // trained on. See sttWorker.ts logMelSpectrogram for the full note.
   for (let m = 0; m < N_MELS; m++) {
     for (let t = 0; t < MEL_FRAMES; t++) {
       let sum = 0;
       for (let f = 0; f < FREQ_BINS; f++) {
         sum += filters[m][f] * powerSpec[f][t];
       }
-      output[m * MEL_FRAMES + t] = Math.log(Math.max(sum, 1e-10));
+      output[m * MEL_FRAMES + t] = Math.log10(Math.max(sum, 1e-10));
     }
   }
 
