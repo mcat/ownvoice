@@ -5,6 +5,7 @@ import { Btn } from "./Btn";
 import { getModelManager } from "../../models/modelManager";
 import { getRecordingScript } from "../../data/recordingScripts";
 import { preprocessEnrollment } from "../../models/enrollmentAudio";
+import { useModels } from "../../hooks/useModels";
 
 /**
  * Voice clone processing status — shown in the UI so the user
@@ -277,6 +278,13 @@ export function VoiceCapture({
   const [cloneStatus, setCloneStatus] = useState<VoiceCloneStatus>(
     hasEmbedding ? "ready" : hasVoice ? "model-loading" : "idle",
   );
+
+  // Readiness signals — used by the pre-capture hint and the deferred-save
+  // status copy. `isWarm("tts")` flips true when the speech encoder has run
+  // its warmup pass; until then, captures are saved but cloning is deferred.
+  const { isWarm, humanCountdown } = useModels();
+  const ttsWarm = isWarm("tts");
+  const countdown = humanCountdown("tts");
 
   // When the TTS model becomes warm, retry embedding extraction if we have
   // audio but no embedding.
@@ -697,9 +705,19 @@ export function VoiceCapture({
       );
     }
     if (cloneStatus === "model-loading") {
+      const text = ttsWarm
+        ? resolvePhrase("ui.readiness.voice_capture.saving_almost", caregiverLang)
+        : resolvePhrase(
+            "ui.readiness.voice_capture.saving",
+            caregiverLang,
+          ).replace("{countdown}", countdown);
       return (
-        <span style={{ ...base, color: "#92400E", background: "#FEF3C7" }}>
-          <span aria-hidden="true">{"\u23F3"}</span> {resolvePhrase("ui.provider.voice_capture.loading_model", caregiverLang)}
+        <span
+          role="status"
+          aria-live="polite"
+          style={{ ...base, color: "#92400E", background: "#FEF3C7" }}
+        >
+          <span aria-hidden="true">{"\u23F3"}</span> {text}
         </span>
       );
     }
@@ -713,7 +731,8 @@ export function VoiceCapture({
     if (cloneStatus === "failed") {
       return (
         <span style={{ ...base, color: "#991B1B", background: "#FEE2E2" }}>
-          <span aria-hidden="true">{"\u26A0\uFE0F"}</span> {resolvePhrase("ui.provider.voice_capture.clone_failed", caregiverLang)}
+          <span aria-hidden="true">{"\u26A0\uFE0F"}</span>{" "}
+          {resolvePhrase("ui.readiness.voice_capture.failed_message", caregiverLang)}
         </span>
       );
     }
@@ -1285,7 +1304,7 @@ export function VoiceCapture({
             {cloneStatus === "failed" && (
               <Btn
                 onClick={retryEmbedding}
-                aria-label={resolvePhrase("ui.provider.voice_capture.retry_aria", caregiverLang)}
+                aria-label={resolvePhrase("ui.readiness.voice_capture.failed_action", caregiverLang)}
                 style={{
                   background: "none",
                   // red-600 gives 4.83:1 on white; red-300 was 1.90:1.
@@ -1296,7 +1315,7 @@ export function VoiceCapture({
                   fontSize: btnFloor.fontSize, fontWeight: 600, color: "#991B1B", fontFamily: "inherit",
                 }}
               >
-                {resolvePhrase("ui.provider.voice_capture.retry", caregiverLang)}
+                {resolvePhrase("ui.readiness.voice_capture.failed_action", caregiverLang)}
               </Btn>
             )}
           </div>
@@ -1357,6 +1376,19 @@ export function VoiceCapture({
           {resolvePhrase("ui.provider.voice_capture.record", caregiverLang)}
         </Btn>
       </div>
+      {!ttsWarm && (
+        <p
+          role="status"
+          aria-live="polite"
+          style={{
+            marginTop: 8,
+            fontSize: 13,
+            color: c.sub,
+          }}
+        >
+          {resolvePhrase("ui.readiness.voice_capture.precapture_hint", caregiverLang)}
+        </p>
+      )}
       {error && <ErrorRow compact={compact} message={error} />}
     </div>
   );

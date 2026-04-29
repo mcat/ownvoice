@@ -54,7 +54,7 @@ vi.mock("../stores/uiStore", () => {
 });
 vi.mock("../models/modelManager", () => ({
   getModelManager: () => ({
-    init: vi.fn(),
+    init: vi.fn().mockResolvedValue(undefined),
     getWorker: vi.fn(() => null),
     clearAll: vi.fn(),
   }),

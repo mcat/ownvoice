@@ -8,7 +8,7 @@ import { VoiceCapture, friendlyVoiceError } from "./VoiceCapture";
 // `installFakeTTSWorker`). A factory-per-call returning a fresh object would
 // hand the test a different instance from the one the component calls.
 const mockMgr = {
-  init: vi.fn(),
+  init: vi.fn().mockResolvedValue(undefined),
   getWorker: vi.fn(() => null) as ReturnType<typeof vi.fn>,
   clearAll: vi.fn(),
   isReady: vi.fn(() => false) as ReturnType<typeof vi.fn>,
@@ -492,5 +492,71 @@ describe("VoiceCapture — retry waits for warm", () => {
     // The retry effect ran retryEmbedding, which constructs an AudioContext
     // with sampleRate 24000 inside decodeAudio.
     expect(decodeAudioCallCount()).toBeGreaterThan(baseline);
+  });
+});
+
+describe("VoiceCapture — pre-capture readiness hint", () => {
+  // useModels reads progress via the onProgress listener; pushing a snapshot
+  // and yielding a microtask lets the hook's state settle before assertions.
+  beforeEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("shows the hint when TTS is not warm", async () => {
+    const ctl = installMockMgrStatus({ tts: "ready" }); // ready but not warm
+    render(
+      <VoiceCapture
+        label="t"
+        hasVoice={false}
+        onCapture={() => {}}
+        onRemove={() => {}}
+      />,
+    );
+    ctl.notify();
+    await new Promise((r) => setTimeout(r, 20));
+    expect(
+      screen.getByText(/Voice will start as soon as it's ready/i),
+    ).toBeInTheDocument();
+  });
+
+  it("hides the hint when TTS is warm", async () => {
+    const ctl = installMockMgrStatus({ tts: "warm" });
+    render(
+      <VoiceCapture
+        label="t"
+        hasVoice={false}
+        onCapture={() => {}}
+        onRemove={() => {}}
+      />,
+    );
+    ctl.notify();
+    await new Promise((r) => setTimeout(r, 20));
+    expect(
+      screen.queryByText(/Voice will start as soon as it's ready/i),
+    ).toBeNull();
+  });
+});
+
+describe("VoiceCapture — plain-language status copy", () => {
+  beforeEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("shows 'Saving your voice — about ...' during deferred processing", async () => {
+    const ctl = installMockMgrStatus({ tts: "ready" });
+    render(
+      <VoiceCapture
+        label="t"
+        hasVoice={true}
+        onCapture={() => {}}
+        onRemove={() => {}}
+        audioBlob={new Blob([new Uint8Array(1024)])}
+      />,
+    );
+    ctl.notify();
+    await new Promise((r) => setTimeout(r, 20));
+    expect(
+      screen.getByText(/Saving your voice/i),
+    ).toBeInTheDocument();
   });
 });
