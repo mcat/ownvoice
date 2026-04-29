@@ -407,6 +407,33 @@ async function ensureSynthModelsLoaded(): Promise<void> {
   console.log(`${LOG} Synth models loaded in ${((performance.now() - t0) / 1000).toFixed(1)}s`);
 }
 
+/** Pre-load the speech encoder and confirm it can run inference.
+ *  Run on a short silent buffer so the OPFS cache is hot when the user
+ *  actually records. Emits {type:"warm"} on success and {type:"error"}
+ *  on failure (without a requestId, since this is unsolicited). */
+async function handleWarmup(): Promise<void> {
+  console.log(`${LOG} Warmup: loading speech encoder...`);
+  try {
+    const session = await createSession(
+      baseUrl + CHATTERBOX_FILES.speechEncoder.onnx,
+      true,
+      true,
+      "encoder",
+    );
+    // Tiny silent buffer — just enough to confirm the graph runs.
+    const silent = new Float32Array(SAMPLE_RATE / 2); // 0.5 s
+    const tensor = new ort.Tensor("float32", silent, [1, silent.length]);
+    await session.run({ audio_values: tensor });
+    session.release();
+    _postMessage({ type: "warm" });
+    console.log(`${LOG} Warmup complete.`);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`${LOG} Warmup failed: ${msg}`);
+    _postMessage({ type: "error", message: msg });
+  }
+}
+
 /**
  * Extract speaker data from a reference audio clip.
  * Loads speech_encoder on-demand, runs inference, then disposes the session.
@@ -753,7 +780,7 @@ self.addEventListener("message", async (e: MessageEvent) => {
   const msg = e.data;
 
   // Ignore ONNX Runtime internal messages (they don't have our type field)
-  if (!msg || !msg.type || !["init", "embed", "synthesize"].includes(msg.type)) return;
+  if (!msg || !msg.type || !["init", "embed", "warmup", "synthesize"].includes(msg.type)) return;
 
   try {
     switch (msg.type) {
@@ -763,6 +790,10 @@ self.addEventListener("message", async (e: MessageEvent) => {
 
       case "embed":
         await handleEmbed(msg.audio, msg.sampleRate);
+        break;
+
+      case "warmup":
+        await handleWarmup();
         break;
 
       case "synthesize":

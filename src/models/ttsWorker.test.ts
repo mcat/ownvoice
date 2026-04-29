@@ -637,6 +637,44 @@ describe("ttsWorker — message protocol", () => {
   });
 });
 
+describe("ttsWorker — warmup", () => {
+  it("emits {type:'warm'} after warmup completes", async () => {
+    setupFetchMocks();
+
+    // Init loads tokenizer only (synth models lazy-loaded on first synthesize).
+    // Warmup will then call createSession for the speech encoder + run() once
+    // on the silent buffer to confirm the graph runs.
+    const warmupSession = {
+      run: vi.fn().mockResolvedValue({
+        audio_features: { data: new Float32Array(8), dims: [1, 8] },
+        audio_tokens: { data: new BigInt64Array(4), dims: [1, 4] },
+        speaker_embeddings: { data: new Float32Array(192), dims: [1, 192] },
+        speaker_features: { data: new Float32Array(80), dims: [1, 1, 80] },
+      }),
+      release: vi.fn(),
+    };
+    mockSessionCreate.mockResolvedValue(warmupSession);
+
+    vi.resetModules();
+    await import("./ttsWorker");
+
+    const handler = getMessageHandler();
+
+    // Init first so baseUrl is set.
+    await handler({ data: { type: "init", modelUrl: "/models/tts/" } } as MessageEvent);
+    mockPostMessage.mockClear();
+
+    await handler({ data: { type: "warmup" } } as MessageEvent);
+    await flush();
+
+    expect(mockPostMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "warm" }),
+    );
+    // The encoder session should be released after the warmup run.
+    expect(warmupSession.release).toHaveBeenCalled();
+  });
+});
+
 describe("ttsWorker — encoder fetch progress", () => {
   it("posts embed-progress events as encoder bytes arrive", async () => {
     const posted: unknown[] = [];
