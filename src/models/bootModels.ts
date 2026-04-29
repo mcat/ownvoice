@@ -142,22 +142,20 @@ function bootSTT(mgr: ReturnType<typeof getModelManager>): void {
         if (e.data.type === "ready") {
           mgr.setWorker("stt", gpuWorker);
           mgr.setReady("stt");
-          console.log("[OwnVoice] STT: WebGPU ready");
-          gpuWorker.postMessage({ type: "warmup" });
-        } else if (e.data.type === "warm") {
+          // The GPU STT worker (public/stt-gpu-worker.js) already runs
+          // shader compilation + encoder/decoder warmup as part of its
+          // own init sequence before emitting `ready`. By the time we
+          // see `ready`, it can run inference — so flip warm directly
+          // without posting an extra `warmup` message (which the GPU
+          // worker doesn't handle and would log as "Unknown message type").
           mgr.markWarm("stt");
+          console.log("[OwnVoice] STT: WebGPU ready");
         } else if (e.data.type === "error") {
           if (!mgr.isReady("stt")) {
             // Init failure on GPU — fall back to WASM, which has its own
             // setError on init failure.
             console.warn("[OwnVoice] STT GPU error:", e.data.message);
             bootSTTWasm(mgr);
-          } else if (e.data.phase === "warmup") {
-            // Init succeeded but warmup failed. Don't fall back — the
-            // model was readyable, the GPU just couldn't run inference
-            // for some reason. Mark as errored so the UI surfaces a
-            // recovery action.
-            mgr.setError("stt", e.data.message);
           }
         }
       };
