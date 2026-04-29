@@ -1,8 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "preact/hooks";
 import { getModelManager } from "../models/modelManager";
-
-/** Periodic flush interval: send audio snapshot to worker every N ms */
-const STREAM_INTERVAL_MS = 5_000;
+import { useSettingsStore } from "../stores/settingsStore";
 
 /** ScriptProcessor buffer size (samples per callback) */
 const BUFFER_SIZE = 4096;
@@ -27,10 +25,14 @@ export interface MicrophoneState {
 /**
  * Hook for capturing microphone audio and sending it to the STT worker.
  *
- * Sends a growing audio snapshot to Whisper every 5 seconds so transcription
- * streams while the user is still speaking. Each snapshot contains ALL audio
- * captured so far (growing window), so each result replaces the previous one.
- * A final flush on stop gives the definitive transcript.
+ * Captures audio while listening and sends one transcription request when the
+ * user stops. The worker streams `partial` updates every few generated tokens
+ * during that single transcription, so the textarea fills in progressively.
+ *
+ * (This used to do periodic 5-second "growing-window" snapshots that
+ * re-transcribed the entire buffer each time. That caused visible transcript
+ * flicker — each greedy decode pass produced slightly different output — and
+ * wasted compute reprocessing the same audio repeatedly.)
  */
 export function useMicrophone(): MicrophoneState {
   const [isListening, setIsListening] = useState(false);
@@ -50,9 +52,6 @@ export function useMicrophone(): MicrophoneState {
   const flushTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stoppedRef = useRef(false);
 
-  // Periodic streaming timer
-  const streamTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
   // Raw RMS value updated by audio processor, synced to state at throttled rate
   const rawLevelRef = useRef(0);
   const levelIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -69,7 +68,6 @@ export function useMicrophone(): MicrophoneState {
   // for pending transcripts. The session is being abandoned, not finalized.
   useEffect(() => {
     return () => {
-      if (streamTimerRef.current) clearInterval(streamTimerRef.current);
       if (levelIntervalRef.current) clearInterval(levelIntervalRef.current);
       if (flushTimeoutRef.current) clearTimeout(flushTimeoutRef.current);
       if (processorRef.current) {
@@ -128,14 +126,16 @@ export function useMicrophone(): MicrophoneState {
   }, []);
 
   /**
-   * Send audio to the STT worker. If `snapshot` is true, keeps the buffer
-   * for future flushes (growing window). If false, clears it (final flush).
+   * Send the captured audio to the STT worker for transcription. Clears the
+   * buffer afterwards (this is the only send — there are no intermediate
+   * snapshots). The worker emits `partial` messages during decoding, so the
+   * textarea progressively fills as tokens generate.
    */
-  const sendToWorker = useCallback((snapshot: boolean) => {
+  const sendToWorker = useCallback(() => {
     const data = combineChunks();
     if (!data) return;
 
-    if (!snapshot) chunksRef.current = [];
+    chunksRef.current = [];
 
     const worker = getModelManager().getWorker("stt");
     if (!worker) {
@@ -144,29 +144,26 @@ export function useMicrophone(): MicrophoneState {
       return;
     }
 
-    // For snapshots, we need to copy the buffer since we're keeping the original
-    const audio = snapshot ? new Float32Array(data.audio) : data.audio;
-
     pendingFlushRef.current++;
     setTranscribing(true);
 
-    const durationSec = (audio.length / data.sampleRate).toFixed(1);
-    console.log(`[OwnVoice:Mic] ${snapshot ? "Snapshot" : "Final flush"}: ${durationSec}s of audio`);
+    const durationSec = (data.audio.length / data.sampleRate).toFixed(1);
+    // Read caregiver language from settings at send time so the user can
+    // change languages between recordings without a rerender of this hook.
+    const language = useSettingsStore.getState().cfg?.caregiverLang ?? "en";
+    console.log(`[OwnVoice:Mic] Final flush: ${durationSec}s of audio (lang=${language})`);
 
     worker.postMessage(
-      { type: "transcribe", audio, sampleRate: data.sampleRate },
-      [audio.buffer],
+      { type: "transcribe", audio: data.audio, sampleRate: data.sampleRate, language },
+      [data.audio.buffer],
     );
 
-    // Safety timeout for final flushes
-    if (!snapshot) {
-      if (flushTimeoutRef.current) clearTimeout(flushTimeoutRef.current);
-      flushTimeoutRef.current = setTimeout(() => {
-        pendingFlushRef.current = 0;
-        setTranscribing(false);
-        maybeCleanupListener();
-      }, FLUSH_TIMEOUT_MS);
-    }
+    if (flushTimeoutRef.current) clearTimeout(flushTimeoutRef.current);
+    flushTimeoutRef.current = setTimeout(() => {
+      pendingFlushRef.current = 0;
+      setTranscribing(false);
+      maybeCleanupListener();
+    }, FLUSH_TIMEOUT_MS);
   }, [combineChunks, maybeCleanupListener]);
 
   /**
@@ -269,30 +266,16 @@ export function useMicrophone(): MicrophoneState {
       setAudioLevel(rawLevelRef.current);
     }, LEVEL_INTERVAL_MS);
 
-    // Start periodic streaming: send a snapshot of all audio every 5s
-    // so transcription starts while the user is still speaking.
-    // The worker's concurrency guard drops requests if already busy,
-    // naturally throttling to one transcription at a time.
-    streamTimerRef.current = setInterval(() => {
-      sendToWorker(true);
-    }, STREAM_INTERVAL_MS);
-
     setIsListening(true);
-  }, [sendToWorker, maybeCleanupListener]);
+  }, [maybeCleanupListener]);
 
   /**
-   * Stop capturing and do a final flush of all audio.
-   * The worker listener stays alive until the final transcript arrives.
+   * Stop capturing and send the captured audio to the STT worker. The worker
+   * listener stays alive until the final transcript arrives.
    */
   const stopCapture = useCallback(() => {
-    // Stop periodic streaming
-    if (streamTimerRef.current) {
-      clearInterval(streamTimerRef.current);
-      streamTimerRef.current = null;
-    }
-
-    // Final flush — sends all audio and clears the buffer
-    sendToWorker(false);
+    // Send all captured audio in one transcription request and clear the buffer.
+    sendToWorker();
 
     stoppedRef.current = true;
 

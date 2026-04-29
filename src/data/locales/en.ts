@@ -566,6 +566,7 @@ const en = {
   "ui.provider.listen.transcribing_placeholder": "Transcribing speech...",
   "ui.provider.listen.type_placeholder": "Or type what was said...",
   "ui.provider.listen.transcript_aria": "Transcript",
+  "ui.provider.listen.audio_level_aria": "Microphone audio level",
   "ui.provider.listen.add_as": "Add to conversation as {prov}",
   "ui.provider.listen.privacy_notice": "On-device · Whisper · no audio leaves this device",
 

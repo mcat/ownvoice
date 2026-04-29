@@ -283,4 +283,103 @@ describe("sttWorker — message protocol", () => {
       expect.objectContaining({ type: "error" }),
     );
   });
+
+  it("returns empty transcript when no-speech probability exceeds threshold", async () => {
+    // Tokenizer mock includes <|nospeech|>=50362 so the worker reads no-speech logit.
+    // Fixture: vocab tokens 100 ("hello"), 101 ("world"); special tokens at 50256+;
+    // we put the no-speech token at 50361 so it's distinct from EOT/SOT/EN/etc.
+    const TOKEN_NO_SPEECH = 50361;
+    mockFetch.mockImplementation(async (url: string) => {
+      if (url.includes("tokenizer.json")) {
+        return {
+          ok: true,
+          json: async () => ({
+            model: { vocab: { hello: 100, world: 101 } },
+            added_tokens: [
+              { id: TOKEN_EOT, content: "<|endoftext|>", special: true },
+              { id: 50258, content: "<|startoftranscript|>", special: true },
+              { id: 50259, content: "<|en|>", special: true },
+              { id: 50359, content: "<|transcribe|>", special: true },
+              { id: TOKEN_NO_SPEECH, content: "<|nospeech|>", special: true },
+              { id: 50363, content: "<|notimestamps|>", special: true },
+            ],
+          }),
+        };
+      }
+      return {
+        ok: true,
+        headers: { get: () => "100" },
+        body: {
+          getReader: () => ({
+            read: vi
+              .fn()
+              .mockResolvedValueOnce({ done: false, value: new Uint8Array([1, 2, 3]) })
+              .mockResolvedValueOnce({ done: true }),
+          }),
+        },
+      };
+    });
+
+    const vocabSize = 51865;
+
+    const encoderRun = vi.fn().mockResolvedValue({
+      last_hidden_state: { data: new Float32Array(1500 * 768), dims: [1, 1500, 768] },
+    });
+
+    // First decoder call: dominant logit on no_speech at SOT position (row 0).
+    // The check reads softmax(logits[0])[no_speech]; setting it ~30 logits above
+    // everything else gives a probability near 1.0, well above threshold 0.6.
+    const decoderRun = vi.fn().mockImplementation(async () => {
+      const seqLen = 4;
+      const fullLogits = new Float32Array(seqLen * vocabSize);
+      fullLogits[TOKEN_NO_SPEECH] = 30.0; // position 0, no-speech token
+      const result: Record<string, unknown> = {
+        logits: { data: fullLogits, dims: [1, seqLen, vocabSize] },
+      };
+      for (let i = 0; i < 12; i++) {
+        for (const at of ["decoder", "encoder"]) {
+          for (const kv of ["key", "value"]) {
+            result[`present.${i}.${at}.${kv}`] = {
+              data: new Float32Array(12 * 64),
+              dims: [1, 12, 1, 64],
+            };
+          }
+        }
+      }
+      return result;
+    });
+
+    let createIdx = 0;
+    mockSessionCreate.mockImplementation(async () => {
+      createIdx++;
+      if (createIdx === 1) {
+        return { run: encoderRun, inputNames: ["input_features"], outputNames: ["last_hidden_state"] };
+      }
+      return {
+        run: decoderRun,
+        inputNames: ["input_ids", "encoder_hidden_states", "use_cache_branch"],
+        outputNames: ["logits"],
+      };
+    });
+
+    vi.resetModules();
+    await import("./sttWorker");
+
+    const handler = getHandler();
+    await handler({ data: { type: "init", modelUrl: "/models/stt/" } } as MessageEvent);
+    mockPostMessage.mockClear();
+
+    await handler({
+      data: {
+        type: "transcribe",
+        audio: new Float32Array(16000),
+        sampleRate: 16000,
+      },
+    } as unknown as MessageEvent);
+
+    // Worker should short-circuit with an empty transcript and never call decoder
+    // a second time (we'd see at least one EOT-driven exit otherwise).
+    expect(mockPostMessage).toHaveBeenCalledWith({ type: "transcript", text: "" });
+    expect(decoderRun).toHaveBeenCalledTimes(1);
+  }, 30_000);
 });

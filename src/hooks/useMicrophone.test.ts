@@ -17,6 +17,15 @@ vi.mock("../models/modelManager", () => ({
   getModelManager: vi.fn(() => mockModelManager),
 }));
 
+// Mock the settings store — the hook reads caregiverLang from it at send time.
+// Default to English; individual tests can override via mockSettingsState.
+let mockCaregiverLang: string = "en";
+vi.mock("../stores/settingsStore", () => ({
+  useSettingsStore: {
+    getState: () => ({ cfg: { caregiverLang: mockCaregiverLang } }),
+  },
+}));
+
 // Helper: create a mock MediaStream
 function createMockStream(): MediaStream {
   const track = { stop: vi.fn(), kind: "audio" } as unknown as MediaStreamTrack;
@@ -75,6 +84,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockModelManager.isReady.mockReturnValue(false);
   mockModelManager.getWorker.mockReturnValue(null);
+  mockCaregiverLang = "en";
 });
 
 describe("useMicrophone", () => {
@@ -384,8 +394,12 @@ describe("useMicrophone", () => {
     });
   });
 
-  describe("audio processing and VAD", () => {
-    it("accumulates audio chunks and sends to STT on the streaming interval", async () => {
+  describe("audio processing", () => {
+    it("does not transcribe while listening — only on stopCapture", async () => {
+      // Earlier versions of this hook ran a 5-second "snapshot" interval that
+      // re-transcribed the growing audio buffer. That caused visible
+      // transcript flicker (each greedy decode produced different output).
+      // The hook now waits for stopCapture before sending anything.
       vi.useFakeTimers();
 
       mockModelManager.isReady.mockReturnValue(true);
@@ -401,34 +415,26 @@ describe("useMicrophone", () => {
         await result.current.startCapture();
       });
 
-      // Simulate audio processing
       const samples = new Float32Array(4096).fill(0.05);
-      const mockInputBuffer = {
-        getChannelData: vi.fn(() => samples),
-      };
-      const audioEvent = { inputBuffer: mockInputBuffer };
-
       act(() => {
-        mockProcessor.onaudioprocess?.(audioEvent);
+        mockProcessor.onaudioprocess?.({ inputBuffer: { getChannelData: () => samples } });
       });
 
-      // Advance past the 5s streaming interval (STREAM_INTERVAL_MS in useMicrophone.ts)
+      // Advance well past any historical streaming interval — no transcribe call should happen.
       await act(async () => {
-        await vi.advanceTimersByTimeAsync(5100);
+        await vi.advanceTimersByTimeAsync(30_000);
       });
 
-      // Worker should have received a transcribe message
-      expect(mockWorker.postMessage).toHaveBeenCalledWith(
-        expect.objectContaining({ type: "transcribe" }),
-        expect.anything(),
+      const transcribeCalls = mockWorker.postMessage.mock.calls.filter(
+        (c: unknown[]) => (c[0] as { type: string }).type === "transcribe",
       );
+      expect(transcribeCalls).toHaveLength(0);
 
       vi.useRealTimers();
     });
 
-    it("resets silence timer when active audio is detected", async () => {
-      vi.useFakeTimers();
-
+    it("passes caregiverLang from the settings store on transcribe", async () => {
+      mockCaregiverLang = "es";
       mockModelManager.isReady.mockReturnValue(true);
       mockModelManager.getWorker.mockReturnValue(mockWorker);
       const { mockProcessor } = setupAudioContextMock();
@@ -442,35 +448,19 @@ describe("useMicrophone", () => {
         await result.current.startCapture();
       });
 
-      // Simulate silent audio
-      const silentSamples = new Float32Array(4096).fill(0.001);
+      const samples = new Float32Array(4096).fill(0.5);
       act(() => {
-        mockProcessor.onaudioprocess?.({ inputBuffer: { getChannelData: () => silentSamples } });
+        mockProcessor.onaudioprocess?.({ inputBuffer: { getChannelData: () => samples } });
       });
 
-      // Advance 500ms (not yet past the 1500ms timeout)
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(500);
-      });
-
-      // Now simulate loud audio (above threshold)
-      const loudSamples = new Float32Array(4096).fill(0.5);
       act(() => {
-        mockProcessor.onaudioprocess?.({ inputBuffer: { getChannelData: () => loudSamples } });
+        result.current.stopCapture();
       });
 
-      // Advance past original timeout — should NOT have flushed because silence timer was reset
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(1100);
-      });
-
-      // Worker should NOT have been called yet (silence timer was reset)
-      expect(mockWorker.postMessage).not.toHaveBeenCalledWith(
-        expect.objectContaining({ type: "transcribe" }),
+      expect(mockWorker.postMessage).toHaveBeenCalledWith(
+        expect.objectContaining({ type: "transcribe", language: "es" }),
         expect.anything(),
       );
-
-      vi.useRealTimers();
     });
 
     it("flushes remaining audio on stopCapture", async () => {
@@ -538,7 +528,7 @@ describe("useMicrophone", () => {
       expect(result.current.transcript).toBe("Hello world");
     });
 
-    it("replaces transcript on each transcript message (growing-window model)", async () => {
+    it("replaces transcript on each transcript message", async () => {
       mockModelManager.isReady.mockReturnValue(true);
       mockModelManager.getWorker.mockReturnValue(mockWorker);
       setupAudioContextMock();
