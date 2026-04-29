@@ -46,10 +46,21 @@ function serveOrtFromPublic(): Plugin {
                 ? "application/wasm"
                 : "application/octet-stream";
           res.setHeader("Content-Type", mime);
-          // Match production COEP/COOP headers so cross-origin-isolated
-          // contexts (the dev server sets these page-wide) accept the
-          // module. Mirrors functions/ort/[[path]].ts in production.
+          // Mirror production headers from public/_headers `/ort/*` block.
+          // CORP keeps the script un-embeddable cross-origin; COEP is
+          // *required* on /ort/*.mjs because ORT's simd-threaded build
+          // spawns sub-workers that re-import the .mjs glue from a worker
+          // context, and sub-worker entry-point scripts loaded into a
+          // crossOriginIsolated page strictly require COEP on their
+          // response. Without it Chrome blocks them with
+          // "(blocked:COEP-framed resource needs COEP header)" — the
+          // same failure documented in PRs #125 and #134.
+          //
+          // Calling res.setHeader here overrides Vite's global
+          // server.headers (which would otherwise set COEP page-wide),
+          // so we must restate it explicitly per-response.
           res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+          res.setHeader("Cross-Origin-Embedder-Policy", "credentialless");
           res.end(data);
         } catch {
           // File not found: fall through (likely a missing
