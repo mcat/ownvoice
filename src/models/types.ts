@@ -110,7 +110,16 @@ export type WorkerResponse =
   | { type: "audio"; data: Float32Array; sampleRate: number }
   | { type: "completions"; data: string[] }
   | { type: "transcript"; text: string }
-  | { type: "error"; message: string; requestId?: number };
+  | {
+      type: "error";
+      message: string;
+      requestId?: number;
+      /** Phase the failure happened in. Lets the boot wiring tell apart
+       *  init failures (mark model error), warmup failures (mark model
+       *  error so UI can recover), and synthesis failures (log only,
+       *  user can retry). */
+      phase?: "init" | "warmup" | "synthesis" | "embed";
+    };
 
 /**
  * Chatterbox-Multilingual ONNX files.

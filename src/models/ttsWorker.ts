@@ -430,7 +430,7 @@ async function handleWarmup(): Promise<void> {
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error(`${LOG} Warmup failed: ${msg}`);
-    _postMessage({ type: "error", message: msg });
+    _postMessage({ type: "error", message: msg, phase: "warmup" });
   }
 }
 

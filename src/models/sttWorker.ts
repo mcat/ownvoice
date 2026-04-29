@@ -860,7 +860,11 @@ async function handleTranscribe(
  *  event that handleTranscribe may post on the silent buffer. */
 async function handleWarmup(): Promise<void> {
   if (!encoderSession || !decoderSession) {
-    self.postMessage({ type: "error", message: "STT not initialized" });
+    self.postMessage({
+      type: "error",
+      message: "STT not initialized",
+      phase: "warmup",
+    });
     return;
   }
   try {
@@ -870,7 +874,7 @@ async function handleWarmup(): Promise<void> {
     self.postMessage({ type: "warm" });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    self.postMessage({ type: "error", message: msg });
+    self.postMessage({ type: "error", message: msg, phase: "warmup" });
   }
 }
 

@@ -356,4 +356,45 @@ describe("bootModels — eager warmup", () => {
 
     expect(mockMarkWarm).toHaveBeenCalledWith("stt");
   });
+
+  it("calls setError on TTS warmup-phase error after ready", async () => {
+    const { bootTTSWasm } = await import("./bootModels");
+    await bootTTSWasm();
+
+    const ttsWorker = createdWorkers[0];
+    ttsWorker.onmessage?.({ data: { type: "ready" } });
+    mockIsReady.mockReturnValueOnce(true);
+    ttsWorker.onmessage?.({
+      data: { type: "error", message: "wasm broken", phase: "warmup" },
+    });
+
+    expect(mockSetError).toHaveBeenCalledWith("tts", "wasm broken");
+  });
+
+  it("does NOT call setError on TTS synthesis-phase error after ready", async () => {
+    const { bootTTSWasm } = await import("./bootModels");
+    await bootTTSWasm();
+
+    const ttsWorker = createdWorkers[0];
+    ttsWorker.onmessage?.({ data: { type: "ready" } });
+    mockSetError.mockClear();
+    ttsWorker.onmessage?.({
+      data: { type: "error", message: "synth blip", phase: "synthesis" },
+    });
+
+    expect(mockSetError).not.toHaveBeenCalled();
+  });
+
+  it("calls setError on STT WASM warmup-phase error after ready", async () => {
+    const { bootSTTAndLLM } = await import("./bootModels");
+    await bootSTTAndLLM();
+
+    const sttWorker = createdWorkers[1];
+    sttWorker.onmessage?.({ data: { type: "ready" } });
+    sttWorker.onmessage?.({
+      data: { type: "error", message: "stt wasm bad", phase: "warmup" },
+    });
+
+    expect(mockSetError).toHaveBeenCalledWith("stt", "stt wasm bad");
+  });
 });
