@@ -676,7 +676,7 @@ export function VoiceCapture({
     <input
       ref={fileInputRef}
       type="file"
-      accept="audio/*"
+      accept="audio/*,.mp3,.wav,.m4a,.aac,.mp4,.caf,.flac"
       style={{ display: "none" }}
       onChange={handleFile}
     />
