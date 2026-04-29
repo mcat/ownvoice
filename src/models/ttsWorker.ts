@@ -437,84 +437,97 @@ async function handleWarmup(): Promise<void> {
 /**
  * Extract speaker data from a reference audio clip.
  * Loads speech_encoder on-demand, runs inference, then disposes the session.
+ *
+ * @param requestId - Echoed back on the embedding/error response so the
+ *   main thread can correlate concurrent embed requests with their handlers
+ *   (Bug 6: handler race on concurrent embeds).
  */
-async function handleEmbed(audio: Float32Array, _sampleRate: number): Promise<void> {
-  let audioMax = 0;
-  let audioRms = 0;
-  for (let i = 0; i < audio.length; i++) {
-    const abs = Math.abs(audio[i]);
-    if (abs > audioMax) audioMax = abs;
-    audioRms += audio[i] * audio[i];
+async function handleEmbed(
+  audio: Float32Array,
+  _sampleRate: number,
+  requestId: number,
+): Promise<void> {
+  try {
+    let audioMax = 0;
+    let audioRms = 0;
+    for (let i = 0; i < audio.length; i++) {
+      const abs = Math.abs(audio[i]);
+      if (abs > audioMax) audioMax = abs;
+      audioRms += audio[i] * audio[i];
+    }
+    audioRms = Math.sqrt(audioRms / audio.length);
+    console.log(`${LOG} Extracting speaker embedding from ${(audio.length / SAMPLE_RATE).toFixed(1)}s audio (max=${audioMax.toFixed(4)}, rms=${audioRms.toFixed(4)})`);
+
+    // The speech encoder external data is ~591 MB. First load can take
+    // minutes on slow networks; after OPFS caches it, subsequent loads
+    // are near-instant. Notify the UI so it can switch to a "model
+    // loading" indicator instead of a generic spinner.
+    _postMessage({ type: "embed-progress", stage: "loading-model" });
+    console.log(`${LOG} Loading speech_encoder (on-demand, WASM)...`);
+    const speechEncoderSession = await createSession(
+      baseUrl + CHATTERBOX_FILES.speechEncoder.onnx,
+      true,
+      true,
+      "encoder",
+    );
+
+    // Run speech encoder
+    // Input: audio_values (float32, [1, audio_length])
+    const audioTensor = new ort.Tensor("float32", audio, [1, audio.length]);
+    const results = await speechEncoderSession.run({ audio_values: audioTensor });
+
+    // Extract all outputs needed for synthesis
+    // Model output names: audio_features, audio_tokens, speaker_embeddings, speaker_features
+    const condEmb = results["audio_features"];
+    const promptToken = results["audio_tokens"];
+    const speakerEmbeddings = results["speaker_embeddings"];
+    const speakerFeatures = results["speaker_features"];
+
+    if (!condEmb || !promptToken || !speakerEmbeddings || !speakerFeatures) {
+      const available = Object.keys(results).join(", ");
+      throw new Error(`Missing speech encoder outputs. Available: ${available}`);
+    }
+
+    // Debug: log speech encoder output stats
+    const ptData = promptToken.data;
+    const ptType = ptData.constructor.name;
+    let ptNonZero = 0;
+    const ptSample: string[] = [];
+    for (let i = 0; i < Math.min(ptData.length, 10); i++) {
+      ptSample.push(String(ptData[i]));
+      if (ptData[i] !== BigInt(0) && ptData[i] !== 0) ptNonZero++;
+    }
+    for (let i = 10; i < ptData.length; i++) {
+      if (ptData[i] !== BigInt(0) && ptData[i] !== 0) ptNonZero++;
+    }
+    console.log(`${LOG} Speech encoder outputs:`);
+    console.log(`${LOG}   condEmb: shape=${condEmb.dims}, dtype=${condEmb.type}`);
+    console.log(`${LOG}   promptToken: shape=${promptToken.dims}, dtype=${promptToken.type}, dataType=${ptType}, nonZero=${ptNonZero}/${ptData.length}, first10=[${ptSample.join(",")}]`);
+    console.log(`${LOG}   speakerEmb: shape=${speakerEmbeddings.dims}`);
+    console.log(`${LOG}   speakerFeat: shape=${speakerFeatures.dims}`);
+
+    // Convert all typed arrays to plain number[] so the data survives
+    // JSON.stringify round-trips (zustand persist uses JSON storage).
+    const speakerData: SpeakerData = {
+      condEmb: Array.from(condEmb.data as Float32Array),
+      condEmbShape: condEmb.dims as number[],
+      promptToken: Array.from(promptToken.data as BigInt64Array, Number),
+      promptTokenShape: promptToken.dims as number[],
+      speakerEmbeddings: Array.from(speakerEmbeddings.data as Float32Array),
+      speakerEmbeddingsShape: speakerEmbeddings.dims as number[],
+      speakerFeatures: Array.from(speakerFeatures.data as Float32Array),
+      speakerFeaturesShape: speakerFeatures.dims as number[],
+    };
+
+    // Unload speech encoder to free ~178 MB
+    speechEncoderSession.release();
+    console.log(`${LOG} Speech encoder unloaded. Embedding extracted.`);
+
+    _postMessage({ type: "embedding", data: speakerData, requestId });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    _postMessage({ type: "error", message: msg, requestId });
   }
-  audioRms = Math.sqrt(audioRms / audio.length);
-  console.log(`${LOG} Extracting speaker embedding from ${(audio.length / SAMPLE_RATE).toFixed(1)}s audio (max=${audioMax.toFixed(4)}, rms=${audioRms.toFixed(4)})`);
-
-  // The speech encoder external data is ~591 MB. First load can take
-  // minutes on slow networks; after OPFS caches it, subsequent loads
-  // are near-instant. Notify the UI so it can switch to a "model
-  // loading" indicator instead of a generic spinner.
-  _postMessage({ type: "embed-progress", stage: "loading-model" });
-  console.log(`${LOG} Loading speech_encoder (on-demand, WASM)...`);
-  const speechEncoderSession = await createSession(
-    baseUrl + CHATTERBOX_FILES.speechEncoder.onnx,
-    true,
-    true,
-    "encoder",
-  );
-
-  // Run speech encoder
-  // Input: audio_values (float32, [1, audio_length])
-  const audioTensor = new ort.Tensor("float32", audio, [1, audio.length]);
-  const results = await speechEncoderSession.run({ audio_values: audioTensor });
-
-  // Extract all outputs needed for synthesis
-  // Model output names: audio_features, audio_tokens, speaker_embeddings, speaker_features
-  const condEmb = results["audio_features"];
-  const promptToken = results["audio_tokens"];
-  const speakerEmbeddings = results["speaker_embeddings"];
-  const speakerFeatures = results["speaker_features"];
-
-  if (!condEmb || !promptToken || !speakerEmbeddings || !speakerFeatures) {
-    const available = Object.keys(results).join(", ");
-    throw new Error(`Missing speech encoder outputs. Available: ${available}`);
-  }
-
-  // Debug: log speech encoder output stats
-  const ptData = promptToken.data;
-  const ptType = ptData.constructor.name;
-  let ptNonZero = 0;
-  const ptSample: string[] = [];
-  for (let i = 0; i < Math.min(ptData.length, 10); i++) {
-    ptSample.push(String(ptData[i]));
-    if (ptData[i] !== BigInt(0) && ptData[i] !== 0) ptNonZero++;
-  }
-  for (let i = 10; i < ptData.length; i++) {
-    if (ptData[i] !== BigInt(0) && ptData[i] !== 0) ptNonZero++;
-  }
-  console.log(`${LOG} Speech encoder outputs:`);
-  console.log(`${LOG}   condEmb: shape=${condEmb.dims}, dtype=${condEmb.type}`);
-  console.log(`${LOG}   promptToken: shape=${promptToken.dims}, dtype=${promptToken.type}, dataType=${ptType}, nonZero=${ptNonZero}/${ptData.length}, first10=[${ptSample.join(",")}]`);
-  console.log(`${LOG}   speakerEmb: shape=${speakerEmbeddings.dims}`);
-  console.log(`${LOG}   speakerFeat: shape=${speakerFeatures.dims}`);
-
-  // Convert all typed arrays to plain number[] so the data survives
-  // JSON.stringify round-trips (zustand persist uses JSON storage).
-  const speakerData: SpeakerData = {
-    condEmb: Array.from(condEmb.data as Float32Array),
-    condEmbShape: condEmb.dims as number[],
-    promptToken: Array.from(promptToken.data as BigInt64Array, Number),
-    promptTokenShape: promptToken.dims as number[],
-    speakerEmbeddings: Array.from(speakerEmbeddings.data as Float32Array),
-    speakerEmbeddingsShape: speakerEmbeddings.dims as number[],
-    speakerFeatures: Array.from(speakerFeatures.data as Float32Array),
-    speakerFeaturesShape: speakerFeatures.dims as number[],
-  };
-
-  // Unload speech encoder to free ~178 MB
-  speechEncoderSession.release();
-  console.log(`${LOG} Speech encoder unloaded. Embedding extracted.`);
-
-  _postMessage({ type: "embedding", data: speakerData });
 }
 
 /**
@@ -789,7 +802,7 @@ self.addEventListener("message", async (e: MessageEvent) => {
         break;
 
       case "embed":
-        await handleEmbed(msg.audio, msg.sampleRate);
+        await handleEmbed(msg.audio, msg.sampleRate, msg.requestId);
         break;
 
       case "warmup":

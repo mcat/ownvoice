@@ -675,6 +675,53 @@ describe("ttsWorker — warmup", () => {
   });
 });
 
+describe("ttsWorker — embed requestId echo", () => {
+  it("includes requestId on embedding response", async () => {
+    setupFetchMocks();
+
+    // Init loads tokenizer only; speech encoder is loaded on-demand in embed.
+    mockSessionCreate.mockResolvedValue(makeMockSession());
+
+    vi.resetModules();
+    await import("./ttsWorker");
+
+    const handler = getMessageHandler();
+
+    // Init first so baseUrl is set.
+    await handler({ data: { type: "init", modelUrl: "/models/tts/" } } as MessageEvent);
+    mockPostMessage.mockClear();
+
+    // Speech encoder session for the embed call: returns valid outputs.
+    const embedSession = {
+      run: vi.fn().mockResolvedValue({
+        audio_features: { data: new Float32Array(8), dims: [1, 8] },
+        audio_tokens: { data: new BigInt64Array(4), dims: [1, 4] },
+        speaker_embeddings: { data: new Float32Array(192), dims: [1, 192] },
+        speaker_features: { data: new Float32Array(80), dims: [1, 1, 80] },
+      }),
+      release: vi.fn(),
+    };
+    mockSessionCreate.mockResolvedValue(embedSession);
+
+    await handler({
+      data: {
+        type: "embed",
+        audio: new Float32Array([0.1, 0.2]),
+        sampleRate: 24000,
+        requestId: 42,
+      },
+    } as unknown as MessageEvent);
+    await flush();
+
+    const posted = mockPostMessage.mock.calls.map((c) => c[0]) as Array<
+      { type: string; requestId?: number }
+    >;
+    const embedding = posted.find((m) => m.type === "embedding");
+    expect(embedding).toBeDefined();
+    expect(embedding?.requestId).toBe(42);
+  });
+});
+
 describe("ttsWorker — encoder fetch progress", () => {
   it("posts embed-progress events as encoder bytes arrive", async () => {
     const posted: unknown[] = [];
