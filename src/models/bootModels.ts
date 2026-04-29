@@ -70,6 +70,11 @@ export async function bootTTSWasm(): Promise<void> {
       if (e.data.type === "ready") {
         ttsInitDone = true;
         mgr.setReady("tts");
+        // Eager warmup: download + run a one-shot encoder inference so
+        // the user's first cloning attempt isn't gated on a 591 MB fetch.
+        ttsWorker.postMessage({ type: "warmup" });
+      } else if (e.data.type === "warm") {
+        mgr.markWarm("tts");
       } else if (e.data.type === "progress" && e.data.total === -1) {
         // Debug: EP signal from synthesis start (loaded=1 → WebGPU, loaded=0 → WASM)
         console.log(`[OwnVoice:TTS] Synthesis EP: ${e.data.loaded ? "WebGPU" : "WASM"}`);
@@ -134,6 +139,9 @@ function bootSTT(mgr: ReturnType<typeof getModelManager>): void {
           mgr.setWorker("stt", gpuWorker);
           mgr.setReady("stt");
           console.log("[OwnVoice] STT: WebGPU ready");
+          gpuWorker.postMessage({ type: "warmup" });
+        } else if (e.data.type === "warm") {
+          mgr.markWarm("stt");
         } else if (e.data.type === "error" && !mgr.isReady("stt")) {
           console.warn("[OwnVoice] STT GPU error:", e.data.message);
           bootSTTWasm(mgr);
@@ -200,6 +208,9 @@ function bootSTTWasm(mgr: ReturnType<typeof getModelManager>): void {
       if (e.data.type === "ready") {
         mgr.setWorker("stt", sttWorker);
         mgr.setReady("stt");
+        sttWorker.postMessage({ type: "warmup" });
+      } else if (e.data.type === "warm") {
+        mgr.markWarm("stt");
       } else if (e.data.type === "error") {
         mgr.setError("stt", e.data.message);
       }
