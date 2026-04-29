@@ -6,6 +6,8 @@ import { t as resolvePhrase } from "../../data/phraseRegistry";
 import { useSettingsStore } from "../../stores/settingsStore";
 import { Btn } from "../shared/Btn";
 import { useMicrophone } from "../../hooks/useMicrophone";
+import { useModels } from "../../hooks/useModels";
+import { getModelManager } from "../../models/modelManager";
 import { BottomSheet } from "../shared/BottomSheet";
 
 interface ListenPanelProps {
@@ -44,6 +46,24 @@ export function ListenPanel({
     stopCapture,
     clearTranscript,
   } = useMicrophone();
+
+  const { isWarm, getError, humanCountdown } = useModels();
+  const sttWarm = isWarm("stt");
+  const sttError = getError("stt");
+  const countdown = humanCountdown("stt");
+
+  const micLabel = sttError
+    ? resolvePhrase("ui.readiness.listen.failed_message", caregiverLang)
+    : !sttWarm
+      ? resolvePhrase(
+          "ui.readiness.listen.with_countdown",
+          caregiverLang,
+        ).replace("{countdown}", countdown)
+      : listening
+        ? resolvePhrase("ui.provider.listen.stop_aria", caregiverLang)
+        : resolvePhrase("ui.provider.listen.start_aria", caregiverLang);
+
+  const micDisabled = !sttWarm || !!sttError;
 
   const [editedTranscript, setEditedTranscript] = useState<string | null>(null);
   const transcript = editedTranscript !== null ? editedTranscript : sttTranscript;
@@ -220,6 +240,7 @@ export function ListenPanel({
         >
           <Btn
             onClick={() => {
+              if (micDisabled) return;
               if (listening) {
                 stopCapture();
               } else {
@@ -227,8 +248,9 @@ export function ListenPanel({
                 startCapture();
               }
             }}
+            disabled={micDisabled}
             style={micBtnStyle}
-            aria-label={listening ? resolvePhrase("ui.provider.listen.stop_aria", caregiverLang) : resolvePhrase("ui.provider.listen.start_aria", caregiverLang)}
+            aria-label={micLabel}
           >
             🎙
           </Btn>
@@ -277,6 +299,26 @@ export function ListenPanel({
             >
               {micError}
             </div>
+          )}
+          {sttError && (
+            <Btn
+              onClick={() => {
+                getModelManager().getWorker("stt")?.postMessage({ type: "warmup" });
+              }}
+              style={{
+                marginTop: 8,
+                padding: "10px 16px",
+                borderRadius: 12,
+                background: "#DC2626",
+                color: "#FFFFFF",
+                border: "none",
+                fontSize: 15,
+                fontWeight: 600,
+                minHeight: 44,
+              }}
+            >
+              {resolvePhrase("ui.readiness.listen.failed_action", caregiverLang)}
+            </Btn>
           )}
         </div>
 

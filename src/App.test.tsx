@@ -51,7 +51,7 @@ vi.mock("./hooks/useSpeakActions", () => ({
 // inline mock made that interplay uninspectable.
 const { mgrMock, isGPUReadyMock, onGPUReadyMock } = vi.hoisted(() => ({
   mgrMock: {
-    init: vi.fn(),
+    init: vi.fn(() => Promise.resolve()),
     getWorker: vi.fn(() => null),
     clearAll: vi.fn(),
     isReady: vi.fn(() => false),
