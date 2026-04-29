@@ -290,11 +290,15 @@ export function ListenPanel({
             }}
           >
             {listening && <span style={recDotStyle} aria-hidden="true" />}
+            {/* Visible label under the mic mirrors the button's aria-label
+                so the "Tap to start listening" affordance never appears
+                while the button is actually disabled. micLabel covers the
+                error / not-ready / almost / countdown / ready states. */}
             {listening
               ? resolvePhrase("ui.provider.listen.listening", caregiverLang)
               : transcribing
                 ? resolvePhrase("ui.provider.listen.transcribing", caregiverLang)
-                : resolvePhrase("ui.provider.listen.start_aria", caregiverLang)}
+                : micLabel}
           </div>
           {micError && (
             <div

@@ -16,6 +16,7 @@ vi.mock("../models/modelManager", () => ({
   getModelManager: () => ({
     init: mockInit,
     onProgress: mockOnProgress,
+    getProgress: () => [],
   }),
 }));
 

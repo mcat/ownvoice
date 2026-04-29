@@ -55,6 +55,8 @@ const { mgrMock, isGPUReadyMock, onGPUReadyMock } = vi.hoisted(() => ({
     getWorker: vi.fn(() => null),
     clearAll: vi.fn(),
     isReady: vi.fn(() => false),
+    isWarm: vi.fn(() => false),
+    getProgress: vi.fn(() => []),
     onProgress: vi.fn(() => () => {}),
   },
   isGPUReadyMock: vi.fn(() => false),

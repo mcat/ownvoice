@@ -33,6 +33,15 @@ export function useModels() {
       }
       setProgress(p);
     });
+
+    // Seed with current state. Without this, components that mount
+    // AFTER a model has finished warming see `progress: []` forever
+    // because there are no future notify() calls — the model already
+    // settled. The Listen panel reproduced this: open it post-warm,
+    // mic button stays "Getting ready to listen…" until the next
+    // unrelated progress event flushes the cache.
+    setProgress(mgr.getProgress());
+
     return unsub;
   }, []);
 
