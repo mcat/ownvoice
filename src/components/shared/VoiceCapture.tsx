@@ -278,13 +278,19 @@ export function VoiceCapture({
     hasEmbedding ? "ready" : hasVoice ? "model-loading" : "idle",
   );
 
-  // When the TTS model becomes ready, retry embedding extraction if we have
+  // When the TTS model becomes warm, retry embedding extraction if we have
   // audio but no embedding.
   //
+  // This effect waits for the worker to flip to `warm`, not `ready`, because
+  // `ready` only means the tokenizer loaded — see Task 4 for the warmup
+  // pipeline. The 591 MB speech encoder external-data file isn't fetched
+  // until warmup completes, and an embed call before that point would block
+  // for minutes on a cold network rather than producing an embedding.
+  //
   // This used to be "check isReady → if not, subscribe" but that had a
-  // check-then-subscribe race: the model could transition to ready between
-  // the isReady check and the subscription, and the notification would fire
-  // with no listener registered. The UI would then wait forever on a "ready"
+  // check-then-subscribe race: the model could transition between the
+  // isReady check and the subscription, and the notification would fire
+  // with no listener registered. The UI would then wait forever on a state
   // event that had already passed. We now subscribe FIRST, then synchronously
   // check the current state — any transition that happens during the race
   // window is caught by one or the other. A `handled` flag dedupes.
@@ -296,7 +302,7 @@ export function VoiceCapture({
 
     function handleStatus(status: string | undefined, err: string | undefined) {
       if (handled) return;
-      if (status === "ready") {
+      if (status === "warm") {
         handled = true;
         retryEmbedding();
       } else if (status === "error") {
@@ -311,7 +317,7 @@ export function VoiceCapture({
       handleStatus(tts?.status, tts?.error);
     });
 
-    // Check the current state immediately. If already ready/error, the
+    // Check the current state immediately. If already warm/error, the
     // subscription won't fire a notification for that past transition —
     // but this sync check catches it. If pending, the subscription is
     // armed for the future transition.

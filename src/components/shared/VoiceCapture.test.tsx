@@ -381,3 +381,116 @@ describe("VoiceCapture — extractEmbedding idle watchdog", () => {
     await expect(promise).resolves.toBeTruthy();
   });
 });
+
+/**
+ * Test helper — drive `mockMgr` so `getProgress()` reads a live status map,
+ * and `onProgress` listeners can be notified on demand. Each call resets state
+ * for a single test. Returns controls so the test can flip status and fire
+ * notifications mid-render.
+ *
+ * The retry effect (VoiceCapture.tsx) calls `getProgress()` synchronously
+ * inside the effect, so we bind a fresh implementation each time rather than
+ * a captured-once `vi.fn(() => [...])`.
+ */
+function installMockMgrStatus(initial: Record<string, string>) {
+  const state: Record<string, { status: string; error?: string }> = {};
+  for (const [m, s] of Object.entries(initial)) state[m] = { status: s };
+  const listeners: Array<(p: any[]) => void> = [];
+
+  function snapshot() {
+    return Object.entries(state).map(([model, v]) => ({
+      model,
+      status: v.status,
+      loaded: 0,
+      total: 0,
+      error: v.error,
+    }));
+  }
+
+  mockMgr.getProgress = vi.fn(() => snapshot()) as ReturnType<typeof vi.fn>;
+  mockMgr.onProgress = vi.fn((cb: (p: any[]) => void) => {
+    listeners.push(cb);
+    return () => {
+      const i = listeners.indexOf(cb);
+      if (i >= 0) listeners.splice(i, 1);
+    };
+  }) as ReturnType<typeof vi.fn>;
+  mockMgr.isReady = vi.fn((id: string) => state[id]?.status === "ready" || state[id]?.status === "warm") as ReturnType<typeof vi.fn>;
+
+  return {
+    setStatus(model: string, status: string, error?: string) {
+      state[model] = { status, error };
+    },
+    notify() {
+      const snap = snapshot();
+      for (const cb of listeners.slice()) cb(snap);
+    },
+  };
+}
+
+describe("VoiceCapture — retry waits for warm", () => {
+  // These tests use real timers so a small setTimeout flushes microtasks
+  // and the retry effect's async `decodeAudio` call gets a chance to run.
+  beforeEach(() => {
+    vi.useRealTimers();
+  });
+
+  function audioCalls() {
+    const fn = globalThis.AudioContext as unknown as { mock: { calls: any[][] } };
+    return fn.mock.calls;
+  }
+
+  function decodeAudioCallCount() {
+    // `decodeAudio` (in retryEmbedding's path) constructs `new AudioContext({ sampleRate: 24000 })`.
+    // Playback uses argless `new AudioContext()`. Filter so the count tracks
+    // only the retry-effect entry path.
+    return audioCalls().filter((args) => args[0]?.sampleRate === 24000).length;
+  }
+
+  it("does not retry while status is ready but not warm", async () => {
+    installMockMgrStatus({ tts: "ready" });
+    const baseline = decodeAudioCallCount();
+    const onCapture = vi.fn();
+    render(
+      <VoiceCapture
+        label="t"
+        hasVoice={true}
+        onCapture={onCapture}
+        onRemove={() => {}}
+        audioBlob={new Blob([new Uint8Array(1024)])}
+      />,
+    );
+    // Allow retry effect to run; with status "ready" (not "warm") it should not retry.
+    await new Promise((r) => setTimeout(r, 20));
+    expect(onCapture).not.toHaveBeenCalled();
+    // The retry effect's first observable side effect is constructing an
+    // AudioContext for decoding — verify it never happened.
+    expect(decodeAudioCallCount()).toBe(baseline);
+  });
+
+  it("retries when warm flips on", async () => {
+    const ctl = installMockMgrStatus({ tts: "ready" });
+    const baseline = decodeAudioCallCount();
+    const onCapture = vi.fn();
+    render(
+      <VoiceCapture
+        label="t"
+        hasVoice={true}
+        onCapture={onCapture}
+        onRemove={() => {}}
+        audioBlob={new Blob([new Uint8Array(1024)])}
+      />,
+    );
+    await new Promise((r) => setTimeout(r, 20));
+    // No retry yet.
+    expect(decodeAudioCallCount()).toBe(baseline);
+
+    // Flip to warm and notify the listener.
+    ctl.setStatus("tts", "warm");
+    ctl.notify();
+    await new Promise((r) => setTimeout(r, 20));
+    // The retry effect ran retryEmbedding, which constructs an AudioContext
+    // with sampleRate 24000 inside decodeAudio.
+    expect(decodeAudioCallCount()).toBeGreaterThan(baseline);
+  });
+});
