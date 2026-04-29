@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "description": "In-patient AAC web application with on-device voice cloning",
   "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build && node scripts/strip-dist-large.mjs",
