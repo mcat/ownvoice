@@ -9,16 +9,14 @@ interface Props {
 }
 
 export function PatientVoiceStatus({ patient }: Props): JSX.Element | null {
-  const { isWarm, getError, isAlmostReady } = useModels();
+  const { getError } = useModels();
 
   // Only show when the patient has opted in to a voice clone but the
   // clone hasn't been computed yet.
   const needsClone = patient.hasVoice && !patient.speakerData;
   if (!needsClone) return null;
 
-  const ttsWarm = isWarm("tts");
   const ttsError = getError("tts");
-  const ttsAlmost = isAlmostReady("tts");
   const lang = patient.patientLang;
 
   if (ttsError) {
@@ -57,14 +55,15 @@ export function PatientVoiceStatus({ patient }: Props): JSX.Element | null {
     );
   }
 
-  // Patient-facing status: short and steady. The patient does not need
-  // a numeric countdown — that's clinician detail. Two states only:
-  // "Almost ready — using a temporary voice" near the end, and
-  // "Using a temporary voice" otherwise.
-  const message =
-    ttsWarm || ttsAlmost
-      ? resolvePhrase("ui.patient.header.voice_status.almost", lang)
-      : resolvePhrase("ui.patient.header.voice_status.not_ready", lang);
+  // Patient-facing status: one steady message. No transitional
+  // "Almost ready…" variant on this surface — text-length changes
+  // resize the pill and reflow the header, which reads as visual
+  // thrashing to the patient. The clinician contexts (Setup, Listen)
+  // keep the transitional copy where active waiting is the point.
+  const message = resolvePhrase(
+    "ui.patient.header.voice_status.not_ready",
+    lang,
+  );
 
   return (
     <span

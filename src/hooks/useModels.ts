@@ -67,15 +67,18 @@ export function useModels() {
     return (p.total - p.loaded) / rate;
   };
 
-  /** True when this model is past the 85% threshold or its rate-based
-   *  estimate is under 5 seconds. Consumers render an "Almost ready…"
-   *  phrase instead of a numeric countdown. */
+  /** True when this model is past the 85% bytes threshold. Consumers
+   *  render an "Almost ready…" phrase instead of a numeric countdown.
+   *
+   *  Bytes-only on purpose: the rate-based `secondsLeft <= 5` check is
+   *  non-monotonic — rolling rate fluctuates with each progress event,
+   *  flipping this true/false repeatedly and producing visible text
+   *  thrashing in the UI. The 85% bytes threshold is monotonic (loaded
+   *  only increases) so once true, it stays true. */
   const isAlmostReady = (id: ModelId): boolean => {
     const p = progress.find((m) => m.model === id);
     if (!p) return false;
-    if (p.total > 0 && p.loaded / p.total >= ALMOST_READY_THRESHOLD) return true;
-    const s = secondsLeft(id);
-    return s !== undefined && s <= 5;
+    return p.total > 0 && p.loaded / p.total >= ALMOST_READY_THRESHOLD;
   };
 
   /** A short duration string ("12s" / "1 min") when an estimate is
