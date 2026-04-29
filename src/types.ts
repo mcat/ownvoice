@@ -90,6 +90,10 @@ export interface Patient {
   hasVoice: boolean;
   /** Chatterbox Turbo speech-encoder output for this patient's voice clone. */
   speakerData: unknown;
+  /** Base64-encoded WebM audio blob captured during enrollment.
+   *  Persists until extraction succeeds. Cleared by `clearPatientPendingVoiceBlob`
+   *  or by Settings → Reset all data. */
+  pendingVoiceBlob?: string | null;
   /** Per-patient system-voice preference paired with patientLang. */
   fallbackVoice?: FallbackVoice | null;
   /** Unix ms when the patient was added. Used for sort order. */

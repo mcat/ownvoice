@@ -32,6 +32,8 @@ interface SettingsState extends SettingsPersistedState {
   removePatient: (id: string) => void;
   updatePatient: (id: string, partial: Partial<Omit<Patient, "id">>) => void;
   updateActivePatient: (partial: Partial<Omit<Patient, "id">>) => void;
+  setPatientPendingVoiceBlob: (patientId: string, base64: string) => void;
+  clearPatientPendingVoiceBlob: (patientId: string) => void;
 }
 
 function newPatientFromLegacy(legacyCfg: Record<string, unknown>, speakerData: unknown): Patient {
@@ -139,6 +141,24 @@ export const useSettingsStore = create<SettingsState>()(
         if (!s.cfg || !s.cfg.activePatientId) return;
         get().updatePatient(s.cfg.activePatientId, partial);
       },
+
+      setPatientPendingVoiceBlob: (patientId, base64) =>
+        set((s) => {
+          if (!s.cfg) return {};
+          const patients = s.cfg.patients.map((p) =>
+            p.id === patientId ? { ...p, pendingVoiceBlob: base64 } : p,
+          );
+          return { cfg: { ...s.cfg, patients } };
+        }),
+
+      clearPatientPendingVoiceBlob: (patientId) =>
+        set((s) => {
+          if (!s.cfg) return {};
+          const patients = s.cfg.patients.map((p) =>
+            p.id === patientId ? { ...p, pendingVoiceBlob: null } : p,
+          );
+          return { cfg: { ...s.cfg, patients } };
+        }),
     }),
     {
       name: "ov-settings",

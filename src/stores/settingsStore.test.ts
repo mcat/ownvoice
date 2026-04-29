@@ -651,3 +651,53 @@ describe("settingsStore action branch coverage (mutation-targeted)", () => {
     expect(cfg.activePatientId).toBe("a");
   });
 });
+
+describe("settingsStore — pendingVoiceBlob", () => {
+  it("setPatientPendingVoiceBlob stores base64 on the patient", () => {
+    const store = useSettingsStore.getState();
+    // The store needs an existing cfg with patients[]. Initialize it.
+    store.setCfg({
+      pin: "0000",
+      caregiverLang: "en",
+      providers: [],
+      patients: [],
+      activePatientId: null,
+    });
+    const patient = store.addPatient({
+      name: "Alex",
+      bed: "12",
+      patientLang: "en",
+      hasVoice: false,
+      speakerData: null,
+    });
+    store.setPatientPendingVoiceBlob(patient.id, "ZmFrZQ==");
+    const updated = useSettingsStore
+      .getState()
+      .cfg!.patients.find((p) => p.id === patient.id);
+    expect(updated?.pendingVoiceBlob).toBe("ZmFrZQ==");
+  });
+
+  it("clearPatientPendingVoiceBlob removes it", () => {
+    const store = useSettingsStore.getState();
+    store.setCfg({
+      pin: "0000",
+      caregiverLang: "en",
+      providers: [],
+      patients: [],
+      activePatientId: null,
+    });
+    const patient = store.addPatient({
+      name: "Alex",
+      bed: "12",
+      patientLang: "en",
+      hasVoice: false,
+      speakerData: null,
+    });
+    store.setPatientPendingVoiceBlob(patient.id, "ZmFrZQ==");
+    store.clearPatientPendingVoiceBlob(patient.id);
+    const updated = useSettingsStore
+      .getState()
+      .cfg!.patients.find((p) => p.id === patient.id);
+    expect(updated?.pendingVoiceBlob).toBeFalsy();
+  });
+});
