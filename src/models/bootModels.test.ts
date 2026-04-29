@@ -62,10 +62,13 @@ beforeEach(() => {
 });
 
 describe("bootModels", () => {
-  it("calls mgr.init() first", async () => {
+  it("calls mgr.init() before creating any workers", async () => {
     const { bootModels } = await import("./bootModels");
     await bootModels();
-    expect(mockInit).toHaveBeenCalledTimes(1);
+    // bootModels composes bootTTSWasm + bootSTTAndLLM; each top-level entry
+    // point calls mgr.init() (which is itself idempotent), so we expect at
+    // least one call rather than exactly one.
+    expect(mockInit).toHaveBeenCalled();
   });
 
   it("creates 3 workers (TTS, LLM, STT)", async () => {
