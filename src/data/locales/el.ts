@@ -598,6 +598,7 @@ const el: LocaleStrings = {
   "ui.provider.listen.transcribing_placeholder": "Μεταγράφει ομιλία...",
   "ui.provider.listen.type_placeholder": "Ή πληκτρολογήστε αυτό που ειπώθηκε...",
   "ui.provider.listen.transcript_aria": "Μεταγραφή",
+  "ui.provider.listen.audio_level_aria": "Επίπεδο ήχου μικροφώνου",
   "ui.provider.listen.add_as": "Προσθήκη στη συνομιλία ως {prov}",
   "ui.provider.listen.privacy_notice":
     "Στη συσκευή · Whisper · κανένα ηχητικό δεν φεύγει από τη συσκευή",

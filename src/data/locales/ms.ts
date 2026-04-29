@@ -593,6 +593,7 @@ const ms: LocaleStrings = {
   "ui.provider.listen.type_placeholder":
     "Atau taip apa yang dikatakan...",
   "ui.provider.listen.transcript_aria": "Transkrip",
+  "ui.provider.listen.audio_level_aria": "Tahap audio mikrofon",
   "ui.provider.listen.add_as": "Tambah ke perbualan sebagai {prov}",
   "ui.provider.listen.privacy_notice":
     "Dalam peranti · Whisper · tiada audio keluar dari peranti ini",

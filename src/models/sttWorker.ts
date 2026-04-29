@@ -78,6 +78,15 @@ let TOKEN_EN = -1;
 let TOKEN_TRANSCRIBE = -1;
 let TOKEN_NOTIMESTAMPS = -1;
 let TOKEN_TIMESTAMP_BEGIN = -1;
+/** Whisper's no-speech token. -1 if not in tokenizer (treats as feature unavailable). */
+let TOKEN_NO_SPEECH = -1;
+
+/** ISO-639-1 language code → Whisper language token ID. Populated from tokenizer.json. */
+const LANG_TO_TOKEN: Map<string, number> = new Map();
+
+/** Whisper's reference no-speech threshold; if SOT-position softmax(no_speech) exceeds this,
+ * the chunk is treated as silence/non-speech and an empty transcript is returned. */
+const NO_SPEECH_THRESHOLD = 0.6;
 
 // ─── Audio preprocessing ────────────────────────────────────────────
 
@@ -349,10 +358,21 @@ async function loadTokenizer(baseUrl: string): Promise<void> {
   TOKEN_TRANSCRIBE = contentToId.get("<|transcribe|>") ?? -1;
   TOKEN_NOTIMESTAMPS = contentToId.get("<|notimestamps|>") ?? -1;
   TOKEN_TIMESTAMP_BEGIN = TOKEN_NOTIMESTAMPS + 1;
+  TOKEN_NO_SPEECH = contentToId.get("<|nospeech|>") ?? contentToId.get("<|nocaptions|>") ?? -1;
 
   // Mark all timestamp tokens as special
   for (let id = TOKEN_TIMESTAMP_BEGIN; id < TOKEN_TIMESTAMP_BEGIN + 1501; id++) {
     specialTokenIds.add(id);
+  }
+
+  // Build language → token map from added_tokens. Whisper language tokens are
+  // always <|xx|> or <|xxx|> with 2- or 3-char lowercase codes (en, es, haw, jw…).
+  // The 2-3-char regex deliberately filters out longer special tokens
+  // (<|transcribe|>, <|notimestamps|>, <|nospeech|>, etc.).
+  LANG_TO_TOKEN.clear();
+  for (const tok of addedTokens) {
+    const m = tok.content.match(/^<\|([a-z]{2,3})\|>$/);
+    if (m) LANG_TO_TOKEN.set(m[1], tok.id);
   }
 
   console.log(
@@ -534,18 +554,47 @@ function extractKVCache(
 // ─── Transcription ──────────────────────────────────────────────────
 
 /**
+ * Compute the softmax probability of `tokenId` given a row of logits.
+ * Numerically stable (subtract max). Used for the SOT-position no-speech check.
+ */
+function softmaxProb(
+  logits: Float32Array,
+  rowOffset: number,
+  vocabSize: number,
+  tokenId: number,
+): number {
+  let maxLogit = -Infinity;
+  for (let v = 0; v < vocabSize; v++) {
+    const lv = logits[rowOffset + v];
+    if (lv > maxLogit) maxLogit = lv;
+  }
+  let sumExp = 0;
+  for (let v = 0; v < vocabSize; v++) {
+    sumExp += Math.exp(logits[rowOffset + v] - maxLogit);
+  }
+  return Math.exp(logits[rowOffset + tokenId] - maxLogit) / sumExp;
+}
+
+/**
  * Transcribe audio using Whisper small (encoder-decoder pipeline).
+ *
+ * @param audio       Mono PCM samples at any rate; resampled to 16 kHz internally.
+ * @param sampleRate  Source rate of `audio`.
+ * @param language    Optional ISO-639-1 code (e.g. "en", "es"). Selects the
+ *                    Whisper language token in the prefix. Falls back to English
+ *                    if the requested language has no token in this checkpoint.
  */
 async function handleTranscribe(
   audio: Float32Array,
   sampleRate: number,
+  language: string = "en",
 ): Promise<void> {
   if (!encoderSession || !decoderSession) {
     throw new Error("Model not initialized");
   }
 
   console.log(
-    `${LOG_PREFIX} Transcribing ${(audio.length / sampleRate).toFixed(1)}s of audio`,
+    `${LOG_PREFIX} Transcribing ${(audio.length / sampleRate).toFixed(1)}s of audio (lang=${language})`,
   );
 
   // Step 1: Resample to 16 kHz if needed
@@ -577,10 +626,16 @@ async function handleTranscribe(
   );
 
   // Step 4: Autoregressive decoding
-  // Start tokens: <|startoftranscript|> <|en|> <|transcribe|> <|notimestamps|>
+  // Start tokens: <|startoftranscript|> <|lang|> <|transcribe|> <|notimestamps|>
+  const langToken = LANG_TO_TOKEN.get(language) ?? TOKEN_EN;
+  if (langToken === TOKEN_EN && language !== "en") {
+    console.warn(
+      `${LOG_PREFIX} No language token for "${language}" in this checkpoint; falling back to English`,
+    );
+  }
   const outputTokens: number[] = [
     TOKEN_SOT,
-    TOKEN_EN,
+    langToken,
     TOKEN_TRANSCRIBE,
     TOKEN_NOTIMESTAMPS,
   ];
@@ -624,6 +679,23 @@ async function handleTranscribe(
     const logitsData = logits.data as Float32Array;
     const vocabSize = logits.dims[2];
     const seqLen = logits.dims[1];
+
+    // No-speech detection on the first step. The logits at position 0 (after
+    // SOT, before causal-masked attention sees the rest of the prefix) carry
+    // the model's "is this speech?" decision — same position HF reads the
+    // no-speech probability from. If above threshold, return early with an
+    // empty transcript instead of letting the decoder hallucinate from
+    // training distribution (the classic " Thanks for watching!" failure).
+    if (step === 0 && TOKEN_NO_SPEECH !== -1) {
+      const noSpeechProb = softmaxProb(logitsData, 0, vocabSize, TOKEN_NO_SPEECH);
+      if (noSpeechProb > NO_SPEECH_THRESHOLD) {
+        console.log(
+          `${LOG_PREFIX} No speech detected (prob=${noSpeechProb.toFixed(3)} > ${NO_SPEECH_THRESHOLD}); returning empty transcript`,
+        );
+        self.postMessage({ type: "transcript", text: "" });
+        return;
+      }
+    }
 
     // Get logits for the last position
     const lastPositionOffset = (seqLen - 1) * vocabSize;
@@ -677,7 +749,7 @@ self.onmessage = async (e: MessageEvent) => {
         break;
 
       case "transcribe":
-        await handleTranscribe(msg.audio, msg.sampleRate);
+        await handleTranscribe(msg.audio, msg.sampleRate, msg.language);
         break;
 
       default:

@@ -83,6 +83,27 @@ describe("ListenPanel", () => {
     ).toBeInTheDocument();
   });
 
+  it("renders the audio meter while listening with aria-valuenow tracking audioLevel", () => {
+    mockUseMicrophone.mockReturnValue(
+      makeMicState({ isListening: true, audioLevel: 0.45 }),
+    );
+    render(<ListenPanel {...baseProps} />);
+
+    const meter = screen.getByRole("meter", { name: "Microphone audio level" });
+    expect(meter).toBeInTheDocument();
+    expect(meter).toHaveAttribute("aria-valuenow", "45");
+    expect(meter).toHaveAttribute("aria-valuemin", "0");
+    expect(meter).toHaveAttribute("aria-valuemax", "100");
+  });
+
+  it("hides the audio meter when not listening", () => {
+    mockUseMicrophone.mockReturnValue(makeMicState({ isListening: false }));
+    render(<ListenPanel {...baseProps} />);
+    expect(
+      screen.queryByRole("meter", { name: "Microphone audio level" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("typing into textarea and submitting calls onAddMessage", () => {
     const onAddMessage = vi.fn();
     render(<ListenPanel {...baseProps} onAddMessage={onAddMessage} />);

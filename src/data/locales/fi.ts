@@ -577,6 +577,7 @@ const fi: LocaleStrings = {
     "Puretaan puhetta tekstiksi...",
   "ui.provider.listen.type_placeholder": "Tai kirjoita mitä sanottiin...",
   "ui.provider.listen.transcript_aria": "Teksti",
+  "ui.provider.listen.audio_level_aria": "Mikrofonin äänitaso",
   "ui.provider.listen.add_as": "Lisää keskusteluun hoitajana {prov}",
   "ui.provider.listen.privacy_notice":
     "Laitteella · Whisper · ääni ei poistu tästä laitteesta",

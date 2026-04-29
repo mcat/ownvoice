@@ -622,6 +622,7 @@ const tl: LocaleStrings = {
   "ui.provider.listen.type_placeholder":
     "O i-type ang sinabi...",
   "ui.provider.listen.transcript_aria": "Transkripsyon",
+  "ui.provider.listen.audio_level_aria": "Antas ng audio ng mikropono",
   "ui.provider.listen.add_as":
     "Idagdag sa usapan bilang {prov}",
   "ui.provider.listen.privacy_notice":

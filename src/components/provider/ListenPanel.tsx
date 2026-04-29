@@ -95,11 +95,6 @@ export function ListenPanel({
     marginBottom: 18,
   };
 
-  const shadowSpread = listening ? Math.round(16 + audioLevel * 12) : 0;
-  const shadowAlpha = listening
-    ? Math.round(0.2 * 255 + audioLevel * 0.35 * 255).toString(16).padStart(2, "0")
-    : "00";
-
   const micBtnStyle: JSX.CSSProperties = {
     width: 80,
     height: 80,
@@ -116,7 +111,42 @@ export function ListenPanel({
     fontSize: 32,
     color: listening ? blue : t.muted,
     transition: "border 0.2s, background 0.2s, color 0.2s",
-    boxShadow: listening ? `0 0 ${shadowSpread}px ${blue}${shadowAlpha}` : "none",
+  };
+
+  // Audio meter — visible only while listening. Width-matched to the textarea
+  // so the meter feels like a deliberate part of the input area; smooth fill
+  // tracks RMS audio level from useMicrophone (already throttled to ~15 fps).
+  // Replaces the previous boxShadow pulse, which was barely visible from
+  // arm's length on a bright iPad screen.
+  const meterPct = listening ? Math.round(audioLevel * 100) : 0;
+  const meterTrackStyle: JSX.CSSProperties = {
+    width: "100%",
+    maxWidth: 240,
+    height: 14,
+    borderRadius: 7,
+    background: t.activeBg,
+    border: `1px solid ${t.border}`,
+    overflow: "hidden",
+    marginTop: 14,
+    position: "relative",
+  };
+  const meterFillStyle: JSX.CSSProperties = {
+    width: `${meterPct}%`,
+    height: "100%",
+    background: blue,
+    transition: "width 80ms linear",
+  };
+
+  // Pulsing red dot for the "Recording" status — universal recording semantics,
+  // far stronger visual cue than a colored ring around the mic button.
+  const recDotStyle: JSX.CSSProperties = {
+    width: 10,
+    height: 10,
+    borderRadius: "50%",
+    background: "#DC2626",
+    display: "inline-block",
+    animation: "ovListenRecPulse 1.5s ease-in-out infinite",
+    flexShrink: 0,
   };
 
   const textareaStyle: JSX.CSSProperties = {
@@ -202,8 +232,37 @@ export function ListenPanel({
           >
             🎙
           </Btn>
-          <div style={{ fontSize: 13, color: t.muted, marginTop: 10 }}>
-            {listening ? resolvePhrase("ui.provider.listen.listening", caregiverLang) : transcribing ? resolvePhrase("ui.provider.listen.transcribing", caregiverLang) : resolvePhrase("ui.provider.listen.start_aria", caregiverLang)}
+
+          {listening && (
+            <div
+              role="meter"
+              aria-label={resolvePhrase("ui.provider.listen.audio_level_aria", caregiverLang)}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={meterPct}
+              style={meterTrackStyle}
+            >
+              <div style={meterFillStyle} />
+            </div>
+          )}
+
+          <div
+            style={{
+              fontSize: 14,
+              color: listening ? t.text : t.muted,
+              marginTop: 10,
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              fontWeight: listening ? 600 : 400,
+            }}
+          >
+            {listening && <span style={recDotStyle} aria-hidden="true" />}
+            {listening
+              ? resolvePhrase("ui.provider.listen.listening", caregiverLang)
+              : transcribing
+                ? resolvePhrase("ui.provider.listen.transcribing", caregiverLang)
+                : resolvePhrase("ui.provider.listen.start_aria", caregiverLang)}
           </div>
           {micError && (
             <div

@@ -582,6 +582,7 @@ const ja: LocaleStrings = {
   "ui.provider.listen.transcribing_placeholder": "音声を文字起こし中...",
   "ui.provider.listen.type_placeholder": "または話した内容を入力...",
   "ui.provider.listen.transcript_aria": "文字起こし",
+  "ui.provider.listen.audio_level_aria": "マイクの音量レベル",
   "ui.provider.listen.add_as": "{prov}として会話に追加",
   "ui.provider.listen.privacy_notice":
     "デバイス上で処理 · Whisper · 音声データは外部に送信されません",

@@ -562,6 +562,7 @@ const zh: LocaleStrings = {
   "ui.provider.listen.transcribing_placeholder": "正在转录语音...",
   "ui.provider.listen.type_placeholder": "或输入对方说的话...",
   "ui.provider.listen.transcript_aria": "转录文本",
+  "ui.provider.listen.audio_level_aria": "麦克风音量",
   "ui.provider.listen.add_as": "以{prov}身份添加到对话",
   "ui.provider.listen.privacy_notice":
     "设备端处理 · Whisper · 音频不会离开本设备",

@@ -593,6 +593,7 @@ const ko: LocaleStrings = {
   "ui.provider.listen.transcribing_placeholder": "음성을 변환하고 있습니다...",
   "ui.provider.listen.type_placeholder": "또는 들은 내용을 입력하세요...",
   "ui.provider.listen.transcript_aria": "음성 기록",
+  "ui.provider.listen.audio_level_aria": "마이크 오디오 레벨",
   "ui.provider.listen.add_as": "{prov}(으)로 대화에 추가",
   "ui.provider.listen.privacy_notice":
     "기기 내 처리 · Whisper · 음성이 기기 밖으로 나가지 않습니다",

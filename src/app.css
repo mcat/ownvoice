@@ -211,6 +211,29 @@ select:focus-visible {
 }
 
 /**
+ * Pulse for the ListenPanel's red "Recording" dot. Symmetric ease so the
+ * "blink" reads as steady recording rather than an attention-seeking alert.
+ */
+@keyframes ovListenRecPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @keyframes ovListenRecPulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+  }
+}
+
+/**
  * Breath-paced fade for coaching messages: fade in, hold, fade out —
  * each proportionally to the total animation duration. Used by the
  * VoiceCapture countdown timeline so every beat has a calm, symmetric

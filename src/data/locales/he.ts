@@ -598,6 +598,7 @@ const he: LocaleStrings = {
   "ui.provider.listen.transcribing_placeholder": "מתמלל דיבור...",
   "ui.provider.listen.type_placeholder": "או הקלד מה שנאמר...",
   "ui.provider.listen.transcript_aria": "תמלול",
+  "ui.provider.listen.audio_level_aria": "רמת השמע של המיקרופון",
   "ui.provider.listen.add_as": "הוסף לשיחה בתור {prov}",
   "ui.provider.listen.privacy_notice":
     "על המכשיר · Whisper · שום אודיו לא עוזב את המכשיר",
