@@ -2,6 +2,7 @@ import { useTheme } from "../../hooks/useTheme";
 import { useActivePatient, useSettingsStore } from "../../stores/settingsStore";
 import { HeaderNav } from "./HeaderNav";
 import { PatientPill } from "./PatientPill";
+import { PatientVoiceStatus } from "./PatientVoiceStatus";
 import type { AppSettings } from "../../types";
 
 interface HeaderProps {
@@ -26,15 +27,26 @@ export function Header({ onOpenSettings, onEditPatient }: HeaderProps) {
         flexShrink: 0,
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          alignItems: "center",
+          gap: 8,
+          minWidth: 0,
+        }}
+      >
         {active && (
-          <PatientPill
-            patient={active}
-            caregiverLang={caregiverLang}
-            onEditPatient={onEditPatient}
-            t={t}
-            theme={theme}
-          />
+          <>
+            <PatientPill
+              patient={active}
+              caregiverLang={caregiverLang}
+              onEditPatient={onEditPatient}
+              t={t}
+              theme={theme}
+            />
+            <PatientVoiceStatus patient={active} />
+          </>
         )}
       </div>
       <HeaderNav onOpenSettings={onOpenSettings} />
