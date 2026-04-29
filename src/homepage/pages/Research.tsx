@@ -10,5 +10,5 @@ import { MarkdownPage } from "./MarkdownPage";
  * can deep-link to specific sections (e.g. /research#abstract).
  */
 export function Research() {
-  return <MarkdownPage content={researchMd} />;
+  return <MarkdownPage content={researchMd} breadcrumbCurrent="Research plan" />;
 }

@@ -130,7 +130,15 @@ const overrides = {
   },
 };
 
-export function MarkdownPage({ content }: { content: string }) {
+export function MarkdownPage({
+  content,
+  breadcrumbCurrent,
+}: {
+  content: string;
+  /** Label for the current page in the breadcrumb trail. When provided,
+   *  a "Home / <breadcrumbCurrent>" nav renders above the article. */
+  breadcrumbCurrent?: string;
+}) {
   return (
     <main
       style={{
@@ -140,16 +148,56 @@ export function MarkdownPage({ content }: { content: string }) {
         padding: "48px 32px 96px",
       }}
     >
-      <article
+      <div
         style={{
           maxWidth: t.bodyMaxWidth,
           margin: "0 auto",
-          fontSize: t.bodyFontSize,
-          lineHeight: t.bodyLineHeight,
         }}
       >
-        <Markdown options={{ overrides }}>{content}</Markdown>
-      </article>
+        {breadcrumbCurrent ? (
+          <nav
+            aria-label="Breadcrumb"
+            style={{ marginBottom: 24, fontSize: 13 }}
+          >
+            <ol
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 8,
+                listStyle: "none",
+                padding: 0,
+                margin: 0,
+                color: t.color.muted,
+              }}
+            >
+              <li>
+                <a
+                  href="/"
+                  style={{
+                    color: t.color.muted,
+                    textDecoration: "underline",
+                    textUnderlineOffset: 2,
+                  }}
+                >
+                  Home
+                </a>
+              </li>
+              <li aria-hidden="true">/</li>
+              <li aria-current="page" style={{ color: t.color.body }}>
+                {breadcrumbCurrent}
+              </li>
+            </ol>
+          </nav>
+        ) : null}
+        <article
+          style={{
+            fontSize: t.bodyFontSize,
+            lineHeight: t.bodyLineHeight,
+          }}
+        >
+          <Markdown options={{ overrides }}>{content}</Markdown>
+        </article>
+      </div>
     </main>
   );
 }

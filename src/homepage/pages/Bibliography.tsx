@@ -11,5 +11,5 @@ import { MarkdownPage } from "./MarkdownPage";
  * link to publisher pages where findable.
  */
 export function Bibliography() {
-  return <MarkdownPage content={bibliographyMd} />;
+  return <MarkdownPage content={bibliographyMd} breadcrumbCurrent="Bibliography" />;
 }
