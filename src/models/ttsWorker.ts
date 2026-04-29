@@ -130,16 +130,58 @@ async function fetchFile(url: string): Promise<ArrayBuffer> {
   return combined.buffer as ArrayBuffer;
 }
 
+/** Fetch a model file as ArrayBuffer, posting embed-progress events.
+ *  Used during encoder load (embed call) so the UI can show a real
+ *  countdown instead of a generic spinner. */
+async function fetchEncoderWithProgress(url: string): Promise<ArrayBuffer> {
+  const response = await fetch(url);
+  if (!response.ok)
+    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+
+  const total = Number(response.headers.get("content-length")) || 0;
+  const reader = response.body?.getReader();
+  if (!reader) throw new Error("No response body");
+
+  const chunks: Uint8Array[] = [];
+  let loaded = 0;
+
+  // Initial event so UI can switch to the loading state.
+  _postMessage({ type: "embed-progress", stage: "loading-model", loaded: 0, total });
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    loaded += value.length;
+    _postMessage({ type: "embed-progress", stage: "loading-model", loaded, total });
+  }
+
+  const combined = new Uint8Array(loaded);
+  let offset = 0;
+  for (const chunk of chunks) {
+    combined.set(chunk, offset);
+    offset += chunk.length;
+  }
+  return combined.buffer as ArrayBuffer;
+}
+
+// Re-export under a stable test name so tests can drive it directly.
+export const __test__fetchModelWithProgress = fetchEncoderWithProgress;
+
 /** Create an ONNX session from a URL, handling external data files.
  *  Lists both WebGPU and WASM as execution providers — ONNX Runtime
  *  will try WebGPU first and fall back to WASM if operators aren't supported.
  *
  *  @param hasExternalData — true if a companion `_data` file exists for this model.
- *    Avoids runtime HEAD probes that cause Cache API errors in the service worker. */
+ *    Avoids runtime HEAD probes that cause Cache API errors in the service worker.
+ *  @param progressTag — when set to "encoder", routes the model + external-data
+ *    fetches through `fetchEncoderWithProgress` so the UI can show a real
+ *    byte-level countdown during the on-demand speech-encoder load. */
 async function createSession(
   onnxUrl: string,
   wasmOnly = false,
   hasExternalData = false,
+  progressTag: "none" | "encoder" = "none",
 ): Promise<ort.InferenceSession> {
   console.log(`${LOG} Loading ${onnxUrl}...`);
 
@@ -166,17 +208,22 @@ async function createSession(
 
   // WASM path: fetch model (and external data if needed) as ArrayBuffer.
   // WASM can't resolve URL-based external data — must provide raw bytes.
-  const response = await fetch(onnxUrl);
-  if (!response.ok) throw new Error(`Failed to fetch ${onnxUrl}: ${response.status}`);
-  const modelData = await response.arrayBuffer();
+  const fetchModel =
+    progressTag === "encoder"
+      ? fetchEncoderWithProgress
+      : async (u: string) => {
+          const r = await fetch(u);
+          if (!r.ok) throw new Error(`Failed to fetch ${u}: ${r.status}`);
+          return r.arrayBuffer();
+        };
+
+  const modelData = await fetchModel(onnxUrl);
 
   if (hasExternalData) {
     const dataUrl = onnxUrl + "_data";
     const dataFileName = onnxUrl.split("/").pop() + "_data";
     console.log(`${LOG} Fetching external data: ${dataUrl}...`);
-    const dataResp = await fetch(dataUrl);
-    if (!dataResp.ok) throw new Error(`Failed to fetch ${dataUrl}: ${dataResp.status}`);
-    const extData = await dataResp.arrayBuffer();
+    const extData = await fetchModel(dataUrl);
     opts.externalData = [{ path: dataFileName!, data: new Uint8Array(extData) }];
   }
 
@@ -381,7 +428,12 @@ async function handleEmbed(audio: Float32Array, _sampleRate: number): Promise<vo
   // loading" indicator instead of a generic spinner.
   _postMessage({ type: "embed-progress", stage: "loading-model" });
   console.log(`${LOG} Loading speech_encoder (on-demand, WASM)...`);
-  const speechEncoderSession = await createSession(baseUrl + CHATTERBOX_FILES.speechEncoder.onnx, true, true);
+  const speechEncoderSession = await createSession(
+    baseUrl + CHATTERBOX_FILES.speechEncoder.onnx,
+    true,
+    true,
+    "encoder",
+  );
 
   // Run speech encoder
   // Input: audio_values (float32, [1, audio_length])

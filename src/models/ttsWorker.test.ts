@@ -106,10 +106,23 @@ function setupFetchMocks() {
         }),
       };
     }
-    // For ONNX model URLs, return an object with arrayBuffer()
-    // (createSession fetches the .onnx file as ArrayBuffer)
+    // For ONNX model URLs, return an object with arrayBuffer() plus headers
+    // and a streaming body so the progress-aware encoder fetch path also works.
     return {
       ok: true,
+      headers: { get: () => "10" },
+      body: {
+        getReader: () => {
+          let done = false;
+          return {
+            read: async () => {
+              if (done) return { done: true, value: undefined };
+              done = true;
+              return { done: false, value: new Uint8Array(10) };
+            },
+          };
+        },
+      },
       arrayBuffer: async () => new ArrayBuffer(10),
     };
   });
@@ -623,3 +636,55 @@ describe("ttsWorker — message protocol", () => {
     );
   });
 });
+
+describe("ttsWorker — encoder fetch progress", () => {
+  it("posts embed-progress events as encoder bytes arrive", async () => {
+    const posted: unknown[] = [];
+    vi.stubGlobal("self", {
+      addEventListener: vi.fn(),
+      postMessage: (m: unknown) => posted.push(m),
+    });
+
+    // 4 chunks of 1024 bytes
+    const total = 4096;
+    const chunks = [
+      new Uint8Array(1024),
+      new Uint8Array(1024),
+      new Uint8Array(1024),
+      new Uint8Array(1024),
+    ];
+    const reader = makeChunkReader(chunks);
+    vi.stubGlobal("fetch", () =>
+      Promise.resolve({
+        ok: true,
+        headers: { get: () => String(total) },
+        body: { getReader: () => reader },
+        arrayBuffer: () => Promise.resolve(new ArrayBuffer(total)),
+      }),
+    );
+
+    // Reset modules so the worker re-binds _postMessage to the
+    // freshly-stubbed self.postMessage (the bind happens at module load).
+    vi.resetModules();
+    const mod = await import("./ttsWorker");
+    await mod.__test__fetchModelWithProgress("https://example/encoder.onnx");
+
+    const progress = posted.filter(
+      (m: any) => m.type === "embed-progress" && m.stage === "loading-model",
+    );
+    expect(progress.length).toBeGreaterThanOrEqual(2);
+    const last = progress[progress.length - 1] as any;
+    expect(last.loaded).toBe(total);
+    expect(last.total).toBe(total);
+  });
+});
+
+function makeChunkReader(chunks: Uint8Array[]) {
+  let i = 0;
+  return {
+    read: async () => {
+      if (i >= chunks.length) return { done: true, value: undefined };
+      return { done: false, value: chunks[i++] };
+    },
+  };
+}
