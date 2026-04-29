@@ -1,4 +1,4 @@
-// build: 2026-04-29-mel-log10
+// build: 2026-04-29-mel-slaney
 /**
  * WebGPU STT Worker — Whisper small via ONNX Runtime WebGPU EP.
  *
@@ -232,6 +232,10 @@ function stft(audio) {
 
 // Bin-index math uses FFT_SIZE (not N_FFT) to match the spectrogram bins
 // produced by stft(). Nyquist is unchanged; only the bin spacing differs.
+//
+// Slaney normalization (per-filter `2 / (hz[m+2] − hz[m])`) matches
+// librosa.filters.mel default since 0.7, which is what openai/whisper's
+// shipped `mel_filters.npz` was generated with. Mirrors src/models/sttWorker.ts.
 function melFilterbank() {
   const melHigh = 2595 * Math.log10(1 + TARGET_SAMPLE_RATE / 2 / 700);
   const melLow = 0;
@@ -239,10 +243,11 @@ function melFilterbank() {
   for (let i = 0; i < N_MELS + 2; i++) {
     melPoints[i] = melLow + ((melHigh - melLow) * i) / (N_MELS + 1);
   }
+  const hzPoints = new Float64Array(N_MELS + 2);
   const binIndices = new Float64Array(N_MELS + 2);
   for (let i = 0; i < N_MELS + 2; i++) {
-    const hz = 700 * (Math.pow(10, melPoints[i] / 2595) - 1);
-    binIndices[i] = (hz * FFT_SIZE) / TARGET_SAMPLE_RATE;
+    hzPoints[i] = 700 * (Math.pow(10, melPoints[i] / 2595) - 1);
+    binIndices[i] = (hzPoints[i] * FFT_SIZE) / TARGET_SAMPLE_RATE;
   }
   const filters = new Array(N_MELS);
   for (let m = 0; m < N_MELS; m++) {
@@ -250,11 +255,12 @@ function melFilterbank() {
     const left = binIndices[m];
     const center = binIndices[m + 1];
     const right = binIndices[m + 2];
+    const enorm = 2.0 / (hzPoints[m + 2] - hzPoints[m]);
     for (let f = 0; f < FREQ_BINS; f++) {
       if (f >= left && f <= center) {
-        filters[m][f] = (f - left) / (center - left);
+        filters[m][f] = ((f - left) / (center - left)) * enorm;
       } else if (f > center && f <= right) {
-        filters[m][f] = (right - f) / (right - center);
+        filters[m][f] = ((right - f) / (right - center)) * enorm;
       }
     }
   }
