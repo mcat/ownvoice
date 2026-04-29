@@ -383,3 +383,74 @@ describe("sttWorker — message protocol", () => {
     expect(decoderRun).toHaveBeenCalledTimes(1);
   }, 30_000);
 });
+
+describe("sttWorker — warmup", () => {
+  it("emits {type:'warm'} after warmup", async () => {
+    setupFetchMocks();
+
+    const vocabSize = 51865;
+
+    // Encoder runs once; output shape just needs to be plausible.
+    const encoderRun = vi.fn().mockResolvedValue({
+      last_hidden_state: {
+        data: new Float32Array(1500 * 768),
+        dims: [1, 1500, 768],
+      },
+    });
+
+    // First (and only) decoder step: emit EOT immediately so warmup completes
+    // quickly without iterating the autoregressive loop.
+    const decoderRun = vi.fn().mockImplementation(async () => {
+      const seqLen = 4;
+      const fullLogits = new Float32Array(seqLen * vocabSize);
+      // Force EOT at the last position so handleTranscribe exits after step 0.
+      fullLogits[(seqLen - 1) * vocabSize + TOKEN_EOT] = 100.0;
+      const result: Record<string, unknown> = {
+        logits: { data: fullLogits, dims: [1, seqLen, vocabSize] },
+      };
+      for (let i = 0; i < 12; i++) {
+        for (const at of ["decoder", "encoder"]) {
+          for (const kv of ["key", "value"]) {
+            result[`present.${i}.${at}.${kv}`] = {
+              data: new Float32Array(12 * 64),
+              dims: [1, 12, 1, 64],
+            };
+          }
+        }
+      }
+      return result;
+    });
+
+    let createIdx = 0;
+    mockSessionCreate.mockImplementation(async () => {
+      createIdx++;
+      if (createIdx === 1) {
+        return {
+          run: encoderRun,
+          inputNames: ["input_features"],
+          outputNames: ["last_hidden_state"],
+        };
+      }
+      return {
+        run: decoderRun,
+        inputNames: ["input_ids", "encoder_hidden_states", "use_cache_branch"],
+        outputNames: ["logits"],
+      };
+    });
+
+    vi.resetModules();
+    await import("./sttWorker");
+
+    const handler = getHandler();
+
+    // Init then warmup.
+    await handler({ data: { type: "init", modelUrl: "/models/stt/" } } as MessageEvent);
+    mockPostMessage.mockClear();
+
+    await handler({ data: { type: "warmup" } } as MessageEvent);
+
+    expect(mockPostMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "warm" }),
+    );
+  }, 30_000);
+});

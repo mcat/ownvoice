@@ -854,6 +854,30 @@ async function handleTranscribe(
   self.postMessage({ type: "transcript", text });
 }
 
+/** Run a tiny silent transcription so encoder + decoder graphs are warm.
+ *  Emits {type:"warm"} on success. The transcript output is discarded —
+ *  consumers waiting for `warm` are independent of any stray `transcript`
+ *  event that handleTranscribe may post on the silent buffer. */
+async function handleWarmup(): Promise<void> {
+  if (!encoderSession || !decoderSession) {
+    self.postMessage({
+      type: "error",
+      message: "STT not initialized",
+      phase: "warmup",
+    });
+    return;
+  }
+  try {
+    // 100 ms of silence — just enough to confirm the graph runs.
+    const silent = new Float32Array(TARGET_SAMPLE_RATE / 10);
+    await handleTranscribe(silent, TARGET_SAMPLE_RATE, "en");
+    self.postMessage({ type: "warm" });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    self.postMessage({ type: "error", message: msg, phase: "warmup" });
+  }
+}
+
 // ─── Message handler ────────────────────────────────────────────────
 
 self.onmessage = async (e: MessageEvent) => {
@@ -867,6 +891,10 @@ self.onmessage = async (e: MessageEvent) => {
 
       case "transcribe":
         await handleTranscribe(msg.audio, msg.sampleRate, msg.language);
+        break;
+
+      case "warmup":
+        await handleWarmup();
         break;
 
       default:

@@ -596,3 +596,42 @@ describe("ModelManager — clearAll OPFS error handling", () => {
     await expect(mgr.clearAll()).resolves.toBeUndefined();
   });
 });
+
+describe("ModelManager — warm tracking", () => {
+  it("isWarm is false until markWarm is called", () => {
+    const mgr = getModelManager();
+    expect(mgr.isWarm("tts")).toBe(false);
+    mgr.setReady("tts");
+    expect(mgr.isWarm("tts")).toBe(false);
+    mgr.markWarm("tts");
+    expect(mgr.isWarm("tts")).toBe(true);
+  });
+
+  it("markWarm flips status to 'warm'", () => {
+    const mgr = getModelManager();
+    mgr.setReady("tts");
+    mgr.markWarm("tts");
+    const tts = mgr.getProgress().find((p) => p.model === "tts");
+    expect(tts?.status).toBe("warm");
+  });
+
+  it("setError after markWarm clears warm state", () => {
+    const mgr = getModelManager();
+    mgr.setReady("tts");
+    mgr.markWarm("tts");
+    mgr.setError("tts", "boom");
+    expect(mgr.isWarm("tts")).toBe(false);
+  });
+
+  it("notifies progress listeners when marked warm", () => {
+    const mgr = getModelManager();
+    const seen: string[] = [];
+    mgr.onProgress((p) => {
+      const tts = p.find((m) => m.model === "tts");
+      if (tts) seen.push(tts.status);
+    });
+    mgr.setReady("tts");
+    mgr.markWarm("tts");
+    expect(seen).toContain("warm");
+  });
+});

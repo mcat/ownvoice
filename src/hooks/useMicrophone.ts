@@ -1,9 +1,12 @@
 import { useState, useRef, useCallback, useEffect } from "preact/hooks";
 import { getModelManager } from "../models/modelManager";
 import { useSettingsStore } from "../stores/settingsStore";
+import { friendlyVoiceError } from "../data/friendlyError";
 
-/** ScriptProcessor buffer size (samples per callback) */
-const BUFFER_SIZE = 4096;
+// Audio worklet processor (public/audio-capture-worklet.js) emits a
+// 128-frame chunk per render quantum — the AudioWorklet spec mandates
+// that block size; the worklet copies and posts each one to the main
+// thread for STT batching.
 
 /** Safety timeout: remove listener if no transcript arrives after final flush (ms) */
 const FLUSH_TIMEOUT_MS = 15_000;
@@ -43,7 +46,7 @@ export function useMicrophone(): MicrophoneState {
 
   const streamRef = useRef<MediaStream | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
-  const processorRef = useRef<ScriptProcessorNode | null>(null);
+  const processorRef = useRef<AudioWorkletNode | null>(null);
   const chunksRef = useRef<Float32Array[]>([]);
   const workerListenerRef = useRef<((e: MessageEvent) => void) | null>(null);
 
@@ -71,8 +74,9 @@ export function useMicrophone(): MicrophoneState {
       if (levelIntervalRef.current) clearInterval(levelIntervalRef.current);
       if (flushTimeoutRef.current) clearTimeout(flushTimeoutRef.current);
       if (processorRef.current) {
+        processorRef.current.port.postMessage({ type: "stop" });
         processorRef.current.disconnect();
-        processorRef.current.onaudioprocess = null;
+        processorRef.current.port.onmessage = null;
       }
       if (audioCtxRef.current) audioCtxRef.current.close().catch(() => {});
       if (streamRef.current) {
@@ -175,14 +179,19 @@ export function useMicrophone(): MicrophoneState {
     pendingFlushRef.current = 0;
 
     const manager = getModelManager();
-    if (!manager.isReady("stt")) {
-      setError("Speech-to-text model is not loaded yet");
+    // Defensive belt-and-suspenders — the ListenPanel mic button is
+    // already gated on `useModels().isWarm("stt")`, so users can't
+    // normally tap until warm. If we somehow get here pre-warm
+    // (programmatic call, race), fail with plain-language copy that
+    // matches the rest of the readiness UX.
+    if (!manager.isWarm("stt")) {
+      setError("Listening isn't ready yet. Try again in a moment.");
       return;
     }
 
     const worker = manager.getWorker("stt");
     if (!worker) {
-      setError("Speech-to-text worker not available");
+      setError("Listening isn't ready yet. Try again in a moment.");
       return;
     }
 
@@ -205,7 +214,8 @@ export function useMicrophone(): MicrophoneState {
         console.log("[OwnVoice:STT:GPU]", msg.text);
       } else if (msg.type === "error") {
         console.error("[OwnVoice:Mic] STT error:", msg.message);
-        setError(msg.message);
+        const lang = useSettingsStore.getState().cfg?.caregiverLang ?? "en";
+        setError(friendlyVoiceError(msg.message, lang));
         setTranscribing(false);
         pendingFlushRef.current = Math.max(0, pendingFlushRef.current - 1);
         maybeCleanupListener();
@@ -219,13 +229,14 @@ export function useMicrophone(): MicrophoneState {
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     } catch (err) {
-      const message =
+      const raw =
         err instanceof DOMException && err.name === "NotAllowedError"
-          ? "Microphone access denied. Please allow microphone access in your browser settings."
+          ? "permission denied"
           : err instanceof Error
             ? err.message
             : "Failed to access microphone";
-      setError(message);
+      const lang = useSettingsStore.getState().cfg?.caregiverLang ?? "en";
+      setError(friendlyVoiceError(raw, lang));
       worker.removeEventListener("message", onMessage);
       workerListenerRef.current = null;
       return;
@@ -236,16 +247,39 @@ export function useMicrophone(): MicrophoneState {
     const audioCtx = new AudioContext();
     audioCtxRef.current = audioCtx;
 
+    // Register the AudioWorklet processor served from /audio-capture-worklet.js.
+    // The module is loaded once per AudioContext; subsequent registrations are
+    // no-ops in modern browsers, but we tolerate either outcome.
+    try {
+      await audioCtx.audioWorklet.addModule("/audio-capture-worklet.js");
+    } catch (err) {
+      const raw = err instanceof Error ? err.message : String(err);
+      console.error("[OwnVoice:Mic] Audio worklet failed to load:", raw);
+      const lang = useSettingsStore.getState().cfg?.caregiverLang ?? "en";
+      setError(friendlyVoiceError(raw, lang));
+      audioCtx.close().catch(() => {});
+      audioCtxRef.current = null;
+      stream.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+      worker.removeEventListener("message", onMessage);
+      workerListenerRef.current = null;
+      return;
+    }
+
     const source = audioCtx.createMediaStreamSource(stream);
-    const processor = audioCtx.createScriptProcessor(BUFFER_SIZE, 1, 1);
+    const processor = new AudioWorkletNode(audioCtx, "audio-capture", {
+      numberOfInputs: 1,
+      numberOfOutputs: 0,
+      channelCount: 1,
+    });
     processorRef.current = processor;
 
     chunksRef.current = [];
 
-    processor.onaudioprocess = (e: AudioProcessingEvent) => {
-      const input = e.inputBuffer.getChannelData(0);
-      const samples = new Float32Array(input.length);
-      samples.set(input);
+    processor.port.onmessage = (e: MessageEvent) => {
+      const msg = e.data;
+      if (msg?.type !== "samples" || !(msg.samples instanceof Float32Array)) return;
+      const samples = msg.samples;
 
       chunksRef.current.push(samples);
 
@@ -258,8 +292,9 @@ export function useMicrophone(): MicrophoneState {
       rawLevelRef.current = Math.min(1, rms / 0.15);
     };
 
+    // AudioWorkletNode runs as long as it has connected inputs — no need
+    // to also connect to destination (unlike ScriptProcessorNode).
     source.connect(processor);
-    processor.connect(audioCtx.destination);
 
     // Start throttled audio level updates
     levelIntervalRef.current = setInterval(() => {
@@ -279,10 +314,15 @@ export function useMicrophone(): MicrophoneState {
 
     stoppedRef.current = true;
 
-    // Disconnect processor
+    // Disconnect processor — AudioWorklet variant: tell the worklet to
+    // return false from process() (lets it GC), close the message port
+    // to the main thread, and disconnect the audio graph.
     if (processorRef.current) {
+      try {
+        processorRef.current.port.postMessage({ type: "stop" });
+      } catch { /* port may already be closed */ }
+      processorRef.current.port.onmessage = null;
       processorRef.current.disconnect();
-      processorRef.current.onaudioprocess = null;
       processorRef.current = null;
     }
 

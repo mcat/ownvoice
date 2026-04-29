@@ -5,6 +5,33 @@ import { useSettingsStore } from "../../stores/settingsStore";
 import { makeTestCfg } from "../../test/makeCfg";
 import type { AppSettings } from "../../types";
 
+const mockUseModels = {
+  isWarm: vi.fn().mockReturnValue(false),
+  isReady: vi.fn().mockReturnValue(false),
+  isLoading: vi.fn().mockReturnValue(false),
+  getError: vi.fn().mockReturnValue(undefined),
+  humanCountdown: vi.fn().mockReturnValue(null),
+  isAlmostReady: vi.fn().mockReturnValue(false),
+  secondsLeft: vi.fn().mockReturnValue(undefined),
+  progress: [],
+  initialized: true,
+  totalProgress: () => ({ loaded: 0, total: 0 }),
+};
+
+vi.mock("../../hooks/useModels", () => ({
+  useModels: () => mockUseModels,
+}));
+
+vi.mock("../../models/modelManager", () => ({
+  getModelManager: () => ({
+    isWarm: vi.fn().mockReturnValue(false),
+    getProgress: vi.fn().mockReturnValue([]),
+    onProgress: vi.fn().mockReturnValue(() => {}),
+    init: vi.fn().mockResolvedValue(undefined),
+    getWorker: vi.fn().mockReturnValue(null),
+  }),
+}));
+
 vi.mock("../../hooks/useTheme", () => ({
   useTheme: () => ({
     theme: "light" as const,
@@ -98,5 +125,41 @@ describe("Header", () => {
     renderHeader();
     fireEvent.click(screen.getByRole("button", { name: /Edit patient: Maria/ }));
     expect(onEditPatient).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("Header — PatientVoiceStatus integration", () => {
+  beforeEach(() => {
+    useUIStore.getState().resetUI();
+    mockUseModels.isWarm.mockReturnValue(false);
+    mockUseModels.getError.mockReturnValue(undefined);
+    mockUseModels.humanCountdown.mockReturnValue(null);
+    mockUseModels.isAlmostReady.mockReturnValue(false);
+  });
+
+  it("renders PatientVoiceStatus next to PatientPill when active patient needs clone", () => {
+    const cfg = makeTestCfg({
+      patient: {
+        name: "Maria",
+        bed: "4A",
+        patientLang: "en",
+        hasVoice: true,
+        speakerData: null,
+      },
+      cfg: { pin: "" },
+    });
+    useSettingsStore.setState({ cfg, speakerData: null, _hasHydrated: true });
+
+    render(
+      <Header
+        cfg={cfg}
+        onOpenSettings={vi.fn()}
+        onEditPatient={vi.fn()}
+      />,
+    );
+
+    expect(
+      screen.getByText(/Using a temporary voice/i),
+    ).toBeInTheDocument();
   });
 });

@@ -106,10 +106,23 @@ function setupFetchMocks() {
         }),
       };
     }
-    // For ONNX model URLs, return an object with arrayBuffer()
-    // (createSession fetches the .onnx file as ArrayBuffer)
+    // For ONNX model URLs, return an object with arrayBuffer() plus headers
+    // and a streaming body so the progress-aware encoder fetch path also works.
     return {
       ok: true,
+      headers: { get: () => "10" },
+      body: {
+        getReader: () => {
+          let done = false;
+          return {
+            read: async () => {
+              if (done) return { done: true, value: undefined };
+              done = true;
+              return { done: false, value: new Uint8Array(10) };
+            },
+          };
+        },
+      },
       arrayBuffer: async () => new ArrayBuffer(10),
     };
   });
@@ -623,3 +636,140 @@ describe("ttsWorker — message protocol", () => {
     );
   });
 });
+
+describe("ttsWorker — warmup", () => {
+  it("emits {type:'warm'} after warmup completes", async () => {
+    setupFetchMocks();
+
+    // Init loads tokenizer only (synth models lazy-loaded on first synthesize).
+    // Warmup will then call createSession for the speech encoder + run() once
+    // on the silent buffer to confirm the graph runs.
+    const warmupSession = {
+      run: vi.fn().mockResolvedValue({
+        audio_features: { data: new Float32Array(8), dims: [1, 8] },
+        audio_tokens: { data: new BigInt64Array(4), dims: [1, 4] },
+        speaker_embeddings: { data: new Float32Array(192), dims: [1, 192] },
+        speaker_features: { data: new Float32Array(80), dims: [1, 1, 80] },
+      }),
+      release: vi.fn(),
+    };
+    mockSessionCreate.mockResolvedValue(warmupSession);
+
+    vi.resetModules();
+    await import("./ttsWorker");
+
+    const handler = getMessageHandler();
+
+    // Init first so baseUrl is set.
+    await handler({ data: { type: "init", modelUrl: "/models/tts/" } } as MessageEvent);
+    mockPostMessage.mockClear();
+
+    await handler({ data: { type: "warmup" } } as MessageEvent);
+    await flush();
+
+    expect(mockPostMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "warm" }),
+    );
+    // The encoder session should be released after the warmup run.
+    expect(warmupSession.release).toHaveBeenCalled();
+  });
+});
+
+describe("ttsWorker — embed requestId echo", () => {
+  it("includes requestId on embedding response", async () => {
+    setupFetchMocks();
+
+    // Init loads tokenizer only; speech encoder is loaded on-demand in embed.
+    mockSessionCreate.mockResolvedValue(makeMockSession());
+
+    vi.resetModules();
+    await import("./ttsWorker");
+
+    const handler = getMessageHandler();
+
+    // Init first so baseUrl is set.
+    await handler({ data: { type: "init", modelUrl: "/models/tts/" } } as MessageEvent);
+    mockPostMessage.mockClear();
+
+    // Speech encoder session for the embed call: returns valid outputs.
+    const embedSession = {
+      run: vi.fn().mockResolvedValue({
+        audio_features: { data: new Float32Array(8), dims: [1, 8] },
+        audio_tokens: { data: new BigInt64Array(4), dims: [1, 4] },
+        speaker_embeddings: { data: new Float32Array(192), dims: [1, 192] },
+        speaker_features: { data: new Float32Array(80), dims: [1, 1, 80] },
+      }),
+      release: vi.fn(),
+    };
+    mockSessionCreate.mockResolvedValue(embedSession);
+
+    await handler({
+      data: {
+        type: "embed",
+        audio: new Float32Array([0.1, 0.2]),
+        sampleRate: 24000,
+        requestId: 42,
+      },
+    } as unknown as MessageEvent);
+    await flush();
+
+    const posted = mockPostMessage.mock.calls.map((c) => c[0]) as Array<
+      { type: string; requestId?: number }
+    >;
+    const embedding = posted.find((m) => m.type === "embedding");
+    expect(embedding).toBeDefined();
+    expect(embedding?.requestId).toBe(42);
+  });
+});
+
+describe("ttsWorker — encoder fetch progress", () => {
+  it("posts embed-progress events as encoder bytes arrive", async () => {
+    const posted: unknown[] = [];
+    vi.stubGlobal("self", {
+      addEventListener: vi.fn(),
+      postMessage: (m: unknown) => posted.push(m),
+    });
+
+    // 4 chunks of 1024 bytes
+    const total = 4096;
+    const chunks = [
+      new Uint8Array(1024),
+      new Uint8Array(1024),
+      new Uint8Array(1024),
+      new Uint8Array(1024),
+    ];
+    const reader = makeChunkReader(chunks);
+    vi.stubGlobal("fetch", () =>
+      Promise.resolve({
+        ok: true,
+        headers: { get: () => String(total) },
+        body: { getReader: () => reader },
+        arrayBuffer: () => Promise.resolve(new ArrayBuffer(total)),
+      }),
+    );
+
+    // Reset modules so the worker re-binds _postMessage to the
+    // freshly-stubbed self.postMessage (the bind happens at module load).
+    vi.resetModules();
+    const mod = await import("./ttsWorker");
+    await mod.__test__fetchModelWithProgress("https://example/encoder.onnx");
+
+    const progress = posted.filter(
+      (m: any) => m.type === "embed-progress" && m.stage === "loading-model",
+    );
+    expect(progress.length).toBeGreaterThanOrEqual(2);
+    const last = progress[progress.length - 1] as any;
+    expect(last.loaded).toBe(total);
+    expect(last.total).toBe(total);
+  });
+});
+
+function makeChunkReader(chunks: Uint8Array[]) {
+  let i = 0;
+  return {
+    read: async () => {
+      if (i >= chunks.length) return { done: true, value: undefined };
+      return { done: false, value: chunks[i++] };
+    },
+  };
+}

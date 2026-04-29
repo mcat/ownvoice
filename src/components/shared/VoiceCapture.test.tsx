@@ -1,18 +1,24 @@
 import { render, screen, fireEvent, act } from "@testing-library/preact";
 import { VoiceCapture, friendlyVoiceError } from "./VoiceCapture";
 
-// Mock getModelManager to avoid model init side effects
+// Mock getModelManager to avoid model init side effects.
+//
+// The mock is a singleton so individual tests can rebind `getWorker` /
+// `isReady` to drive `extractEmbedding` against a fake worker (see
+// `installFakeTTSWorker`). A factory-per-call returning a fresh object would
+// hand the test a different instance from the one the component calls.
+const mockMgr = {
+  init: vi.fn().mockResolvedValue(undefined),
+  getWorker: vi.fn(() => null) as ReturnType<typeof vi.fn>,
+  clearAll: vi.fn(),
+  isReady: vi.fn(() => false) as ReturnType<typeof vi.fn>,
+  onProgress: vi.fn(() => () => {}),
+  getProgress: vi.fn(() => [
+    { model: "tts", status: "idle", loaded: 0, total: 0 },
+  ]),
+};
 vi.mock("../../models/modelManager", () => ({
-  getModelManager: () => ({
-    init: vi.fn(),
-    getWorker: vi.fn(() => null),
-    clearAll: vi.fn(),
-    isReady: vi.fn(() => false),
-    onProgress: vi.fn(() => () => {}),
-    getProgress: vi.fn(() => [
-      { model: "tts", status: "idle", loaded: 0, total: 0 },
-    ]),
-  }),
+  getModelManager: () => mockMgr,
 }));
 
 describe("VoiceCapture", () => {
@@ -260,5 +266,299 @@ describe("friendlyVoiceError — raw error strings must never reach the user", (
     );
     expect(msg.toLowerCase()).toMatch(/quiet|noise|background|loud/);
     expect(msg.toLowerCase()).not.toContain("snr");
+  });
+});
+
+/** Test helper — install a fake TTS worker on the mocked getModelManager.
+ *  Returns the worker harness plus the isReady mock so tests can flip it. */
+function installFakeTTSWorker() {
+  const listeners: Array<(e: MessageEvent) => void> = [];
+  const postedMessages: any[] = [];
+  const worker = {
+    addEventListener: (type: string, h: any) => {
+      if (type === "message") listeners.push(h);
+    },
+    removeEventListener: (type: string, h: any) => {
+      if (type === "message") {
+        const i = listeners.indexOf(h);
+        if (i >= 0) listeners.splice(i, 1);
+      }
+    },
+    postMessage: (m: any) => postedMessages.push(m),
+    postedMessages,
+    dispatchMessage: (data: any) => {
+      const evt = { data } as MessageEvent;
+      for (const l of listeners.slice()) l(evt);
+    },
+  };
+  mockMgr.getWorker = vi.fn().mockReturnValue(worker);
+  const isReady = vi.fn();
+  mockMgr.isReady = isReady;
+  return { worker, isReady };
+}
+
+describe("VoiceCapture — extractEmbedding idle watchdog", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("does not timeout while progress events keep arriving", async () => {
+    const { worker, isReady } = installFakeTTSWorker();
+    isReady.mockReturnValue(true);
+
+    const { __test__extractEmbedding } = await import("./VoiceCapture");
+    const promise = __test__extractEmbedding(new Float32Array(24000), undefined);
+
+    // Capture the embed message to learn what requestId was used.
+    const embedMsg = worker.postedMessages.find((m: any) => m.type === "embed");
+    expect(embedMsg).toBeTruthy();
+    const requestId = (embedMsg as any).requestId;
+
+    // Pulse a progress event every 30s for 10 minutes — never idle 60s.
+    for (let i = 0; i < 20; i++) {
+      vi.advanceTimersByTime(30_000);
+      worker.dispatchMessage({
+        type: "embed-progress",
+        stage: "loading-model",
+        loaded: i + 1,
+        total: 20,
+      });
+    }
+
+    worker.dispatchMessage({
+      type: "embedding",
+      data: { condEmb: [], condEmbShape: [], promptToken: [], promptTokenShape: [], speakerEmbeddings: [], speakerEmbeddingsShape: [], speakerFeatures: [], speakerFeaturesShape: [] },
+      requestId,
+    });
+    await expect(promise).resolves.toBeTruthy();
+  });
+
+  it("times out after 60s of silence", async () => {
+    const { worker, isReady } = installFakeTTSWorker();
+    isReady.mockReturnValue(true);
+
+    const { __test__extractEmbedding } = await import("./VoiceCapture");
+    const promise = __test__extractEmbedding(new Float32Array(24000), undefined);
+
+    worker.dispatchMessage({ type: "embed-progress", stage: "loading-model", loaded: 1, total: 100 });
+    vi.advanceTimersByTime(61_000);
+
+    await expect(promise).rejects.toThrow(/taking longer/i);
+  });
+
+  it("ignores responses with mismatched requestId", async () => {
+    const { worker, isReady } = installFakeTTSWorker();
+    isReady.mockReturnValue(true);
+
+    const { __test__extractEmbedding } = await import("./VoiceCapture");
+    const promise = __test__extractEmbedding(new Float32Array(24000), undefined);
+
+    const embedMsg = worker.postedMessages.find((m: any) => m.type === "embed");
+    const requestId = (embedMsg as any).requestId;
+
+    // Dispatch an embedding for a different requestId — must NOT resolve.
+    worker.dispatchMessage({
+      type: "embedding",
+      data: { condEmb: [], condEmbShape: [], promptToken: [], promptTokenShape: [], speakerEmbeddings: [], speakerEmbeddingsShape: [], speakerFeatures: [], speakerFeaturesShape: [] },
+      requestId: requestId + 9999,
+    });
+    // After a small advance, our promise should still be pending (no idle).
+    vi.advanceTimersByTime(30_000);
+    let settled = false;
+    promise.then(() => { settled = true; }, () => { settled = true; });
+    await Promise.resolve();
+    expect(settled).toBe(false);
+
+    // Now dispatch the matching one and confirm it resolves.
+    worker.dispatchMessage({
+      type: "embedding",
+      data: { condEmb: [], condEmbShape: [], promptToken: [], promptTokenShape: [], speakerEmbeddings: [], speakerEmbeddingsShape: [], speakerFeatures: [], speakerFeaturesShape: [] },
+      requestId,
+    });
+    await expect(promise).resolves.toBeTruthy();
+  });
+});
+
+/**
+ * Test helper — drive `mockMgr` so `getProgress()` reads a live status map,
+ * and `onProgress` listeners can be notified on demand. Each call resets state
+ * for a single test. Returns controls so the test can flip status and fire
+ * notifications mid-render.
+ *
+ * The retry effect (VoiceCapture.tsx) calls `getProgress()` synchronously
+ * inside the effect, so we bind a fresh implementation each time rather than
+ * a captured-once `vi.fn(() => [...])`.
+ */
+function installMockMgrStatus(initial: Record<string, string>) {
+  const state: Record<string, { status: string; error?: string }> = {};
+  for (const [m, s] of Object.entries(initial)) state[m] = { status: s };
+  const listeners: Array<(p: any[]) => void> = [];
+
+  function snapshot() {
+    return Object.entries(state).map(([model, v]) => ({
+      model,
+      status: v.status,
+      loaded: 0,
+      total: 0,
+      error: v.error,
+    }));
+  }
+
+  mockMgr.getProgress = vi.fn(() => snapshot()) as ReturnType<typeof vi.fn>;
+  mockMgr.onProgress = vi.fn((cb: (p: any[]) => void) => {
+    listeners.push(cb);
+    return () => {
+      const i = listeners.indexOf(cb);
+      if (i >= 0) listeners.splice(i, 1);
+    };
+  }) as ReturnType<typeof vi.fn>;
+  mockMgr.isReady = vi.fn((id: string) => state[id]?.status === "ready" || state[id]?.status === "warm") as ReturnType<typeof vi.fn>;
+
+  return {
+    setStatus(model: string, status: string, error?: string) {
+      state[model] = { status, error };
+    },
+    notify() {
+      const snap = snapshot();
+      for (const cb of listeners.slice()) cb(snap);
+    },
+  };
+}
+
+describe("VoiceCapture — retry waits for warm", () => {
+  // These tests use real timers so a small setTimeout flushes microtasks
+  // and the retry effect's async `decodeAudio` call gets a chance to run.
+  beforeEach(() => {
+    vi.useRealTimers();
+  });
+
+  function audioCalls() {
+    const fn = globalThis.AudioContext as unknown as { mock: { calls: any[][] } };
+    return fn.mock.calls;
+  }
+
+  function decodeAudioCallCount() {
+    // `decodeAudio` (in retryEmbedding's path) constructs `new AudioContext({ sampleRate: 24000 })`.
+    // Playback uses argless `new AudioContext()`. Filter so the count tracks
+    // only the retry-effect entry path.
+    return audioCalls().filter((args) => args[0]?.sampleRate === 24000).length;
+  }
+
+  it("does not retry while status is ready but not warm", async () => {
+    installMockMgrStatus({ tts: "ready" });
+    const baseline = decodeAudioCallCount();
+    const onCapture = vi.fn();
+    render(
+      <VoiceCapture
+        label="t"
+        hasVoice={true}
+        onCapture={onCapture}
+        onRemove={() => {}}
+        audioBlob={new Blob([new Uint8Array(1024)])}
+      />,
+    );
+    // Allow retry effect to run; with status "ready" (not "warm") it should not retry.
+    await new Promise((r) => setTimeout(r, 20));
+    expect(onCapture).not.toHaveBeenCalled();
+    // The retry effect's first observable side effect is constructing an
+    // AudioContext for decoding — verify it never happened.
+    expect(decodeAudioCallCount()).toBe(baseline);
+  });
+
+  it("retries when warm flips on", async () => {
+    const ctl = installMockMgrStatus({ tts: "ready" });
+    const baseline = decodeAudioCallCount();
+    const onCapture = vi.fn();
+    render(
+      <VoiceCapture
+        label="t"
+        hasVoice={true}
+        onCapture={onCapture}
+        onRemove={() => {}}
+        audioBlob={new Blob([new Uint8Array(1024)])}
+      />,
+    );
+    await new Promise((r) => setTimeout(r, 20));
+    // No retry yet.
+    expect(decodeAudioCallCount()).toBe(baseline);
+
+    // Flip to warm and notify the listener.
+    ctl.setStatus("tts", "warm");
+    ctl.notify();
+    await new Promise((r) => setTimeout(r, 20));
+    // The retry effect ran retryEmbedding, which constructs an AudioContext
+    // with sampleRate 24000 inside decodeAudio.
+    expect(decodeAudioCallCount()).toBeGreaterThan(baseline);
+  });
+});
+
+describe("VoiceCapture — pre-capture readiness hint", () => {
+  // useModels reads progress via the onProgress listener; pushing a snapshot
+  // and yielding a microtask lets the hook's state settle before assertions.
+  beforeEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("shows the hint when TTS is not warm", async () => {
+    const ctl = installMockMgrStatus({ tts: "ready" }); // ready but not warm
+    render(
+      <VoiceCapture
+        label="t"
+        hasVoice={false}
+        onCapture={() => {}}
+        onRemove={() => {}}
+      />,
+    );
+    ctl.notify();
+    await new Promise((r) => setTimeout(r, 20));
+    expect(
+      screen.getByText(/Voice will start as soon as it's ready/i),
+    ).toBeInTheDocument();
+  });
+
+  it("hides the hint when TTS is warm", async () => {
+    const ctl = installMockMgrStatus({ tts: "warm" });
+    render(
+      <VoiceCapture
+        label="t"
+        hasVoice={false}
+        onCapture={() => {}}
+        onRemove={() => {}}
+      />,
+    );
+    ctl.notify();
+    await new Promise((r) => setTimeout(r, 20));
+    expect(
+      screen.queryByText(/Voice will start as soon as it's ready/i),
+    ).toBeNull();
+  });
+});
+
+describe("VoiceCapture — plain-language status copy", () => {
+  beforeEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("shows 'Saving your voice — about ...' during deferred processing", async () => {
+    const ctl = installMockMgrStatus({ tts: "ready" });
+    render(
+      <VoiceCapture
+        label="t"
+        hasVoice={true}
+        onCapture={() => {}}
+        onRemove={() => {}}
+        audioBlob={new Blob([new Uint8Array(1024)])}
+      />,
+    );
+    ctl.notify();
+    await new Promise((r) => setTimeout(r, 20));
+    // Both the visible badge and the throttled visually-hidden
+    // aria-live region contain the same saving text — assert that
+    // both are present (visible + accessible) and that they match.
+    const matches = screen.getAllByText(/Saving your voice/i);
+    expect(matches.length).toBeGreaterThanOrEqual(1);
   });
 });

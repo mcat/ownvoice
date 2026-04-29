@@ -5,6 +5,9 @@ import { Btn } from "./Btn";
 import { getModelManager } from "../../models/modelManager";
 import { getRecordingScript } from "../../data/recordingScripts";
 import { preprocessEnrollment } from "../../models/enrollmentAudio";
+import { useModels } from "../../hooks/useModels";
+import { useThrottledText } from "../../hooks/useThrottledText";
+import { friendlyVoiceError } from "../../data/friendlyError";
 
 /**
  * Voice clone processing status — shown in the UI so the user
@@ -124,31 +127,11 @@ const COUNTDOWN_TIMELINE: CountdownStep[] = [
   { kind: "go", tone: 659 },
 ];
 
-/**
- * Translate a raw error message into something a non-technical user can act on.
- * The raw message is still useful for logs and for developers reading the
- * console, but it should never be the user-facing copy — `Failed to fetch` and
- * similar native strings mean nothing at the bedside.
- */
-export function friendlyVoiceError(raw: string, locale = "en"): string {
-  const m = raw.toLowerCase();
-  if (m.includes("failed to fetch") || m.includes("networkerror") || m.includes("network")) {
-    return resolvePhrase("ui.provider.voice_capture.err_network", locale);
-  }
-  if (m.includes("timed out") || m.includes("timeout")) {
-    return resolvePhrase("ui.provider.voice_capture.err_timeout", locale);
-  }
-  if (m.includes("denied") || m.includes("permission")) {
-    return resolvePhrase("ui.provider.voice_capture.err_mic_denied", locale);
-  }
-  if (m.includes("too short")) {
-    return resolvePhrase("ui.provider.voice_capture.err_too_short", locale);
-  }
-  if (m.includes("too noisy") || m.includes("snr")) {
-    return resolvePhrase("ui.provider.voice_capture.err_too_noisy", locale);
-  }
-  return resolvePhrase("ui.provider.voice_capture.err_generic", locale);
-}
+// Re-export under the original name so existing tests / consumers
+// that import from this file keep working. The implementation lives
+// in src/data/friendlyError.ts because Listen (useMicrophone hook)
+// needs the same mapping and shouldn't import from a UI component file.
+export { friendlyVoiceError };
 
 async function decodeAudio(blob: Blob): Promise<Float32Array> {
   const ctx = new AudioContext({ sampleRate: 24000 });
@@ -165,11 +148,20 @@ async function decodeAudio(blob: Blob): Promise<Float32Array> {
  * Throws on extraction failure.
  *
  * The worker lazy-loads the ~591 MB speech encoder external-data file on
- * the first embed call. On slow networks this can take minutes; the
- * worker emits an "embed-progress" message when it begins the model
- * load so the caller can surface a "loading model" indicator. After
- * OPFS caches the bytes, subsequent embeds run in seconds.
+ * the first embed call. On slow networks this can take many minutes; the
+ * worker emits an "embed-progress" message as bytes arrive so the caller
+ * can surface a "loading model" indicator. After OPFS caches the bytes,
+ * subsequent embeds run in seconds.
+ *
+ * We use an idle watchdog (60s without ANY progress) instead of a hard
+ * outer bound so a slow-but-progressing download never spuriously aborts
+ * (Bug 2). Each `embed` carries a `requestId` and we only resolve on a
+ * matching response so a stale handler doesn't grab a sibling caller's
+ * reply (Bug 6).
  */
+const IDLE_TIMEOUT_MS = 60_000;
+let nextRequestId = 1;
+
 async function extractEmbedding(
   audio: Float32Array,
   onLoadingModel?: () => void,
@@ -181,34 +173,49 @@ async function extractEmbedding(
     return null; // Model not loaded yet
   }
 
+  const requestId = nextRequestId++;
+
   return new Promise<unknown>((resolve, reject) => {
-    // 5-minute outer bound. Covers the worst realistic first-load:
-    // 591 MB of external data + ORT WASM init + inference. The
-    // "loading-model" progress event drives UI feedback; without it,
-    // a 5-minute spinner would be indistinguishable from a hang.
-    const timeout = setTimeout(
-      () => reject(new Error("Voice processing timed out. Please try again.")),
-      5 * 60 * 1000,
-    );
+    let idleTimer: ReturnType<typeof setTimeout> | null = null;
+
+    function resetIdle() {
+      if (idleTimer) clearTimeout(idleTimer);
+      idleTimer = setTimeout(() => {
+        worker!.removeEventListener("message", handler);
+        reject(new Error("This is taking longer than expected. Try again."));
+      }, IDLE_TIMEOUT_MS);
+    }
+
     const handler = (e: MessageEvent) => {
-      if (e.data.type === "embedding") {
-        clearTimeout(timeout);
-        worker.removeEventListener("message", handler);
-        resolve(e.data.data); // Return the actual embedding data
-      } else if (e.data.type === "embed-progress" && e.data.stage === "loading-model") {
-        // Worker is fetching the speech encoder; surface in UI.
-        // Don't clear the timeout — it still bounds the full operation.
+      const msg = e.data;
+      if (msg.type === "embed-progress" && msg.stage === "loading-model") {
         onLoadingModel?.();
-      } else if (e.data.type === "error") {
-        clearTimeout(timeout);
-        worker.removeEventListener("message", handler);
-        reject(new Error(e.data.message || "Voice processing failed"));
+        resetIdle();
+        return;
+      }
+      if (msg.type === "embedding" && msg.requestId === requestId) {
+        if (idleTimer) clearTimeout(idleTimer);
+        worker!.removeEventListener("message", handler);
+        resolve(msg.data);
+      } else if (msg.type === "error" && msg.requestId === requestId) {
+        if (idleTimer) clearTimeout(idleTimer);
+        worker!.removeEventListener("message", handler);
+        reject(new Error(msg.message || "Voice processing failed"));
       }
     };
     worker.addEventListener("message", handler);
-    worker.postMessage({ type: "embed", audio, sampleRate: 24000 });
+    resetIdle();
+    worker.postMessage({
+      type: "embed",
+      audio,
+      sampleRate: 24000,
+      requestId,
+    });
   });
 }
+
+// Test hook — keep at module scope so vitest can call it directly.
+export const __test__extractEmbedding = extractEmbedding;
 
 export function VoiceCapture({
   label,
@@ -254,13 +261,44 @@ export function VoiceCapture({
     hasEmbedding ? "ready" : hasVoice ? "model-loading" : "idle",
   );
 
-  // When the TTS model becomes ready, retry embedding extraction if we have
+  // Readiness signals — used by the pre-capture hint and the deferred-save
+  // status copy. `isWarm("tts")` flips true when the speech encoder has run
+  // its warmup pass; until then, captures are saved but cloning is deferred.
+  const { isWarm, humanCountdown, isAlmostReady } = useModels();
+  const ttsWarm = isWarm("tts");
+  const countdown = humanCountdown("tts");
+  const ttsAlmost = isAlmostReady("tts");
+
+  // Compute the "saving" status text + a category key for throttling.
+  // The badge re-renders on every progress event (countdown ticks) but
+  // we only want screen-reader announcements at most once every 5s,
+  // unless the category changes (e.g. saving → almost-ready).
+  const savingCategory =
+    ttsWarm || ttsAlmost ? "almost" : countdown ? "saving-cd" : "saving";
+  const savingText =
+    ttsWarm || ttsAlmost
+      ? resolvePhrase("ui.readiness.voice_capture.saving_almost", caregiverLang)
+      : countdown
+        ? resolvePhrase(
+            "ui.readiness.voice_capture.saving_with_countdown",
+            caregiverLang,
+          ).replace("{countdown}", countdown)
+        : resolvePhrase("ui.readiness.voice_capture.saving", caregiverLang);
+  const announcedSavingText = useThrottledText(savingText, savingCategory);
+
+  // When the TTS model becomes warm, retry embedding extraction if we have
   // audio but no embedding.
   //
+  // This effect waits for the worker to flip to `warm`, not `ready`, because
+  // `ready` only means the tokenizer loaded — see Task 4 for the warmup
+  // pipeline. The 591 MB speech encoder external-data file isn't fetched
+  // until warmup completes, and an embed call before that point would block
+  // for minutes on a cold network rather than producing an embedding.
+  //
   // This used to be "check isReady → if not, subscribe" but that had a
-  // check-then-subscribe race: the model could transition to ready between
-  // the isReady check and the subscription, and the notification would fire
-  // with no listener registered. The UI would then wait forever on a "ready"
+  // check-then-subscribe race: the model could transition between the
+  // isReady check and the subscription, and the notification would fire
+  // with no listener registered. The UI would then wait forever on a state
   // event that had already passed. We now subscribe FIRST, then synchronously
   // check the current state — any transition that happens during the race
   // window is caught by one or the other. A `handled` flag dedupes.
@@ -272,7 +310,7 @@ export function VoiceCapture({
 
     function handleStatus(status: string | undefined, err: string | undefined) {
       if (handled) return;
-      if (status === "ready") {
+      if (status === "warm") {
         handled = true;
         retryEmbedding();
       } else if (status === "error") {
@@ -287,7 +325,7 @@ export function VoiceCapture({
       handleStatus(tts?.status, tts?.error);
     });
 
-    // Check the current state immediately. If already ready/error, the
+    // Check the current state immediately. If already warm/error, the
     // subscription won't fire a notification for that past transition —
     // but this sync check catches it. If pending, the subscription is
     // armed for the future transition.
@@ -667,9 +705,32 @@ export function VoiceCapture({
       );
     }
     if (cloneStatus === "model-loading") {
+      // Visible text updates on every render (countdown ticking). The
+      // aria-live announcement is throttled separately via
+      // announcedSavingText so screen readers aren't spammed with
+      // every-second updates \u2014 see useThrottledText.
       return (
-        <span style={{ ...base, color: "#92400E", background: "#FEF3C7" }}>
-          <span aria-hidden="true">{"\u23F3"}</span> {resolvePhrase("ui.provider.voice_capture.loading_model", caregiverLang)}
+        <span
+          style={{ ...base, color: "#92400E", background: "#FEF3C7" }}
+        >
+          <span aria-hidden="true">{"\u23F3"}</span> {savingText}
+          <span
+            role="status"
+            aria-live="polite"
+            style={{
+              position: "absolute",
+              width: 1,
+              height: 1,
+              padding: 0,
+              margin: -1,
+              overflow: "hidden",
+              clip: "rect(0,0,0,0)",
+              whiteSpace: "nowrap",
+              border: 0,
+            }}
+          >
+            {announcedSavingText}
+          </span>
         </span>
       );
     }
@@ -683,7 +744,8 @@ export function VoiceCapture({
     if (cloneStatus === "failed") {
       return (
         <span style={{ ...base, color: "#991B1B", background: "#FEE2E2" }}>
-          <span aria-hidden="true">{"\u26A0\uFE0F"}</span> {resolvePhrase("ui.provider.voice_capture.clone_failed", caregiverLang)}
+          <span aria-hidden="true">{"\u26A0\uFE0F"}</span>{" "}
+          {resolvePhrase("ui.readiness.voice_capture.failed_message", caregiverLang)}
         </span>
       );
     }
@@ -1255,7 +1317,7 @@ export function VoiceCapture({
             {cloneStatus === "failed" && (
               <Btn
                 onClick={retryEmbedding}
-                aria-label={resolvePhrase("ui.provider.voice_capture.retry_aria", caregiverLang)}
+                aria-label={resolvePhrase("ui.readiness.voice_capture.failed_action", caregiverLang)}
                 style={{
                   background: "none",
                   // red-600 gives 4.83:1 on white; red-300 was 1.90:1.
@@ -1266,7 +1328,7 @@ export function VoiceCapture({
                   fontSize: btnFloor.fontSize, fontWeight: 600, color: "#991B1B", fontFamily: "inherit",
                 }}
               >
-                {resolvePhrase("ui.provider.voice_capture.retry", caregiverLang)}
+                {resolvePhrase("ui.readiness.voice_capture.failed_action", caregiverLang)}
               </Btn>
             )}
           </div>
@@ -1327,6 +1389,19 @@ export function VoiceCapture({
           {resolvePhrase("ui.provider.voice_capture.record", caregiverLang)}
         </Btn>
       </div>
+      {!ttsWarm && (
+        <p
+          role="status"
+          aria-live="polite"
+          style={{
+            marginTop: 8,
+            fontSize: 13,
+            color: c.sub,
+          }}
+        >
+          {resolvePhrase("ui.readiness.voice_capture.precapture_hint", caregiverLang)}
+        </p>
+      )}
       {error && <ErrorRow compact={compact} message={error} />}
     </div>
   );

@@ -70,16 +70,25 @@ export async function bootTTSWasm(): Promise<void> {
       if (e.data.type === "ready") {
         ttsInitDone = true;
         mgr.setReady("tts");
+        // Eager warmup: download + run a one-shot encoder inference so
+        // the user's first cloning attempt isn't gated on a 591 MB fetch.
+        ttsWorker.postMessage({ type: "warmup" });
+      } else if (e.data.type === "warm") {
+        mgr.markWarm("tts");
       } else if (e.data.type === "progress" && e.data.total === -1) {
         // Debug: EP signal from synthesis start (loaded=1 → WebGPU, loaded=0 → WASM)
         console.log(`[OwnVoice:TTS] Synthesis EP: ${e.data.loaded ? "WebGPU" : "WASM"}`);
       } else if (e.data.type === "error") {
-        if (!ttsInitDone) {
-          // Init failure — mark model as broken
+        if (!ttsInitDone || e.data.phase === "warmup" || e.data.phase === "init") {
+          // Init or warmup failure — mark model as broken so the UI can
+          // surface a recovery action. Without this, a failed warmup
+          // leaves the model in `ready` forever — the UI shows
+          // "Voice will start as soon as it's ready" with no error path.
           mgr.setError("tts", e.data.message);
         } else {
-          // Synthesis failure — log but keep model ready for retries
-          console.error(`[OwnVoice:TTS] synthesis error: ${e.data.message}`);
+          // Synthesis or embed failure — log but keep model ready for
+          // retries; the speak() pathway falls back to Web Speech.
+          console.error(`[OwnVoice:TTS] ${e.data.phase ?? "synthesis"} error: ${e.data.message}`);
         }
       }
     };
@@ -133,10 +142,21 @@ function bootSTT(mgr: ReturnType<typeof getModelManager>): void {
         if (e.data.type === "ready") {
           mgr.setWorker("stt", gpuWorker);
           mgr.setReady("stt");
+          // The GPU STT worker (public/stt-gpu-worker.js) already runs
+          // shader compilation + encoder/decoder warmup as part of its
+          // own init sequence before emitting `ready`. By the time we
+          // see `ready`, it can run inference — so flip warm directly
+          // without posting an extra `warmup` message (which the GPU
+          // worker doesn't handle and would log as "Unknown message type").
+          mgr.markWarm("stt");
           console.log("[OwnVoice] STT: WebGPU ready");
-        } else if (e.data.type === "error" && !mgr.isReady("stt")) {
-          console.warn("[OwnVoice] STT GPU error:", e.data.message);
-          bootSTTWasm(mgr);
+        } else if (e.data.type === "error") {
+          if (!mgr.isReady("stt")) {
+            // Init failure on GPU — fall back to WASM, which has its own
+            // setError on init failure.
+            console.warn("[OwnVoice] STT GPU error:", e.data.message);
+            bootSTTWasm(mgr);
+          }
         }
       };
 
@@ -200,6 +220,9 @@ function bootSTTWasm(mgr: ReturnType<typeof getModelManager>): void {
       if (e.data.type === "ready") {
         mgr.setWorker("stt", sttWorker);
         mgr.setReady("stt");
+        sttWorker.postMessage({ type: "warmup" });
+      } else if (e.data.type === "warm") {
+        mgr.markWarm("stt");
       } else if (e.data.type === "error") {
         mgr.setError("stt", e.data.message);
       }

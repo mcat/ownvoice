@@ -11,10 +11,12 @@ vi.mock("../../models/audioCacheRunner", () => ({
   abort: vi.fn(),
 }));
 
-// Mock getModelManager to avoid model init side effects
+// Mock getModelManager to avoid model init side effects.
+// `init` must return a thenable — useModels does `mgr.init().then(...)` and
+// will throw on undefined.
 vi.mock("../../models/modelManager", () => ({
   getModelManager: () => ({
-    init: vi.fn(),
+    init: vi.fn().mockResolvedValue(undefined),
     getWorker: vi.fn(() => null),
     clearAll: vi.fn(),
     isReady: vi.fn(() => false),
@@ -448,12 +450,13 @@ describe("Setup", () => {
       fileInput.dispatchEvent(new Event("change", { bubbles: true }));
 
       // Wait for async processAndCapture chain to resolve and update the DOM.
-      // The failure surfaces as the "Clone failed" badge + Retry button + a
-      // non-technical subtitle.
+      // The failure surfaces as the "Couldn't prepare your voice" badge +
+      // "Try again" button + a non-technical subtitle. Copy was migrated to
+      // the plain-language readiness keys in T16.
       await waitFor(() => {
-        expect(screen.getByText(/Clone failed/i)).toBeInTheDocument();
+        expect(screen.getByText(/Couldn't prepare your voice/i)).toBeInTheDocument();
       });
-      expect(screen.getByRole("button", { name: /retry/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /try again/i })).toBeInTheDocument();
       // Raw error must NOT be visible to the user.
       expect(screen.queryByText(/bad format/i)).not.toBeInTheDocument();
     });

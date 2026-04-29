@@ -6,6 +6,8 @@ import { t as resolvePhrase } from "../../data/phraseRegistry";
 import { useSettingsStore } from "../../stores/settingsStore";
 import { Btn } from "../shared/Btn";
 import { useMicrophone } from "../../hooks/useMicrophone";
+import { useModels } from "../../hooks/useModels";
+import { getModelManager } from "../../models/modelManager";
 import { BottomSheet } from "../shared/BottomSheet";
 
 interface ListenPanelProps {
@@ -44,6 +46,34 @@ export function ListenPanel({
     stopCapture,
     clearTranscript,
   } = useMicrophone();
+
+  const { isWarm, getError, humanCountdown, isAlmostReady } = useModels();
+  const sttWarm = isWarm("stt");
+  const sttError = getError("stt");
+  const countdown = humanCountdown("stt");
+  const sttAlmost = isAlmostReady("stt");
+
+  // Phrase priority: error → almost-ready → with-countdown → not-ready
+  // (no countdown estimate yet) → ready listening/start aria. Splicing
+  // a fallback string like "One moment…" into the {countdown} template
+  // produced awkward sentences ("Getting ready to listen — One moment…"),
+  // so each branch picks a phrase that reads naturally on its own.
+  const micLabel = sttError
+    ? resolvePhrase("ui.readiness.listen.failed_message", caregiverLang)
+    : !sttWarm
+      ? sttAlmost
+        ? resolvePhrase("ui.readiness.listen.almost", caregiverLang)
+        : countdown
+          ? resolvePhrase(
+              "ui.readiness.listen.with_countdown",
+              caregiverLang,
+            ).replace("{countdown}", countdown)
+          : resolvePhrase("ui.readiness.listen.not_ready", caregiverLang)
+      : listening
+        ? resolvePhrase("ui.provider.listen.stop_aria", caregiverLang)
+        : resolvePhrase("ui.provider.listen.start_aria", caregiverLang);
+
+  const micDisabled = !sttWarm || !!sttError;
 
   const [editedTranscript, setEditedTranscript] = useState<string | null>(null);
   const transcript = editedTranscript !== null ? editedTranscript : sttTranscript;
@@ -95,22 +125,35 @@ export function ListenPanel({
     marginBottom: 18,
   };
 
+  // Visual states:
+  //   listening → blue ring, blue tint background, blue mic glyph
+  //   ready (warm) → default border, regular background, muted glyph
+  //   disabled (not warm or errored) → dashed border, faded background,
+  //     ~40% opacity glyph. The dashed border is the strongest "not
+  //     interactive yet" cue — solid borders read as primary affordance.
   const micBtnStyle: JSX.CSSProperties = {
     width: 80,
     height: 80,
     borderRadius: "50%",
-    border: listening ? `3px solid ${blue}` : `2px solid ${t.border}`,
+    border: listening
+      ? `3px solid ${blue}`
+      : micDisabled
+        ? `2px dashed ${t.border}`
+        : `2px solid ${t.border}`,
     background: listening
       ? theme === "dark"
         ? "rgba(96,165,250,0.15)"
         : "rgba(37,99,235,0.08)"
-      : t.activeBg,
+      : micDisabled
+        ? "transparent"
+        : t.activeBg,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     fontSize: 32,
     color: listening ? blue : t.muted,
-    transition: "border 0.2s, background 0.2s, color 0.2s",
+    opacity: micDisabled ? 0.45 : 1,
+    transition: "border 0.2s, background 0.2s, color 0.2s, opacity 0.2s",
   };
 
   // Audio meter — visible only while listening. Width-matched to the textarea
@@ -220,6 +263,7 @@ export function ListenPanel({
         >
           <Btn
             onClick={() => {
+              if (micDisabled) return;
               if (listening) {
                 stopCapture();
               } else {
@@ -227,8 +271,9 @@ export function ListenPanel({
                 startCapture();
               }
             }}
+            disabled={micDisabled}
             style={micBtnStyle}
-            aria-label={listening ? resolvePhrase("ui.provider.listen.stop_aria", caregiverLang) : resolvePhrase("ui.provider.listen.start_aria", caregiverLang)}
+            aria-label={micLabel}
           >
             🎙
           </Btn>
@@ -258,11 +303,15 @@ export function ListenPanel({
             }}
           >
             {listening && <span style={recDotStyle} aria-hidden="true" />}
+            {/* Visible label under the mic mirrors the button's aria-label
+                so the "Tap to start listening" affordance never appears
+                while the button is actually disabled. micLabel covers the
+                error / not-ready / almost / countdown / ready states. */}
             {listening
               ? resolvePhrase("ui.provider.listen.listening", caregiverLang)
               : transcribing
                 ? resolvePhrase("ui.provider.listen.transcribing", caregiverLang)
-                : resolvePhrase("ui.provider.listen.start_aria", caregiverLang)}
+                : micLabel}
           </div>
           {micError && (
             <div
@@ -277,6 +326,26 @@ export function ListenPanel({
             >
               {micError}
             </div>
+          )}
+          {sttError && (
+            <Btn
+              onClick={() => {
+                getModelManager().getWorker("stt")?.postMessage({ type: "warmup" });
+              }}
+              style={{
+                marginTop: 8,
+                padding: "10px 16px",
+                borderRadius: 12,
+                background: "#DC2626",
+                color: "#FFFFFF",
+                border: "none",
+                fontSize: 15,
+                fontWeight: 600,
+                minHeight: 44,
+              }}
+            >
+              {resolvePhrase("ui.readiness.listen.failed_action", caregiverLang)}
+            </Btn>
           )}
         </div>
 

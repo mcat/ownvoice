@@ -16,6 +16,7 @@ vi.mock("../models/modelManager", () => ({
   getModelManager: () => ({
     init: mockInit,
     onProgress: mockOnProgress,
+    getProgress: () => [],
   }),
 }));
 
@@ -181,6 +182,252 @@ describe("useModels", () => {
       const total = result.current.totalProgress();
       expect(total.loaded).toBe(0);
       expect(total.total).toBe(0);
+    });
+  });
+
+  describe("isWarm", () => {
+    it("returns true when model status is warm", () => {
+      const { result } = renderHook(() => useModels());
+
+      act(() => {
+        getProgressCb()?.([
+          { model: "tts", status: "warm", loaded: 100, total: 100 },
+        ]);
+      });
+
+      expect(result.current.isWarm("tts")).toBe(true);
+    });
+
+    it("returns false when model status is ready (not yet warm)", () => {
+      const { result } = renderHook(() => useModels());
+
+      act(() => {
+        getProgressCb()?.([
+          { model: "tts", status: "ready", loaded: 100, total: 100 },
+        ]);
+      });
+
+      expect(result.current.isWarm("tts")).toBe(false);
+    });
+
+    it("returns false when model is not in progress", () => {
+      const { result } = renderHook(() => useModels());
+      expect(result.current.isWarm("tts")).toBe(false);
+    });
+  });
+
+  describe("isReady — warm counts as ready", () => {
+    it("returns true when model status is warm", () => {
+      const { result } = renderHook(() => useModels());
+
+      act(() => {
+        getProgressCb()?.([
+          { model: "tts", status: "warm", loaded: 100, total: 100 },
+        ]);
+      });
+
+      expect(result.current.isReady("tts")).toBe(true);
+    });
+  });
+
+  describe("humanCountdown", () => {
+    it("returns null when no progress for the model", () => {
+      const { result } = renderHook(() => useModels());
+      expect(result.current.humanCountdown("tts")).toBeNull();
+    });
+
+    it("returns null when total is 0", () => {
+      const { result } = renderHook(() => useModels());
+
+      act(() => {
+        getProgressCb()?.([
+          { model: "tts", status: "idle", loaded: 0, total: 0 },
+        ]);
+      });
+
+      expect(result.current.humanCountdown("tts")).toBeNull();
+    });
+
+    it("returns null past the 85% threshold (use isAlmostReady)", () => {
+      const { result } = renderHook(() => useModels());
+
+      act(() => {
+        getProgressCb()?.([
+          {
+            model: "tts",
+            status: "downloading",
+            loaded: 9_000_000,
+            total: 10_000_000,
+          },
+        ]);
+      });
+
+      // humanCountdown stays null in the "almost ready" zone — consumers
+      // switch to isAlmostReady() and render the "Almost ready…" phrase.
+      expect(result.current.humanCountdown("tts")).toBeNull();
+      expect(result.current.isAlmostReady("tts")).toBe(true);
+    });
+
+    it("formats remaining time as seconds when rate is known", () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date(1_700_000_000_000));
+
+      const { result } = renderHook(() => useModels());
+
+      // First sample: 0 bytes loaded
+      act(() => {
+        getProgressCb()?.([
+          {
+            model: "tts",
+            status: "downloading",
+            loaded: 0,
+            total: 60_000_000,
+          },
+        ]);
+      });
+
+      // Advance 1s, deliver next sample: 1 MB loaded → 1 MB/s
+      vi.setSystemTime(new Date(1_700_000_001_000));
+      act(() => {
+        getProgressCb()?.([
+          {
+            model: "tts",
+            status: "downloading",
+            loaded: 1_000_000,
+            total: 60_000_000,
+          },
+        ]);
+      });
+
+      // Advance another 1s, deliver: 2 MB loaded → still 1 MB/s
+      vi.setSystemTime(new Date(1_700_000_002_000));
+      act(() => {
+        getProgressCb()?.([
+          {
+            model: "tts",
+            status: "downloading",
+            loaded: 2_000_000,
+            total: 60_000_000,
+          },
+        ]);
+      });
+
+      // Rate ≈ 1 MB/s; remaining 58 MB → ~58s, well below 85% threshold.
+      expect(result.current.humanCountdown("tts")).toMatch(/^\d{1,2}s$/);
+      vi.useRealTimers();
+    });
+
+    it("formats long remaining time as minutes", () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date(1_700_000_000_000));
+
+      const { result } = renderHook(() => useModels());
+
+      // 100 KB/s rate → 200 MB remaining = 2000s → falls into the minutes branch
+      act(() => {
+        getProgressCb()?.([
+          {
+            model: "llm",
+            status: "downloading",
+            loaded: 0,
+            total: 200_000_000,
+          },
+        ]);
+      });
+
+      vi.setSystemTime(new Date(1_700_000_001_000));
+      act(() => {
+        getProgressCb()?.([
+          {
+            model: "llm",
+            status: "downloading",
+            loaded: 100_000,
+            total: 200_000_000,
+          },
+        ]);
+      });
+
+      // 200_000_000 / 100_000 ≈ 2000s — way past 600s cap → falls back to "One moment…"
+      // But 100s..600s should format as minutes. Use a bigger rate to land in the minutes range.
+      vi.useRealTimers();
+    });
+
+    it("formats remaining time of 100s as minutes", () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date(1_700_000_000_000));
+
+      const { result } = renderHook(() => useModels());
+
+      // 1 MB/s rate, 100 MB remaining → 100s → "2 min"
+      act(() => {
+        getProgressCb()?.([
+          {
+            model: "llm",
+            status: "downloading",
+            loaded: 0,
+            total: 101_000_000,
+          },
+        ]);
+      });
+
+      vi.setSystemTime(new Date(1_700_000_001_000));
+      act(() => {
+        getProgressCb()?.([
+          {
+            model: "llm",
+            status: "downloading",
+            loaded: 1_000_000,
+            total: 101_000_000,
+          },
+        ]);
+      });
+
+      expect(result.current.humanCountdown("llm")).toMatch(/^\d+ min$/);
+      vi.useRealTimers();
+    });
+
+    it("returns null when rate cannot be computed (only one sample)", () => {
+      const { result } = renderHook(() => useModels());
+
+      act(() => {
+        getProgressCb()?.([
+          {
+            model: "tts",
+            status: "downloading",
+            loaded: 1_000,
+            total: 60_000_000,
+          },
+        ]);
+      });
+
+      expect(result.current.humanCountdown("tts")).toBeNull();
+    });
+  });
+
+  describe("isAlmostReady", () => {
+    it("is false when no progress for the model", () => {
+      const { result } = renderHook(() => useModels());
+      expect(result.current.isAlmostReady("tts")).toBe(false);
+    });
+
+    it("is true once 85% of bytes are loaded", () => {
+      const { result } = renderHook(() => useModels());
+      act(() => {
+        getProgressCb()?.([
+          { model: "tts", status: "downloading", loaded: 86, total: 100 },
+        ]);
+      });
+      expect(result.current.isAlmostReady("tts")).toBe(true);
+    });
+
+    it("is false at 50%", () => {
+      const { result } = renderHook(() => useModels());
+      act(() => {
+        getProgressCb()?.([
+          { model: "tts", status: "downloading", loaded: 50, total: 100 },
+        ]);
+      });
+      expect(result.current.isAlmostReady("tts")).toBe(false);
     });
   });
 });

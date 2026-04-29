@@ -6,6 +6,8 @@ const mockSetWorker = vi.fn();
 const mockSetReady = vi.fn();
 const mockSetError = vi.fn();
 const mockIsReady = vi.fn(() => false);
+const mockMarkWarm = vi.fn();
+const mockIsWarm = vi.fn(() => false);
 const mockVerifyOPFSCache = vi.fn(() =>
   Promise.resolve({ ok: true, files: [] }),
 );
@@ -17,6 +19,8 @@ vi.mock("./modelManager", () => ({
     setReady: mockSetReady,
     setError: mockSetError,
     isReady: mockIsReady,
+    markWarm: mockMarkWarm,
+    isWarm: mockIsWarm,
     verifyOPFSCache: mockVerifyOPFSCache,
   }),
 }));
@@ -293,5 +297,104 @@ describe("verifyAllOnBoot", () => {
     await verifyAllOnBoot();
     const v = useOfflineStore.getState().verified;
     expect(v.tts).toBe("needs-retry");
+  });
+});
+
+describe("bootModels — eager warmup", () => {
+  it("posts a warmup message to TTS after receiving ready", async () => {
+    const { bootTTSWasm } = await import("./bootModels");
+    await bootTTSWasm();
+
+    // First created worker is the TTS worker
+    const ttsWorker = createdWorkers[0];
+    ttsWorker.onmessage?.({ data: { type: "ready" } });
+
+    const warmupCall = ttsWorker.postMessage.mock.calls.find(
+      (call: unknown[]) =>
+        typeof call[0] === "object" &&
+        call[0] !== null &&
+        (call[0] as { type?: string }).type === "warmup",
+    );
+    expect(warmupCall).toBeTruthy();
+  });
+
+  it("calls markWarm on TTS warm message", async () => {
+    const { bootTTSWasm } = await import("./bootModels");
+    await bootTTSWasm();
+
+    const ttsWorker = createdWorkers[0];
+    ttsWorker.onmessage?.({ data: { type: "ready" } });
+    ttsWorker.onmessage?.({ data: { type: "warm" } });
+
+    expect(mockMarkWarm).toHaveBeenCalledWith("tts");
+  });
+
+  it("posts a warmup message to STT (WASM path) after receiving ready", async () => {
+    const { bootSTTAndLLM } = await import("./bootModels");
+    await bootSTTAndLLM();
+
+    // bootSTTAndLLM creates LLM (index 0) then STT (index 1, WASM path since no navigator.gpu)
+    const sttWorker = createdWorkers[1];
+    sttWorker.onmessage?.({ data: { type: "ready" } });
+
+    const warmupCall = sttWorker.postMessage.mock.calls.find(
+      (call: unknown[]) =>
+        typeof call[0] === "object" &&
+        call[0] !== null &&
+        (call[0] as { type?: string }).type === "warmup",
+    );
+    expect(warmupCall).toBeTruthy();
+  });
+
+  it("calls markWarm on STT warm message", async () => {
+    const { bootSTTAndLLM } = await import("./bootModels");
+    await bootSTTAndLLM();
+
+    const sttWorker = createdWorkers[1];
+    sttWorker.onmessage?.({ data: { type: "ready" } });
+    sttWorker.onmessage?.({ data: { type: "warm" } });
+
+    expect(mockMarkWarm).toHaveBeenCalledWith("stt");
+  });
+
+  it("calls setError on TTS warmup-phase error after ready", async () => {
+    const { bootTTSWasm } = await import("./bootModels");
+    await bootTTSWasm();
+
+    const ttsWorker = createdWorkers[0];
+    ttsWorker.onmessage?.({ data: { type: "ready" } });
+    mockIsReady.mockReturnValueOnce(true);
+    ttsWorker.onmessage?.({
+      data: { type: "error", message: "wasm broken", phase: "warmup" },
+    });
+
+    expect(mockSetError).toHaveBeenCalledWith("tts", "wasm broken");
+  });
+
+  it("does NOT call setError on TTS synthesis-phase error after ready", async () => {
+    const { bootTTSWasm } = await import("./bootModels");
+    await bootTTSWasm();
+
+    const ttsWorker = createdWorkers[0];
+    ttsWorker.onmessage?.({ data: { type: "ready" } });
+    mockSetError.mockClear();
+    ttsWorker.onmessage?.({
+      data: { type: "error", message: "synth blip", phase: "synthesis" },
+    });
+
+    expect(mockSetError).not.toHaveBeenCalled();
+  });
+
+  it("calls setError on STT WASM warmup-phase error after ready", async () => {
+    const { bootSTTAndLLM } = await import("./bootModels");
+    await bootSTTAndLLM();
+
+    const sttWorker = createdWorkers[1];
+    sttWorker.onmessage?.({ data: { type: "ready" } });
+    sttWorker.onmessage?.({
+      data: { type: "error", message: "stt wasm bad", phase: "warmup" },
+    });
+
+    expect(mockSetError).toHaveBeenCalledWith("stt", "stt wasm bad");
   });
 });

@@ -20,8 +20,30 @@ vi.mock("../../hooks/useMicrophone", () => ({
   useMicrophone: vi.fn(),
 }));
 
+vi.mock("../../hooks/useModels", () => ({
+  useModels: vi.fn(),
+}));
+
 import { useMicrophone } from "../../hooks/useMicrophone";
+import { useModels } from "../../hooks/useModels";
 const mockUseMicrophone = vi.mocked(useMicrophone);
+const mockUseModels = vi.mocked(useModels);
+
+const makeModelsState = (
+  overrides: Partial<ReturnType<typeof useModels>> = {},
+): ReturnType<typeof useModels> => ({
+  initialized: true,
+  progress: [],
+  isReady: vi.fn(() => true),
+  isWarm: vi.fn(() => true),
+  isLoading: vi.fn(() => false),
+  getError: vi.fn(() => undefined),
+  secondsLeft: vi.fn(() => undefined),
+  humanCountdown: vi.fn(() => null),
+  isAlmostReady: vi.fn(() => false),
+  totalProgress: vi.fn(() => ({ loaded: 0, total: 0 })),
+  ...overrides,
+});
 
 const providers: Provider[] = [
   { name: "Dr. Smith", hasVoice: false, emoji: "👩‍⚕️" },
@@ -42,6 +64,7 @@ describe("ListenPanel", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseMicrophone.mockReturnValue(makeMicState());
+    mockUseModels.mockReturnValue(makeModelsState());
   });
 
   it("renders the Listen title", () => {
@@ -233,5 +256,56 @@ describe("ListenPanel", () => {
     expect(
       screen.queryByRole("button", { name: "Select Dr. Solo" }),
     ).not.toBeInTheDocument();
+  });
+});
+
+describe("ListenPanel — STT readiness gating", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockUseMicrophone.mockReturnValue(makeMicState());
+    mockUseModels.mockReturnValue(makeModelsState());
+  });
+
+  it("disables the mic button while STT is not warm", () => {
+    mockUseModels.mockReturnValue(
+      makeModelsState({
+        isWarm: vi.fn(() => false),
+        getError: vi.fn(() => undefined),
+        humanCountdown: vi.fn(() => null),
+        isAlmostReady: vi.fn(() => false),
+      }),
+    );
+    render(<ListenPanel {...baseProps} />);
+    const micBtn = screen.getByRole("button", {
+      name: /Getting ready to listen/i,
+    });
+    expect(micBtn).toBeDisabled();
+  });
+
+  it("enables the mic button when STT is warm", () => {
+    mockUseModels.mockReturnValue(
+      makeModelsState({
+        isWarm: vi.fn(() => true),
+        getError: vi.fn(() => undefined),
+      }),
+    );
+    render(<ListenPanel {...baseProps} />);
+    const micBtn = screen.getByRole("button", {
+      name: /Tap to start listening/i,
+    });
+    expect(micBtn).not.toBeDisabled();
+  });
+
+  it("shows a Try again button on failure", () => {
+    mockUseModels.mockReturnValue(
+      makeModelsState({
+        isWarm: vi.fn(() => false),
+        getError: vi.fn(() => "boom"),
+      }),
+    );
+    render(<ListenPanel {...baseProps} />);
+    expect(
+      screen.getByRole("button", { name: /Try again/i }),
+    ).toBeInTheDocument();
   });
 });

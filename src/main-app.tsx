@@ -3,6 +3,7 @@ import { App } from "./App";
 import "./app.css";
 import { useUIStore } from "./stores/uiStore";
 import { themes, type ThemeName } from "./theme/tokens";
+import { startVoiceProcessor } from "./models/voiceProcessor";
 
 // Subscribe to theme changes outside of Preact to guarantee DOM updates.
 // Uses requestAnimationFrame to run AFTER Preact's re-render commits.
@@ -27,5 +28,7 @@ useUIStore.subscribe((state, prev) => {
     });
   }
 });
+
+startVoiceProcessor();
 
 render(<App />, document.getElementById("root")!);
