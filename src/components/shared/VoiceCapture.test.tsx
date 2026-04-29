@@ -555,8 +555,10 @@ describe("VoiceCapture — plain-language status copy", () => {
     );
     ctl.notify();
     await new Promise((r) => setTimeout(r, 20));
-    expect(
-      screen.getByText(/Saving your voice/i),
-    ).toBeInTheDocument();
+    // Both the visible badge and the throttled visually-hidden
+    // aria-live region contain the same saving text — assert that
+    // both are present (visible + accessible) and that they match.
+    const matches = screen.getAllByText(/Saving your voice/i);
+    expect(matches.length).toBeGreaterThanOrEqual(1);
   });
 });

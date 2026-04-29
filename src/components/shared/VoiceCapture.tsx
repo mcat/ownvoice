@@ -6,6 +6,7 @@ import { getModelManager } from "../../models/modelManager";
 import { getRecordingScript } from "../../data/recordingScripts";
 import { preprocessEnrollment } from "../../models/enrollmentAudio";
 import { useModels } from "../../hooks/useModels";
+import { useThrottledText } from "../../hooks/useThrottledText";
 import { friendlyVoiceError } from "../../data/friendlyError";
 
 /**
@@ -267,6 +268,23 @@ export function VoiceCapture({
   const ttsWarm = isWarm("tts");
   const countdown = humanCountdown("tts");
   const ttsAlmost = isAlmostReady("tts");
+
+  // Compute the "saving" status text + a category key for throttling.
+  // The badge re-renders on every progress event (countdown ticks) but
+  // we only want screen-reader announcements at most once every 5s,
+  // unless the category changes (e.g. saving → almost-ready).
+  const savingCategory =
+    ttsWarm || ttsAlmost ? "almost" : countdown ? "saving-cd" : "saving";
+  const savingText =
+    ttsWarm || ttsAlmost
+      ? resolvePhrase("ui.readiness.voice_capture.saving_almost", caregiverLang)
+      : countdown
+        ? resolvePhrase(
+            "ui.readiness.voice_capture.saving_with_countdown",
+            caregiverLang,
+          ).replace("{countdown}", countdown)
+        : resolvePhrase("ui.readiness.voice_capture.saving", caregiverLang);
+  const announcedSavingText = useThrottledText(savingText, savingCategory);
 
   // When the TTS model becomes warm, retry embedding extraction if we have
   // audio but no embedding.
@@ -687,28 +705,32 @@ export function VoiceCapture({
       );
     }
     if (cloneStatus === "model-loading") {
-      // Phrase priority:
-      //   warm or past 85% \u2192 "Almost ready\u2026"
-      //   otherwise + numeric countdown \u2192 "Saving your voice \u2014 45s remaining"
-      //   otherwise (no estimate yet) \u2192 "Saving your voice\u2026"
-      // The plain "saving" branch keeps the message readable while
-      // rate samples are still warming up.
-      const text =
-        ttsWarm || ttsAlmost
-          ? resolvePhrase("ui.readiness.voice_capture.saving_almost", caregiverLang)
-          : countdown
-            ? resolvePhrase(
-                "ui.readiness.voice_capture.saving_with_countdown",
-                caregiverLang,
-              ).replace("{countdown}", countdown)
-            : resolvePhrase("ui.readiness.voice_capture.saving", caregiverLang);
+      // Visible text updates on every render (countdown ticking). The
+      // aria-live announcement is throttled separately via
+      // announcedSavingText so screen readers aren't spammed with
+      // every-second updates \u2014 see useThrottledText.
       return (
         <span
-          role="status"
-          aria-live="polite"
           style={{ ...base, color: "#92400E", background: "#FEF3C7" }}
         >
-          <span aria-hidden="true">{"\u23F3"}</span> {text}
+          <span aria-hidden="true">{"\u23F3"}</span> {savingText}
+          <span
+            role="status"
+            aria-live="polite"
+            style={{
+              position: "absolute",
+              width: 1,
+              height: 1,
+              padding: 0,
+              margin: -1,
+              overflow: "hidden",
+              clip: "rect(0,0,0,0)",
+              whiteSpace: "nowrap",
+              border: 0,
+            }}
+          >
+            {announcedSavingText}
+          </span>
         </span>
       );
     }
