@@ -326,18 +326,30 @@ function logMelSpectrogram(audio: Float32Array): Float32Array {
 
   const output = new Float32Array(N_MELS * MEL_FRAMES);
 
+  // Whisper's reference (openai/whisper):
+  //   log_spec = clamp(mel_spec, min=1e-10).log10()
+  //   log_spec = max(log_spec, log_spec.max() - 8.0)
+  //   log_spec = (log_spec + 4.0) / 4.0   ≡  log_spec/4 + 1
+  //
+  // We were using natural log here. Math.log values are ~2.303× larger
+  // than Math.log10 for the same input, so the encoder was receiving
+  // features at the wrong magnitude — and the (x+4)/4 rescale below
+  // is calibrated for log10 input. Result: every transcription saw a
+  // distribution-shifted feature space the encoder was never trained
+  // on. Match the spec by switching to log10.
   for (let m = 0; m < N_MELS; m++) {
     for (let t = 0; t < MEL_FRAMES; t++) {
       let sum = 0;
       for (let f = 0; f < FREQ_BINS; f++) {
         sum += filters[m][f] * powerSpec[f][t];
       }
-      // Log-mel: log(max(sum, 1e-10))
-      output[m * MEL_FRAMES + t] = Math.log(Math.max(sum, 1e-10));
+      output[m * MEL_FRAMES + t] = Math.log10(Math.max(sum, 1e-10));
     }
   }
 
-  // Normalize: scale to match Whisper's expected range
+  // Cap at max - 8.0 (≈ 80 dB dynamic range), then rescale into
+  // Whisper's expected feature range. `/ 4 + 1` is algebraically
+  // identical to `(x + 4) / 4` from the reference.
   let maxVal = -Infinity;
   for (let i = 0; i < output.length; i++) {
     if (output[i] > maxVal) maxVal = output[i];
