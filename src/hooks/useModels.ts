@@ -67,19 +67,28 @@ export function useModels() {
     return (p.total - p.loaded) / rate;
   };
 
-  /** "12s" / "Almost ready…" / "1 min" / "One moment…" */
-  const humanCountdown = (id: ModelId): string => {
+  /** True when this model is past the 85% threshold or its rate-based
+   *  estimate is under 5 seconds. Consumers render an "Almost ready…"
+   *  phrase instead of a numeric countdown. */
+  const isAlmostReady = (id: ModelId): boolean => {
     const p = progress.find((m) => m.model === id);
-    if (!p) return "One moment…";
-    if (p.total > 0 && p.loaded / p.total >= ALMOST_READY_THRESHOLD) {
-      return "Almost ready…";
-    }
+    if (!p) return false;
+    if (p.total > 0 && p.loaded / p.total >= ALMOST_READY_THRESHOLD) return true;
     const s = secondsLeft(id);
-    if (s === undefined) return "One moment…";
-    if (s <= 5) return "Almost ready…";
+    return s !== undefined && s <= 5;
+  };
+
+  /** A short duration string ("12s" / "1 min") when an estimate is
+   *  available, or `null` when not. Consumers use the null case to
+   *  switch to a different phrase ("Getting ready…") rather than
+   *  splicing a complete sentence into a "{countdown}" template. */
+  const humanCountdown = (id: ModelId): string | null => {
+    const s = secondsLeft(id);
+    if (s === undefined) return null;
+    if (s <= 5) return null; // covered by isAlmostReady
     if (s <= 90) return `${Math.round(s)}s`;
     if (s <= 600) return `${Math.round(s / 60)} min`;
-    return "One moment…";
+    return null;
   };
 
   const totalProgress = (): { loaded: number; total: number } =>
@@ -100,6 +109,7 @@ export function useModels() {
     getError,
     secondsLeft,
     humanCountdown,
+    isAlmostReady,
     totalProgress,
   };
 }

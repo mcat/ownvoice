@@ -47,18 +47,28 @@ export function ListenPanel({
     clearTranscript,
   } = useMicrophone();
 
-  const { isWarm, getError, humanCountdown } = useModels();
+  const { isWarm, getError, humanCountdown, isAlmostReady } = useModels();
   const sttWarm = isWarm("stt");
   const sttError = getError("stt");
   const countdown = humanCountdown("stt");
+  const sttAlmost = isAlmostReady("stt");
 
+  // Phrase priority: error → almost-ready → with-countdown → not-ready
+  // (no countdown estimate yet) → ready listening/start aria. Splicing
+  // a fallback string like "One moment…" into the {countdown} template
+  // produced awkward sentences ("Getting ready to listen — One moment…"),
+  // so each branch picks a phrase that reads naturally on its own.
   const micLabel = sttError
     ? resolvePhrase("ui.readiness.listen.failed_message", caregiverLang)
     : !sttWarm
-      ? resolvePhrase(
-          "ui.readiness.listen.with_countdown",
-          caregiverLang,
-        ).replace("{countdown}", countdown)
+      ? sttAlmost
+        ? resolvePhrase("ui.readiness.listen.almost", caregiverLang)
+        : countdown
+          ? resolvePhrase(
+              "ui.readiness.listen.with_countdown",
+              caregiverLang,
+            ).replace("{countdown}", countdown)
+          : resolvePhrase("ui.readiness.listen.not_ready", caregiverLang)
       : listening
         ? resolvePhrase("ui.provider.listen.stop_aria", caregiverLang)
         : resolvePhrase("ui.provider.listen.start_aria", caregiverLang);

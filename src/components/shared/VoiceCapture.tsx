@@ -282,9 +282,10 @@ export function VoiceCapture({
   // Readiness signals — used by the pre-capture hint and the deferred-save
   // status copy. `isWarm("tts")` flips true when the speech encoder has run
   // its warmup pass; until then, captures are saved but cloning is deferred.
-  const { isWarm, humanCountdown } = useModels();
+  const { isWarm, humanCountdown, isAlmostReady } = useModels();
   const ttsWarm = isWarm("tts");
   const countdown = humanCountdown("tts");
+  const ttsAlmost = isAlmostReady("tts");
 
   // When the TTS model becomes warm, retry embedding extraction if we have
   // audio but no embedding.
@@ -705,12 +706,21 @@ export function VoiceCapture({
       );
     }
     if (cloneStatus === "model-loading") {
-      const text = ttsWarm
-        ? resolvePhrase("ui.readiness.voice_capture.saving_almost", caregiverLang)
-        : resolvePhrase(
-            "ui.readiness.voice_capture.saving",
-            caregiverLang,
-          ).replace("{countdown}", countdown);
+      // Phrase priority:
+      //   warm or past 85% \u2192 "Almost ready\u2026"
+      //   otherwise + numeric countdown \u2192 "Saving your voice \u2014 45s remaining"
+      //   otherwise (no estimate yet) \u2192 "Saving your voice\u2026"
+      // The plain "saving" branch keeps the message readable while
+      // rate samples are still warming up.
+      const text =
+        ttsWarm || ttsAlmost
+          ? resolvePhrase("ui.readiness.voice_capture.saving_almost", caregiverLang)
+          : countdown
+            ? resolvePhrase(
+                "ui.readiness.voice_capture.saving_with_countdown",
+                caregiverLang,
+              ).replace("{countdown}", countdown)
+            : resolvePhrase("ui.readiness.voice_capture.saving", caregiverLang);
       return (
         <span
           role="status"

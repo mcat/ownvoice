@@ -9,7 +9,7 @@ interface Props {
 }
 
 export function PatientVoiceStatus({ patient }: Props): JSX.Element | null {
-  const { isWarm, getError, humanCountdown } = useModels();
+  const { isWarm, getError, isAlmostReady } = useModels();
 
   // Only show when the patient has opted in to a voice clone but the
   // clone hasn't been computed yet.
@@ -18,6 +18,7 @@ export function PatientVoiceStatus({ patient }: Props): JSX.Element | null {
 
   const ttsWarm = isWarm("tts");
   const ttsError = getError("tts");
+  const ttsAlmost = isAlmostReady("tts");
   const lang = patient.patientLang;
 
   if (ttsError) {
@@ -56,13 +57,14 @@ export function PatientVoiceStatus({ patient }: Props): JSX.Element | null {
     );
   }
 
-  const countdown = humanCountdown("tts");
-  const message = ttsWarm
-    ? resolvePhrase("ui.patient.header.voice_status.almost", lang)
-    : resolvePhrase(
-        "ui.patient.header.voice_status.not_ready",
-        lang,
-      ).replace("{countdown}", countdown);
+  // Patient-facing status: short and steady. The patient does not need
+  // a numeric countdown — that's clinician detail. Two states only:
+  // "Almost ready — using a temporary voice" near the end, and
+  // "Using a temporary voice" otherwise.
+  const message =
+    ttsWarm || ttsAlmost
+      ? resolvePhrase("ui.patient.header.voice_status.almost", lang)
+      : resolvePhrase("ui.patient.header.voice_status.not_ready", lang);
 
   return (
     <span
@@ -80,19 +82,19 @@ export function PatientVoiceStatus({ patient }: Props): JSX.Element | null {
 
 function pillStyle(variant: "info" | "error"): JSX.CSSProperties {
   return {
+    // No nowrap / no truncation — copy is short enough to fit naturally
+    // and the parent flex container already wraps the pill onto a second
+    // line on narrow widths if needed.
     display: "inline-flex",
     alignItems: "center",
     fontSize: 13,
     fontWeight: 500,
     padding: "6px 12px",
-    borderRadius: 999,
+    borderRadius: 16,
     color: variant === "error" ? "#991B1B" : "#1F2937",
     background: variant === "error" ? "#FEE2E2" : "#F3F4F6",
     minHeight: 32,
-    maxWidth: 320,
-    whiteSpace: "nowrap",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
+    lineHeight: 1.3,
   };
 }
 

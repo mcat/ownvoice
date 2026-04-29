@@ -39,7 +39,8 @@ const makeModelsState = (
   isLoading: vi.fn(() => false),
   getError: vi.fn(() => undefined),
   secondsLeft: vi.fn(() => undefined),
-  humanCountdown: vi.fn(() => "Almost ready…"),
+  humanCountdown: vi.fn(() => null),
+  isAlmostReady: vi.fn(() => false),
   totalProgress: vi.fn(() => ({ loaded: 0, total: 0 })),
   ...overrides,
 });
@@ -270,7 +271,8 @@ describe("ListenPanel — STT readiness gating", () => {
       makeModelsState({
         isWarm: vi.fn(() => false),
         getError: vi.fn(() => undefined),
-        humanCountdown: vi.fn(() => "Almost ready…"),
+        humanCountdown: vi.fn(() => null),
+        isAlmostReady: vi.fn(() => false),
       }),
     );
     render(<ListenPanel {...baseProps} />);

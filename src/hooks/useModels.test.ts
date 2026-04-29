@@ -230,12 +230,12 @@ describe("useModels", () => {
   });
 
   describe("humanCountdown", () => {
-    it("returns 'One moment…' when no progress for the model", () => {
+    it("returns null when no progress for the model", () => {
       const { result } = renderHook(() => useModels());
-      expect(result.current.humanCountdown("tts")).toBe("One moment…");
+      expect(result.current.humanCountdown("tts")).toBeNull();
     });
 
-    it("returns 'One moment…' when total is 0", () => {
+    it("returns null when total is 0", () => {
       const { result } = renderHook(() => useModels());
 
       act(() => {
@@ -244,10 +244,10 @@ describe("useModels", () => {
         ]);
       });
 
-      expect(result.current.humanCountdown("tts")).toBe("One moment…");
+      expect(result.current.humanCountdown("tts")).toBeNull();
     });
 
-    it("returns 'Almost ready…' once 85% is reached", () => {
+    it("returns null past the 85% threshold (use isAlmostReady)", () => {
       const { result } = renderHook(() => useModels());
 
       act(() => {
@@ -261,7 +261,10 @@ describe("useModels", () => {
         ]);
       });
 
-      expect(result.current.humanCountdown("tts")).toBe("Almost ready…");
+      // humanCountdown stays null in the "almost ready" zone — consumers
+      // switch to isAlmostReady() and render the "Almost ready…" phrase.
+      expect(result.current.humanCountdown("tts")).toBeNull();
+      expect(result.current.isAlmostReady("tts")).toBe(true);
     });
 
     it("formats remaining time as seconds when rate is known", () => {
@@ -382,7 +385,7 @@ describe("useModels", () => {
       vi.useRealTimers();
     });
 
-    it("returns 'One moment…' when rate cannot be computed (only one sample)", () => {
+    it("returns null when rate cannot be computed (only one sample)", () => {
       const { result } = renderHook(() => useModels());
 
       act(() => {
@@ -396,7 +399,34 @@ describe("useModels", () => {
         ]);
       });
 
-      expect(result.current.humanCountdown("tts")).toBe("One moment…");
+      expect(result.current.humanCountdown("tts")).toBeNull();
+    });
+  });
+
+  describe("isAlmostReady", () => {
+    it("is false when no progress for the model", () => {
+      const { result } = renderHook(() => useModels());
+      expect(result.current.isAlmostReady("tts")).toBe(false);
+    });
+
+    it("is true once 85% of bytes are loaded", () => {
+      const { result } = renderHook(() => useModels());
+      act(() => {
+        getProgressCb()?.([
+          { model: "tts", status: "downloading", loaded: 86, total: 100 },
+        ]);
+      });
+      expect(result.current.isAlmostReady("tts")).toBe(true);
+    });
+
+    it("is false at 50%", () => {
+      const { result } = renderHook(() => useModels());
+      act(() => {
+        getProgressCb()?.([
+          { model: "tts", status: "downloading", loaded: 50, total: 100 },
+        ]);
+      });
+      expect(result.current.isAlmostReady("tts")).toBe(false);
     });
   });
 });

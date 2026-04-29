@@ -10,7 +10,8 @@ const mockUseModels = {
   isReady: vi.fn().mockReturnValue(false),
   isLoading: vi.fn().mockReturnValue(false),
   getError: vi.fn().mockReturnValue(undefined),
-  humanCountdown: vi.fn().mockReturnValue("45s"),
+  humanCountdown: vi.fn().mockReturnValue(null),
+  isAlmostReady: vi.fn().mockReturnValue(false),
   secondsLeft: vi.fn().mockReturnValue(undefined),
   progress: [],
   initialized: true,
@@ -132,7 +133,8 @@ describe("Header — PatientVoiceStatus integration", () => {
     useUIStore.getState().resetUI();
     mockUseModels.isWarm.mockReturnValue(false);
     mockUseModels.getError.mockReturnValue(undefined);
-    mockUseModels.humanCountdown.mockReturnValue("45s");
+    mockUseModels.humanCountdown.mockReturnValue(null);
+    mockUseModels.isAlmostReady.mockReturnValue(false);
   });
 
   it("renders PatientVoiceStatus next to PatientPill when active patient needs clone", () => {
@@ -157,7 +159,7 @@ describe("Header — PatientVoiceStatus integration", () => {
     );
 
     expect(
-      screen.getByText(/Using a temporary voice while yours gets ready/i),
+      screen.getByText(/Using a temporary voice/i),
     ).toBeInTheDocument();
   });
 });
