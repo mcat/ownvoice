@@ -866,6 +866,31 @@ const en = {
   "ui.provider.nav.end_staff_session": "End staff session",
   "ui.provider.nav.lock_now": "Lock",
   "ui.provider.nav.lock_now_aria": "Lock staff session now",
+
+  // ── Model readiness ───────────────────────────────────────────
+  // Verb-led, plain language. Never use "model", "encoder", "AI",
+  // "STT", "TTS", "weights", "download".
+  "ui.readiness.listen.not_ready": "Getting ready to listen",
+  "ui.readiness.listen.with_countdown": "Getting ready to listen — {countdown}",
+  "ui.readiness.listen.almost": "Almost ready…",
+  "ui.readiness.listen.ready": "Tap to listen",
+  "ui.readiness.listen.failed_message": "Couldn't get ready",
+  "ui.readiness.listen.failed_action": "Try again",
+
+  "ui.readiness.voice_capture.precapture_hint": "Voice will start as soon as it's ready",
+  "ui.readiness.voice_capture.saving": "Saving your voice — about {countdown} left",
+  "ui.readiness.voice_capture.saving_almost": "Almost ready…",
+  "ui.readiness.voice_capture.ready": "Voice ready",
+  "ui.readiness.voice_capture.failed_message": "Couldn't prepare your voice",
+  "ui.readiness.voice_capture.failed_action": "Try again",
+
+  "ui.patient.header.voice_status.not_ready":
+    "Using a temporary voice while yours gets ready — {countdown}",
+  "ui.patient.header.voice_status.almost":
+    "Almost ready — using a temporary voice",
+  "ui.patient.header.voice_status.failed_message":
+    "Couldn't prepare your voice",
+  "ui.patient.header.voice_status.failed_action": "Try again",
 } as const;
 
 export type PhraseKey = keyof typeof en;
