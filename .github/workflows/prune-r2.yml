@@ -30,7 +30,9 @@ jobs:
           ref: ${{ github.event.deployment.sha || github.sha }}
       - uses: actions/setup-node@v4
         with:
-          node-version: "24"
+          # Reads `.nvmrc` so CI, Cloudflare Pages, and local dev all
+          # agree on a single source of truth for the Node major.
+          node-version-file: ".nvmrc"
           cache: "npm"
       - run: npm ci
       - name: Prune unreferenced R2 objects
