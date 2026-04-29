@@ -1,4 +1,4 @@
-// build: 2026-04-29-fft-mel
+// build: 2026-04-29-kv-cache-respike-doc
 /**
  * WebGPU STT Worker — Whisper small via ONNX Runtime WebGPU EP.
  *
@@ -528,15 +528,30 @@ async function handleTranscribe(audio, sampleRate, language = "en") {
       console.warn(`${LOG} No language token for "${language}" in this checkpoint; falling back to English`);
     }
     const outputTokens = [TOKEN_SOT, langToken, TOKEN_TRANSCRIBE, TOKEN_NOTIMESTAMPS];
-    let kvCache = createEmptyKVCache();
-    let isFirstStep = true;
 
     console.log(`${LOG} Running decoder (autoregressive)...`);
 
-    // No KV cache: always pass the full token sequence with empty caches and
-    // use_cache_branch=false. WebGPU EP has issues reusing output tensors as
-    // inputs for subsequent runs (divide-by-zero at step 2+). This is O(n²)
-    // but for typical transcriptions (<50 tokens) the overhead is negligible.
+    // KV cache disabled on this path — re-feed full token sequence each step
+    // with empty caches and use_cache_branch=false. Decoder is therefore O(n²)
+    // in the generated-token count (n × full-prefix work). For typical
+    // <50-token transcripts the wall-clock cost is acceptable; for longer
+    // utterances this is the dominant cost.
+    //
+    // Why disabled: the natural KV-cached path (mirroring sttWorker.ts —
+    // first step full prefix + empty cache, subsequent steps last-token +
+    // populated cache + use_cache_branch=true) reliably hits "divide by
+    // zero" inside ORT-Web's WebGPU EP at step 2+ when the populated past_*
+    // tensors are fed back. Re-spiked against onnxruntime-web 1.24.3 on
+    // 2026-04-29 — issue still reproduces. The WASM EP and other backends
+    // are unaffected; sttWorker.ts (WASM fallback) DOES use KV caching.
+    //
+    // To re-test, restore the cached-loop pattern and look for the error
+    // surfacing as "[OwnVoice:Mic] STT error: divide by zero" in console.
+    // Likely root cause is GPU-tensor-reuse semantics — passing output
+    // tensors as inputs to the next run without copying invalidates the
+    // GPU buffer binding. A workaround worth exploring: deep-copy each
+    // present.* tensor into a fresh ort.Tensor before using it as
+    // past_key_values.* in the next step.
     const emptyCache = createEmptyKVCache();
 
     for (let step = 0; step < MAX_TOKENS; step++) {
