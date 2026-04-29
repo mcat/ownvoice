@@ -20,16 +20,9 @@ describe("Home page", () => {
     expect(h2s.some((t) => /try the app on your iPad/i.test(t))).toBe(true);
   });
 
-  it("links 'Try a demo' to /app/?demo=1", () => {
+  it("links 'Set up a patient' to /app/", () => {
     render(<Home />);
-    const links = screen.getAllByRole("link", { name: /try a demo/i });
-    expect(links.length).toBeGreaterThanOrEqual(1);
-    links.forEach((link) => expect(link).toHaveAttribute("href", "/app/?demo=1"));
-  });
-
-  it("links 'Set up a real session' to /app/", () => {
-    render(<Home />);
-    const links = screen.getAllByRole("link", { name: /set up a real session/i });
+    const links = screen.getAllByRole("link", { name: /set up a patient/i });
     expect(links.length).toBeGreaterThanOrEqual(1);
     links.forEach((link) => expect(link).toHaveAttribute("href", "/app/"));
   });

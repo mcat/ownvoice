@@ -54,7 +54,7 @@ export function Hero() {
         </p>
         <div style={{ display: "flex", gap: 12, marginTop: 28, flexWrap: "wrap" }}>
           <a
-            href="/app/?demo=1"
+            href="/app/"
             style={{
               background: t.color.heroText,
               color: t.color.text,
@@ -65,21 +65,7 @@ export function Hero() {
               textDecoration: "none",
             }}
           >
-            Try a demo &rarr;
-          </a>
-          <a
-            href="/app/"
-            style={{
-              border: `1px solid ${t.color.heroText}`,
-              color: t.color.heroText,
-              padding: "10px 18px",
-              borderRadius: t.radius,
-              fontSize: 14,
-              fontWeight: 600,
-              textDecoration: "none",
-            }}
-          >
-            Set up a real session
+            Set up a patient
           </a>
           <a
             href="/research"
