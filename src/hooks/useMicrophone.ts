@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "preact/hooks";
 import { getModelManager } from "../models/modelManager";
 import { useSettingsStore } from "../stores/settingsStore";
+import { friendlyVoiceError } from "../data/friendlyError";
 
 /** ScriptProcessor buffer size (samples per callback) */
 const BUFFER_SIZE = 4096;
@@ -210,7 +211,8 @@ export function useMicrophone(): MicrophoneState {
         console.log("[OwnVoice:STT:GPU]", msg.text);
       } else if (msg.type === "error") {
         console.error("[OwnVoice:Mic] STT error:", msg.message);
-        setError(msg.message);
+        const lang = useSettingsStore.getState().cfg?.caregiverLang ?? "en";
+        setError(friendlyVoiceError(msg.message, lang));
         setTranscribing(false);
         pendingFlushRef.current = Math.max(0, pendingFlushRef.current - 1);
         maybeCleanupListener();
@@ -224,13 +226,14 @@ export function useMicrophone(): MicrophoneState {
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     } catch (err) {
-      const message =
+      const raw =
         err instanceof DOMException && err.name === "NotAllowedError"
-          ? "Microphone access denied. Please allow microphone access in your browser settings."
+          ? "permission denied"
           : err instanceof Error
             ? err.message
             : "Failed to access microphone";
-      setError(message);
+      const lang = useSettingsStore.getState().cfg?.caregiverLang ?? "en";
+      setError(friendlyVoiceError(raw, lang));
       worker.removeEventListener("message", onMessage);
       workerListenerRef.current = null;
       return;

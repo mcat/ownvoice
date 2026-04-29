@@ -6,6 +6,7 @@ import { getModelManager } from "../../models/modelManager";
 import { getRecordingScript } from "../../data/recordingScripts";
 import { preprocessEnrollment } from "../../models/enrollmentAudio";
 import { useModels } from "../../hooks/useModels";
+import { friendlyVoiceError } from "../../data/friendlyError";
 
 /**
  * Voice clone processing status — shown in the UI so the user
@@ -125,31 +126,11 @@ const COUNTDOWN_TIMELINE: CountdownStep[] = [
   { kind: "go", tone: 659 },
 ];
 
-/**
- * Translate a raw error message into something a non-technical user can act on.
- * The raw message is still useful for logs and for developers reading the
- * console, but it should never be the user-facing copy — `Failed to fetch` and
- * similar native strings mean nothing at the bedside.
- */
-export function friendlyVoiceError(raw: string, locale = "en"): string {
-  const m = raw.toLowerCase();
-  if (m.includes("failed to fetch") || m.includes("networkerror") || m.includes("network")) {
-    return resolvePhrase("ui.provider.voice_capture.err_network", locale);
-  }
-  if (m.includes("timed out") || m.includes("timeout")) {
-    return resolvePhrase("ui.provider.voice_capture.err_timeout", locale);
-  }
-  if (m.includes("denied") || m.includes("permission")) {
-    return resolvePhrase("ui.provider.voice_capture.err_mic_denied", locale);
-  }
-  if (m.includes("too short")) {
-    return resolvePhrase("ui.provider.voice_capture.err_too_short", locale);
-  }
-  if (m.includes("too noisy") || m.includes("snr")) {
-    return resolvePhrase("ui.provider.voice_capture.err_too_noisy", locale);
-  }
-  return resolvePhrase("ui.provider.voice_capture.err_generic", locale);
-}
+// Re-export under the original name so existing tests / consumers
+// that import from this file keep working. The implementation lives
+// in src/data/friendlyError.ts because Listen (useMicrophone hook)
+// needs the same mapping and shouldn't import from a UI component file.
+export { friendlyVoiceError };
 
 async function decodeAudio(blob: Blob): Promise<Float32Array> {
   const ctx = new AudioContext({ sampleRate: 24000 });

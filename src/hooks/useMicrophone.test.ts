@@ -139,8 +139,10 @@ describe("useMicrophone", () => {
         await result.current.startCapture();
       });
 
+      // Friendly mapping (friendlyVoiceError) translates the raw
+      // permission-denied DOMException into plain language.
       expect(result.current.error).toBe(
-        "Microphone access denied. Please allow microphone access in your browser settings.",
+        "Microphone access is blocked. Enable it in your browser settings or upload a file instead.",
       );
       expect(result.current.isListening).toBe(false);
       // Should clean up worker listener
@@ -164,7 +166,10 @@ describe("useMicrophone", () => {
         await result.current.startCapture();
       });
 
-      expect(result.current.error).toBe("Device not found");
+      // Generic raw error → friendlyVoiceError fallback "err_generic".
+      expect(result.current.error).toBe(
+        "We couldn't finish preparing your voice. Tap Retry to try again.",
+      );
     });
 
     it("calls getUserMedia and sets isListening on success", async () => {
@@ -615,7 +620,10 @@ describe("useMicrophone", () => {
         capturedHandler!({ data: { type: "error", message: "Transcription failed" } } as MessageEvent);
       });
 
-      expect(result.current.error).toBe("Transcription failed");
+      // Worker error string → friendlyVoiceError fallback.
+      expect(result.current.error).toBe(
+        "We couldn't finish preparing your voice. Tap Retry to try again.",
+      );
     });
   });
 
@@ -718,7 +726,9 @@ describe("useMicrophone", () => {
         await result.current.startCapture();
       });
 
-      expect(result.current.error).toBe("Failed to access microphone");
+      expect(result.current.error).toBe(
+        "We couldn't finish preparing your voice. Tap Retry to try again.",
+      );
     });
   });
 });

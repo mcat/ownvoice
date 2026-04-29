@@ -125,22 +125,35 @@ export function ListenPanel({
     marginBottom: 18,
   };
 
+  // Visual states:
+  //   listening → blue ring, blue tint background, blue mic glyph
+  //   ready (warm) → default border, regular background, muted glyph
+  //   disabled (not warm or errored) → dashed border, faded background,
+  //     ~40% opacity glyph. The dashed border is the strongest "not
+  //     interactive yet" cue — solid borders read as primary affordance.
   const micBtnStyle: JSX.CSSProperties = {
     width: 80,
     height: 80,
     borderRadius: "50%",
-    border: listening ? `3px solid ${blue}` : `2px solid ${t.border}`,
+    border: listening
+      ? `3px solid ${blue}`
+      : micDisabled
+        ? `2px dashed ${t.border}`
+        : `2px solid ${t.border}`,
     background: listening
       ? theme === "dark"
         ? "rgba(96,165,250,0.15)"
         : "rgba(37,99,235,0.08)"
-      : t.activeBg,
+      : micDisabled
+        ? "transparent"
+        : t.activeBg,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     fontSize: 32,
     color: listening ? blue : t.muted,
-    transition: "border 0.2s, background 0.2s, color 0.2s",
+    opacity: micDisabled ? 0.45 : 1,
+    transition: "border 0.2s, background 0.2s, color 0.2s, opacity 0.2s",
   };
 
   // Audio meter — visible only while listening. Width-matched to the textarea
