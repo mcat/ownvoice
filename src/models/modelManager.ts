@@ -186,6 +186,17 @@ class ModelManager {
     console.log(`[OwnVoice] ${id} model ready`);
   }
 
+  /** True only when the worker can actually run inference for this model. */
+  isWarm(id: ModelId): boolean {
+    return this.models[id].status === "warm";
+  }
+
+  /** Mark a model as warm — the worker has confirmed it can run inference. */
+  markWarm(id: ModelId): void {
+    this.updateModel(id, { status: "warm" });
+    console.log(`[OwnVoice] ${id} model warm`);
+  }
+
   /** Mark a model as errored */
   setError(id: ModelId, error: string): void {
     this.updateModel(id, { status: "error", error });
