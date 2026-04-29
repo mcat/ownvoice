@@ -45,7 +45,7 @@ export function CTA() {
         }}
       >
         <a
-          href="/app/?demo=1"
+          href="/app/"
           style={{
             background: t.color.accent,
             color: "#fff",
@@ -56,22 +56,7 @@ export function CTA() {
             textDecoration: "none",
           }}
         >
-          Try a demo &rarr;
-        </a>
-        <a
-          href="/app/"
-          style={{
-            border: `1px solid ${t.color.border}`,
-            color: t.color.text,
-            padding: "10px 18px",
-            borderRadius: t.radius,
-            fontSize: 14,
-            fontWeight: 600,
-            textDecoration: "none",
-            background: t.color.bg,
-          }}
-        >
-          Set up a real session
+          Set up a patient
         </a>
       </div>
     </section>

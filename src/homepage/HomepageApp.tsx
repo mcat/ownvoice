@@ -9,7 +9,7 @@ import { Bibliography } from "./pages/Bibliography";
  *   /research      → <Research />
  *   /bibliography  → <Bibliography />
  *
- * `scope` excludes `/app/*` so the "Set up a real session" link
+ * `scope` excludes `/app/*` so the "Set up a patient" link
  * triggers a real cross-document navigation to the app entry instead
  * of being SPA-hijacked into a no-match (blank) render.
  */
