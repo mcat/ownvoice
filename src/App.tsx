@@ -33,7 +33,7 @@ import { ConfirmDialogHost } from "./components/shared/ConfirmDialog";
 import { StaffSessionTimer } from "./components/shared/StaffSessionTimer";
 import { Setup } from "./components/settings/Setup";
 import { getModelManager } from "./models/modelManager";
-import { bootModels, verifyAllOnBoot } from "./models/bootModels";
+import { bootSTTAndLLM, bootTTSWasm, verifyAllOnBoot } from "./models/bootModels";
 import { drivePrimer } from "./models/drivePrimer";
 import { resumePendingOnVisible } from "./models/offlineResume";
 import { useOfflineStore } from "./stores/offlineStore";
@@ -150,16 +150,22 @@ export function App() {
 
   // Initialize model manager and boot all on-device models (TTS, LLM, STT)
   useEffect(() => {
-    // Boot GPU TTS first (main thread, WebGPU/Metal). If it fails,
-    // the WASM worker acts as fallback. Don't run both simultaneously —
-    // concurrent ORT WASM init causes contention.
+    // STT and LLM run in their own DedicatedWorkers and don't share state
+    // with the GPU TTS load path — start them immediately so their downloads
+    // and shader compilations can run in parallel with GPU TTS init. (When
+    // these were chained behind initGPU, STT and LLM couldn't begin
+    // downloading until GPU TTS finished compiling shaders, which is
+    // minutes on first cold load and indefinite if init hung.)
+    bootSTTAndLLM();
+
+    // GPU TTS in parallel; defer the WASM TTS fallback until GPU TTS resolves
+    // either way, to avoid concurrent ORT-WASM/ORT-WebGPU init contention.
     initGPU(MODEL_URLS.tts).then(ok => {
       console.log("[OwnVoice] GPU TTS:", ok ? "ready" : "unavailable");
-      // Boot workers (LLM, STT, and TTS WASM fallback if GPU unavailable)
-      bootModels();
+      bootTTSWasm();
     }).catch(err => {
       console.warn("[OwnVoice] GPU TTS error:", err);
-      bootModels();
+      bootTTSWasm();
     });
     // Run OPFS integrity check in parallel, then auto-prime if needed.
     // The primer moves models into OPFS with resumable downloads + integrity

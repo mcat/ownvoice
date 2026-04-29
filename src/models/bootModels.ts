@@ -12,13 +12,53 @@ import { useOfflineStore } from "../stores/offlineStore";
  * Workers are created as module workers pointing to the worker source files.
  * Vite handles bundling them correctly via `new Worker(url, { type: 'module' })`.
  *
- * Call this once after the model manager is initialized and the app is ready.
+ * For most callers, prefer the split entry points so STT and LLM can begin
+ * downloading without waiting for GPU TTS shader compilation:
+ *   - {@link bootSTTAndLLM} — start immediately, in parallel with `initGPU()`.
+ *   - {@link bootTTSWasm}    — call after `initGPU()` resolves to keep the
+ *                              "no concurrent ORT WASM/GPU init" invariant.
+ *
+ * `bootModels()` is preserved for tests and any caller that wants a single
+ * "boot everything" entry point; it composes the two split paths.
  */
 export async function bootModels(): Promise<void> {
+  // Order matters for callers that introspect worker-creation sequence
+  // (notably bootModels.test.ts): TTS first, then LLM + STT inside
+  // bootSTTAndLLM. Both halves still start essentially in parallel —
+  // the order only governs which Worker constructor wins the microtask
+  // race when init() is synchronous (real production: doesn't matter).
+  await Promise.all([bootTTSWasm(), bootSTTAndLLM()]);
+}
+
+/**
+ * Boot the STT (WebGPU primary, WASM fallback) and LLM workers.
+ *
+ * Safe to call before `initGPU()` resolves: STT-GPU and LLM each run in their
+ * own DedicatedWorkers on independent ORT instances and don't share resources
+ * with the main-thread GPU TTS load path. Earlier code awaited `initGPU()`
+ * before calling `bootModels()`, which left STT and LLM unable to even start
+ * downloading until GPU TTS finished compiling shaders — minutes on first
+ * cold load, indefinite if the GPU TTS init hung.
+ */
+export async function bootSTTAndLLM(): Promise<void> {
+  const mgr = getModelManager();
+  await mgr.init();
+  bootLLM(mgr);
+  bootSTT(mgr);
+}
+
+/**
+ * Boot the TTS WASM worker. Always available alongside the GPU TTS path;
+ * falls back automatically when synthesis can't run on WebGPU.
+ *
+ * Call this *after* `initGPU()` resolves (success or failure) so that ORT
+ * WASM session creation doesn't race with the WebGPU shader compilation —
+ * the original concern documented in `App.tsx` when these were serialized.
+ */
+export async function bootTTSWasm(): Promise<void> {
   const mgr = getModelManager();
   await mgr.init();
 
-  // Boot TTS worker (Chatterbox Turbo runtime: embed_tokens + language_model + conditional_decoder)
   try {
     const ttsWorker = new Worker(
       new URL("./ttsWorker.ts", import.meta.url),
@@ -49,8 +89,10 @@ export async function bootModels(): Promise<void> {
   } catch (err) {
     console.warn("[OwnVoice] Failed to create TTS worker:", err);
   }
+}
 
-  // Boot LLM worker (LFM2.5-1.2B-Instruct)
+/** Internal: boot the LLM worker (LFM2.5-1.2B-Instruct). */
+function bootLLM(mgr: ReturnType<typeof getModelManager>): void {
   try {
     const llmWorker = new Worker(
       new URL("./llmWorker.ts", import.meta.url),
@@ -70,9 +112,6 @@ export async function bootModels(): Promise<void> {
   } catch (err) {
     console.warn("[OwnVoice] Failed to create LLM worker:", err);
   }
-
-  // Boot STT: try WebGPU first (plain JS worker in public/), fall back to WASM
-  bootSTT(mgr);
 }
 
 /**
