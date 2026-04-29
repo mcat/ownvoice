@@ -595,6 +595,7 @@ const de: LocaleStrings = {
   "ui.provider.listen.transcribing_placeholder": "Transkribiert Sprache …",
   "ui.provider.listen.type_placeholder": "Oder tippen Sie das Gesagte ein …",
   "ui.provider.listen.transcript_aria": "Transkript",
+  "ui.provider.listen.audio_level_aria": "Mikrofon-Audiopegel",
   "ui.provider.listen.add_as": "Zum Gespräch hinzufügen als {prov}",
   "ui.provider.listen.privacy_notice":
     "Auf dem Gerät · Whisper · kein Audio verlässt dieses Gerät",

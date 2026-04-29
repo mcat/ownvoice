@@ -577,6 +577,7 @@ const ar: LocaleStrings = {
   "ui.provider.listen.transcribing_placeholder": "تفريغ الكلام...",
   "ui.provider.listen.type_placeholder": "أو اكتب ما قيل...",
   "ui.provider.listen.transcript_aria": "النص المفرّغ",
+  "ui.provider.listen.audio_level_aria": "مستوى صوت الميكروفون",
   "ui.provider.listen.add_as": "إضافة إلى المحادثة بصفتك {prov}",
   "ui.provider.listen.privacy_notice":
     "على الجهاز · Whisper · لا يُرسَل أي صوت خارج هذا الجهاز",

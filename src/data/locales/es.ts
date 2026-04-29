@@ -577,6 +577,7 @@ const es: LocaleStrings = {
   "ui.provider.listen.transcribing_placeholder": "Transcribiendo habla...",
   "ui.provider.listen.type_placeholder": "O escriba lo que se dijo...",
   "ui.provider.listen.transcript_aria": "Transcripción",
+  "ui.provider.listen.audio_level_aria": "Nivel de audio del micrófono",
   "ui.provider.listen.add_as": "Agregar a la conversación como {prov}",
   "ui.provider.listen.privacy_notice":
     "En el dispositivo · Whisper · ningún audio sale de este dispositivo",

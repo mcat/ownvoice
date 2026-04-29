@@ -601,6 +601,7 @@ const vi: LocaleStrings = {
   "ui.provider.listen.type_placeholder":
     "Hoặc gõ những gì đã nói...",
   "ui.provider.listen.transcript_aria": "Bản ghi",
+  "ui.provider.listen.audio_level_aria": "Mức âm thanh của micrô",
   "ui.provider.listen.add_as":
     "Thêm vào cuộc trò chuyện với tư cách {prov}",
   "ui.provider.listen.privacy_notice":

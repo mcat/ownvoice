@@ -590,6 +590,7 @@ const da: LocaleStrings = {
   "ui.provider.listen.transcribing_placeholder": "Transskriberer tale...",
   "ui.provider.listen.type_placeholder": "Eller skriv det, der blev sagt...",
   "ui.provider.listen.transcript_aria": "Transskription",
+  "ui.provider.listen.audio_level_aria": "Mikrofonens lydniveau",
   "ui.provider.listen.add_as": "Tilføj til samtale som {prov}",
   "ui.provider.listen.privacy_notice":
     "På enheden · Whisper · ingen lyd forlader denne enhed",

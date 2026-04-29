@@ -583,6 +583,7 @@ const fr: LocaleStrings = {
   "ui.provider.listen.transcribing_placeholder": "Transcription de la parole...",
   "ui.provider.listen.type_placeholder": "Ou tapez ce qui a été dit...",
   "ui.provider.listen.transcript_aria": "Transcription",
+  "ui.provider.listen.audio_level_aria": "Niveau audio du microphone",
   "ui.provider.listen.add_as": "Ajouter à la conversation en tant que {prov}",
   "ui.provider.listen.privacy_notice":
     "Sur l'appareil · Whisper · aucun audio ne quitte cet appareil",

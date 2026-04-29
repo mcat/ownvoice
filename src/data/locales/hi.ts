@@ -577,6 +577,7 @@ const hi: LocaleStrings = {
   "ui.provider.listen.transcribing_placeholder": "बोली लिख रहे हैं...",
   "ui.provider.listen.type_placeholder": "या जो कहा गया वो टाइप करें...",
   "ui.provider.listen.transcript_aria": "प्रतिलेख",
+  "ui.provider.listen.audio_level_aria": "माइक्रोफ़ोन ऑडियो स्तर",
   "ui.provider.listen.add_as": "{prov} के रूप में बातचीत में जोड़ें",
   "ui.provider.listen.privacy_notice":
     "डिवाइस पर · Whisper · कोई ऑडियो इस डिवाइस से बाहर नहीं जाता",

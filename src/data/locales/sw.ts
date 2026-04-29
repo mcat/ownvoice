@@ -590,6 +590,7 @@ const sw: LocaleStrings = {
   "ui.provider.listen.transcribing_placeholder": "Inandika usemi...",
   "ui.provider.listen.type_placeholder": "Au andika kilichosemwa...",
   "ui.provider.listen.transcript_aria": "Maandishi",
+  "ui.provider.listen.audio_level_aria": "Kiwango cha sauti cha kipaza sauti",
   "ui.provider.listen.add_as": "Ongeza kwenye mazungumzo kama {prov}",
   "ui.provider.listen.privacy_notice":
     "Kwenye kifaa · Whisper · hakuna sauti inayotoka kwenye kifaa hiki",

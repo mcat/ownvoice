@@ -581,6 +581,7 @@ const ru: LocaleStrings = {
   "ui.provider.listen.transcribing_placeholder": "Транскрибирую речь...",
   "ui.provider.listen.type_placeholder": "Или введите сказанное...",
   "ui.provider.listen.transcript_aria": "Транскрипция",
+  "ui.provider.listen.audio_level_aria": "Уровень звука микрофона",
   "ui.provider.listen.add_as": "Добавить в разговор от лица {prov}",
   "ui.provider.listen.privacy_notice":
     "На устройстве · Whisper · звук не покидает это устройство",

@@ -587,6 +587,7 @@ const tr: LocaleStrings = {
   "ui.provider.listen.transcribing_placeholder": "Konuşma yazıya dökülüyor...",
   "ui.provider.listen.type_placeholder": "Veya söyleneni yazın...",
   "ui.provider.listen.transcript_aria": "Transkript",
+  "ui.provider.listen.audio_level_aria": "Mikrofon ses seviyesi",
   "ui.provider.listen.add_as": "{prov} olarak görüşmeye ekle",
   "ui.provider.listen.privacy_notice":
     "Cihaz üzerinde · Whisper · ses bu cihazdan çıkmaz",

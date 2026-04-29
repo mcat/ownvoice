@@ -592,6 +592,7 @@ const nl: LocaleStrings = {
     "Spraak wordt getranscribeerd...",
   "ui.provider.listen.type_placeholder": "Of typ wat er gezegd is...",
   "ui.provider.listen.transcript_aria": "Transcriptie",
+  "ui.provider.listen.audio_level_aria": "Microfoonaudioniveau",
   "ui.provider.listen.add_as": "Toevoegen aan gesprek als {prov}",
   "ui.provider.listen.privacy_notice":
     "Op het apparaat · Whisper · geen audio verlaat dit apparaat",
