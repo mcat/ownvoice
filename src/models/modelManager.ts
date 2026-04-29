@@ -51,9 +51,14 @@ class ModelManager {
     );
   }
 
-  /** Check if a specific model is ready for inference */
+  /** Check if a specific model is ready for inference. Returns true for
+   *  both `"ready"` and `"warm"` — warm is strictly stronger than ready
+   *  (the worker has loaded enough to run inference AND confirmed it on
+   *  a one-shot warmup). Consumers gating "is this model usable?" stay
+   *  correct as the model transitions ready → warm. */
   isReady(id: ModelId): boolean {
-    return this.models[id].status === "ready";
+    const status = this.models[id].status;
+    return status === "ready" || status === "warm";
   }
 
   /** Get loading progress for all models */

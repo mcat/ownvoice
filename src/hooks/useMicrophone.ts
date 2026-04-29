@@ -175,14 +175,19 @@ export function useMicrophone(): MicrophoneState {
     pendingFlushRef.current = 0;
 
     const manager = getModelManager();
-    if (!manager.isReady("stt")) {
-      setError("Speech-to-text model is not loaded yet");
+    // Defensive belt-and-suspenders — the ListenPanel mic button is
+    // already gated on `useModels().isWarm("stt")`, so users can't
+    // normally tap until warm. If we somehow get here pre-warm
+    // (programmatic call, race), fail with plain-language copy that
+    // matches the rest of the readiness UX.
+    if (!manager.isWarm("stt")) {
+      setError("Listening isn't ready yet. Try again in a moment.");
       return;
     }
 
     const worker = manager.getWorker("stt");
     if (!worker) {
-      setError("Speech-to-text worker not available");
+      setError("Listening isn't ready yet. Try again in a moment.");
       return;
     }
 

@@ -9,7 +9,7 @@ const mockWorker = {
 };
 
 const mockModelManager = {
-  isReady: vi.fn(),
+  isReady: vi.fn(), isWarm: vi.fn(),
   getWorker: vi.fn(),
 };
 
@@ -82,7 +82,7 @@ function setupAudioContextMock() {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockModelManager.isReady.mockReturnValue(false);
+  mockModelManager.isWarm.mockReturnValue(false);
   mockModelManager.getWorker.mockReturnValue(null);
   mockCaregiverLang = "en";
 });
@@ -100,7 +100,7 @@ describe("useMicrophone", () => {
 
   describe("startCapture", () => {
     it("sets error when STT model is not ready", async () => {
-      mockModelManager.isReady.mockReturnValue(false);
+      mockModelManager.isWarm.mockReturnValue(false);
 
       const { result } = renderHook(() => useMicrophone());
 
@@ -108,12 +108,12 @@ describe("useMicrophone", () => {
         await result.current.startCapture();
       });
 
-      expect(result.current.error).toBe("Speech-to-text model is not loaded yet");
+      expect(result.current.error).toBe("Listening isn't ready yet. Try again in a moment.");
       expect(result.current.isListening).toBe(false);
     });
 
     it("sets error when STT worker is not available", async () => {
-      mockModelManager.isReady.mockReturnValue(true);
+      mockModelManager.isWarm.mockReturnValue(true);
       mockModelManager.getWorker.mockReturnValue(null);
 
       const { result } = renderHook(() => useMicrophone());
@@ -122,12 +122,12 @@ describe("useMicrophone", () => {
         await result.current.startCapture();
       });
 
-      expect(result.current.error).toBe("Speech-to-text worker not available");
+      expect(result.current.error).toBe("Listening isn't ready yet. Try again in a moment.");
       expect(result.current.isListening).toBe(false);
     });
 
     it("sets error when microphone permission is denied", async () => {
-      mockModelManager.isReady.mockReturnValue(true);
+      mockModelManager.isWarm.mockReturnValue(true);
       mockModelManager.getWorker.mockReturnValue(mockWorker);
 
       const domError = new DOMException("Permission denied", "NotAllowedError");
@@ -151,7 +151,7 @@ describe("useMicrophone", () => {
     });
 
     it("sets error with generic message for non-permission errors", async () => {
-      mockModelManager.isReady.mockReturnValue(true);
+      mockModelManager.isWarm.mockReturnValue(true);
       mockModelManager.getWorker.mockReturnValue(mockWorker);
 
       vi.mocked(navigator.mediaDevices.getUserMedia).mockRejectedValueOnce(
@@ -168,7 +168,7 @@ describe("useMicrophone", () => {
     });
 
     it("calls getUserMedia and sets isListening on success", async () => {
-      mockModelManager.isReady.mockReturnValue(true);
+      mockModelManager.isWarm.mockReturnValue(true);
       mockModelManager.getWorker.mockReturnValue(mockWorker);
       setupAudioContextMock();
 
@@ -187,7 +187,7 @@ describe("useMicrophone", () => {
     });
 
     it("registers a worker message listener", async () => {
-      mockModelManager.isReady.mockReturnValue(true);
+      mockModelManager.isWarm.mockReturnValue(true);
       mockModelManager.getWorker.mockReturnValue(mockWorker);
       setupAudioContextMock();
 
@@ -226,7 +226,7 @@ describe("useMicrophone", () => {
 
   describe("stopCapture", () => {
     it("sets isListening to false", async () => {
-      mockModelManager.isReady.mockReturnValue(true);
+      mockModelManager.isWarm.mockReturnValue(true);
       mockModelManager.getWorker.mockReturnValue(mockWorker);
       setupAudioContextMock();
 
@@ -247,7 +247,7 @@ describe("useMicrophone", () => {
     });
 
     it("stops media stream tracks", async () => {
-      mockModelManager.isReady.mockReturnValue(true);
+      mockModelManager.isWarm.mockReturnValue(true);
       mockModelManager.getWorker.mockReturnValue(mockWorker);
       setupAudioContextMock();
 
@@ -271,7 +271,7 @@ describe("useMicrophone", () => {
     });
 
     it("disconnects the ScriptProcessorNode and closes AudioContext", async () => {
-      mockModelManager.isReady.mockReturnValue(true);
+      mockModelManager.isWarm.mockReturnValue(true);
       mockModelManager.getWorker.mockReturnValue(mockWorker);
       const { mockCtx, mockProcessor } = setupAudioContextMock();
 
@@ -293,7 +293,7 @@ describe("useMicrophone", () => {
     });
 
     it("removes the worker message listener on stop", async () => {
-      mockModelManager.isReady.mockReturnValue(true);
+      mockModelManager.isWarm.mockReturnValue(true);
       mockModelManager.getWorker.mockReturnValue(mockWorker);
       setupAudioContextMock();
 
@@ -330,7 +330,7 @@ describe("useMicrophone", () => {
 
   describe("unmount cleanup", () => {
     it("releases the media stream when the hook unmounts mid-capture", async () => {
-      mockModelManager.isReady.mockReturnValue(true);
+      mockModelManager.isWarm.mockReturnValue(true);
       mockModelManager.getWorker.mockReturnValue(mockWorker);
       setupAudioContextMock();
 
@@ -352,7 +352,7 @@ describe("useMicrophone", () => {
     });
 
     it("closes the AudioContext and disconnects the processor on unmount", async () => {
-      mockModelManager.isReady.mockReturnValue(true);
+      mockModelManager.isWarm.mockReturnValue(true);
       mockModelManager.getWorker.mockReturnValue(mockWorker);
       const { mockCtx, mockProcessor } = setupAudioContextMock();
 
@@ -372,7 +372,7 @@ describe("useMicrophone", () => {
     });
 
     it("removes the worker message listener on unmount", async () => {
-      mockModelManager.isReady.mockReturnValue(true);
+      mockModelManager.isWarm.mockReturnValue(true);
       mockModelManager.getWorker.mockReturnValue(mockWorker);
       setupAudioContextMock();
 
@@ -402,7 +402,7 @@ describe("useMicrophone", () => {
       // The hook now waits for stopCapture before sending anything.
       vi.useFakeTimers();
 
-      mockModelManager.isReady.mockReturnValue(true);
+      mockModelManager.isWarm.mockReturnValue(true);
       mockModelManager.getWorker.mockReturnValue(mockWorker);
       const { mockProcessor } = setupAudioContextMock();
 
@@ -435,7 +435,7 @@ describe("useMicrophone", () => {
 
     it("passes caregiverLang from the settings store on transcribe", async () => {
       mockCaregiverLang = "es";
-      mockModelManager.isReady.mockReturnValue(true);
+      mockModelManager.isWarm.mockReturnValue(true);
       mockModelManager.getWorker.mockReturnValue(mockWorker);
       const { mockProcessor } = setupAudioContextMock();
 
@@ -464,7 +464,7 @@ describe("useMicrophone", () => {
     });
 
     it("flushes remaining audio on stopCapture", async () => {
-      mockModelManager.isReady.mockReturnValue(true);
+      mockModelManager.isWarm.mockReturnValue(true);
       mockModelManager.getWorker.mockReturnValue(mockWorker);
       const { mockProcessor } = setupAudioContextMock();
 
@@ -497,7 +497,7 @@ describe("useMicrophone", () => {
 
   describe("STT worker message handling", () => {
     it("updates transcript when worker sends transcript message", async () => {
-      mockModelManager.isReady.mockReturnValue(true);
+      mockModelManager.isWarm.mockReturnValue(true);
       mockModelManager.getWorker.mockReturnValue(mockWorker);
       setupAudioContextMock();
 
@@ -529,7 +529,7 @@ describe("useMicrophone", () => {
     });
 
     it("replaces transcript on each transcript message", async () => {
-      mockModelManager.isReady.mockReturnValue(true);
+      mockModelManager.isWarm.mockReturnValue(true);
       mockModelManager.getWorker.mockReturnValue(mockWorker);
       setupAudioContextMock();
 
@@ -563,7 +563,7 @@ describe("useMicrophone", () => {
     });
 
     it("ignores empty transcript text", async () => {
-      mockModelManager.isReady.mockReturnValue(true);
+      mockModelManager.isWarm.mockReturnValue(true);
       mockModelManager.getWorker.mockReturnValue(mockWorker);
       setupAudioContextMock();
 
@@ -591,7 +591,7 @@ describe("useMicrophone", () => {
     });
 
     it("sets error when worker sends error message", async () => {
-      mockModelManager.isReady.mockReturnValue(true);
+      mockModelManager.isWarm.mockReturnValue(true);
       mockModelManager.getWorker.mockReturnValue(mockWorker);
       setupAudioContextMock();
 
@@ -631,7 +631,7 @@ describe("useMicrophone", () => {
       // First call: isReady=true, getWorker=transientWorker
       // During flush: getWorker returns null
       let getWorkerCallCount = 0;
-      mockModelManager.isReady.mockReturnValue(true);
+      mockModelManager.isWarm.mockReturnValue(true);
       mockModelManager.getWorker.mockImplementation(() => {
         getWorkerCallCount++;
         // First call (startCapture worker check) returns the worker
@@ -668,7 +668,7 @@ describe("useMicrophone", () => {
     it("clears an active silence timer when stopping", async () => {
       vi.useFakeTimers();
 
-      mockModelManager.isReady.mockReturnValue(true);
+      mockModelManager.isWarm.mockReturnValue(true);
       mockModelManager.getWorker.mockReturnValue(mockWorker);
       const { mockProcessor } = setupAudioContextMock();
 
@@ -705,7 +705,7 @@ describe("useMicrophone", () => {
 
   describe("startCapture — non-Error, non-DOMException getUserMedia rejection", () => {
     it("sets generic error message for non-Error getUserMedia rejection", async () => {
-      mockModelManager.isReady.mockReturnValue(true);
+      mockModelManager.isWarm.mockReturnValue(true);
       mockModelManager.getWorker.mockReturnValue(mockWorker);
 
       vi.mocked(navigator.mediaDevices.getUserMedia).mockRejectedValueOnce(
