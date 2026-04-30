@@ -9,9 +9,12 @@ import {
   setCangjieData,
   SUPPORTED_LANGUAGES,
 } from "./multilingualTokenizer";
+import { MODELS_RELEASE } from "./assetVersions";
+
+const CHATTERBOX_DIR = `public/models/${MODELS_RELEASE}/chatterbox-multilingual`;
 
 const TOKENIZER_JSON = JSON.parse(
-  readFileSync("public/models/2026-04-27/chatterbox-multilingual/tokenizer.json", "utf8"),
+  readFileSync(`${CHATTERBOX_DIR}/tokenizer.json`, "utf8"),
 );
 
 describe("multilingualTokenizer encode", () => {
@@ -120,10 +123,7 @@ describe("cangjieNormalize (Chinese ideographs → [cj_*] tokens)", () => {
   // Load the real Cangjie5 table once for the suite. It's a 126,610-entry
   // tab-separated dataset shipped alongside the tokenizer.
   const cangjieEntries: string[] = JSON.parse(
-    readFileSync(
-      "public/models/2026-04-27/chatterbox-multilingual/Cangjie5_TC.json",
-      "utf8",
-    ),
+    readFileSync(`${CHATTERBOX_DIR}/Cangjie5_TC.json`, "utf8"),
   );
 
   // setCangjieData mutates module-level state. beforeEach guarantees every
@@ -303,10 +303,7 @@ describe("upstream tokenization parity (byte-for-byte)", () => {
   //   /tmp/cbox-test/bin/python <<<'... see git log dc5d96c.. for harness ...'
 
   const cangjieEntries: string[] = JSON.parse(
-    readFileSync(
-      "public/models/2026-04-27/chatterbox-multilingual/Cangjie5_TC.json",
-      "utf8",
-    ),
+    readFileSync(`${CHATTERBOX_DIR}/Cangjie5_TC.json`, "utf8"),
   );
   const tok = buildMultilingualTokenizer(TOKENIZER_JSON);
 
