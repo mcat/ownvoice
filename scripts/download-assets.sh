@@ -68,12 +68,53 @@ echo "==> Chatterbox Multilingual (TTS)"
 for f in tokenizer.json Cangjie5_TC.json; do
   [ -f "$DIR/$f" ] && echo "  $f (cached)" || { echo "  $f"; curl -sL -o "$DIR/$f" "$REPO/$f"; }
 done
-for model in speech_encoder embed_tokens language_model_q4 conditional_decoder; do
+# embed_tokens / language_model_q4 / conditional_decoder ship as-is from HF.
+for model in embed_tokens language_model_q4 conditional_decoder; do
   for ext in onnx onnx_data; do
     f="${model}.${ext}"
     [ -f "$DIR/$f" ] && echo "  $f (cached)" || { echo "  $f ..."; curl -L -o "$DIR/$f" "$REPO/onnx/$f" 2>/dev/null; }
   done
 done
+
+# speech_encoder: HF publishes only fp32 (~591 MB) but iPad Safari's
+# WebAssembly heap cap blocks anything > ~500 MB in a worker (issue #163).
+# We download the fp32 source then convert locally to fp16 in-place; the
+# manifest expects the fp16 sizes (~296 MB). Detection is by data-file size:
+# fp32 ≈ 591 MB, fp16 ≈ 296 MB.
+for ext in onnx onnx_data; do
+  f="speech_encoder.${ext}"
+  [ -f "$DIR/$f" ] && echo "  $f (cached)" || { echo "  $f ..."; curl -L -o "$DIR/$f" "$REPO/onnx/$f" 2>/dev/null; }
+done
+DATA_SIZE=$(stat -f%z "$DIR/speech_encoder.onnx_data" 2>/dev/null || stat -c%s "$DIR/speech_encoder.onnx_data" 2>/dev/null || echo 0)
+if [ "$DATA_SIZE" -lt 400000000 ]; then
+  echo "  speech_encoder fp16 (already converted, ${DATA_SIZE} bytes)"
+else
+  if ! command -v python3 >/dev/null 2>&1; then
+    echo "ERROR: python3 not found on PATH; needed to convert speech_encoder fp32 → fp16."
+    echo "       Install Python 3.10+ (e.g. brew install python) and re-run."
+    exit 1
+  fi
+  VENV="$ROOT/.venv-fp16"
+  if [ ! -x "$VENV/bin/python" ]; then
+    echo "  setting up Python venv at .venv-fp16 (one-time, ~30s) ..."
+    python3 -m venv "$VENV"
+    "$VENV/bin/pip" install --quiet --upgrade pip
+    "$VENV/bin/pip" install --quiet onnx onnxconverter-common
+  fi
+  echo "  converting speech_encoder fp32 → fp16 ..."
+  # Convert into a temp dir so the input fp32 stays valid until conversion
+  # completes (avoids self-overwrite via the canonical filename), then
+  # atomic-replace the fp32 source with the fp16 result.
+  TMP=$(mktemp -d -t ov-fp16.XXXXXX)
+  trap 'rm -rf "$TMP"' EXIT
+  "$VENV/bin/python" "$ROOT/scripts/convert-encoder-fp16.py" \
+    --input "$DIR/speech_encoder.onnx" \
+    --output "$TMP/speech_encoder.onnx"
+  mv -f "$TMP/speech_encoder.onnx" "$DIR/speech_encoder.onnx"
+  mv -f "$TMP/speech_encoder.onnx_data" "$DIR/speech_encoder.onnx_data"
+  rmdir "$TMP"
+  trap - EXIT
+fi
 echo "  Done: $(du -sh "$DIR" | cut -f1)"
 echo ""
 

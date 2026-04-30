@@ -19,7 +19,7 @@ export const ORT_VERSION = "v1.25.1";
  * (yyyy-mm-dd) rather than a model-specific name — the release covers
  * the entire set of models (TTS + LLM + STT), not just one.
  */
-export const MODELS_RELEASE = "2026-04-27";
+export const MODELS_RELEASE = "2026-04-29";
 
 /** Asset path prefixes — used by upload script and Pages Functions. */
 export const ORT_ASSET_PREFIX = `ort/${ORT_VERSION}`;

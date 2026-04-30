@@ -2,16 +2,16 @@
   "version": 1,
   "models": {
     "tts": {
-      "baseUrl": "/models/2026-04-27/chatterbox-multilingual/",
+      "baseUrl": "/models/2026-04-29/chatterbox-multilingual/",
       "files": [
         {
           "name": "speech_encoder.onnx",
-          "size": 1184608,
+          "size": 1209307,
           "magic": "onnx"
         },
         {
           "name": "speech_encoder.onnx_data",
-          "size": 591274880,
+          "size": 295588160,
           "magic": null
         },
         {
@@ -57,7 +57,7 @@
       ]
     },
     "llm": {
-      "baseUrl": "/models/2026-04-27/lfm2-1.2b-instruct/",
+      "baseUrl": "/models/2026-04-29/lfm2-1.2b-instruct/",
       "files": [
         {
           "name": "model_q4.onnx",
@@ -87,7 +87,7 @@
       ]
     },
     "stt": {
-      "baseUrl": "/models/2026-04-27/whisper-small/",
+      "baseUrl": "/models/2026-04-29/whisper-small/",
       "files": [
         {
           "name": "encoder_model_q4.onnx",
