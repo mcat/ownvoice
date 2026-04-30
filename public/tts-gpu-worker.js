@@ -30,7 +30,7 @@
 // (set below to the same /ort/v<X>/ prefix), so the .mjs and .wasm
 // must live at that same path. Update both this URL and the wasmPaths
 // string when bumping ORT_VERSION.
-import * as ort from "/ort/v1.24.3/ort.webgpu.min.mjs";
+import * as ort from "/ort/v1.25.1/ort.webgpu.min.mjs";
 
 const LOG = "[OwnVoice:TTS:GPU]";
 const SAMPLE_RATE = 24000;
@@ -123,7 +123,7 @@ if (ort.env?.wasm) {
   // Path matches src/models/assetVersions.ts ORT_VERSION. Versioned because
   // /ort/v<X>/*.wasm is served by a Pages Function reading R2 in production.
   // Update this string when bumping ORT_VERSION there.
-  ort.env.wasm.wasmPaths = "/ort/v1.24.3/";
+  ort.env.wasm.wasmPaths = "/ort/v1.25.1/";
   ort.env.wasm.numThreads = self.crossOriginIsolated
     ? Math.min(navigator.hardwareConcurrency ?? 4, 4)
     : 1;
