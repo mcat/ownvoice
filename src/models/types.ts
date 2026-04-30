@@ -76,7 +76,7 @@ export interface SpeakerData {
 
 /** Messages sent TO a model worker */
 export type WorkerRequest =
-  | { type: "init"; modelUrl: string }
+  | { type: "init"; modelUrl: string; bench?: boolean }
   | { type: "warmup" }
   | { type: "embed"; audio: Float32Array; sampleRate: number; requestId: number }
   | { type: "synthesize"; text: string; embedding: Float32Array }

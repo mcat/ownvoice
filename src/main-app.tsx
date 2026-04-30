@@ -5,6 +5,17 @@ import { useUIStore } from "./stores/uiStore";
 import { themes, type ThemeName } from "./theme/tokens";
 import { startVoiceProcessor } from "./models/voiceProcessor";
 
+// `?bench=true` enables per-step timing logs in the TTS workers (encoder
+// load + per-LM-step latencies + decode time + RTF). Used to compare
+// WASM vs WebGPU performance on real devices, especially iPad — see
+// issue #163. Look for `[OwnVoice:Bench]` lines in the console. The
+// flag is parsed once at boot and propagated to workers via the init
+// message; toggling at runtime requires a reload.
+if (new URLSearchParams(globalThis.location?.search ?? "").get("bench") === "true") {
+  (globalThis as { __OV_BENCH__?: boolean }).__OV_BENCH__ = true;
+  console.log("[OwnVoice:Bench] Bench mode active. Per-step TTS timings will be logged.");
+}
+
 // Subscribe to theme changes outside of Preact to guarantee DOM updates.
 // Uses requestAnimationFrame to run AFTER Preact's re-render commits.
 useUIStore.subscribe((state, prev) => {

@@ -207,7 +207,10 @@ export function initGPU(modelUrl: string): Promise<boolean> {
         }
       };
 
-      worker.postMessage({ type: "init", modelUrl });
+      // `?bench=true` flag set by main-app.tsx — forwards to the GPU
+      // worker so it can log per-step timings (LM + decode + RTF).
+      const bench = (globalThis as { __OV_BENCH__?: boolean }).__OV_BENCH__ === true;
+      worker.postMessage({ type: "init", modelUrl, bench });
     } catch (err) {
       console.warn("[OwnVoice:TTS:GPU] Failed to create worker:", err);
       settle(false);

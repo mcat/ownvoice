@@ -135,6 +135,18 @@ let languageModelSession = null;
 let conditionalDecoderSession = null;
 let tokenizer = null;
 
+// Set by `?bench=true` URL flag (propagated through init message). When
+// true, handleSynthesize emits `[OwnVoice:Bench]` lines with per-LM-step
+// + decode timings. See issue #163 for WASM-vs-WebGPU comparison context.
+let bench = false;
+
+function quantile(arr, q) {
+  if (arr.length === 0) return 0;
+  const sorted = [...arr].sort((a, b) => a - b);
+  const i = Math.min(sorted.length - 1, Math.floor(q * sorted.length));
+  return sorted[i];
+}
+
 async function createSession(url, hasExternalData = false, wasmOnly = false, extraOpts = {}) {
   const opts = {
     executionProviders: wasmOnly ? ["wasm"] : ["webgpu", "wasm"],
@@ -562,9 +574,10 @@ function sampleToken(logits, generatedTokens) {
   return nucleus[nucleus.length - 1][0];
 }
 
-async function handleInit(modelUrl) {
+async function handleInit(modelUrl, benchFlag) {
   const baseUrl = modelUrl.endsWith("/") ? modelUrl : modelUrl + "/";
-  console.log(`${LOG} Initializing WebGPU TTS in DedicatedWorker...`);
+  bench = benchFlag === true;
+  console.log(`${LOG} Initializing WebGPU TTS in DedicatedWorker...${bench ? " (bench mode)" : ""}`);
 
   const t0 = performance.now();
 
@@ -852,9 +865,14 @@ async function handleSynthesize(text, speakerData, id, languageId, exaggeration 
   // and leak into subsequent sentences during batch pre-gen.
   let priorGpuKV = [];
 
+  const tSynth0 = bench ? performance.now() : 0;
+  const lmStepMs = bench ? [] : null;
+
   try {
   for (let step = 0; step < MAX_NEW_TOKENS; step++) {
+    const tStep0 = bench ? performance.now() : 0;
     const lmResult = await languageModelSession.run(lmInputs);
+    if (bench) lmStepMs.push(performance.now() - tStep0);
     for (const t of priorGpuKV) t.dispose?.();
     priorGpuKV = [];
 
@@ -964,16 +982,34 @@ async function handleSynthesize(text, speakerData, id, languageId, exaggeration 
   const spkEmb = new ort.Tensor("float32", new Float32Array(speakerData.speakerEmbeddings), speakerData.speakerEmbeddingsShape);
   const spkFeat = new ort.Tensor("float32", new Float32Array(speakerData.speakerFeatures), speakerData.speakerFeaturesShape);
 
+  const tDec0 = bench ? performance.now() : 0;
   const decResult = await conditionalDecoderSession.run({
     speech_tokens: speechTok,
     speaker_embeddings: spkEmb,
     speaker_features: spkFeat,
   });
+  const tDecMs = bench ? performance.now() - tDec0 : 0;
 
   const wav = decResult["waveform"] ?? decResult["wav"];
   if (!wav) throw new Error("Decoder missing output: " + Object.keys(decResult));
 
   const audioData = new Float32Array(wav.data);
+
+  if (bench) {
+    const totalMs = performance.now() - tSynth0;
+    const lmTotalMs = lmStepMs.reduce((s, x) => s + x, 0);
+    const audioS = audioData.length / SAMPLE_RATE;
+    console.log(
+      `[OwnVoice:Bench] synth: ep=webgpu tokens=${lmStepMs.length}` +
+        ` lm_total_ms=${lmTotalMs.toFixed(0)}` +
+        ` lm_median_ms=${quantile(lmStepMs, 0.5).toFixed(1)}` +
+        ` lm_p95_ms=${quantile(lmStepMs, 0.95).toFixed(1)}` +
+        ` decode_ms=${tDecMs.toFixed(0)}` +
+        ` total_ms=${totalMs.toFixed(0)}` +
+        ` audio_s=${audioS.toFixed(2)}` +
+        ` rtf=${(totalMs / 1000 / Math.max(audioS, 0.001)).toFixed(2)}`,
+    );
+  }
   console.log(`${LOG} Total: ${((performance.now() - t0) / 1000).toFixed(1)}s, ${(audioData.length / SAMPLE_RATE).toFixed(1)}s audio`);
 
   postMessage(
@@ -995,7 +1031,7 @@ self.addEventListener("message", (e) => {
   if (!msg || !msg.type) return;
 
   if (msg.type === "init") {
-    handleInit(msg.modelUrl).catch((err) => {
+    handleInit(msg.modelUrl, msg.bench === true).catch((err) => {
       const message = err instanceof Error ? err.message : String(err);
       console.error(`${LOG} Init error:`, message);
       postMessage({ type: "error", message });

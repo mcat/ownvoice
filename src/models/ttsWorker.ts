@@ -96,6 +96,19 @@ let prepareLanguageFn: ((text: string, lang: string) => string) | null = null;
 
 let baseUrl = "";
 
+/** Set by `?bench=true` URL flag (propagated through init message). When
+ *  true, handleEmbed / handleSynthesize emit `[OwnVoice:Bench]` lines
+ *  with model load + per-LM-step + decode timings for WASM-vs-WebGPU
+ *  comparison on real devices. See issue #163. */
+let bench = false;
+
+function quantile(arr: number[], q: number): number {
+  if (arr.length === 0) return 0;
+  const sorted = [...arr].sort((a, b) => a - b);
+  const i = Math.min(sorted.length - 1, Math.floor(q * sorted.length));
+  return sorted[i];
+}
+
 /** Worker always uses WASM — WebGPU runs in the main thread via ttsEngine.ts */
 function getEP(): string {
   return "wasm";
@@ -369,10 +382,11 @@ function sampleToken(logits: Float32Array, generatedTokens: number[]): number {
  * synth models eagerly during init was blocking `mgr.isReady("tts")` — and
  * therefore the enrollment UI — for ~150s+ on cold starts.
  */
-async function handleInit(modelUrl: string): Promise<void> {
+async function handleInit(modelUrl: string, benchFlag: boolean): Promise<void> {
   baseUrl = modelUrl.endsWith("/") ? modelUrl : modelUrl + "/";
+  bench = benchFlag;
   const ep = getEP();
-  console.log(`${LOG} Initializing with EP: ${ep}`);
+  console.log(`${LOG} Initializing with EP: ${ep}${bench ? " (bench mode)" : ""}`);
 
   // Tokenizer is small and needed for any operation; load eagerly.
   await loadTokenizer(baseUrl + CHATTERBOX_FILES.tokenizer);
@@ -464,17 +478,26 @@ async function handleEmbed(
     // loading" indicator instead of a generic spinner.
     _postMessage({ type: "embed-progress", stage: "loading-model" });
     console.log(`${LOG} Loading speech_encoder (on-demand, WASM)...`);
+    const tLoad0 = performance.now();
     const speechEncoderSession = await createSession(
       baseUrl + CHATTERBOX_FILES.speechEncoder.onnx,
       true,
       true,
       "encoder",
     );
+    const tLoadMs = performance.now() - tLoad0;
 
     // Run speech encoder
     // Input: audio_values (float32, [1, audio_length])
     const audioTensor = new ort.Tensor("float32", audio, [1, audio.length]);
+    const tInfer0 = performance.now();
     const results = await speechEncoderSession.run({ audio_values: audioTensor });
+    const tInferMs = performance.now() - tInfer0;
+    if (bench) {
+      console.log(
+        `[OwnVoice:Bench] embed: ep=${getEP()} load_ms=${tLoadMs.toFixed(0)} infer_ms=${tInferMs.toFixed(0)} audio_s=${(audio.length / SAMPLE_RATE).toFixed(2)}`,
+      );
+    }
 
     // Extract all outputs needed for synthesis
     // Model output names: audio_features, audio_tokens, speaker_embeddings, speaker_features
@@ -646,9 +669,13 @@ async function handleSynthesize(
   }
 
   const generatedTokens: number[] = [START_SPEECH];
+  const tSynth0 = bench ? performance.now() : 0;
+  const lmStepMs: number[] = bench ? [] : [];
 
   for (let step = 0; step < MAX_NEW_TOKENS; step++) {
+    const tStep0 = bench ? performance.now() : 0;
     const lmResult = await languageModelSession.run(lmInputs);
+    if (bench) lmStepMs.push(performance.now() - tStep0);
 
     const logits = lmResult["logits"];
     if (!logits) {
@@ -762,11 +789,13 @@ async function handleSynthesize(
     speakerData.speakerFeaturesShape,
   );
 
+  const tDec0 = bench ? performance.now() : 0;
   const decoderResult = await conditionalDecoderSession.run({
     [speechTokName]: speechTokensTensor,
     speaker_embeddings: speakerEmbTensor,
     speaker_features: speakerFeatTensor,
   });
+  const tDecMs = bench ? performance.now() - tDec0 : 0;
 
   const wav = decoderResult["waveform"] ?? decoderResult["wav"];
   if (!wav) {
@@ -776,6 +805,22 @@ async function handleSynthesize(
   // Squeeze batch dimension if present
   const audioData = new Float32Array(wav.data as Float32Array);
   console.log(`${LOG} Synthesis complete: ${(audioData.length / SAMPLE_RATE).toFixed(1)}s audio`);
+
+  if (bench) {
+    const totalMs = performance.now() - tSynth0;
+    const lmTotalMs = lmStepMs.reduce((s, x) => s + x, 0);
+    const audioS = audioData.length / SAMPLE_RATE;
+    console.log(
+      `[OwnVoice:Bench] synth: ep=${getEP()} tokens=${lmStepMs.length}` +
+        ` lm_total_ms=${lmTotalMs.toFixed(0)}` +
+        ` lm_median_ms=${quantile(lmStepMs, 0.5).toFixed(1)}` +
+        ` lm_p95_ms=${quantile(lmStepMs, 0.95).toFixed(1)}` +
+        ` decode_ms=${tDecMs.toFixed(0)}` +
+        ` total_ms=${totalMs.toFixed(0)}` +
+        ` audio_s=${audioS.toFixed(2)}` +
+        ` rtf=${(totalMs / 1000 / Math.max(audioS, 0.001)).toFixed(2)}`,
+    );
+  }
 
   _postMessage(
     { type: "audio", data: audioData, sampleRate: SAMPLE_RATE },
@@ -798,7 +843,7 @@ self.addEventListener("message", async (e: MessageEvent) => {
   try {
     switch (msg.type) {
       case "init":
-        await handleInit(msg.modelUrl);
+        await handleInit(msg.modelUrl, msg.bench === true);
         break;
 
       case "embed":

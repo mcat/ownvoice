@@ -29,6 +29,22 @@ npm run dev
 
 Opens at `http://localhost:3000`.
 
+## Performance benchmarking (`?bench=true`)
+
+Append `?bench=true` to any URL (e.g. `http://localhost:3000/app/?bench=true`) to enable per-call TTS timing logs. Used to compare WASM vs WebGPU performance on real devices, particularly for iPad QA.
+
+Two grep'able log lines appear in the browser console:
+
+```
+[OwnVoice:Bench] embed: ep=wasm load_ms=8421 infer_ms=12340 audio_s=6.00
+[OwnVoice:Bench] synth: ep=webgpu tokens=27 lm_total_ms=540 lm_median_ms=18 lm_p95_ms=35 decode_ms=312 total_ms=890 audio_s=1.10 rtf=0.81
+```
+
+- `embed` — speech-encoder load + inference (one-shot, fires on actual enrollment, not the silent-buffer warmup).
+- `synth` — per-phrase autoregressive LM + conditional-decoder timings; `rtf < 1` is faster than real-time.
+
+Both lines are space-key-value formatted for easy spreadsheet import. Bench mode is purely additive — the flag is parsed once at boot and the worker-side timing collection is gated behind a `bench` flag in the init message; zero overhead in normal sessions.
+
 ## Project Structure
 
 ```
