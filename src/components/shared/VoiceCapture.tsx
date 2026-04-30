@@ -418,7 +418,16 @@ export function VoiceCapture({
         setCloneStatus("failed");
         return;
       }
-      const embedding = await extractEmbedding(rawAudio, () => setCloneStatus("model-loading"));
+      // No `onLoadingModel` callback here — we're inside the
+      // model-loading-recovery path (the model is already warm; this is the
+      // retry firing after worker warmup). If we passed the same
+      // setCloneStatus("model-loading") callback that processAndCapture uses,
+      // the worker's first `embed-progress` event would flip status from
+      // "extracting" → "model-loading", which re-fires the
+      // [cloneStatus, hasVoice] useEffect, which calls retryEmbedding again,
+      // queueing a second embed message. The cycle repeats per progress
+      // event, flooding the worker with hundreds of concurrent extractions.
+      const embedding = await extractEmbedding(rawAudio);
       if (embedding) {
         setCloneStatus("ready");
         onCapture(blob, embedding);
@@ -448,7 +457,18 @@ export function VoiceCapture({
         onCapture(blob);
         return;
       }
-      const embedding = await extractEmbedding(rawAudio, () => setCloneStatus("model-loading"));
+      // Don't pass an onLoadingModel callback. Earlier versions used
+      // `() => setCloneStatus("model-loading")` here to swap the UI copy mid-
+      // extraction, but the worker fires `embed-progress` repeatedly during
+      // the encoder fetch — each one would flip cloneStatus
+      // "extracting" → "model-loading", which re-fires the
+      // [cloneStatus, hasVoice] useEffect that decides whether to retry.
+      // The handler then re-issued `extractEmbedding` while the first one was
+      // still in flight, queueing dozens of concurrent embeds in the worker.
+      // The "model-loading" status is set explicitly below in the
+      // extract-returned-null branch (worker not ready) and is the right
+      // signal for the retry-after-warm useEffect to fire on.
+      const embedding = await extractEmbedding(rawAudio);
       setSavedBlob(blob);
 
       if (embedding) {
