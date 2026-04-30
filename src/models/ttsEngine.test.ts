@@ -129,6 +129,7 @@ describe("ttsEngine — initGPU", () => {
     expect(workers[0].postMessage).toHaveBeenCalledWith({
       type: "init",
       modelUrl: "/models",
+      bench: false,
     });
     expect(isGPUReady()).toBe(false);
 

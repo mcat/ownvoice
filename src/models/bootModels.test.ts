@@ -99,10 +99,13 @@ describe("bootModels", () => {
     const { bootModels } = await import("./bootModels");
     await bootModels();
 
-    // Workers are created in order: TTS, LLM, STT
+    // Workers are created in order: TTS, LLM, STT.
+    // TTS init also carries a `bench` flag (defaults to false unless
+    // `?bench=true` is set on globalThis.__OV_BENCH__) — see main-app.tsx.
     expect(createdWorkers[0].postMessage).toHaveBeenCalledWith({
       type: "init",
       modelUrl: MODEL_URLS.tts,
+      bench: false,
     });
     expect(createdWorkers[1].postMessage).toHaveBeenCalledWith({
       type: "init",

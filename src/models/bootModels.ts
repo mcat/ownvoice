@@ -94,7 +94,10 @@ export async function bootTTSWasm(): Promise<void> {
     };
 
     mgr.setWorker("tts", ttsWorker);
-    ttsWorker.postMessage({ type: "init", modelUrl: MODEL_URLS.tts });
+    // `?bench=true` flag is set on globalThis by main-app.tsx — propagate
+    // to the worker so it can log per-step timings (encoder + LM + decode).
+    const bench = (globalThis as { __OV_BENCH__?: boolean }).__OV_BENCH__ === true;
+    ttsWorker.postMessage({ type: "init", modelUrl: MODEL_URLS.tts, bench });
   } catch (err) {
     console.warn("[OwnVoice] Failed to create TTS worker:", err);
   }
