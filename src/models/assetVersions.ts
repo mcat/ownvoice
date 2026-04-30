@@ -12,7 +12,7 @@
  */
 
 /** Bumped when we ship a new onnxruntime-web version. Matches package.json. */
-export const ORT_VERSION = "v1.24.3";
+export const ORT_VERSION = "v1.25.1";
 
 /**
  * Bumped when we change which model bytes ship. Date-based label

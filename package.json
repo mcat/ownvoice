@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "markdown-to-jsx": "^7.7.17",
-    "onnxruntime-web": "^1.24.3",
+    "onnxruntime-web": "^1.25.1",
     "preact": "^10.29.1",
     "preact-iso": "^2.11.1",
     "zustand": "^5.0.12"
@@ -42,7 +42,7 @@
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "fake-indexeddb": "^6.2.5",
     "jsdom": "^29.0.2",
-    "onnxruntime-node": "^1.24.3",
+    "onnxruntime-node": "^1.25.1",
     "tailwindcss": "^4.2.2",
     "typescript": "^6.0.2",
     "typescript-eslint": "^8.58.2",
