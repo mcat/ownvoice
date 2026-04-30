@@ -2,6 +2,21 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      // Belt-and-suspenders for the edge 301: if the iPad lands on apex
+      // via a cached HTML page or a stale SW registered before the 301
+      // was configured, the page stays on apex while relative asset
+      // requests get 301'd to www — so `import.meta.url` (and any URL
+      // resolved through it) ends up www-prefixed against an apex page,
+      // tripping CORP=same-origin on /assets/*. Synchronously bouncing
+      // here avoids running any module code on apex (and lets the SW
+      // register on the canonical origin).
+      if (location.hostname === "ownvoice.icu") {
+        location.replace(
+          "https://www.ownvoice.icu" + location.pathname + location.search + location.hash,
+        );
+      }
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
