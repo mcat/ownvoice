@@ -38,7 +38,14 @@ ORT_DIR="$ROOT/public/ort/$ORT_VERSION_FULL"
 mkdir -p "$ORT_DIR"
 
 echo "==> ONNX Runtime WASM ($ORT_VERSION_FULL)"
-for f in ort-wasm-simd-threaded.jsep.wasm ort-wasm-simd-threaded.asyncify.wasm; do
+# Both .wasm binaries and .mjs glue files are needed at runtime — ORT
+# dynamically imports the .mjs from `wasmPaths` (see vite.config.ts).
+for f in \
+  ort-wasm-simd-threaded.jsep.wasm \
+  ort-wasm-simd-threaded.jsep.mjs \
+  ort-wasm-simd-threaded.asyncify.wasm \
+  ort-wasm-simd-threaded.asyncify.mjs \
+  ort.webgpu.min.mjs; do
   if [ -f "$ORT_DIR/$f" ]; then
     echo "  $f (cached)"
   else

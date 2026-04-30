@@ -125,9 +125,14 @@ async function main() {
   // constants are read above only to print a helpful banner; the actual key
   // is the relative-path mirror.
 
-  // ORT WASM (recurse, .wasm only)
+  // ORT runtime files (recurse). Both .wasm binaries and .mjs glue
+  // files are needed at runtime — ORT dynamically imports the .mjs from
+  // wasmPaths (see vite.config.ts). Filtering to .wasm only would leave
+  // R2 missing the glue and break ORT instantiation in production.
   const ortDir = join(ROOT, "public/ort");
-  const ortFiles = (await walk(ortDir)).filter((p) => p.endsWith(".wasm"));
+  const ortFiles = (await walk(ortDir)).filter(
+    (p) => p.endsWith(".wasm") || p.endsWith(".mjs"),
+  );
   console.log(`ORT WASM files (${ortFiles.length}):`);
   for (const local of ortFiles) {
     const rel = relative(ortDir, local);
