@@ -17,13 +17,17 @@ export function fftReal(x: Float32Array): { re: Float32Array; im: Float32Array }
   for (let i = 0; i < N; i++) re[i] = x[i];
   bitReversePermute(re, im);
 
+  // Twiddle index `k` advances by `tableStep = N/size` each butterfly,
+  // so it indexes a virtual length-N twiddle table tw[m] = exp(-2πi·m/N).
+  // The angle formula must therefore divide by N, not by size — using
+  // /size produces a (N/size)× phase error for every stage except the last.
   for (let size = 2; size <= N; size *= 2) {
     const half = size / 2;
     const tableStep = N / size;
     for (let i = 0; i < N; i += size) {
       let k = 0;
       for (let j = i; j < i + half; j++) {
-        const angle = (-2 * Math.PI * k) / size;
+        const angle = (-2 * Math.PI * k) / N;
         const cos = Math.cos(angle);
         const sin = Math.sin(angle);
         const tre = re[j + half] * cos - im[j + half] * sin;

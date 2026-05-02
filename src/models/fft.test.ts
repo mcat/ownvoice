@@ -13,20 +13,36 @@ describe("fftReal", () => {
     }
   });
 
-  it("returns a single peak at the right bin for a pure sine", () => {
+  it("returns a single peak at the right bin for a pure sine, with all other bins near zero", () => {
     const N = 128;
     const k0 = 8;
     const x = new Float32Array(N);
     for (let n = 0; n < N; n++) x[n] = Math.sin((2 * Math.PI * k0 * n) / N);
     const { re, im } = fftReal(x);
     const mag = (k: number) => Math.hypot(re[k], im[k]);
-    let peakBin = 0;
-    let peakMag = 0;
+    expect(mag(k0)).toBeGreaterThan(N / 4);
     for (let k = 0; k < N / 2; k++) {
-      const m = mag(k);
-      if (m > peakMag) { peakMag = m; peakBin = k; }
+      if (k === k0) continue;
+      expect(mag(k)).toBeLessThan(1e-3);
     }
-    expect(peakBin).toBe(k0);
+  });
+
+  it("works correctly across a range of lengths and frequencies (catches twiddle-factor bugs)", () => {
+    for (const N of [16, 64, 256, 1024]) {
+      for (const k0 of [1, 3, N / 8, N / 4 - 1]) {
+        const x = new Float32Array(N);
+        for (let n = 0; n < N; n++) x[n] = Math.sin((2 * Math.PI * k0 * n) / N);
+        const { re, im } = fftReal(x);
+        const mag = (k: number) => Math.hypot(re[k], im[k]);
+        for (let k = 0; k < N / 2; k++) {
+          if (k === k0) {
+            expect(mag(k)).toBeGreaterThan(N / 4);
+          } else {
+            expect(mag(k)).toBeLessThan(1e-2);
+          }
+        }
+      }
+    }
   });
 
   it("throws on non-power-of-2 length", () => {
