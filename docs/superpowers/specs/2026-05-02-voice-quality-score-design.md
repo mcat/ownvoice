@@ -82,8 +82,8 @@ Files added:
 
 Files modified:
 
-- `src/types.ts` — add `VoiceQualityResult`; add optional `quality` to
-  `SpeakerData`
+- `src/models/types.ts` — add `VoiceQualityResult`; add optional `quality`
+  to `SpeakerData` (which already lives in this file)
 - `src/components/shared/VoiceCapture.tsx` — call `scoreVoiceSample` from
   preview-render `useEffect` and from `processAndCapture`; thread `quality`
   through `onCapture`
