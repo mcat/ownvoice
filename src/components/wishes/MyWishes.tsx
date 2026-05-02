@@ -9,7 +9,7 @@ import { Btn } from "../shared/Btn";
 import { BottomSheet } from "../shared/BottomSheet";
 
 interface MyWishesProps {
-  onSpeak: (text: string, opts?: { gloss?: string }) => void;
+  onSpeak: (text: string, opts?: { gloss?: string; icon?: string }) => void;
   locale?: string;
   onAddToThread: (
     text: string,
@@ -22,6 +22,12 @@ interface MyWishesProps {
   theme: ThemeName;
   patientName: string;
 }
+
+/** Decorative emoji on every wish-flow message bubble. SICG topics each
+ *  have their own icon (lightbulb / hand etc., shown on the topic list)
+ *  but the spoken sentences are personal expressions of value/preference,
+ *  so the bubble carries a unifying heart instead of the topic icon. */
+const WISH_ICON = "❤️"; // ❤️
 
 export function MyWishes({
   onSpeak,
@@ -77,7 +83,7 @@ export function MyWishes({
       resolvePhrase("ui.patient.wishes.my_wishes", patientLang),
       questionGloss,
     );
-    onSpeak(sentence, { gloss });
+    onSpeak(sentence, { gloss, icon: WISH_ICON });
     advance();
   }
 
@@ -101,7 +107,7 @@ export function MyWishes({
         const gloss = caregiverLang !== patientLang
           ? composeWishSentence({ locale: caregiverLang, topicId: tp.id, selectedResponseKeys: sel })
           : undefined;
-        onSpeak(sentence, { gloss });
+        onSpeak(sentence, { gloss, icon: WISH_ICON });
       }
     }
   }
