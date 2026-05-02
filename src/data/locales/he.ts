@@ -1010,19 +1010,19 @@ const he: LocaleStrings = {
   "ui.patient.header.voice_status.failed_message": "Couldn't prepare your voice",
   "ui.patient.header.voice_status.failed_action": "Try again",
 
-  // ── Voice quality score (enrollment feedback) — TODO: translate ──
-  "ui.voice_quality.title": "Voice quality",
-  "ui.voice_quality.label.good": "Good",
-  "ui.voice_quality.label.ok": "OK",
-  "ui.voice_quality.label.poor": "Needs improvement",
-  "ui.voice_quality.tip.snr": "Try recording in a quieter spot.",
-  "ui.voice_quality.tip.clipping": "Move a bit further from the microphone.",
-  "ui.voice_quality.tip.coverage": "Try reading for a bit longer.",
-  "ui.voice_quality.tip.voiced_fraction": "Try to keep talking for the full recording.",
-  "ui.voice_quality.tip.pitch_variation": "Try reading more naturally — let your voice rise and fall.",
-  "ui.voice_quality.tip.loudness": "Try to keep your volume steady.",
-  "ui.voice_quality.tip.tilt_boomy": "Try moving slightly further from the microphone.",
-  "ui.voice_quality.tip.tilt_tinny": "This mic sounds thin — if you have another, try it.",
+  // ── Voice quality score (enrollment feedback) ──
+  "ui.voice_quality.title": "איכות הקול",
+  "ui.voice_quality.label.good": "טוב",
+  "ui.voice_quality.label.ok": "סביר",
+  "ui.voice_quality.label.poor": "דורש שיפור",
+  "ui.voice_quality.tip.snr": "נסה להקליט במקום שקט יותר.",
+  "ui.voice_quality.tip.clipping": "התרחק מעט מהמיקרופון.",
+  "ui.voice_quality.tip.coverage": "נסה לקרוא קצת יותר זמן.",
+  "ui.voice_quality.tip.voiced_fraction": "נסה לדבר לאורך כל ההקלטה.",
+  "ui.voice_quality.tip.pitch_variation": "קרא בצורה טבעית יותר — תן לקול שלך לעלות ולרדת.",
+  "ui.voice_quality.tip.loudness": "נסה לשמור על עוצמת קול אחידה.",
+  "ui.voice_quality.tip.tilt_boomy": "נסה להתרחק מעט מהמיקרופון.",
+  "ui.voice_quality.tip.tilt_tinny": "המיקרופון נשמע דק — נסה אחר אם יש לך.",
 };
 
 export default he;

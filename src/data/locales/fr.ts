@@ -991,19 +991,19 @@ const fr: LocaleStrings = {
   "ui.patient.header.voice_status.failed_message": "Couldn't prepare your voice",
   "ui.patient.header.voice_status.failed_action": "Try again",
 
-  // ── Voice quality score (enrollment feedback) — TODO: translate ──
-  "ui.voice_quality.title": "Voice quality",
-  "ui.voice_quality.label.good": "Good",
-  "ui.voice_quality.label.ok": "OK",
-  "ui.voice_quality.label.poor": "Needs improvement",
-  "ui.voice_quality.tip.snr": "Try recording in a quieter spot.",
-  "ui.voice_quality.tip.clipping": "Move a bit further from the microphone.",
-  "ui.voice_quality.tip.coverage": "Try reading for a bit longer.",
-  "ui.voice_quality.tip.voiced_fraction": "Try to keep talking for the full recording.",
-  "ui.voice_quality.tip.pitch_variation": "Try reading more naturally — let your voice rise and fall.",
-  "ui.voice_quality.tip.loudness": "Try to keep your volume steady.",
-  "ui.voice_quality.tip.tilt_boomy": "Try moving slightly further from the microphone.",
-  "ui.voice_quality.tip.tilt_tinny": "This mic sounds thin — if you have another, try it.",
+  // ── Voice quality score (enrollment feedback) ──
+  "ui.voice_quality.title": "Qualité vocale",
+  "ui.voice_quality.label.good": "Bonne",
+  "ui.voice_quality.label.ok": "Correcte",
+  "ui.voice_quality.label.poor": "À améliorer",
+  "ui.voice_quality.tip.snr": "Essayez d'enregistrer dans un endroit plus calme.",
+  "ui.voice_quality.tip.clipping": "Éloignez-vous un peu du microphone.",
+  "ui.voice_quality.tip.coverage": "Essayez de lire un peu plus longtemps.",
+  "ui.voice_quality.tip.voiced_fraction": "Essayez de parler pendant toute la durée de l'enregistrement.",
+  "ui.voice_quality.tip.pitch_variation": "Lisez plus naturellement — laissez votre voix monter et descendre.",
+  "ui.voice_quality.tip.loudness": "Essayez de garder un volume constant.",
+  "ui.voice_quality.tip.tilt_boomy": "Éloignez-vous un peu plus du microphone.",
+  "ui.voice_quality.tip.tilt_tinny": "Ce micro semble manquer de basses — essayez-en un autre si possible.",
 };
 
 export default fr;

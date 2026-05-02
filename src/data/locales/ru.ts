@@ -989,19 +989,19 @@ const ru: LocaleStrings = {
   "ui.patient.header.voice_status.failed_message": "Couldn't prepare your voice",
   "ui.patient.header.voice_status.failed_action": "Try again",
 
-  // ── Voice quality score (enrollment feedback) — TODO: translate ──
-  "ui.voice_quality.title": "Voice quality",
-  "ui.voice_quality.label.good": "Good",
-  "ui.voice_quality.label.ok": "OK",
-  "ui.voice_quality.label.poor": "Needs improvement",
-  "ui.voice_quality.tip.snr": "Try recording in a quieter spot.",
-  "ui.voice_quality.tip.clipping": "Move a bit further from the microphone.",
-  "ui.voice_quality.tip.coverage": "Try reading for a bit longer.",
-  "ui.voice_quality.tip.voiced_fraction": "Try to keep talking for the full recording.",
-  "ui.voice_quality.tip.pitch_variation": "Try reading more naturally — let your voice rise and fall.",
-  "ui.voice_quality.tip.loudness": "Try to keep your volume steady.",
-  "ui.voice_quality.tip.tilt_boomy": "Try moving slightly further from the microphone.",
-  "ui.voice_quality.tip.tilt_tinny": "This mic sounds thin — if you have another, try it.",
+  // ── Voice quality score (enrollment feedback) ──
+  "ui.voice_quality.title": "Качество голоса",
+  "ui.voice_quality.label.good": "Хорошее",
+  "ui.voice_quality.label.ok": "Нормальное",
+  "ui.voice_quality.label.poor": "Требует улучшения",
+  "ui.voice_quality.tip.snr": "Попробуйте записать в более тихом месте.",
+  "ui.voice_quality.tip.clipping": "Отодвиньтесь немного от микрофона.",
+  "ui.voice_quality.tip.coverage": "Попробуйте читать немного дольше.",
+  "ui.voice_quality.tip.voiced_fraction": "Старайтесь говорить на протяжении всей записи.",
+  "ui.voice_quality.tip.pitch_variation": "Читайте естественнее — пусть голос поднимается и опускается.",
+  "ui.voice_quality.tip.loudness": "Старайтесь сохранять одинаковую громкость.",
+  "ui.voice_quality.tip.tilt_boomy": "Попробуйте отодвинуться немного дальше от микрофона.",
+  "ui.voice_quality.tip.tilt_tinny": "Этот микрофон звучит тонко — попробуйте другой, если есть.",
 };
 
 export default ru;

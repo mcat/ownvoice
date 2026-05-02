@@ -988,19 +988,19 @@ const ja: LocaleStrings = {
   "ui.patient.header.voice_status.failed_message": "Couldn't prepare your voice",
   "ui.patient.header.voice_status.failed_action": "Try again",
 
-  // ── Voice quality score (enrollment feedback) — TODO: translate ──
-  "ui.voice_quality.title": "Voice quality",
-  "ui.voice_quality.label.good": "Good",
-  "ui.voice_quality.label.ok": "OK",
-  "ui.voice_quality.label.poor": "Needs improvement",
-  "ui.voice_quality.tip.snr": "Try recording in a quieter spot.",
-  "ui.voice_quality.tip.clipping": "Move a bit further from the microphone.",
-  "ui.voice_quality.tip.coverage": "Try reading for a bit longer.",
-  "ui.voice_quality.tip.voiced_fraction": "Try to keep talking for the full recording.",
-  "ui.voice_quality.tip.pitch_variation": "Try reading more naturally — let your voice rise and fall.",
-  "ui.voice_quality.tip.loudness": "Try to keep your volume steady.",
-  "ui.voice_quality.tip.tilt_boomy": "Try moving slightly further from the microphone.",
-  "ui.voice_quality.tip.tilt_tinny": "This mic sounds thin — if you have another, try it.",
+  // ── Voice quality score (enrollment feedback) ──
+  "ui.voice_quality.title": "声の品質",
+  "ui.voice_quality.label.good": "良好",
+  "ui.voice_quality.label.ok": "問題なし",
+  "ui.voice_quality.label.poor": "改善の余地あり",
+  "ui.voice_quality.tip.snr": "もっと静かな場所で録音してみてください。",
+  "ui.voice_quality.tip.clipping": "マイクから少し離れてください。",
+  "ui.voice_quality.tip.coverage": "もう少し長く読んでみてください。",
+  "ui.voice_quality.tip.voiced_fraction": "録音中はずっと話し続けるようにしてください。",
+  "ui.voice_quality.tip.pitch_variation": "もっと自然に読んでください — 声の高低を意識して。",
+  "ui.voice_quality.tip.loudness": "声の大きさを一定に保ってください。",
+  "ui.voice_quality.tip.tilt_boomy": "マイクから少し離れてみてください。",
+  "ui.voice_quality.tip.tilt_tinny": "このマイクは音が細く聞こえます — 他にあれば試してみてください。",
 };
 
 export default ja;

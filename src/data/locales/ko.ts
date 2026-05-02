@@ -1004,19 +1004,19 @@ const ko: LocaleStrings = {
   "ui.patient.header.voice_status.failed_message": "Couldn't prepare your voice",
   "ui.patient.header.voice_status.failed_action": "Try again",
 
-  // ── Voice quality score (enrollment feedback) — TODO: translate ──
-  "ui.voice_quality.title": "Voice quality",
-  "ui.voice_quality.label.good": "Good",
-  "ui.voice_quality.label.ok": "OK",
-  "ui.voice_quality.label.poor": "Needs improvement",
-  "ui.voice_quality.tip.snr": "Try recording in a quieter spot.",
-  "ui.voice_quality.tip.clipping": "Move a bit further from the microphone.",
-  "ui.voice_quality.tip.coverage": "Try reading for a bit longer.",
-  "ui.voice_quality.tip.voiced_fraction": "Try to keep talking for the full recording.",
-  "ui.voice_quality.tip.pitch_variation": "Try reading more naturally — let your voice rise and fall.",
-  "ui.voice_quality.tip.loudness": "Try to keep your volume steady.",
-  "ui.voice_quality.tip.tilt_boomy": "Try moving slightly further from the microphone.",
-  "ui.voice_quality.tip.tilt_tinny": "This mic sounds thin — if you have another, try it.",
+  // ── Voice quality score (enrollment feedback) ──
+  "ui.voice_quality.title": "음성 품질",
+  "ui.voice_quality.label.good": "좋음",
+  "ui.voice_quality.label.ok": "보통",
+  "ui.voice_quality.label.poor": "개선 필요",
+  "ui.voice_quality.tip.snr": "더 조용한 곳에서 녹음해 보세요.",
+  "ui.voice_quality.tip.clipping": "마이크에서 조금 떨어지세요.",
+  "ui.voice_quality.tip.coverage": "조금 더 길게 읽어 보세요.",
+  "ui.voice_quality.tip.voiced_fraction": "녹음 시간 내내 말해 보세요.",
+  "ui.voice_quality.tip.pitch_variation": "더 자연스럽게 읽으세요 — 목소리에 높낮이를 주세요.",
+  "ui.voice_quality.tip.loudness": "목소리 크기를 일정하게 유지해 보세요.",
+  "ui.voice_quality.tip.tilt_boomy": "마이크에서 조금 더 떨어져 보세요.",
+  "ui.voice_quality.tip.tilt_tinny": "이 마이크는 소리가 얇게 들립니다 — 다른 마이크가 있으면 사용해 보세요.",
 };
 
 export default ko;

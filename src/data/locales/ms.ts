@@ -999,19 +999,19 @@ const ms: LocaleStrings = {
   "ui.patient.header.voice_status.failed_message": "Couldn't prepare your voice",
   "ui.patient.header.voice_status.failed_action": "Try again",
 
-  // ── Voice quality score (enrollment feedback) — TODO: translate ──
-  "ui.voice_quality.title": "Voice quality",
-  "ui.voice_quality.label.good": "Good",
+  // ── Voice quality score (enrollment feedback) ──
+  "ui.voice_quality.title": "Kualiti suara",
+  "ui.voice_quality.label.good": "Baik",
   "ui.voice_quality.label.ok": "OK",
-  "ui.voice_quality.label.poor": "Needs improvement",
-  "ui.voice_quality.tip.snr": "Try recording in a quieter spot.",
-  "ui.voice_quality.tip.clipping": "Move a bit further from the microphone.",
-  "ui.voice_quality.tip.coverage": "Try reading for a bit longer.",
-  "ui.voice_quality.tip.voiced_fraction": "Try to keep talking for the full recording.",
-  "ui.voice_quality.tip.pitch_variation": "Try reading more naturally — let your voice rise and fall.",
-  "ui.voice_quality.tip.loudness": "Try to keep your volume steady.",
-  "ui.voice_quality.tip.tilt_boomy": "Try moving slightly further from the microphone.",
-  "ui.voice_quality.tip.tilt_tinny": "This mic sounds thin — if you have another, try it.",
+  "ui.voice_quality.label.poor": "Perlu diperbaiki",
+  "ui.voice_quality.tip.snr": "Cuba rakam di tempat yang lebih senyap.",
+  "ui.voice_quality.tip.clipping": "Jauhkan sedikit dari mikrofon.",
+  "ui.voice_quality.tip.coverage": "Cuba baca lebih lama sedikit.",
+  "ui.voice_quality.tip.voiced_fraction": "Cuba terus bercakap sepanjang rakaman.",
+  "ui.voice_quality.tip.pitch_variation": "Baca dengan lebih semula jadi — biarkan suara anda naik dan turun.",
+  "ui.voice_quality.tip.loudness": "Cuba kekalkan kelantangan suara yang sekata.",
+  "ui.voice_quality.tip.tilt_boomy": "Cuba jauhkan sedikit lagi dari mikrofon.",
+  "ui.voice_quality.tip.tilt_tinny": "Mikrofon ini berbunyi nipis — cuba yang lain jika ada.",
 };
 
 export default ms;

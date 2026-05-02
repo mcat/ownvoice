@@ -1004,19 +1004,19 @@ const da: LocaleStrings = {
   "ui.patient.header.voice_status.failed_message": "Couldn't prepare your voice",
   "ui.patient.header.voice_status.failed_action": "Try again",
 
-  // ── Voice quality score (enrollment feedback) — TODO: translate ──
-  "ui.voice_quality.title": "Voice quality",
-  "ui.voice_quality.label.good": "Good",
+  // ── Voice quality score (enrollment feedback) ──
+  "ui.voice_quality.title": "Stemmekvalitet",
+  "ui.voice_quality.label.good": "God",
   "ui.voice_quality.label.ok": "OK",
-  "ui.voice_quality.label.poor": "Needs improvement",
-  "ui.voice_quality.tip.snr": "Try recording in a quieter spot.",
-  "ui.voice_quality.tip.clipping": "Move a bit further from the microphone.",
-  "ui.voice_quality.tip.coverage": "Try reading for a bit longer.",
-  "ui.voice_quality.tip.voiced_fraction": "Try to keep talking for the full recording.",
-  "ui.voice_quality.tip.pitch_variation": "Try reading more naturally — let your voice rise and fall.",
-  "ui.voice_quality.tip.loudness": "Try to keep your volume steady.",
-  "ui.voice_quality.tip.tilt_boomy": "Try moving slightly further from the microphone.",
-  "ui.voice_quality.tip.tilt_tinny": "This mic sounds thin — if you have another, try it.",
+  "ui.voice_quality.label.poor": "Skal forbedres",
+  "ui.voice_quality.tip.snr": "Prøv at optage et roligere sted.",
+  "ui.voice_quality.tip.clipping": "Flyt dig lidt længere væk fra mikrofonen.",
+  "ui.voice_quality.tip.coverage": "Prøv at læse lidt længere.",
+  "ui.voice_quality.tip.voiced_fraction": "Prøv at fortsætte med at tale gennem hele optagelsen.",
+  "ui.voice_quality.tip.pitch_variation": "Læs mere naturligt — lad din stemme stige og falde.",
+  "ui.voice_quality.tip.loudness": "Prøv at holde lydstyrken jævn.",
+  "ui.voice_quality.tip.tilt_boomy": "Prøv at flytte dig lidt længere væk fra mikrofonen.",
+  "ui.voice_quality.tip.tilt_tinny": "Mikrofonen lyder tynd — prøv en anden, hvis du har én.",
 };
 
 export default da;

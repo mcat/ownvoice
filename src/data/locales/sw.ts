@@ -1005,19 +1005,19 @@ const sw: LocaleStrings = {
   "ui.patient.header.voice_status.failed_message": "Couldn't prepare your voice",
   "ui.patient.header.voice_status.failed_action": "Try again",
 
-  // ── Voice quality score (enrollment feedback) — TODO: translate ──
-  "ui.voice_quality.title": "Voice quality",
-  "ui.voice_quality.label.good": "Good",
-  "ui.voice_quality.label.ok": "OK",
-  "ui.voice_quality.label.poor": "Needs improvement",
-  "ui.voice_quality.tip.snr": "Try recording in a quieter spot.",
-  "ui.voice_quality.tip.clipping": "Move a bit further from the microphone.",
-  "ui.voice_quality.tip.coverage": "Try reading for a bit longer.",
-  "ui.voice_quality.tip.voiced_fraction": "Try to keep talking for the full recording.",
-  "ui.voice_quality.tip.pitch_variation": "Try reading more naturally — let your voice rise and fall.",
-  "ui.voice_quality.tip.loudness": "Try to keep your volume steady.",
-  "ui.voice_quality.tip.tilt_boomy": "Try moving slightly further from the microphone.",
-  "ui.voice_quality.tip.tilt_tinny": "This mic sounds thin — if you have another, try it.",
+  // ── Voice quality score (enrollment feedback) ──
+  "ui.voice_quality.title": "Ubora wa sauti",
+  "ui.voice_quality.label.good": "Nzuri",
+  "ui.voice_quality.label.ok": "Sawa",
+  "ui.voice_quality.label.poor": "Inahitaji uboreshaji",
+  "ui.voice_quality.tip.snr": "Jaribu kurekodi mahali tulivu zaidi.",
+  "ui.voice_quality.tip.clipping": "Jiondoe kidogo kutoka kwa kipaza sauti.",
+  "ui.voice_quality.tip.coverage": "Jaribu kusoma kwa muda mrefu kidogo.",
+  "ui.voice_quality.tip.voiced_fraction": "Jaribu kuendelea kuongea kwa muda wote wa kurekodi.",
+  "ui.voice_quality.tip.pitch_variation": "Soma kwa njia ya asili zaidi — acha sauti yako ipande na kushuka.",
+  "ui.voice_quality.tip.loudness": "Jaribu kudumisha sauti ya kiwango sawa.",
+  "ui.voice_quality.tip.tilt_boomy": "Jaribu kujiondoa zaidi kutoka kwa kipaza sauti.",
+  "ui.voice_quality.tip.tilt_tinny": "Kipaza sauti hiki kinasikika nyembamba — jaribu kingine ikiwa unacho.",
 };
 
 export default sw;

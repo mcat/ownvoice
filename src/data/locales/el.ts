@@ -1003,19 +1003,19 @@ const el: LocaleStrings = {
   "ui.patient.header.voice_status.failed_message": "Couldn't prepare your voice",
   "ui.patient.header.voice_status.failed_action": "Try again",
 
-  // ── Voice quality score (enrollment feedback) — TODO: translate ──
-  "ui.voice_quality.title": "Voice quality",
-  "ui.voice_quality.label.good": "Good",
-  "ui.voice_quality.label.ok": "OK",
-  "ui.voice_quality.label.poor": "Needs improvement",
-  "ui.voice_quality.tip.snr": "Try recording in a quieter spot.",
-  "ui.voice_quality.tip.clipping": "Move a bit further from the microphone.",
-  "ui.voice_quality.tip.coverage": "Try reading for a bit longer.",
-  "ui.voice_quality.tip.voiced_fraction": "Try to keep talking for the full recording.",
-  "ui.voice_quality.tip.pitch_variation": "Try reading more naturally — let your voice rise and fall.",
-  "ui.voice_quality.tip.loudness": "Try to keep your volume steady.",
-  "ui.voice_quality.tip.tilt_boomy": "Try moving slightly further from the microphone.",
-  "ui.voice_quality.tip.tilt_tinny": "This mic sounds thin — if you have another, try it.",
+  // ── Voice quality score (enrollment feedback) ──
+  "ui.voice_quality.title": "Ποιότητα φωνής",
+  "ui.voice_quality.label.good": "Καλή",
+  "ui.voice_quality.label.ok": "Εντάξει",
+  "ui.voice_quality.label.poor": "Χρειάζεται βελτίωση",
+  "ui.voice_quality.tip.snr": "Δοκιμάστε να ηχογραφήσετε σε πιο ήσυχο μέρος.",
+  "ui.voice_quality.tip.clipping": "Απομακρυνθείτε λίγο από το μικρόφωνο.",
+  "ui.voice_quality.tip.coverage": "Δοκιμάστε να διαβάσετε λίγο περισσότερο.",
+  "ui.voice_quality.tip.voiced_fraction": "Προσπαθήστε να μιλάτε σε όλη τη διάρκεια της ηχογράφησης.",
+  "ui.voice_quality.tip.pitch_variation": "Διαβάστε πιο φυσικά — αφήστε τη φωνή σας να ανεβαίνει και να κατεβαίνει.",
+  "ui.voice_quality.tip.loudness": "Διατηρήστε σταθερή την ένταση της φωνής σας.",
+  "ui.voice_quality.tip.tilt_boomy": "Δοκιμάστε να απομακρυνθείτε λίγο από το μικρόφωνο.",
+  "ui.voice_quality.tip.tilt_tinny": "Το μικρόφωνο ακούγεται λεπτό — δοκιμάστε άλλο, αν έχετε.",
 };
 
 export default el;

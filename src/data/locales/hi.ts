@@ -984,19 +984,19 @@ const hi: LocaleStrings = {
   "ui.patient.header.voice_status.failed_message": "Couldn't prepare your voice",
   "ui.patient.header.voice_status.failed_action": "Try again",
 
-  // ── Voice quality score (enrollment feedback) — TODO: translate ──
-  "ui.voice_quality.title": "Voice quality",
-  "ui.voice_quality.label.good": "Good",
-  "ui.voice_quality.label.ok": "OK",
-  "ui.voice_quality.label.poor": "Needs improvement",
-  "ui.voice_quality.tip.snr": "Try recording in a quieter spot.",
-  "ui.voice_quality.tip.clipping": "Move a bit further from the microphone.",
-  "ui.voice_quality.tip.coverage": "Try reading for a bit longer.",
-  "ui.voice_quality.tip.voiced_fraction": "Try to keep talking for the full recording.",
-  "ui.voice_quality.tip.pitch_variation": "Try reading more naturally — let your voice rise and fall.",
-  "ui.voice_quality.tip.loudness": "Try to keep your volume steady.",
-  "ui.voice_quality.tip.tilt_boomy": "Try moving slightly further from the microphone.",
-  "ui.voice_quality.tip.tilt_tinny": "This mic sounds thin — if you have another, try it.",
+  // ── Voice quality score (enrollment feedback) ──
+  "ui.voice_quality.title": "आवाज़ की गुणवत्ता",
+  "ui.voice_quality.label.good": "अच्छी",
+  "ui.voice_quality.label.ok": "ठीक है",
+  "ui.voice_quality.label.poor": "सुधार की ज़रूरत",
+  "ui.voice_quality.tip.snr": "किसी शांत जगह पर रिकॉर्ड करने की कोशिश करें।",
+  "ui.voice_quality.tip.clipping": "माइक्रोफ़ोन से थोड़ा दूर हटें।",
+  "ui.voice_quality.tip.coverage": "थोड़ी देर और पढ़ने की कोशिश करें।",
+  "ui.voice_quality.tip.voiced_fraction": "पूरी रिकॉर्डिंग के दौरान बोलते रहने की कोशिश करें।",
+  "ui.voice_quality.tip.pitch_variation": "अधिक स्वाभाविक रूप से पढ़ें — अपनी आवाज़ को ऊँचा और नीचा होने दें।",
+  "ui.voice_quality.tip.loudness": "अपनी आवाज़ का स्तर एक जैसा रखने की कोशिश करें।",
+  "ui.voice_quality.tip.tilt_boomy": "माइक्रोफ़ोन से थोड़ा और दूर हटें।",
+  "ui.voice_quality.tip.tilt_tinny": "यह माइक पतली आवाज़ देता है — अगर कोई और हो तो आज़माएँ।",
 };
 
 export default hi;

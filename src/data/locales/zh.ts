@@ -939,19 +939,19 @@ const zh: LocaleStrings = {
   "ui.patient.header.voice_status.failed_message": "Couldn't prepare your voice",
   "ui.patient.header.voice_status.failed_action": "Try again",
 
-  // ── Voice quality score (enrollment feedback) — TODO: translate ──
-  "ui.voice_quality.title": "Voice quality",
-  "ui.voice_quality.label.good": "Good",
-  "ui.voice_quality.label.ok": "OK",
-  "ui.voice_quality.label.poor": "Needs improvement",
-  "ui.voice_quality.tip.snr": "Try recording in a quieter spot.",
-  "ui.voice_quality.tip.clipping": "Move a bit further from the microphone.",
-  "ui.voice_quality.tip.coverage": "Try reading for a bit longer.",
-  "ui.voice_quality.tip.voiced_fraction": "Try to keep talking for the full recording.",
-  "ui.voice_quality.tip.pitch_variation": "Try reading more naturally — let your voice rise and fall.",
-  "ui.voice_quality.tip.loudness": "Try to keep your volume steady.",
-  "ui.voice_quality.tip.tilt_boomy": "Try moving slightly further from the microphone.",
-  "ui.voice_quality.tip.tilt_tinny": "This mic sounds thin — if you have another, try it.",
+  // ── Voice quality score (enrollment feedback) ──
+  "ui.voice_quality.title": "语音质量",
+  "ui.voice_quality.label.good": "良好",
+  "ui.voice_quality.label.ok": "尚可",
+  "ui.voice_quality.label.poor": "需要改进",
+  "ui.voice_quality.tip.snr": "请尝试在更安静的地方录音。",
+  "ui.voice_quality.tip.clipping": "请离麦克风稍远一些。",
+  "ui.voice_quality.tip.coverage": "请尝试再读一会儿。",
+  "ui.voice_quality.tip.voiced_fraction": "请在整个录音过程中持续说话。",
+  "ui.voice_quality.tip.pitch_variation": "请更自然地朗读 — 让声音有起伏。",
+  "ui.voice_quality.tip.loudness": "请保持音量稳定。",
+  "ui.voice_quality.tip.tilt_boomy": "请离麦克风再远一些。",
+  "ui.voice_quality.tip.tilt_tinny": "这个麦克风听起来声音单薄 — 如果有其他麦克风可以试试。",
 };
 
 export default zh;
