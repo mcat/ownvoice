@@ -256,4 +256,26 @@ describe("preprocessEnrollment", () => {
     preprocessEnrollment(tone, SR);
     for (let i = 0; i < tone.length; i++) expect(tone[i]).toBe(snapshot[i]);
   });
+
+  test("rejects 'mostly silence' recordings even when SNR clears the floor", () => {
+    // 7 s recording: a single 1 s burst of speech-like signal at amplitude
+    // 0.4, surrounded by ~6 s of low-amplitude noise. The noise puts the
+    // SNR (signal-to-noise across the whole clip) above 6 dB, but only
+    // ~14% of frames are voiced — well below the 30% gate.
+    const noisyHead = whiteNoise(3.0, 0.005);
+    const burst = sine(440, 1.0, 0.4);
+    const noisyTail = whiteNoise(3.0, 0.005);
+    const input = concat(noisyHead, burst, noisyTail);
+
+    const result = preprocessEnrollment(input, SR);
+    expect(result.acceptable).toBe(false);
+    expect(result.rejectionReason).toContain("speech");
+  });
+
+  test("rejects pure silence via the voiced-fraction gate", () => {
+    const silence = new Float32Array(Math.floor(3.0 * SR));
+    const result = preprocessEnrollment(silence, SR);
+    expect(result.acceptable).toBe(false);
+    expect(result.rejectionReason).toBeDefined();
+  });
 });

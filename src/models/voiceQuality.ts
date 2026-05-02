@@ -10,7 +10,7 @@
 
 import { fftReal } from "./fft";
 import { trackPitch } from "./pitchTracker";
-import { estimateSNR } from "./enrollmentAudio";
+import { estimateSNR, computeVoicedFraction } from "./enrollmentAudio";
 import type { VoiceQualityResult } from "./types";
 
 /** Bumped when sub-score mappings, weights, or the schema change.
@@ -91,28 +91,11 @@ export function scoreCoverage(speechDurationSec: number): number {
   ]);
 }
 
-const VOICED_FRAME_MS = 20;
-const SILENCE_THRESHOLD_DBFS = -40;
-
-export function computeVoicedFraction(audio: Float32Array, sampleRate: number): number {
-  const frameSize = Math.floor((VOICED_FRAME_MS / 1000) * sampleRate);
-  if (frameSize === 0 || audio.length < frameSize) return 0;
-  const numFrames = Math.floor(audio.length / frameSize);
-  if (numFrames === 0) return 0;
-  const threshold = Math.pow(10, SILENCE_THRESHOLD_DBFS / 20);
-  let voiced = 0;
-  for (let f = 0; f < numFrames; f++) {
-    let s = 0;
-    const off = f * frameSize;
-    for (let i = 0; i < frameSize; i++) {
-      const x = audio[off + i];
-      s += x * x;
-    }
-    const rms = Math.sqrt(s / frameSize);
-    if (rms > threshold) voiced++;
-  }
-  return voiced / numFrames;
-}
+// computeVoicedFraction lives in enrollmentAudio.ts (alongside estimateSNR
+// and trimSilence) and is re-exported here so the existing test imports
+// keep working. It's the same primitive used by the hard gate's
+// "not enough speech" check.
+export { computeVoicedFraction };
 
 export function scoreVoicedFraction(voicedFraction: number): number {
   // Curve calibrated against an actual healthy adult Rainbow Passage read
