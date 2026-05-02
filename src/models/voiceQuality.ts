@@ -9,6 +9,8 @@
  */
 
 import { fftReal } from "./fft";
+import { trackPitch } from "./pitchTracker";
+import { estimateSNR } from "./enrollmentAudio";
 import type { VoiceQualityResult } from "./types";
 
 /** Bumped when sub-score mappings, weights, or the schema change. */
@@ -233,4 +235,86 @@ export function scoreSpectralTilt(alphaDb: number): number {
     [12, 30],
     [18, 0],
   ]);
+}
+
+const DYSPHONIA_GUARD_THRESHOLD = 0.45;
+
+type Breakdown = VoiceQualityResult["breakdown"];
+
+export function aggregate(breakdown: Breakdown): number {
+  let totalWeight = 0;
+  let weighted = 0;
+  for (const k of Object.keys(DEFAULT_WEIGHTS) as SubScoreKey[]) {
+    const v = breakdown[k];
+    if (v === null || v === undefined || !Number.isFinite(v)) continue;
+    totalWeight += DEFAULT_WEIGHTS[k];
+    weighted += DEFAULT_WEIGHTS[k] * v;
+  }
+  if (totalWeight === 0) return 0;
+  return weighted / totalWeight;
+}
+
+function median(values: number[]): number {
+  if (values.length === 0) return 0;
+  const sorted = values.slice().sort((a, b) => a - b);
+  return sorted[Math.floor(sorted.length / 2)];
+}
+
+export function scoreVoiceSample(rawAudio: Float32Array, sampleRate: number): VoiceQualityResult {
+  // Sub-scores that operate on the raw audio directly:
+  const { snrDb } = estimateSNR(rawAudio, sampleRate);
+  const snr = scoreSnr(snrDb);
+
+  const clipFraction = computeClipFraction(rawAudio);
+  const clipping = scoreClipping(clipFraction);
+
+  const speechDuration = rawAudio.length / sampleRate;
+  const coverage = scoreCoverage(speechDuration);
+
+  const voicedFraction = computeVoicedFraction(rawAudio, sampleRate);
+  const voicedFractionScore = scoreVoicedFraction(voicedFraction);
+
+  const loudnessCV = computeLoudnessCV(rawAudio, sampleRate);
+  const loudnessConsistency = scoreLoudnessConsistency(loudnessCV);
+
+  // Pitch-derived sub-scores. The dysphonia guard reads
+  // peakHeights[voicedMask] median; if confidence is too low to trust the
+  // pitch estimates, set pitchVariation to null. Aggregation will
+  // redistribute pitch's weight automatically across remaining dimensions.
+  const pitch = trackPitch(rawAudio, sampleRate);
+  const voicedHeights: number[] = [];
+  for (let i = 0; i < pitch.peakHeights.length; i++) {
+    if (pitch.voiced[i]) voicedHeights.push(pitch.peakHeights[i]);
+  }
+  const medianConfidence = voicedHeights.length > 0 ? median(voicedHeights) : 0;
+  const dysphoniaSuppressed = medianConfidence < DYSPHONIA_GUARD_THRESHOLD;
+
+  let pitchVariation: number | null;
+  if (dysphoniaSuppressed) {
+    pitchVariation = null;
+  } else {
+    const stdev = computePitchStdevSemitones(pitch.f0Hz, pitch.voiced);
+    pitchVariation = stdev === null ? null : scorePitchVariation(stdev);
+  }
+
+  const alphaDb = computeSpectralTiltAlphaDb(rawAudio, pitch.voiced, sampleRate);
+  const spectralTilt = scoreSpectralTilt(alphaDb);
+  const spectralTiltDirection = classifyTiltDirection(alphaDb);
+
+  const breakdown: Breakdown = {
+    snr,
+    clipping,
+    coverage,
+    voicedFraction: voicedFractionScore,
+    pitchVariation,
+    loudnessConsistency,
+    spectralTilt,
+  };
+
+  return {
+    score: aggregate(breakdown),
+    breakdown,
+    spectralTiltDirection,
+    qualityVersion: QUALITY_VERSION,
+  };
 }

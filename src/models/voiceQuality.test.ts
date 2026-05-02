@@ -258,3 +258,75 @@ describe("scoreSpectralTilt", () => {
     expect(scoreSpectralTilt(15)).toBe(0);
   });
 });
+
+import { aggregate, scoreVoiceSample } from "./voiceQuality";
+
+describe("aggregate", () => {
+  it("returns the weighted sum when all sub-scores are present", () => {
+    const score = aggregate({
+      snr: 100, clipping: 100, pitchVariation: 100, voicedFraction: 100,
+      loudnessConsistency: 100, coverage: 100, spectralTilt: 100,
+    });
+    expect(score).toBeCloseTo(100, 5);
+  });
+  it("redistributes weight when pitchVariation is null", () => {
+    const score = aggregate({
+      snr: 100, clipping: 100, pitchVariation: null, voicedFraction: 100,
+      loudnessConsistency: 100, coverage: 100, spectralTilt: 100,
+    });
+    expect(score).toBeCloseTo(100, 5);
+  });
+  it("low pitchVariation pulls the aggregate down", () => {
+    const score = aggregate({
+      snr: 100, clipping: 100, pitchVariation: 0, voicedFraction: 100,
+      loudnessConsistency: 100, coverage: 100, spectralTilt: 100,
+    });
+    expect(score).toBeLessThan(100);
+    expect(score).toBeCloseTo(75, 1); // (1 - 0.25) * 100
+  });
+});
+
+describe("scoreVoiceSample", () => {
+  it("scores a synthetic clean read in the 'good' band", () => {
+    const sr = 24000;
+    const audio = new Float32Array(sr * 5);
+    // 200 Hz fundamental amplitude-modulated by 5 Hz to vary pitch via vibrato
+    for (let i = 0; i < audio.length; i++) {
+      const t = i / sr;
+      const f0 = 200 * Math.pow(2, 0.05 * Math.sin(2 * Math.PI * 0.5 * t));
+      audio[i] = Math.sin(2 * Math.PI * f0 * t) * 0.4;
+    }
+    const result = scoreVoiceSample(audio, sr);
+    expect(result.qualityVersion).toBe(1);
+    expect(result.score).toBeGreaterThan(50);
+    expect(result.breakdown.clipping).toBe(100);
+    expect(result.breakdown.pitchVariation).not.toBeNull();
+  });
+
+  it("fires the dysphonia guard on weak-periodicity input (sets pitchVariation to null)", () => {
+    const sr = 24000;
+    const audio = new Float32Array(sr * 3);
+    for (let i = 0; i < audio.length; i++) {
+      const envelope = 0.5 + 0.5 * Math.sin((2 * Math.PI * 4 * i) / sr);
+      audio[i] = (Math.random() * 2 - 1) * 0.4 * envelope;
+    }
+    const result = scoreVoiceSample(audio, sr);
+    expect(result.breakdown.pitchVariation).toBeNull();
+  });
+
+  it("fully-clipped signal scores low on clipping", () => {
+    const sr = 24000;
+    const audio = new Float32Array(sr * 3);
+    for (let i = 0; i < audio.length; i++) audio[i] = i % 2 === 0 ? 1 : -1;
+    const result = scoreVoiceSample(audio, sr);
+    expect(result.breakdown.clipping).toBeLessThan(10);
+  });
+
+  it("returns spectralTiltDirection 'boomy' on heavy low-band content", () => {
+    const sr = 24000;
+    const audio = new Float32Array(sr * 3);
+    for (let i = 0; i < audio.length; i++) audio[i] = Math.sin((2 * Math.PI * 150 * i) / sr) * 0.4;
+    const result = scoreVoiceSample(audio, sr);
+    expect(result.spectralTiltDirection).toBe("boomy");
+  });
+});
