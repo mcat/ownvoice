@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { createDebouncedIDBStorage } from "./idbStorage";
+import { isValidQualityResult } from "../models/voiceQuality";
 import type { AppSettings, Patient } from "../types";
 
 // 300 ms debounce on IDB persistence — avoids a round-trip per keystroke
@@ -34,6 +35,20 @@ interface SettingsState extends SettingsPersistedState {
   updateActivePatient: (partial: Partial<Omit<Patient, "id">>) => void;
   setPatientPendingVoiceBlob: (patientId: string, base64: string) => void;
   clearPatientPendingVoiceBlob: (patientId: string) => void;
+}
+
+/** Drops the `quality` field on a SpeakerData blob if it fails the runtime
+ *  shape check. Returns the rest of the SpeakerData intact. Used during
+ *  store hydration so a corrupted quality field can't destroy the encoder
+ *  outputs that ride alongside it. */
+export function scrubQualityIfInvalid<T>(speakerData: T): T {
+  if (!speakerData || typeof speakerData !== "object") return speakerData;
+  const sd = speakerData as Record<string, unknown>;
+  if (sd.quality !== undefined && !isValidQualityResult(sd.quality)) {
+    const { quality: _drop, ...rest } = sd;
+    return rest as T;
+  }
+  return speakerData;
 }
 
 function newPatientFromLegacy(legacyCfg: Record<string, unknown>, speakerData: unknown): Patient {
@@ -219,6 +234,25 @@ export const useSettingsStore = create<SettingsState>()(
           };
           speakerData = null;
         }
+
+        // Final pass: scrub any malformed `quality` field on per-patient
+        // speakerData / per-provider embedding blobs. Optional field, so
+        // legacy speakers without it pass through unchanged.
+        if (cfg) {
+          cfg = {
+            ...cfg,
+            patients: cfg.patients.map((p) => ({
+              ...p,
+              speakerData: scrubQualityIfInvalid(p.speakerData),
+            })),
+            providers: cfg.providers.map((pr) => ({
+              ...pr,
+              embedding: scrubQualityIfInvalid(pr.embedding),
+            })),
+          };
+        }
+        // Also scrub the legacy top-level speakerData (v1 layout) just in case.
+        speakerData = scrubQualityIfInvalid(speakerData);
 
         return { cfg, speakerData };
       },
