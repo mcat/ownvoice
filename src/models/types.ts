@@ -57,6 +57,32 @@ export interface FewShotExample {
 }
 
 /**
+ * Advisory quality score for an enrollment recording. Computed by
+ * `scoreVoiceSample` in voiceQuality.ts. Persisted alongside SpeakerData
+ * to enable later clone-health views without a schema migration.
+ */
+export interface VoiceQualityResult {
+  /** Overall 0-100 weighted score. */
+  score: number;
+  /** Per-dimension 0-100 sub-scores. `pitchVariation` is null when the
+   *  pitch tracker's median voicing confidence is below threshold; the
+   *  aggregate ignores null entries and renormalises remaining weights. */
+  breakdown: {
+    snr: number;
+    clipping: number;
+    coverage: number;
+    voicedFraction: number;
+    pitchVariation: number | null;
+    loudnessConsistency: number;
+    spectralTilt: number;
+  };
+  /** Direction of spectral-tilt deviation, used by the tip selector. */
+  spectralTiltDirection: "boomy" | "tinny" | "neutral";
+  /** Bumped when the algorithm or weights change. */
+  qualityVersion: number;
+}
+
+/**
  * Outputs from the Chatterbox-Multilingual speech encoder, stored and reused
  * for all synthesis calls. All arrays use JSON-safe types (number[]) so the
  * data can be persisted via zustand's JSON storage. BigInt64Array values
@@ -72,6 +98,8 @@ export interface SpeakerData {
   speakerEmbeddingsShape: number[];
   speakerFeatures: number[];
   speakerFeaturesShape: number[];
+  /** Optional: undefined for speakers enrolled before this feature shipped. */
+  quality?: VoiceQualityResult;
 }
 
 /** Messages sent TO a model worker */
