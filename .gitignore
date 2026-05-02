@@ -67,5 +67,10 @@ __pycache__/
 # never be committed — `git add -A` would otherwise sweep them in.
 .claude/skills/
 aac-icu-candidacy.md
-sample-voices/
+# sample-voices/ is gitignored except for the calibration fixture used by
+# voiceQuality.test.ts. Leave the directory rule in place; negate only the
+# fixture and its README.
+sample-voices/*
+!sample-voices/mark-voice.wav
+!sample-voices/README.md
 docs/*.pdf
