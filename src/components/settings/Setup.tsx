@@ -1,5 +1,6 @@
 import { useState } from "preact/hooks";
 import type { AppSettings, FallbackVoice, Patient, Provider } from "../../types";
+import type { SpeakerData } from "../../models/types";
 import { LANGS } from "../../data/phrases";
 import { z } from "../../theme/z";
 import { Btn } from "../shared/Btn";
@@ -330,6 +331,7 @@ export function Setup({ mode = "first-run", onFirstRunDone, onAddPatientDone, on
           <StepVoice
             patientName={name}
             patientVoice={patientVoice}
+            speakerData={speakerData}
             setPatientVoice={setPatientVoice}
             setSpeakerData={setSpeakerData}
             setPendingBlob={setPendingBlob}
@@ -527,6 +529,7 @@ function StepPatient({
 function StepVoice({
   patientName,
   patientVoice,
+  speakerData,
   setPatientVoice,
   setSpeakerData,
   setPendingBlob,
@@ -537,6 +540,7 @@ function StepVoice({
 }: {
   patientName: string;
   patientVoice: boolean;
+  speakerData: unknown;
   setPatientVoice: (v: boolean) => void;
   setSpeakerData: (data: unknown) => void;
   setPendingBlob: (b: string | null) => void;
@@ -560,9 +564,10 @@ function StepVoice({
       <VoiceCapture
         label={resolvePhrase("ui.provider.setup.step1.patient_label", caregiverLang)}
         hasVoice={patientVoice}
-        onCapture={async (blob, embedding) => {
+        savedQuality={(speakerData as SpeakerData | null | undefined)?.quality}
+        onCapture={async (blob, embedding, quality) => {
           setPatientVoice(true);
-          if (embedding) setSpeakerData(embedding);
+          if (embedding) setSpeakerData({ ...(embedding as SpeakerData), quality });
           const base64 = await blobToBase64(blob);
           setPendingBlob(base64);
         }}
@@ -680,9 +685,10 @@ function StepCareTeam({
               label={p.name}
               hasVoice={p.hasVoice}
               hasEmbedding={!!p.embedding}
-              onCapture={(_blob, embedding) => {
+              savedQuality={(p.embedding as SpeakerData | undefined)?.quality}
+              onCapture={(_blob, embedding, quality) => {
                 toggleProviderVoice(i, true);
-                if (embedding) setProviderEmbedding(i, embedding);
+                if (embedding) setProviderEmbedding(i, { ...(embedding as SpeakerData), quality });
               }}
               onRemove={() => { toggleProviderVoice(i, false); }}
               locale={lang}
