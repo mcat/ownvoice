@@ -8,6 +8,9 @@ import { preprocessEnrollment } from "../../models/enrollmentAudio";
 import { useModels } from "../../hooks/useModels";
 import { useThrottledText } from "../../hooks/useThrottledText";
 import { friendlyVoiceError } from "../../data/friendlyError";
+import { scoreVoiceSample } from "../../models/voiceQuality";
+import { QualityBadge } from "./QualityBadge";
+import type { VoiceQualityResult } from "../../models/types";
 
 /**
  * Voice clone processing status — shown in the UI so the user
@@ -24,12 +27,15 @@ export interface VoiceCaptureProps {
   label: string;
   hasVoice: boolean;
   /** Called when voice is captured. Returns the audio blob and (if available) the embedding. */
-  onCapture: (audioBlob: Blob, embedding?: unknown) => void;
+  onCapture: (audioBlob: Blob, embedding?: unknown, quality?: VoiceQualityResult) => void;
   onRemove: () => void;
   /** Pre-existing audio blob for playback */
   audioBlob?: Blob | null;
   /** Whether a speaker embedding exists for this voice (enables "clone active" indicator) */
   hasEmbedding?: boolean;
+  /** Persisted quality from saved speakerData. Renders the compact badge on
+   *  the saved-state card. Undefined for legacy speakers (rendered as nothing). */
+  savedQuality?: VoiceQualityResult;
   /**
    * BCP-47 locale for the recording script (e.g. "en-US"). Determines whether
    * the recording card shows a phonetically balanced reference passage or
@@ -227,6 +233,7 @@ export function VoiceCapture({
   hasEmbedding = false,
   locale,
   color,
+  savedQuality,
 }: VoiceCaptureProps) {
   const caregiverLang = useSettingsStore((s) => s.cfg?.caregiverLang ?? "en");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -251,6 +258,7 @@ export function VoiceCapture({
   const [countdownIdx, setCountdownIdx] = useState<number | null>(null);
   const countdownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
+  const [previewQuality, setPreviewQuality] = useState<VoiceQualityResult | null>(null);
   const [savedBlob, setSavedBlob] = useState<Blob | null>(externalBlob ?? null);
   const [playing, setPlaying] = useState(false);
   const playbackCtxRef = useRef<AudioContext | null>(null);
@@ -370,6 +378,28 @@ export function VoiceCapture({
     }
   }, [recording, recordSecs]);
 
+  // Score the preview blob so the recording-preview screen can show a
+  // full-size QualityBadge BEFORE the user accepts the take.
+  useEffect(() => {
+    if (!previewBlob) {
+      setPreviewQuality(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const audio = await decodeAudio(previewBlob);
+        const result = scoreVoiceSample(audio, 24000);
+        if (!cancelled) setPreviewQuality(result);
+      } catch {
+        if (!cancelled) setPreviewQuality(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [previewBlob]);
+
   const c = {
     text: color?.text ?? "#1A1A1A",
     sub: color?.sub ?? "#6B7280",
@@ -427,10 +457,11 @@ export function VoiceCapture({
       // [cloneStatus, hasVoice] useEffect, which calls retryEmbedding again,
       // queueing a second embed message. The cycle repeats per progress
       // event, flooding the worker with hundreds of concurrent extractions.
+      const quality = scoreVoiceSample(rawAudio, 24000);
       const embedding = await extractEmbedding(rawAudio);
       if (embedding) {
         setCloneStatus("ready");
-        onCapture(blob, embedding);
+        onCapture(blob, embedding, quality);
       } else {
         setCloneStatus("model-loading");
       }
@@ -468,16 +499,17 @@ export function VoiceCapture({
       // The "model-loading" status is set explicitly below in the
       // extract-returned-null branch (worker not ready) and is the right
       // signal for the retry-after-warm useEffect to fire on.
+      const quality = scoreVoiceSample(rawAudio, 24000);
       const embedding = await extractEmbedding(rawAudio);
       setSavedBlob(blob);
 
       if (embedding) {
         setCloneStatus("ready");
-        onCapture(blob, embedding);
+        onCapture(blob, embedding, quality);
       } else {
         // Model not ready yet — save audio, mark as captured, will retry when model loads
         setCloneStatus("model-loading");
-        onCapture(blob);
+        onCapture(blob, undefined, quality);
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Voice processing failed";
@@ -1213,6 +1245,11 @@ export function VoiceCapture({
             {playing ? resolvePhrase("ui.provider.voice_capture.stop", caregiverLang) : resolvePhrase("ui.provider.voice_capture.play", caregiverLang)}
           </Btn>
         </div>
+        {previewQuality && (
+          <div style={{ marginBottom: compact ? 10 : 12 }}>
+            <QualityBadge quality={previewQuality} locale={caregiverLang} />
+          </div>
+        )}
         <div style={{ display: "flex", gap: btnFloor.gap }}>
           <Btn
             onClick={discardPreview}
@@ -1334,6 +1371,9 @@ export function VoiceCapture({
         >
           <div style={{ display: "flex", alignItems: "center", gap: btnFloor.gap, flexWrap: "wrap" }}>
             <CloneStatusBadge />
+            {savedQuality && (
+              <QualityBadge quality={savedQuality} locale={caregiverLang} compact />
+            )}
             {cloneStatus === "failed" && (
               <Btn
                 onClick={retryEmbedding}
