@@ -138,16 +138,16 @@ describe("computeVoicedFraction", () => {
 
 describe("scoreVoicedFraction", () => {
   it("returns 0 at 40% voiced", () => { expect(scoreVoicedFraction(0.4)).toBe(0); });
-  it("returns ~40 at 60%", () => {
-    expect(scoreVoicedFraction(0.6)).toBeGreaterThan(35);
-    expect(scoreVoicedFraction(0.6)).toBeLessThan(45);
+  it("returns ~40 at 55%", () => {
+    expect(scoreVoicedFraction(0.55)).toBeGreaterThan(35);
+    expect(scoreVoicedFraction(0.55)).toBeLessThan(45);
   });
-  it("returns ~80 at 75%", () => {
-    expect(scoreVoicedFraction(0.75)).toBeGreaterThan(75);
-    expect(scoreVoicedFraction(0.75)).toBeLessThan(85);
+  it("returns ~80 at 70%", () => {
+    expect(scoreVoicedFraction(0.7)).toBeGreaterThan(75);
+    expect(scoreVoicedFraction(0.7)).toBeLessThan(85);
   });
-  it("returns 100 at 85% and above", () => {
-    expect(scoreVoicedFraction(0.85)).toBe(100);
+  it("returns 100 at 80% and above", () => {
+    expect(scoreVoicedFraction(0.8)).toBe(100);
     expect(scoreVoicedFraction(1)).toBe(100);
   });
 });
@@ -376,3 +376,72 @@ describe("isValidQualityResult", () => {
     expect(isValidQualityResult(v)).toBe(false);
   });
 });
+
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+describe("calibration: mark-voice.wav (Rainbow Passage)", () => {
+  const here = path.dirname(fileURLToPath(import.meta.url));
+  const fixturePath = path.resolve(here, "../../sample-voices/mark-voice.wav");
+
+  it("scores in the 'good' band and does not trigger the dysphonia guard", () => {
+    expect(fs.existsSync(fixturePath)).toBe(true);
+    const buf = fs.readFileSync(fixturePath);
+    const { audio: audio48k, sampleRate } = decodePcm16Wav(buf);
+    expect(sampleRate).toBe(48000);
+    const audio24k = halveRate(audio48k);
+
+    const result = scoreVoiceSample(audio24k, 24000);
+    expect(result.breakdown.pitchVariation).not.toBeNull();
+    expect(result.breakdown.pitchVariation as number).toBeGreaterThanOrEqual(70);
+    expect(result.breakdown.voicedFraction).toBeGreaterThanOrEqual(60);
+    expect(result.score).toBeGreaterThanOrEqual(80);
+  });
+});
+
+function decodePcm16Wav(buf: Buffer): { audio: Float32Array; sampleRate: number } {
+  // Minimal RIFF/WAVE PCM-16 mono parser. Skips through chunks until 'fmt '
+  // and 'data'; rejects anything that is not 16-bit mono PCM.
+  const view = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+  const id = (off: number) => String.fromCharCode(view.getUint8(off), view.getUint8(off + 1), view.getUint8(off + 2), view.getUint8(off + 3));
+  if (id(0) !== "RIFF" || id(8) !== "WAVE") throw new Error("not a RIFF/WAVE file");
+  let p = 12;
+  let sampleRate = 0;
+  let bits = 0;
+  let channels = 0;
+  let dataOff = 0;
+  let dataLen = 0;
+  while (p < buf.length) {
+    const chunkId = id(p);
+    const size = view.getUint32(p + 4, true);
+    if (chunkId === "fmt ") {
+      const fmt = view.getUint16(p + 8, true);
+      if (fmt !== 1) throw new Error(`only PCM (1) supported, got fmt=${fmt}`);
+      channels = view.getUint16(p + 10, true);
+      sampleRate = view.getUint32(p + 12, true);
+      bits = view.getUint16(p + 22, true);
+    } else if (chunkId === "data") {
+      dataOff = p + 8;
+      dataLen = size;
+      break;
+    }
+    p += 8 + size + (size % 2);
+  }
+  if (channels !== 1) throw new Error(`only mono supported, got ${channels} channels`);
+  if (bits !== 16) throw new Error(`only 16-bit supported, got ${bits} bits`);
+  const sampleCount = dataLen / 2;
+  const audio = new Float32Array(sampleCount);
+  for (let i = 0; i < sampleCount; i++) {
+    audio[i] = view.getInt16(dataOff + i * 2, true) / 32768;
+  }
+  return { audio, sampleRate };
+}
+
+function halveRate(audio: Float32Array): Float32Array {
+  const out = new Float32Array(Math.floor(audio.length / 2));
+  for (let i = 0; i < out.length; i++) {
+    out[i] = (audio[2 * i] + audio[2 * i + 1]) / 2;
+  }
+  return out;
+}

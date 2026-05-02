@@ -104,11 +104,16 @@ export function computeVoicedFraction(audio: Float32Array, sampleRate: number): 
 }
 
 export function scoreVoicedFraction(voicedFraction: number): number {
+  // Curve calibrated against an actual healthy adult Rainbow Passage read
+  // (sample-voices/mark-voice.wav, ~66% raw voiced after natural pauses).
+  // The earlier 0.4/0.6/0.75/0.85 curve was tuned for sustained-vowel
+  // synthetic input and undershot real reads — see calibration test below
+  // and the spec's voicedFraction note.
   return piecewiseLinear(voicedFraction, [
     [0.4, 0],
-    [0.6, 40],
-    [0.75, 80],
-    [0.85, 100],
+    [0.55, 40],
+    [0.7, 80],
+    [0.8, 100],
   ]);
 }
 
