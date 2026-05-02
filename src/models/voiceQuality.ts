@@ -318,3 +318,28 @@ export function scoreVoiceSample(rawAudio: Float32Array, sampleRate: number): Vo
     qualityVersion: QUALITY_VERSION,
   };
 }
+
+const VALID_TILT_DIRECTIONS = new Set(["boomy", "tinny", "neutral"]);
+const NUMERIC_BREAKDOWN_KEYS = [
+  "snr", "clipping", "coverage", "voicedFraction",
+  "loudnessConsistency", "spectralTilt",
+] as const;
+
+export function isValidQualityResult(x: unknown): x is VoiceQualityResult {
+  if (!x || typeof x !== "object") return false;
+  const q = x as Record<string, unknown>;
+  if (typeof q.score !== "number" || !Number.isFinite(q.score)) return false;
+  if (typeof q.qualityVersion !== "number") return false;
+  if (typeof q.spectralTiltDirection !== "string"
+      || !VALID_TILT_DIRECTIONS.has(q.spectralTiltDirection)) return false;
+  if (!q.breakdown || typeof q.breakdown !== "object") return false;
+  const b = q.breakdown as Record<string, unknown>;
+  for (const k of NUMERIC_BREAKDOWN_KEYS) {
+    if (typeof b[k] !== "number" || !Number.isFinite(b[k])) return false;
+  }
+  if (b.pitchVariation !== null
+      && (typeof b.pitchVariation !== "number" || !Number.isFinite(b.pitchVariation))) {
+    return false;
+  }
+  return true;
+}

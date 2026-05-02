@@ -15,6 +15,7 @@ import {
   scoreSpectralTilt,
   computeSpectralTiltAlphaDb,
   classifyTiltDirection,
+  isValidQualityResult,
 } from "./voiceQuality";
 
 describe("voiceQuality module constants", () => {
@@ -328,5 +329,50 @@ describe("scoreVoiceSample", () => {
     for (let i = 0; i < audio.length; i++) audio[i] = Math.sin((2 * Math.PI * 150 * i) / sr) * 0.4;
     const result = scoreVoiceSample(audio, sr);
     expect(result.spectralTiltDirection).toBe("boomy");
+  });
+});
+
+describe("isValidQualityResult", () => {
+  function valid(): unknown {
+    return {
+      score: 75,
+      breakdown: {
+        snr: 80, clipping: 90, coverage: 60, voicedFraction: 70,
+        pitchVariation: 75, loudnessConsistency: 80, spectralTilt: 85,
+      },
+      spectralTiltDirection: "neutral",
+      qualityVersion: 1,
+    };
+  }
+
+  it("accepts a well-formed object", () => {
+    expect(isValidQualityResult(valid())).toBe(true);
+  });
+  it("accepts pitchVariation: null (dysphonia guard fired)", () => {
+    const v = valid() as { breakdown: Record<string, number | null> };
+    v.breakdown.pitchVariation = null;
+    expect(isValidQualityResult(v)).toBe(true);
+  });
+  it("rejects null", () => { expect(isValidQualityResult(null)).toBe(false); });
+  it("rejects non-object", () => { expect(isValidQualityResult(42)).toBe(false); });
+  it("rejects when score is NaN", () => {
+    const v = valid() as { score: number };
+    v.score = NaN;
+    expect(isValidQualityResult(v)).toBe(false);
+  });
+  it("rejects when a sub-score is missing", () => {
+    const v = valid() as { breakdown: Record<string, unknown> };
+    delete v.breakdown.snr;
+    expect(isValidQualityResult(v)).toBe(false);
+  });
+  it("rejects when spectralTiltDirection is unknown", () => {
+    const v = valid() as { spectralTiltDirection: string };
+    v.spectralTiltDirection = "weird";
+    expect(isValidQualityResult(v)).toBe(false);
+  });
+  it("rejects pitchVariation undefined (only null is allowed)", () => {
+    const v = valid() as { breakdown: Record<string, unknown> };
+    v.breakdown.pitchVariation = undefined;
+    expect(isValidQualityResult(v)).toBe(false);
   });
 });
