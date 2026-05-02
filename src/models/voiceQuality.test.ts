@@ -19,8 +19,8 @@ import {
 } from "./voiceQuality";
 
 describe("voiceQuality module constants", () => {
-  it("exports QUALITY_VERSION starting at 1", () => {
-    expect(QUALITY_VERSION).toBe(1);
+  it("exports QUALITY_VERSION at the current value", () => {
+    expect(QUALITY_VERSION).toBe(2);
   });
 
   it("DEFAULT_WEIGHTS sum to 1.0", () => {
@@ -298,7 +298,7 @@ describe("scoreVoiceSample", () => {
       audio[i] = Math.sin(2 * Math.PI * f0 * t) * 0.4;
     }
     const result = scoreVoiceSample(audio, sr);
-    expect(result.qualityVersion).toBe(1);
+    expect(result.qualityVersion).toBe(2);
     expect(result.score).toBeGreaterThan(50);
     expect(result.breakdown.clipping).toBe(100);
     expect(result.breakdown.pitchVariation).not.toBeNull();
@@ -329,6 +329,49 @@ describe("scoreVoiceSample", () => {
     for (let i = 0; i < audio.length; i++) audio[i] = Math.sin((2 * Math.PI * 150 * i) / sr) * 0.4;
     const result = scoreVoiceSample(audio, sr);
     expect(result.spectralTiltDirection).toBe("boomy");
+  });
+
+  it("scores pure silence at zero (no-speech guard fires)", () => {
+    // Regression test: before the no-speech guard, 7s of pure zero audio
+    // scored ~51 because clipping/loudnessConsistency/spectralTilt all
+    // returned 100 (no degradation = full credit) and coverage gave 66
+    // (raw 7s in the 6→60..12→95 band). The user reported score 60 on
+    // dead-air recordings; this asserts silence now scores 0.
+    const sr = 24000;
+    const audio = new Float32Array(sr * 7);
+    const result = scoreVoiceSample(audio, sr);
+    expect(result.score).toBe(0);
+    expect(result.breakdown.clipping).toBeNull();
+    expect(result.breakdown.loudnessConsistency).toBeNull();
+    expect(result.breakdown.spectralTilt).toBeNull();
+    expect(result.breakdown.voicedFraction).toBe(0);
+    expect(result.breakdown.coverage).toBe(0);
+  });
+
+  it("scores low-amplitude ambient noise at zero (no-speech guard fires)", () => {
+    const sr = 24000;
+    const audio = new Float32Array(sr * 7);
+    // ~-54 dBFS room tone, well below the -40 dBFS voiced threshold
+    for (let i = 0; i < audio.length; i++) audio[i] = (Math.random() * 2 - 1) * 0.002;
+    const result = scoreVoiceSample(audio, sr);
+    expect(result.score).toBeLessThan(15);
+    expect(result.breakdown.clipping).toBeNull();
+    expect(result.breakdown.loudnessConsistency).toBeNull();
+    expect(result.breakdown.spectralTilt).toBeNull();
+  });
+
+  it("uses effective speech duration for coverage (raw × voicedFraction)", () => {
+    // 12 s of audio with only the first 3 s voiced — effective speech
+    // duration is ~3 s, well below the 6 s knee, so coverage should be low
+    // even though the raw recording is "long enough."
+    const sr = 24000;
+    const audio = new Float32Array(sr * 12);
+    for (let i = 0; i < sr * 3; i++) {
+      audio[i] = Math.sin((2 * Math.PI * 200 * i) / sr) * 0.4;
+    }
+    // remaining 9 s stays silence
+    const result = scoreVoiceSample(audio, sr);
+    expect(result.breakdown.coverage).toBeLessThan(50);
   });
 });
 

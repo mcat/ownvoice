@@ -13,8 +13,19 @@ import { trackPitch } from "./pitchTracker";
 import { estimateSNR } from "./enrollmentAudio";
 import type { VoiceQualityResult } from "./types";
 
-/** Bumped when sub-score mappings, weights, or the schema change. */
-export const QUALITY_VERSION = 1;
+/** Bumped when sub-score mappings, weights, or the schema change.
+ *  v2 (2026-05-02): no-speech guard added — clipping, loudnessConsistency,
+ *  and spectralTilt return null when voicedFraction is below threshold;
+ *  coverage measures effective speech duration (raw × voicedFraction)
+ *  rather than raw audio length. Together these stop silence from scoring
+ *  ~50 due to "absence of degradation" sub-scores giving full credit. */
+export const QUALITY_VERSION = 2;
+
+/** Below this raw voiced-frame fraction, sub-scores that measure "absence
+ *  of degradation" (clipping, loudnessConsistency, spectralTilt) return
+ *  null instead of high values — there is not enough signal to evaluate
+ *  them, and rewarding silence with full marks would mislead the user. */
+const NO_SPEECH_GUARD_THRESHOLD = 0.30;
 
 /** Default aggregation weights. Sum to 1.0. Pitch variation is the
  *  highest because Chatterbox conditions on frame-level features the LM
@@ -266,26 +277,41 @@ function median(values: number[]): number {
 }
 
 export function scoreVoiceSample(rawAudio: Float32Array, sampleRate: number): VoiceQualityResult {
-  // Sub-scores that operate on the raw audio directly:
   const { snrDb } = estimateSNR(rawAudio, sampleRate);
   const snr = scoreSnr(snrDb);
-
-  const clipFraction = computeClipFraction(rawAudio);
-  const clipping = scoreClipping(clipFraction);
-
-  const speechDuration = rawAudio.length / sampleRate;
-  const coverage = scoreCoverage(speechDuration);
 
   const voicedFraction = computeVoicedFraction(rawAudio, sampleRate);
   const voicedFractionScore = scoreVoicedFraction(voicedFraction);
 
-  const loudnessCV = computeLoudnessCV(rawAudio, sampleRate);
-  const loudnessConsistency = scoreLoudnessConsistency(loudnessCV);
+  // Coverage uses effective SPEECH duration (raw duration × voicedFraction),
+  // not raw audio length. A 7s recording of pure silence has 0s of speech
+  // and should score 0 on coverage, not the ~66 the raw-duration mapping
+  // would give. A 13s read at 67% voiced has ~8.7s effective speech.
+  const effectiveSpeechSec = (rawAudio.length / sampleRate) * voicedFraction;
+  const coverage = scoreCoverage(effectiveSpeechSec);
 
-  // Pitch-derived sub-scores. The dysphonia guard reads
-  // peakHeights[voicedMask] median; if confidence is too low to trust the
-  // pitch estimates, set pitchVariation to null. Aggregation will
-  // redistribute pitch's weight automatically across remaining dimensions.
+  // No-speech guard: if there's too little voiced content, sub-scores that
+  // measure "absence of degradation" (clipping, loudnessConsistency,
+  // spectralTilt) would otherwise return high marks — silence has no
+  // clipping, zero loudness variance, and no FFT energy to skew. Suppressing
+  // them via null lets the aggregate redistribute weight to dimensions that
+  // *can* be measured (snr, voicedFraction, coverage), which together drive
+  // the score toward zero on silence.
+  const noSpeechSuppressed = voicedFraction < NO_SPEECH_GUARD_THRESHOLD;
+
+  let clipping: number | null;
+  let loudnessConsistency: number | null;
+  if (noSpeechSuppressed) {
+    clipping = null;
+    loudnessConsistency = null;
+  } else {
+    clipping = scoreClipping(computeClipFraction(rawAudio));
+    loudnessConsistency = scoreLoudnessConsistency(computeLoudnessCV(rawAudio, sampleRate));
+  }
+
+  // Pitch tracking runs unconditionally because spectralTilt's voiced-frame
+  // mask comes from it and the dysphonia guard depends on its peak heights.
+  // Cheap (<10 ms for a 15s clip).
   const pitch = trackPitch(rawAudio, sampleRate);
   const voicedHeights: number[] = [];
   for (let i = 0; i < pitch.peakHeights.length; i++) {
@@ -302,9 +328,16 @@ export function scoreVoiceSample(rawAudio: Float32Array, sampleRate: number): Vo
     pitchVariation = stdev === null ? null : scorePitchVariation(stdev);
   }
 
-  const alphaDb = computeSpectralTiltAlphaDb(rawAudio, pitch.voiced, sampleRate);
-  const spectralTilt = scoreSpectralTilt(alphaDb);
-  const spectralTiltDirection = classifyTiltDirection(alphaDb);
+  let spectralTilt: number | null;
+  let spectralTiltDirection: "boomy" | "tinny" | "neutral";
+  if (noSpeechSuppressed) {
+    spectralTilt = null;
+    spectralTiltDirection = "neutral";
+  } else {
+    const alphaDb = computeSpectralTiltAlphaDb(rawAudio, pitch.voiced, sampleRate);
+    spectralTilt = scoreSpectralTilt(alphaDb);
+    spectralTiltDirection = classifyTiltDirection(alphaDb);
+  }
 
   const breakdown: Breakdown = {
     snr,
@@ -325,9 +358,9 @@ export function scoreVoiceSample(rawAudio: Float32Array, sampleRate: number): Vo
 }
 
 const VALID_TILT_DIRECTIONS = new Set(["boomy", "tinny", "neutral"]);
-const NUMERIC_BREAKDOWN_KEYS = [
-  "snr", "clipping", "coverage", "voicedFraction",
-  "loudnessConsistency", "spectralTilt",
+const ALWAYS_NUMERIC_BREAKDOWN_KEYS = ["snr", "coverage", "voicedFraction"] as const;
+const NULLABLE_BREAKDOWN_KEYS = [
+  "clipping", "pitchVariation", "loudnessConsistency", "spectralTilt",
 ] as const;
 
 export function isValidQualityResult(x: unknown): x is VoiceQualityResult {
@@ -339,12 +372,12 @@ export function isValidQualityResult(x: unknown): x is VoiceQualityResult {
       || !VALID_TILT_DIRECTIONS.has(q.spectralTiltDirection)) return false;
   if (!q.breakdown || typeof q.breakdown !== "object") return false;
   const b = q.breakdown as Record<string, unknown>;
-  for (const k of NUMERIC_BREAKDOWN_KEYS) {
+  for (const k of ALWAYS_NUMERIC_BREAKDOWN_KEYS) {
     if (typeof b[k] !== "number" || !Number.isFinite(b[k])) return false;
   }
-  if (b.pitchVariation !== null
-      && (typeof b.pitchVariation !== "number" || !Number.isFinite(b.pitchVariation))) {
-    return false;
+  for (const k of NULLABLE_BREAKDOWN_KEYS) {
+    if (b[k] === null) continue;
+    if (typeof b[k] !== "number" || !Number.isFinite(b[k])) return false;
   }
   return true;
 }

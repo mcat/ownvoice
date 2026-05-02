@@ -144,7 +144,7 @@ is meant to surface.
 |---|---|---|
 | `snr` | 6 dB→0, 15 dB→50, 25 dB→90, 35 dB→100 | LibriTTS 32 dB filter (Zen 2019); Hi-Fi TTS (Bakhturina 2021); x-vector vs ECAPA degradation curves (Loweimi 2024) |
 | `clipping` | 0%→100, 0.05%→80, 0.5%→30, ≥2%→0 | ElevenLabs PVC −3 dBTP guidance; cloning replicates distortion verbatim |
-| `coverage` | <2 s→0, 2-6 s→0-60 linear, 6-12 s→60-95, ≥12 s→100 | ECAPA short-duration plateau (Loweimi 2024; ERes2NetV2) |
+| `coverage` | <2 s→0, 2-6 s→0-60 linear, 6-12 s→60-95, ≥12 s→100, applied to `effective speech duration = raw duration × voicedFraction` | ECAPA short-duration plateau (Loweimi 2024; ERes2NetV2). The voicedFraction multiplier prevents silent recordings from earning coverage credit. |
 | `voicedFraction` | 40%→0, 55%→40, 70%→80, ≥80%→100 | Heuristic, calibrated against `sample-voices/mark-voice.wav` (Rainbow Passage, ~67% raw voiced) — literature silent at this granularity |
 | `pitchVariation` | 1 ST→0, 2 ST→40, 2.5 ST→70, 3.5 ST→90, ≥4.5 ST→100 | Neutral read speech ~2.7 ST (women) / ~3.4 ST (men) — Traunmüller & Eriksson; eksss; ASHA |
 | `loudnessConsistency` | CV<0.25→100, 0.5→70, 1.0→30, ≥1.5→0 | RMS coefficient of variation; LRA disqualified for <1 min clips per EBU TECH 3342 |
@@ -204,6 +204,22 @@ Any sub-score may be `null` (unmeasurable for this take); aggregation
 redistributes that sub-score's weight proportionally across the remaining
 dimensions. The dysphonia guard (next section) is one consumer of this
 mechanism, not a special case.
+
+### No-speech guard
+
+Sub-scores that measure "absence of degradation" (`clipping`,
+`loudnessConsistency`, `spectralTilt`) return null instead of high
+values when the recording has too little voiced content
+(`voicedFraction < 0.30`). Silence has no clipping, no loudness
+variance, and no FFT energy to skew — left to score normally those
+dimensions return 100, treating "no signal to evaluate" as "perfect."
+Suppressing them via null lets the aggregate redistribute weight to
+dimensions that *can* be measured (`snr`, `voicedFraction`, `coverage`),
+which together drive the score toward zero on silence.
+
+This was caught after release by a user report: 7 s of dead air scored
+~50–60 instead of near-0. Bug-fix landed alongside the version 2 schema
+in commit (PR #171 follow-up).
 
 ### Dysphonia guard
 

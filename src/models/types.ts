@@ -64,17 +64,23 @@ export interface FewShotExample {
 export interface VoiceQualityResult {
   /** Overall 0-100 weighted score. */
   score: number;
-  /** Per-dimension 0-100 sub-scores. `pitchVariation` is null when the
-   *  pitch tracker's median voicing confidence is below threshold; the
-   *  aggregate ignores null entries and renormalises remaining weights. */
+  /** Per-dimension 0-100 sub-scores. Sub-scores are null when they cannot
+   *  be measured meaningfully:
+   *   - `pitchVariation` when median voicing confidence is below the
+   *     dysphonia threshold (autocorrelation can't trust the F0 estimates).
+   *   - `clipping`, `loudnessConsistency`, `spectralTilt` when the recording
+   *     has too little voiced content (no-speech guard) — these dimensions
+   *     measure "absence of degradation" and would otherwise reward silence
+   *     with full marks.
+   *  The aggregate ignores null entries and renormalises remaining weights. */
   breakdown: {
     snr: number;
-    clipping: number;
+    clipping: number | null;
     coverage: number;
     voicedFraction: number;
     pitchVariation: number | null;
-    loudnessConsistency: number;
-    spectralTilt: number;
+    loudnessConsistency: number | null;
+    spectralTilt: number | null;
   };
   /** Direction of spectral-tilt deviation, used by the tip selector. */
   spectralTiltDirection: "boomy" | "tinny" | "neutral";
