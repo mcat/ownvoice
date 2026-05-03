@@ -548,6 +548,8 @@ const pt: LocaleStrings = {
   // ── UI chrome: Thread ──────────────────────────────────────────
   "ui.dual.thread.repeat_aria": "Repetir: {text}",
   "ui.dual.thread.aria_label": "Conversation",
+  "ui.dual.thread.scroll_up_aria": "Rolar conversa para cima",
+  "ui.dual.thread.scroll_down_aria": "Rolar conversa para baixo",
 
   // ── UI chrome: ProviderPanel ───────────────────────────────────
   "ui.provider.care_team.title": "Equipe de cuidados",

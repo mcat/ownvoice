@@ -543,6 +543,8 @@ const fi: LocaleStrings = {
   // ── UI chrome: Thread ──────────────────────────────────────────
   "ui.dual.thread.repeat_aria": "Toista: {text}",
   "ui.dual.thread.aria_label": "Conversation",
+  "ui.dual.thread.scroll_up_aria": "Vieritä keskustelua ylös",
+  "ui.dual.thread.scroll_down_aria": "Vieritä keskustelua alas",
 
   // ── UI chrome: ProviderPanel ───────────────────────────────────
   "ui.provider.care_team.title": "Hoitotiimi",

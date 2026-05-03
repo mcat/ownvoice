@@ -565,6 +565,8 @@ const he: LocaleStrings = {
   // ── UI chrome: Thread ──────────────────────────────────────────
   "ui.dual.thread.repeat_aria": "חזור: {text}",
   "ui.dual.thread.aria_label": "Conversation",
+  "ui.dual.thread.scroll_up_aria": "גלול שיחה למעלה",
+  "ui.dual.thread.scroll_down_aria": "גלול שיחה למטה",
 
   // ── UI chrome: ProviderPanel ───────────────────────────────────
   "ui.provider.care_team.title": "צוות טיפול",

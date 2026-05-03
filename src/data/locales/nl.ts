@@ -558,6 +558,8 @@ const nl: LocaleStrings = {
   // ── UI chrome: Thread ──────────────────────────────────────────
   "ui.dual.thread.repeat_aria": "Herhalen: {text}",
   "ui.dual.thread.aria_label": "Conversation",
+  "ui.dual.thread.scroll_up_aria": "Gesprek omhoog scrollen",
+  "ui.dual.thread.scroll_down_aria": "Gesprek omlaag scrollen",
 
   // ── UI chrome: ProviderPanel ───────────────────────────────────
   "ui.provider.care_team.title": "Zorgteam",

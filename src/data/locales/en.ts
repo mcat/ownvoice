@@ -533,6 +533,8 @@ const en = {
   // ── UI chrome: Thread ──────────────────────────────────────────
   "ui.dual.thread.repeat_aria": "Repeat: {text}",
   "ui.dual.thread.aria_label": "Conversation",
+  "ui.dual.thread.scroll_up_aria": "Scroll conversation up",
+  "ui.dual.thread.scroll_down_aria": "Scroll conversation down",
 
   // ── UI chrome: ProviderPanel ───────────────────────────────────
   "ui.provider.care_team.title": "Care Team",

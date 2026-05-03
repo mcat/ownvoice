@@ -564,6 +564,8 @@ const vi: LocaleStrings = {
   // ── UI chrome: Thread ──────────────────────────────────────────
   "ui.dual.thread.repeat_aria": "Nhắc lại: {text}",
   "ui.dual.thread.aria_label": "Conversation",
+  "ui.dual.thread.scroll_up_aria": "Cuộn cuộc trò chuyện lên",
+  "ui.dual.thread.scroll_down_aria": "Cuộn cuộc trò chuyện xuống",
 
   // ── UI chrome: ProviderPanel ───────────────────────────────────
   "ui.provider.care_team.title": "Đội ngũ y tế",

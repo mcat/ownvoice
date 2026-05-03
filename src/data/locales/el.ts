@@ -565,6 +565,8 @@ const el: LocaleStrings = {
   // ── UI chrome: Thread ──────────────────────────────────────────
   "ui.dual.thread.repeat_aria": "Επανάληψη: {text}",
   "ui.dual.thread.aria_label": "Conversation",
+  "ui.dual.thread.scroll_up_aria": "Κύλιση συζήτησης προς τα πάνω",
+  "ui.dual.thread.scroll_down_aria": "Κύλιση συζήτησης προς τα κάτω",
 
   // ── UI chrome: ProviderPanel ───────────────────────────────────
   "ui.provider.care_team.title": "Ομάδα φροντίδας",

@@ -549,6 +549,8 @@ const ja: LocaleStrings = {
   // ── UI chrome: Thread ──────────────────────────────────────────
   "ui.dual.thread.repeat_aria": "もう一度: {text}",
   "ui.dual.thread.aria_label": "Conversation",
+  "ui.dual.thread.scroll_up_aria": "会話を上にスクロール",
+  "ui.dual.thread.scroll_down_aria": "会話を下にスクロール",
 
   // ── UI chrome: ProviderPanel ───────────────────────────────────
   "ui.provider.care_team.title": "ケアチーム",
