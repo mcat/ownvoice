@@ -548,6 +548,8 @@ const ru: LocaleStrings = {
   // ── UI chrome: Thread ──────────────────────────────────────────
   "ui.dual.thread.repeat_aria": "Повторить: {text}",
   "ui.dual.thread.aria_label": "Conversation",
+  "ui.dual.thread.scroll_up_aria": "Прокрутить разговор вверх",
+  "ui.dual.thread.scroll_down_aria": "Прокрутить разговор вниз",
 
   // ── UI chrome: ProviderPanel ───────────────────────────────────
   "ui.provider.care_team.title": "Медицинская команда",

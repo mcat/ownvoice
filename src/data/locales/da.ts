@@ -557,6 +557,8 @@ const da: LocaleStrings = {
   // ── UI chrome: Thread ──────────────────────────────────────────
   "ui.dual.thread.repeat_aria": "Gentag: {text}",
   "ui.dual.thread.aria_label": "Conversation",
+  "ui.dual.thread.scroll_up_aria": "Rul samtale op",
+  "ui.dual.thread.scroll_down_aria": "Rul samtale ned",
 
   // ── UI chrome: ProviderPanel ───────────────────────────────────
   "ui.provider.care_team.title": "Behandlingsteam",

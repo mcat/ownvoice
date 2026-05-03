@@ -554,6 +554,8 @@ const tr: LocaleStrings = {
   // ── UI chrome: Thread ──────────────────────────────────────────
   "ui.dual.thread.repeat_aria": "Tekrarla: {text}",
   "ui.dual.thread.aria_label": "Conversation",
+  "ui.dual.thread.scroll_up_aria": "Konuşmayı yukarı kaydır",
+  "ui.dual.thread.scroll_down_aria": "Konuşmayı aşağı kaydır",
 
   // ── UI chrome: ProviderPanel ───────────────────────────────────
   "ui.provider.care_team.title": "Bakım Ekibi",

@@ -544,6 +544,8 @@ const hi: LocaleStrings = {
   // ── UI chrome: Thread ──────────────────────────────────────────
   "ui.dual.thread.repeat_aria": "दोहराएँ: {text}",
   "ui.dual.thread.aria_label": "Conversation",
+  "ui.dual.thread.scroll_up_aria": "बातचीत ऊपर स्क्रॉल करें",
+  "ui.dual.thread.scroll_down_aria": "बातचीत नीचे स्क्रॉल करें",
 
   // ── UI chrome: ProviderPanel ───────────────────────────────────
   "ui.provider.care_team.title": "देखभाल टीम",

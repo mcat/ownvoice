@@ -558,6 +558,8 @@ const ms: LocaleStrings = {
   // ── UI chrome: Thread ──────────────────────────────────────────
   "ui.dual.thread.repeat_aria": "Ulang: {text}",
   "ui.dual.thread.aria_label": "Conversation",
+  "ui.dual.thread.scroll_up_aria": "Tatal perbualan ke atas",
+  "ui.dual.thread.scroll_down_aria": "Tatal perbualan ke bawah",
 
   // ── UI chrome: ProviderPanel ───────────────────────────────────
   "ui.provider.care_team.title": "Pasukan penjagaan",

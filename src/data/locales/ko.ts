@@ -560,6 +560,8 @@ const ko: LocaleStrings = {
   // ── UI chrome: Thread ──────────────────────────────────────────
   "ui.dual.thread.repeat_aria": "반복: {text}",
   "ui.dual.thread.aria_label": "Conversation",
+  "ui.dual.thread.scroll_up_aria": "대화를 위로 스크롤",
+  "ui.dual.thread.scroll_down_aria": "대화를 아래로 스크롤",
 
   // ── UI chrome: ProviderPanel ───────────────────────────────────
   "ui.provider.care_team.title": "의료진",

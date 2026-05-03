@@ -557,6 +557,8 @@ const sw: LocaleStrings = {
   // ── UI chrome: Thread ──────────────────────────────────────────
   "ui.dual.thread.repeat_aria": "Rudia: {text}",
   "ui.dual.thread.aria_label": "Conversation",
+  "ui.dual.thread.scroll_up_aria": "Sogeza mazungumzo juu",
+  "ui.dual.thread.scroll_down_aria": "Sogeza mazungumzo chini",
 
   // ── UI chrome: ProviderPanel ───────────────────────────────────
   "ui.provider.care_team.title": "Timu ya Huduma",

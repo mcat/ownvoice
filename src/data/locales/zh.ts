@@ -529,6 +529,8 @@ const zh: LocaleStrings = {
   // ── UI chrome: Thread ──────────────────────────────────────────
   "ui.dual.thread.repeat_aria": "重复：{text}",
   "ui.dual.thread.aria_label": "Conversation",
+  "ui.dual.thread.scroll_up_aria": "向上滚动对话",
+  "ui.dual.thread.scroll_down_aria": "向下滚动对话",
 
   // ── UI chrome: ProviderPanel ───────────────────────────────────
   "ui.provider.care_team.title": "医疗团队",

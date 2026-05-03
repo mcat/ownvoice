@@ -550,6 +550,8 @@ const fr: LocaleStrings = {
   // ── UI chrome: Thread ──────────────────────────────────────────
   "ui.dual.thread.repeat_aria": "Répéter : {text}",
   "ui.dual.thread.aria_label": "Conversation",
+  "ui.dual.thread.scroll_up_aria": "Faire défiler la conversation vers le haut",
+  "ui.dual.thread.scroll_down_aria": "Faire défiler la conversation vers le bas",
 
   // ── UI chrome: ProviderPanel ───────────────────────────────────
   "ui.provider.care_team.title": "Équipe soignante",
