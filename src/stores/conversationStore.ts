@@ -12,6 +12,7 @@ interface ConversationState {
     from: "patient" | "provider",
     label: string,
     gloss?: string,
+    icon?: string,
   ) => void;
   /** Clears the currently-active patient's thread. */
   clear: () => void;
@@ -24,7 +25,7 @@ export const useConversationStore = create<ConversationState>()(
     (set) => ({
       messagesByPatientId: {},
 
-      addMessage: (text, from, label, gloss) => {
+      addMessage: (text, from, label, gloss, icon) => {
         const activeId = useSettingsStore.getState().cfg?.activePatientId;
         if (!activeId) return;
         const time = new Date().toLocaleTimeString([], {
@@ -35,7 +36,7 @@ export const useConversationStore = create<ConversationState>()(
           return {
             messagesByPatientId: {
               ...s.messagesByPatientId,
-              [activeId]: [...existing, { from, text, time, label, gloss }],
+              [activeId]: [...existing, { from, text, time, label, gloss, icon }],
             },
           };
         });

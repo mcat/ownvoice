@@ -35,12 +35,12 @@ describe("PhraseGrid", () => {
     render(<PhraseGrid phrases={phrases} onTap={onTap} t={light} ariaLabel="Test" />);
 
     fireEvent.click(screen.getByRole("gridcell", { name: "I need water" }));
-    expect(onTap).toHaveBeenCalledWith("I need water");
+    expect(onTap).toHaveBeenCalledWith("I need water", { icon: "💧" });
 
     // Btn has 300ms debounce, so advance timers for second click
     vi.useFakeTimers();
     fireEvent.click(screen.getByRole("gridcell", { name: "I am cold" }));
-    expect(onTap).toHaveBeenCalledWith("I am cold");
+    expect(onTap).toHaveBeenCalledWith("I am cold", { icon: "🥶" });
     vi.useRealTimers();
   });
 

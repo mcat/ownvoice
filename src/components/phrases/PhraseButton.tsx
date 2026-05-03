@@ -8,7 +8,7 @@ import type { ThemeTokens } from "../../theme/tokens";
 
 interface PhraseButtonProps {
   phrase: Phrase;
-  onTap: (text: string, opts?: { key?: PhraseKey }) => void;
+  onTap: (text: string, opts?: { key?: PhraseKey; icon?: string }) => void;
   t: ThemeTokens;
   /** Override role — used by PhraseGrid to set role="gridcell". */
   role?: AriaRole;
@@ -35,7 +35,10 @@ export function PhraseButton({ phrase, onTap, t, role, tabIndex }: PhraseButtonP
 
   const handle = () => {
     setLit(true);
-    if (phrase.key) onTap(phrase.text, { key: phrase.key });
+    const opts: { key?: PhraseKey; icon?: string } = {};
+    if (phrase.key) opts.key = phrase.key;
+    if (phrase.icon) opts.icon = phrase.icon;
+    if (opts.key || opts.icon) onTap(phrase.text, opts);
     else onTap(phrase.text);
     setTimeout(() => setLit(false), litMs);
   };

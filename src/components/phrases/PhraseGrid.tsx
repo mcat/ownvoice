@@ -7,7 +7,7 @@ import type { ThemeTokens } from "../../theme/tokens";
 
 interface PhraseGridProps {
   phrases: Phrase[];
-  onTap: (text: string, opts?: { key?: PhraseKey }) => void;
+  onTap: (text: string, opts?: { key?: PhraseKey; icon?: string }) => void;
   t: ThemeTokens;
   /** Accessible name for the grid container. Caller passes the active
    *  category label, e.g. "Comfort phrases". Required because

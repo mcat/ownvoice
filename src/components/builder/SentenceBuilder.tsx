@@ -3,6 +3,7 @@ import { Btn } from "../shared/Btn";
 import { getKeyedContextualSuggestions, getLLMSuggestions } from "../../data/suggestion-trees";
 import { t as resolvePhrase } from "../../data/phraseRegistry";
 import type { PhraseKey, SuggestionItem } from "../../data/phraseRegistry";
+import { resolveEmoji, scanKeywordEmoji, pickBubbleIcon, type EmojiEntry } from "../../data/expressiveEmoji";
 import { useActivePatient, useSettingsStore } from "../../stores/settingsStore";
 import { polishSentence } from "../../utils/polishSentence";
 import type { Message } from "../../types";
@@ -11,11 +12,11 @@ import type { ThemeTokens, ThemeName } from "../../theme/tokens";
 // ── Token model ─────────────────────────────────────────────────
 
 export type Token =
-  | { kind: "key"; key: PhraseKey }   // From a curated suggestion chip tap
-  | { kind: "free"; text: string };   // From keyboard typing or keyless chip
+  | { kind: "key"; key: PhraseKey; emoji?: EmojiEntry }   // From a curated suggestion chip tap
+  | { kind: "free"; text: string; emoji?: EmojiEntry };   // From keyboard typing or keyless chip
 
 interface SentenceBuilderProps {
-  onSend: (text: string, opts?: { gloss?: string }) => void;
+  onSend: (text: string, opts?: { gloss?: string; icon?: string }) => void;
   t: ThemeTokens;
   theme: ThemeName;
   messages: Message[];
@@ -106,7 +107,8 @@ export function SentenceBuilder({ onSend, t, theme, messages }: SentenceBuilderP
   function flushPending(): Token[] {
     const trimmed = pendingFree.trim();
     if (!trimmed) return tokens;
-    const next = [...tokens, { kind: "free" as const, text: trimmed }];
+    const emoji = scanKeywordEmoji(trimmed);
+    const next = [...tokens, { kind: "free" as const, text: trimmed, emoji }];
     setTokens(next);
     setPendingFree("");
     return next;
@@ -114,15 +116,17 @@ export function SentenceBuilder({ onSend, t, theme, messages }: SentenceBuilderP
 
   function addKeyedChip(item: SuggestionItem) {
     const base = flushPending();
+    const emoji = resolveEmoji(item);
     const tok: Token = item.key
-      ? { kind: "key", key: item.key }
-      : { kind: "free", text: item.text };
+      ? { kind: "key", key: item.key, emoji }
+      : { kind: "free", text: item.text, emoji };
     setTokens([...base, tok]);
   }
 
   function addLlmChip(text: string) {
     const base = flushPending();
-    setTokens([...base, { kind: "free", text }]);
+    const emoji = scanKeywordEmoji(text);
+    setTokens([...base, { kind: "free", text, emoji }]);
   }
 
   function undoLast() {
@@ -146,14 +150,27 @@ export function SentenceBuilder({ onSend, t, theme, messages }: SentenceBuilderP
     if (!patientText) return;
     const caregiverText = polishSentence(resolveTokens(tokens, pendingFree, caregiverLang));
     const gloss = patientText !== caregiverText ? caregiverText : undefined;
-    onSend(patientText, gloss ? { gloss } : undefined);
+    // Build a token list that includes any unflushed pendingFree so its
+    // emoji can win the bubble pick — without this, a patient who hits
+    // Speak mid-typing loses any icon their final word would contribute.
+    const trimmedPending = pendingFree.trim();
+    const finalTokens: Token[] = trimmedPending
+      ? [...tokens, { kind: "free", text: trimmedPending, emoji: scanKeywordEmoji(trimmedPending) }]
+      : tokens;
+    const icon = pickBubbleIcon(finalTokens);
+    const opts: { gloss?: string; icon?: string } = {};
+    if (gloss) opts.gloss = gloss;
+    if (icon) opts.icon = icon;
+    onSend(patientText, Object.keys(opts).length ? opts : undefined);
     setTokens([]);
     setPendingFree("");
   }
 
   function handleBlur() {
-    if (pendingFree.trim()) {
-      setTokens((prev) => [...prev, { kind: "free", text: pendingFree.trim() }]);
+    const trimmed = pendingFree.trim();
+    if (trimmed) {
+      const emoji = scanKeywordEmoji(trimmed);
+      setTokens((prev) => [...prev, { kind: "free", text: trimmed, emoji }]);
       setPendingFree("");
     }
   }
@@ -219,11 +236,15 @@ export function SentenceBuilder({ onSend, t, theme, messages }: SentenceBuilderP
       {shownSuggestions.length > 0 && (
         <div style={{ marginBottom: 12 }}>
           <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 8 }}>
-            {shownSuggestions.map((item) => (
-              <Btn key={item.text} onClick={() => addKeyedChip(item)} style={pillStyle}>
-                {item.key ? resolvePhrase(item.key, patientLang) : item.text}
-              </Btn>
-            ))}
+            {shownSuggestions.map((item) => {
+              const emoji = resolveEmoji(item);
+              const label = item.key ? resolvePhrase(item.key, patientLang) : item.text;
+              return (
+                <Btn key={item.text} onClick={() => addKeyedChip(item)} style={pillStyle}>
+                  {emoji ? `${label} ${emoji.icon}` : label}
+                </Btn>
+              );
+            })}
           </div>
         </div>
       )}
@@ -261,12 +282,15 @@ export function SentenceBuilder({ onSend, t, theme, messages }: SentenceBuilderP
           </div>
           {shownLlm.length > 0 ? (
             <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 8 }}>
-              {shownLlm.map((word) => (
-                <Btn key={`llm-${word}`} onClick={() => addLlmChip(word)} style={{
-                  ...pillStyle,
-                  border: `1px solid ${theme === "dark" ? "rgba(167,139,250,0.25)" : "rgba(124,58,237,0.2)"}`,
-                }}>{word}</Btn>
-              ))}
+              {shownLlm.map((word) => {
+                const emoji = scanKeywordEmoji(word);
+                return (
+                  <Btn key={`llm-${word}`} onClick={() => addLlmChip(word)} style={{
+                    ...pillStyle,
+                    border: `1px solid ${theme === "dark" ? "rgba(167,139,250,0.25)" : "rgba(124,58,237,0.2)"}`,
+                  }}>{emoji ? `${word} ${emoji.icon}` : word}</Btn>
+                );
+              })}
             </div>
           ) : loadingLlm ? (
             <div role="status" aria-live="polite" style={{ color: llmAccent, fontSize: 14 }}>

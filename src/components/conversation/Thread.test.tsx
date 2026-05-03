@@ -191,6 +191,80 @@ describe("Thread", () => {
     });
   });
 
+  describe("icon rendering on bubbles", () => {
+    // Reset to English — earlier dual-locale describe leaves patientLang="es"
+    // which would mismatch the /Repeat: …/ aria-label assertions.
+    beforeEach(() => {
+      useSettingsStore.setState({
+        cfg: makeTestCfg({
+          patient: { name: "Maria", patientLang: "en" },
+          cfg: { caregiverLang: "en" },
+        }),
+        _hasHydrated: true,
+      });
+    });
+
+    it("renders msg.icon as a leading aria-hidden span", () => {
+      const msgs: Message[] = [
+        {
+          from: "patient",
+          text: "I need water",
+          icon: "💧",
+          time: "2:30 PM",
+          label: "Maria",
+        },
+      ];
+      render(<Thread messages={msgs} t={light} onRepeat={vi.fn()} />);
+      const iconEl = screen.getByText("💧");
+      expect(iconEl.getAttribute("aria-hidden")).toBe("true");
+      // The icon span sits inside the bubble button alongside the text.
+      const bubble = screen.getByRole("button", { name: /Repeat: I need water/ });
+      expect(bubble.contains(iconEl)).toBe(true);
+    });
+
+    it("omits the icon span when msg.icon is undefined", () => {
+      const msgs: Message[] = [
+        { from: "patient", text: "plain text", time: "2:30 PM", label: "Maria" },
+      ];
+      const { container } = render(
+        <Thread messages={msgs} t={light} onRepeat={vi.fn()} />,
+      );
+      // No emoji glyph anywhere in the bubble. Use a regex that excludes
+      // common emoji ranges; the assertion is that no aria-hidden span
+      // sibling of the text exists.
+      const bubble = screen.getByRole("button", { name: /Repeat: plain text/ });
+      const ariaHiddens = bubble.querySelectorAll('[aria-hidden="true"]');
+      // The arrows in scrollByStep direction glyphs are aria-hidden too
+      // but live OUTSIDE the bubble. We scope the selector to the bubble.
+      expect(ariaHiddens.length).toBe(0);
+      expect(container).toBeTruthy();
+    });
+
+    it("renders icon alongside gloss when both are present", () => {
+      useSettingsStore.setState({
+        cfg: makeTestCfg({
+          patient: { name: "Maria", patientLang: "es" },
+          cfg: { caregiverLang: "en" },
+        }),
+        _hasHydrated: true,
+      });
+      const msgs: Message[] = [
+        {
+          from: "patient",
+          text: "Necesito agua",
+          gloss: "I need water",
+          icon: "💧",
+          time: "2:30 PM",
+          label: "Maria",
+        },
+      ];
+      render(<Thread messages={msgs} t={light} onRepeat={vi.fn()} />);
+      expect(screen.getByText("💧")).toBeInTheDocument();
+      expect(screen.getByText("Necesito agua")).toBeInTheDocument();
+      expect(screen.getByText("I need water")).toBeInTheDocument();
+    });
+  });
+
   describe("scroll arrow buttons", () => {
     // Earlier describe sets patientLang: "es" and never restores it. Reset
     // to English here so the locale-resolved aria-labels match these
