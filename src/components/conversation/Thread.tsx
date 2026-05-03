@@ -269,14 +269,6 @@ export function Thread({ messages, t, onRepeat }: ThreadProps) {
                   verticalAlign: "middle",
                 }}
               >
-                {msg.icon && (
-                  <span
-                    aria-hidden="true"
-                    style={{ lineHeight: 1, flexShrink: 0 }}
-                  >
-                    {msg.icon}
-                  </span>
-                )}
                 {showGloss ? (
                   <DualLocaleText
                     variant="transcript"

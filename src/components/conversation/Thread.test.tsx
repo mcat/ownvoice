@@ -175,54 +175,6 @@ describe("Thread", () => {
       expect(screen.getByText("Como te sientes?")).toBeInTheDocument();
     });
 
-    it("renders msg.icon in the bubble when present, marked decorative", () => {
-      const msgs: Message[] = [
-        {
-          from: "patient",
-          text: "I need water",
-          icon: "💧",
-          time: "2:30 PM",
-          label: "Maria",
-        },
-      ];
-      render(<Thread messages={msgs} t={light} onRepeat={vi.fn()} />);
-      const iconEl = screen.getByText("💧");
-      expect(iconEl).toBeInTheDocument();
-      // Decorative — AT should ignore it, the button's aria-label has the text.
-      expect(iconEl.getAttribute("aria-hidden")).toBe("true");
-    });
-
-    it("does not render an icon element when msg.icon is absent", () => {
-      const msgs: Message[] = [
-        {
-          from: "patient",
-          text: "I need water",
-          time: "2:30 PM",
-          label: "Maria",
-        },
-      ];
-      render(<Thread messages={msgs} t={light} onRepeat={vi.fn()} />);
-      // Only the bubble button; no nested decorative icon span.
-      expect(screen.queryByText("💧")).toBeNull();
-    });
-
-    it("renders icon alongside dual-locale gloss without breaking layout", () => {
-      const msgs: Message[] = [
-        {
-          from: "patient",
-          text: "Necesito agua",
-          gloss: "I need water",
-          icon: "💧",
-          time: "2:30 PM",
-          label: "Maria",
-        },
-      ];
-      render(<Thread messages={msgs} t={light} onRepeat={vi.fn()} />);
-      expect(screen.getByText("💧")).toBeInTheDocument();
-      expect(screen.getByText("Necesito agua")).toBeInTheDocument();
-      expect(screen.getByText("I need water")).toBeInTheDocument();
-    });
-
     it("gloss element has aria-hidden=true for transcript variant", () => {
       const msgs: Message[] = [
         {
