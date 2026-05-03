@@ -998,6 +998,20 @@ const ms: LocaleStrings = {
   "ui.patient.header.voice_status.almost": "Almost ready — using a temporary voice",
   "ui.patient.header.voice_status.failed_message": "Couldn't prepare your voice",
   "ui.patient.header.voice_status.failed_action": "Try again",
+
+  // ── Voice quality score (enrollment feedback) ──
+  "ui.voice_quality.title": "Kualiti suara",
+  "ui.voice_quality.label.good": "Baik",
+  "ui.voice_quality.label.ok": "OK",
+  "ui.voice_quality.label.poor": "Perlu diperbaiki",
+  "ui.voice_quality.tip.snr": "Cuba rakam di tempat yang lebih senyap.",
+  "ui.voice_quality.tip.clipping": "Jauhkan sedikit dari mikrofon.",
+  "ui.voice_quality.tip.coverage": "Cuba baca lebih lama sedikit.",
+  "ui.voice_quality.tip.voiced_fraction": "Cuba terus bercakap sepanjang rakaman.",
+  "ui.voice_quality.tip.pitch_variation": "Baca dengan lebih semula jadi — biarkan suara anda naik dan turun.",
+  "ui.voice_quality.tip.loudness": "Cuba kekalkan kelantangan suara yang sekata.",
+  "ui.voice_quality.tip.tilt_boomy": "Cuba jauhkan sedikit lagi dari mikrofon.",
+  "ui.voice_quality.tip.tilt_tinny": "Mikrofon ini berbunyi nipis — cuba yang lain jika ada.",
 };
 
 export default ms;

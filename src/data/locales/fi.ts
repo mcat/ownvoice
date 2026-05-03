@@ -973,6 +973,20 @@ const fi: LocaleStrings = {
   "ui.patient.header.voice_status.almost": "Almost ready — using a temporary voice",
   "ui.patient.header.voice_status.failed_message": "Couldn't prepare your voice",
   "ui.patient.header.voice_status.failed_action": "Try again",
+
+  // ── Voice quality score (enrollment feedback) ──
+  "ui.voice_quality.title": "Äänenlaatu",
+  "ui.voice_quality.label.good": "Hyvä",
+  "ui.voice_quality.label.ok": "Kohtalainen",
+  "ui.voice_quality.label.poor": "Tarvitsee parannusta",
+  "ui.voice_quality.tip.snr": "Yritä äänittää hiljaisemmassa paikassa.",
+  "ui.voice_quality.tip.clipping": "Siirry vähän kauemmas mikrofonista.",
+  "ui.voice_quality.tip.coverage": "Yritä lukea vähän pidempään.",
+  "ui.voice_quality.tip.voiced_fraction": "Yritä puhua koko äänityksen ajan.",
+  "ui.voice_quality.tip.pitch_variation": "Lue luonnollisemmin — anna äänesi nousta ja laskea.",
+  "ui.voice_quality.tip.loudness": "Yritä pitää äänenvoimakkuus tasaisena.",
+  "ui.voice_quality.tip.tilt_boomy": "Siirry vähän kauemmas mikrofonista.",
+  "ui.voice_quality.tip.tilt_tinny": "Tämä mikrofoni kuulostaa ohuelta — kokeile toista, jos sinulla on.",
 };
 
 export default fi;

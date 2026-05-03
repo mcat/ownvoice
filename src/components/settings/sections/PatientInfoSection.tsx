@@ -1,5 +1,6 @@
 import type { JSX, ComponentChildren } from "preact";
 import type { AppSettings, Patient } from "../../../types";
+import type { SpeakerData } from "../../../models/types";
 import type { ThemeTokens, ThemeName } from "../../../theme/tokens";
 import { LANGS } from "../../../data/phrases";
 import { VoiceCapture } from "../../shared/VoiceCapture";
@@ -109,10 +110,11 @@ export function PatientInfoSection({
           label="Patient"
           hasVoice={patient.hasVoice}
           hasEmbedding={!!patient.speakerData}
-          onCapture={(_blob, embedding) => {
+          savedQuality={(patient.speakerData as SpeakerData | null | undefined)?.quality}
+          onCapture={(_blob, embedding, quality) => {
             update({
               hasVoice: true,
-              speakerData: embedding ?? null,
+              speakerData: embedding ? { ...(embedding as SpeakerData), quality } : null,
             });
           }}
           onRemove={() => {

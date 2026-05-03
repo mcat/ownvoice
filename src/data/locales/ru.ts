@@ -988,6 +988,20 @@ const ru: LocaleStrings = {
   "ui.patient.header.voice_status.almost": "Almost ready — using a temporary voice",
   "ui.patient.header.voice_status.failed_message": "Couldn't prepare your voice",
   "ui.patient.header.voice_status.failed_action": "Try again",
+
+  // ── Voice quality score (enrollment feedback) ──
+  "ui.voice_quality.title": "Качество голоса",
+  "ui.voice_quality.label.good": "Хорошее",
+  "ui.voice_quality.label.ok": "Нормальное",
+  "ui.voice_quality.label.poor": "Требует улучшения",
+  "ui.voice_quality.tip.snr": "Попробуйте записать в более тихом месте.",
+  "ui.voice_quality.tip.clipping": "Отодвиньтесь немного от микрофона.",
+  "ui.voice_quality.tip.coverage": "Попробуйте читать немного дольше.",
+  "ui.voice_quality.tip.voiced_fraction": "Старайтесь говорить на протяжении всей записи.",
+  "ui.voice_quality.tip.pitch_variation": "Читайте естественнее — пусть голос поднимается и опускается.",
+  "ui.voice_quality.tip.loudness": "Старайтесь сохранять одинаковую громкость.",
+  "ui.voice_quality.tip.tilt_boomy": "Попробуйте отодвинуться немного дальше от микрофона.",
+  "ui.voice_quality.tip.tilt_tinny": "Этот микрофон звучит тонко — попробуйте другой, если есть.",
 };
 
 export default ru;

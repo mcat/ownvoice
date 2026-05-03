@@ -1000,6 +1000,20 @@ const nl: LocaleStrings = {
   "ui.patient.header.voice_status.almost": "Almost ready — using a temporary voice",
   "ui.patient.header.voice_status.failed_message": "Couldn't prepare your voice",
   "ui.patient.header.voice_status.failed_action": "Try again",
+
+  // ── Voice quality score (enrollment feedback) ──
+  "ui.voice_quality.title": "Stemkwaliteit",
+  "ui.voice_quality.label.good": "Goed",
+  "ui.voice_quality.label.ok": "OK",
+  "ui.voice_quality.label.poor": "Kan beter",
+  "ui.voice_quality.tip.snr": "Probeer op te nemen op een rustigere plek.",
+  "ui.voice_quality.tip.clipping": "Ga iets verder van de microfoon af.",
+  "ui.voice_quality.tip.coverage": "Probeer iets langer voor te lezen.",
+  "ui.voice_quality.tip.voiced_fraction": "Probeer de hele opname door te blijven praten.",
+  "ui.voice_quality.tip.pitch_variation": "Lees natuurlijker — laat je stem stijgen en dalen.",
+  "ui.voice_quality.tip.loudness": "Probeer het volume gelijkmatig te houden.",
+  "ui.voice_quality.tip.tilt_boomy": "Ga iets verder van de microfoon af.",
+  "ui.voice_quality.tip.tilt_tinny": "Deze microfoon klinkt dun — probeer een andere als je die hebt.",
 };
 
 export default nl;

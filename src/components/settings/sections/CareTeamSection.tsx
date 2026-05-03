@@ -1,6 +1,7 @@
 import { useState } from "preact/hooks";
 import type { JSX, ComponentChildren } from "preact";
 import type { AppSettings, Provider } from "../../../types";
+import type { SpeakerData } from "../../../models/types";
 import type { ThemeTokens, ThemeName } from "../../../theme/tokens";
 import { Btn } from "../../shared/Btn";
 import { VoiceCapture } from "../../shared/VoiceCapture";
@@ -184,8 +185,9 @@ export function CareTeamSection({
               label={p.name}
               hasVoice={p.hasVoice}
               hasEmbedding={!!p.embedding}
-              onCapture={(_blob, embedding) => {
-                if (embedding) captureProviderVoice(i, embedding);
+              savedQuality={(p.embedding as SpeakerData | undefined)?.quality}
+              onCapture={(_blob, embedding, quality) => {
+                if (embedding) captureProviderVoice(i, { ...(embedding as SpeakerData), quality });
                 else toggleProviderVoice(i, true);
               }}
               onRemove={() => toggleProviderVoice(i, false)}

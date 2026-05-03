@@ -1033,6 +1033,20 @@ const pl: LocaleStrings = {
   "ui.patient.header.voice_status.almost": "Almost ready — using a temporary voice",
   "ui.patient.header.voice_status.failed_message": "Couldn't prepare your voice",
   "ui.patient.header.voice_status.failed_action": "Try again",
+
+  // ── Voice quality score (enrollment feedback) ──
+  "ui.voice_quality.title": "Jakość głosu",
+  "ui.voice_quality.label.good": "Dobra",
+  "ui.voice_quality.label.ok": "OK",
+  "ui.voice_quality.label.poor": "Wymaga poprawy",
+  "ui.voice_quality.tip.snr": "Spróbuj nagrywać w cichszym miejscu.",
+  "ui.voice_quality.tip.clipping": "Odsuń się trochę od mikrofonu.",
+  "ui.voice_quality.tip.coverage": "Spróbuj czytać trochę dłużej.",
+  "ui.voice_quality.tip.voiced_fraction": "Staraj się mówić przez cały czas nagrania.",
+  "ui.voice_quality.tip.pitch_variation": "Czytaj bardziej naturalnie — pozwól głosowi opadać i wznosić się.",
+  "ui.voice_quality.tip.loudness": "Staraj się utrzymywać stałą głośność.",
+  "ui.voice_quality.tip.tilt_boomy": "Spróbuj odsunąć się trochę dalej od mikrofonu.",
+  "ui.voice_quality.tip.tilt_tinny": "Ten mikrofon brzmi cienko — spróbuj innego, jeśli masz.",
 };
 
 export default pl;

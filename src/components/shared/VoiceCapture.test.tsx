@@ -1,5 +1,6 @@
 import { render, screen, fireEvent, act } from "@testing-library/preact";
 import { VoiceCapture, friendlyVoiceError } from "./VoiceCapture";
+import type { VoiceQualityResult } from "../../models/types";
 
 // Mock getModelManager to avoid model init side effects.
 //
@@ -559,6 +560,41 @@ describe("VoiceCapture — plain-language status copy", () => {
     // aria-live region contain the same saving text — assert that
     // both are present (visible + accessible) and that they match.
     const matches = screen.getAllByText(/Saving your voice/i);
+    expect(matches.length).toBeGreaterThanOrEqual(1);
+  });
+});
+
+describe("VoiceCapture quality integration", () => {
+  const validQuality: VoiceQualityResult = {
+    score: 75,
+    breakdown: {
+      snr: 80,
+      clipping: 90,
+      coverage: 70,
+      voicedFraction: 75,
+      pitchVariation: 70,
+      loudnessConsistency: 80,
+      spectralTilt: 75,
+    },
+    spectralTiltDirection: "neutral",
+    qualityVersion: 1,
+  };
+
+  it("renders the saved-state badge when savedQuality is provided", () => {
+    const blob = new Blob([new Uint8Array(1024)], { type: "audio/webm" });
+    render(
+      <VoiceCapture
+        label="test"
+        hasVoice={true}
+        audioBlob={blob}
+        hasEmbedding={true}
+        savedQuality={validQuality}
+        onCapture={() => {}}
+        onRemove={() => {}}
+      />,
+    );
+    // The QualityBadge renders the rounded numeric score in its label.
+    const matches = screen.getAllByText(/75/);
     expect(matches.length).toBeGreaterThanOrEqual(1);
   });
 });

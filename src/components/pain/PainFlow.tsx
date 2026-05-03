@@ -11,7 +11,7 @@ import type { ThemeTokens, ThemeName } from "../../theme/tokens";
 type Step = "severity" | "location" | "descriptor";
 
 interface PainFlowProps {
-  onSelect: (text: string, opts?: { gloss?: string }) => void;
+  onSelect: (text: string, opts?: { gloss?: string; icon?: string }) => void;
   t: ThemeTokens;
   theme: ThemeName;
 }
@@ -90,7 +90,12 @@ export function PainFlow({ onSelect, t, theme }: PainFlowProps) {
           severity: severity!,
         })
       : undefined;
-    onSelect(sentence, { gloss });
+    // Decorative pain face for the thread bubble — same emoji the patient
+    // tapped in the severity step. Matches Emoji-FPS (Li et al. JMIR 2023):
+    // n is the 0/2/4/6/8/10 severity. Falls back to undefined if the
+    // current severity isn't a valid face value.
+    const icon = EMOJI_FPS.find((f) => f.n === severity)?.face;
+    onSelect(sentence, { gloss, icon });
     reset();
   }
 

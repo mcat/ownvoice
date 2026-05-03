@@ -998,6 +998,20 @@ const tr: LocaleStrings = {
   "ui.patient.header.voice_status.almost": "Almost ready — using a temporary voice",
   "ui.patient.header.voice_status.failed_message": "Couldn't prepare your voice",
   "ui.patient.header.voice_status.failed_action": "Try again",
+
+  // ── Voice quality score (enrollment feedback) ──
+  "ui.voice_quality.title": "Ses kalitesi",
+  "ui.voice_quality.label.good": "İyi",
+  "ui.voice_quality.label.ok": "Tamam",
+  "ui.voice_quality.label.poor": "İyileştirilmesi gerek",
+  "ui.voice_quality.tip.snr": "Daha sessiz bir yerde kaydetmeyi deneyin.",
+  "ui.voice_quality.tip.clipping": "Mikrofondan biraz uzaklaşın.",
+  "ui.voice_quality.tip.coverage": "Biraz daha uzun süre okumayı deneyin.",
+  "ui.voice_quality.tip.voiced_fraction": "Kayıt boyunca konuşmaya çalışın.",
+  "ui.voice_quality.tip.pitch_variation": "Daha doğal okuyun — sesinizin yükselip alçalmasına izin verin.",
+  "ui.voice_quality.tip.loudness": "Ses seviyenizi sabit tutmaya çalışın.",
+  "ui.voice_quality.tip.tilt_boomy": "Mikrofondan biraz daha uzaklaşmayı deneyin.",
+  "ui.voice_quality.tip.tilt_tinny": "Bu mikrofonun sesi ince geliyor — varsa başka bir tane deneyin.",
 };
 
 export default tr;

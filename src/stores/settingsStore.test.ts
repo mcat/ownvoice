@@ -701,3 +701,74 @@ describe("settingsStore — pendingVoiceBlob", () => {
     expect(updated?.pendingVoiceBlob).toBeFalsy();
   });
 });
+
+import { scrubQualityIfInvalid } from "./settingsStore";
+
+describe("scrubQualityIfInvalid", () => {
+  function validSpeakerData() {
+    return {
+      condEmb: [0],
+      condEmbShape: [1],
+      promptToken: [0],
+      promptTokenShape: [1],
+      speakerEmbeddings: [0],
+      speakerEmbeddingsShape: [1],
+      speakerFeatures: [0],
+      speakerFeaturesShape: [1],
+    };
+  }
+
+  it("drops a malformed quality field but preserves the rest of speakerData", () => {
+    const sd = {
+      ...validSpeakerData(),
+      quality: { score: NaN, breakdown: {} }, // malformed
+    };
+    const scrubbed = scrubQualityIfInvalid(sd) as Record<string, unknown>;
+    expect(scrubbed.quality).toBeUndefined();
+    expect(scrubbed.condEmb).toEqual([0]);
+    expect(scrubbed.speakerFeatures).toEqual([0]);
+  });
+
+  it("leaves a valid quality field intact", () => {
+    const sd = {
+      ...validSpeakerData(),
+      quality: {
+        score: 80,
+        breakdown: {
+          snr: 80, clipping: 90, coverage: 70, voicedFraction: 75,
+          pitchVariation: 80, loudnessConsistency: 80, spectralTilt: 75,
+        },
+        spectralTiltDirection: "neutral",
+        qualityVersion: 1,
+      },
+    };
+    const scrubbed = scrubQualityIfInvalid(sd) as Record<string, unknown>;
+    expect(scrubbed.quality).toEqual(sd.quality);
+  });
+
+  it("passes through speakerData with no quality field unchanged", () => {
+    const sd = validSpeakerData();
+    const scrubbed = scrubQualityIfInvalid(sd) as Record<string, unknown>;
+    expect(scrubbed.quality).toBeUndefined();
+    expect(scrubbed.condEmb).toEqual([0]);
+  });
+
+  it("returns null/undefined inputs unchanged", () => {
+    expect(scrubQualityIfInvalid(null)).toBeNull();
+    expect(scrubQualityIfInvalid(undefined)).toBeUndefined();
+  });
+
+  it("rejects malformed quality with missing breakdown fields", () => {
+    const sd = {
+      ...validSpeakerData(),
+      quality: {
+        score: 75,
+        breakdown: { snr: 80 }, // missing other required fields
+        spectralTiltDirection: "neutral",
+        qualityVersion: 1,
+      },
+    };
+    const scrubbed = scrubQualityIfInvalid(sd) as Record<string, unknown>;
+    expect(scrubbed.quality).toBeUndefined();
+  });
+});

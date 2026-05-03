@@ -1003,6 +1003,20 @@ const da: LocaleStrings = {
   "ui.patient.header.voice_status.almost": "Almost ready — using a temporary voice",
   "ui.patient.header.voice_status.failed_message": "Couldn't prepare your voice",
   "ui.patient.header.voice_status.failed_action": "Try again",
+
+  // ── Voice quality score (enrollment feedback) ──
+  "ui.voice_quality.title": "Stemmekvalitet",
+  "ui.voice_quality.label.good": "God",
+  "ui.voice_quality.label.ok": "OK",
+  "ui.voice_quality.label.poor": "Skal forbedres",
+  "ui.voice_quality.tip.snr": "Prøv at optage et roligere sted.",
+  "ui.voice_quality.tip.clipping": "Flyt dig lidt længere væk fra mikrofonen.",
+  "ui.voice_quality.tip.coverage": "Prøv at læse lidt længere.",
+  "ui.voice_quality.tip.voiced_fraction": "Prøv at fortsætte med at tale gennem hele optagelsen.",
+  "ui.voice_quality.tip.pitch_variation": "Læs mere naturligt — lad din stemme stige og falde.",
+  "ui.voice_quality.tip.loudness": "Prøv at holde lydstyrken jævn.",
+  "ui.voice_quality.tip.tilt_boomy": "Prøv at flytte dig lidt længere væk fra mikrofonen.",
+  "ui.voice_quality.tip.tilt_tinny": "Mikrofonen lyder tynd — prøv en anden, hvis du har én.",
 };
 
 export default da;

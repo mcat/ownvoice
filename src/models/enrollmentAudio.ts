@@ -20,6 +20,14 @@ const MIN_DURATION_SEC = 1.5;
 // up, so a tighter gate would reject real recordings. 6 dB only catches the
 // degenerate cases (silence, pure noise, mic failure). Tighten with telemetry.
 const MIN_SNR_DB = 6;
+// Minimum fraction of pre-trim 20 ms frames above the silence threshold.
+// Without this, a recording of 7 s of room tone with non-stationary noise
+// can clear the 6 dB SNR gate (signal_rms / noise_rms > ~2 from random
+// peaks) and produce a useless clone — the user gets a quality-score-of-0
+// badge but can still hit "Use this take." 0.30 matches the no-speech
+// guard threshold inside scoreVoiceSample (voiceQuality.ts).
+const MIN_VOICED_FRACTION = 0.30;
+const VOICED_FRAME_MS = 20;
 
 export interface EnrollmentResult {
   /** Processed audio ready for the speech encoder. */
@@ -51,6 +59,10 @@ export function preprocessEnrollment(
   let buf = removeDCOffset(audio);
   buf = highPass(buf, sampleRate, HP_CUTOFF_HZ);
   const { snrDb } = estimateSNR(buf, sampleRate);
+  // Compute voiced fraction on the pre-trim signal so silence at head/tail
+  // counts against the recording (a 15 s file with 4 s of speech and 11 s
+  // of silence is not a usable enrollment).
+  const voicedFraction = computeVoicedFraction(buf, sampleRate);
   buf = trimSilence(buf, sampleRate, SILENCE_TRIM_DBFS);
   buf = peakNormalize(buf, TARGET_PEAK, MAX_GAIN_DB);
 
@@ -69,9 +81,39 @@ export function preprocessEnrollment(
   } else if (snrDb < MIN_SNR_DB) {
     acceptable = false;
     rejectionReason = `Recording too noisy — SNR ${snrDb.toFixed(0)} dB, need at least ${MIN_SNR_DB} dB. Try a quieter location.`;
+  } else if (voicedFraction < MIN_VOICED_FRACTION) {
+    acceptable = false;
+    rejectionReason = `Not enough speech detected — only ${Math.round(voicedFraction * 100)}% of the recording was voiced (need at least ${Math.round(MIN_VOICED_FRACTION * 100)}%). Try speaking for the full duration.`;
   }
 
   return { audio: buf, durationSec, peak, snrDb, acceptable, rejectionReason };
+}
+
+/**
+ * Fraction of pre-trim 20 ms frames whose RMS is above the silence floor
+ * (-40 dBFS). Used by the hard gate to reject recordings that are mostly
+ * silence even if they pass the SNR floor (room tone with non-stationary
+ * noise can clear SNR=6 dB). Also exported so voiceQuality.ts can reuse
+ * the same primitive without duplicating the framing loop.
+ */
+export function computeVoicedFraction(audio: Float32Array, sampleRate: number): number {
+  const frameSize = Math.floor((VOICED_FRAME_MS / 1000) * sampleRate);
+  if (frameSize === 0 || audio.length < frameSize) return 0;
+  const numFrames = Math.floor(audio.length / frameSize);
+  if (numFrames === 0) return 0;
+  const threshold = Math.pow(10, SILENCE_TRIM_DBFS / 20);
+  let voiced = 0;
+  for (let f = 0; f < numFrames; f++) {
+    let s = 0;
+    const off = f * frameSize;
+    for (let i = 0; i < frameSize; i++) {
+      const x = audio[off + i];
+      s += x * x;
+    }
+    const rms = Math.sqrt(s / frameSize);
+    if (rms > threshold) voiced++;
+  }
+  return voiced / numFrames;
 }
 
 /** 2nd-order Butterworth high-pass; returns a new Float32Array. */

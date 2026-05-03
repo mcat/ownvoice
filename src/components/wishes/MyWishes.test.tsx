@@ -80,7 +80,7 @@ describe("MyWishes", () => {
     );
     expect(onSpeak).toHaveBeenCalledWith(
       expect.stringContaining("being with my family"),
-      { gloss: undefined }, // same locale → no gloss
+      { gloss: undefined, icon: "❤️" }, // same locale → no gloss; heart on every wish bubble
     );
   });
 
@@ -174,7 +174,7 @@ describe("MyWishes", () => {
     expect(onSpeak).toHaveBeenCalledTimes(2);
     expect(onSpeak).toHaveBeenCalledWith(
       expect.stringContaining("being with my family"),
-      { gloss: undefined }, // same locale → no gloss
+      { gloss: undefined, icon: "❤️" },
     );
     vi.useRealTimers();
   });

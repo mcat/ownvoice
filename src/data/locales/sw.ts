@@ -1004,6 +1004,20 @@ const sw: LocaleStrings = {
   "ui.patient.header.voice_status.almost": "Almost ready — using a temporary voice",
   "ui.patient.header.voice_status.failed_message": "Couldn't prepare your voice",
   "ui.patient.header.voice_status.failed_action": "Try again",
+
+  // ── Voice quality score (enrollment feedback) ──
+  "ui.voice_quality.title": "Ubora wa sauti",
+  "ui.voice_quality.label.good": "Nzuri",
+  "ui.voice_quality.label.ok": "Sawa",
+  "ui.voice_quality.label.poor": "Inahitaji uboreshaji",
+  "ui.voice_quality.tip.snr": "Jaribu kurekodi mahali tulivu zaidi.",
+  "ui.voice_quality.tip.clipping": "Jiondoe kidogo kutoka kwa kipaza sauti.",
+  "ui.voice_quality.tip.coverage": "Jaribu kusoma kwa muda mrefu kidogo.",
+  "ui.voice_quality.tip.voiced_fraction": "Jaribu kuendelea kuongea kwa muda wote wa kurekodi.",
+  "ui.voice_quality.tip.pitch_variation": "Soma kwa njia ya asili zaidi — acha sauti yako ipande na kushuka.",
+  "ui.voice_quality.tip.loudness": "Jaribu kudumisha sauti ya kiwango sawa.",
+  "ui.voice_quality.tip.tilt_boomy": "Jaribu kujiondoa zaidi kutoka kwa kipaza sauti.",
+  "ui.voice_quality.tip.tilt_tinny": "Kipaza sauti hiki kinasikika nyembamba — jaribu kingine ikiwa unacho.",
 };
 
 export default sw;

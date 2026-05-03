@@ -8,6 +8,9 @@ import { preprocessEnrollment } from "../../models/enrollmentAudio";
 import { useModels } from "../../hooks/useModels";
 import { useThrottledText } from "../../hooks/useThrottledText";
 import { friendlyVoiceError } from "../../data/friendlyError";
+import { scoreVoiceSample } from "../../models/voiceQuality";
+import { QualityBadge } from "./QualityBadge";
+import type { VoiceQualityResult } from "../../models/types";
 
 /**
  * Voice clone processing status — shown in the UI so the user
@@ -24,12 +27,15 @@ export interface VoiceCaptureProps {
   label: string;
   hasVoice: boolean;
   /** Called when voice is captured. Returns the audio blob and (if available) the embedding. */
-  onCapture: (audioBlob: Blob, embedding?: unknown) => void;
+  onCapture: (audioBlob: Blob, embedding?: unknown, quality?: VoiceQualityResult) => void;
   onRemove: () => void;
   /** Pre-existing audio blob for playback */
   audioBlob?: Blob | null;
   /** Whether a speaker embedding exists for this voice (enables "clone active" indicator) */
   hasEmbedding?: boolean;
+  /** Persisted quality from saved speakerData. Renders the compact badge on
+   *  the saved-state card. Undefined for legacy speakers (rendered as nothing). */
+  savedQuality?: VoiceQualityResult;
   /**
    * BCP-47 locale for the recording script (e.g. "en-US"). Determines whether
    * the recording card shows a phonetically balanced reference passage or
@@ -227,6 +233,7 @@ export function VoiceCapture({
   hasEmbedding = false,
   locale,
   color,
+  savedQuality,
 }: VoiceCaptureProps) {
   const caregiverLang = useSettingsStore((s) => s.cfg?.caregiverLang ?? "en");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -251,6 +258,7 @@ export function VoiceCapture({
   const [countdownIdx, setCountdownIdx] = useState<number | null>(null);
   const countdownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
+  const [previewQuality, setPreviewQuality] = useState<VoiceQualityResult | null>(null);
   const [savedBlob, setSavedBlob] = useState<Blob | null>(externalBlob ?? null);
   const [playing, setPlaying] = useState(false);
   const playbackCtxRef = useRef<AudioContext | null>(null);
@@ -370,6 +378,28 @@ export function VoiceCapture({
     }
   }, [recording, recordSecs]);
 
+  // Score the preview blob so the recording-preview screen can show a
+  // full-size QualityBadge BEFORE the user accepts the take.
+  useEffect(() => {
+    if (!previewBlob) {
+      setPreviewQuality(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const audio = await decodeAudio(previewBlob);
+        const result = scoreVoiceSample(audio, 24000);
+        if (!cancelled) setPreviewQuality(result);
+      } catch {
+        if (!cancelled) setPreviewQuality(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [previewBlob]);
+
   const c = {
     text: color?.text ?? "#1A1A1A",
     sub: color?.sub ?? "#6B7280",
@@ -427,10 +457,11 @@ export function VoiceCapture({
       // [cloneStatus, hasVoice] useEffect, which calls retryEmbedding again,
       // queueing a second embed message. The cycle repeats per progress
       // event, flooding the worker with hundreds of concurrent extractions.
+      const quality = scoreVoiceSample(rawAudio, 24000);
       const embedding = await extractEmbedding(rawAudio);
       if (embedding) {
         setCloneStatus("ready");
-        onCapture(blob, embedding);
+        onCapture(blob, embedding, quality);
       } else {
         setCloneStatus("model-loading");
       }
@@ -468,16 +499,17 @@ export function VoiceCapture({
       // The "model-loading" status is set explicitly below in the
       // extract-returned-null branch (worker not ready) and is the right
       // signal for the retry-after-warm useEffect to fire on.
+      const quality = scoreVoiceSample(rawAudio, 24000);
       const embedding = await extractEmbedding(rawAudio);
       setSavedBlob(blob);
 
       if (embedding) {
         setCloneStatus("ready");
-        onCapture(blob, embedding);
+        onCapture(blob, embedding, quality);
       } else {
         // Model not ready yet — save audio, mark as captured, will retry when model loads
         setCloneStatus("model-loading");
-        onCapture(blob);
+        onCapture(blob, undefined, quality);
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Voice processing failed";
@@ -731,7 +763,7 @@ export function VoiceCapture({
       // every-second updates \u2014 see useThrottledText.
       return (
         <span
-          style={{ ...base, color: "#92400E", background: "#FEF3C7" }}
+          style={{ ...base, color: "#78350F", background: "#FEF3C7" }}
         >
           <span aria-hidden="true">{"\u23F3"}</span> {savingText}
           <span
@@ -763,7 +795,7 @@ export function VoiceCapture({
     // "Voice clone active — all N phrases ready".
     if (cloneStatus === "failed") {
       return (
-        <span style={{ ...base, color: "#991B1B", background: "#FEE2E2" }}>
+        <span style={{ ...base, color: "#7F1D1D", background: "#FEE2E2" }}>
           <span aria-hidden="true">{"\u26A0\uFE0F"}</span>{" "}
           {resolvePhrase("ui.readiness.voice_capture.failed_message", caregiverLang)}
         </span>
@@ -821,9 +853,12 @@ export function VoiceCapture({
         <p
           style={{
             margin: 0,
-            fontSize: compact ? 13 : 14,
+            // 18px is the project's patient-content minimum (CLAUDE.md). The
+            // earlier 13/14px violated that floor for the population that
+            // actually reads this hint while preparing to record.
+            fontSize: compact ? 16 : 18,
             lineHeight: 1.4,
-            color: "#92400E", // amber-900
+            color: "#78350F", // amber-950: 8.75:1 on #FFFBEB (AAA-normal)
             fontWeight: 500,
             maxWidth: compact ? 280 : 360,
           }}
@@ -1001,7 +1036,7 @@ export function VoiceCapture({
             marginBottom: compact ? 10 : 12,
             fontSize: compact ? 13 : 14,
             lineHeight: 1.4,
-            color: "#92400E", // amber-900
+            color: "#78350F", // amber-950 (was amber-900 #92400E at 6.84:1 on cream — failed AAA-normal)
             fontWeight: 500,
           }}
         >
@@ -1019,7 +1054,7 @@ export function VoiceCapture({
           />
           <span
             style={{
-              fontSize: compact ? 14 : 16, fontWeight: 700, color: "#92400E", // amber-900
+              fontSize: compact ? 14 : 16, fontWeight: 700, color: "#78350F", // amber-950 (was amber-900 #92400E at 6.84:1 on cream — failed AAA-normal)
               fontVariantNumeric: "tabular-nums", minWidth: 48,
             }}
           >
@@ -1099,7 +1134,7 @@ export function VoiceCapture({
             <span
               style={{
                 fontSize: compact ? 14 : 15,
-                color: "#92400E",
+                color: "#78350F",
                 fontWeight: 500,
                 textAlign: "center",
               }}
@@ -1128,7 +1163,7 @@ export function VoiceCapture({
             }}
           >
             <div style={{
-              fontSize: 13, fontWeight: 600, color: "#92400E",
+              fontSize: 13, fontWeight: 600, color: "#78350F",
               textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8,
             }}>
               {script.prompt}
@@ -1166,7 +1201,7 @@ export function VoiceCapture({
               onClick={stopRecording}
               aria-label={resolvePhrase("ui.provider.voice_capture.stop_early_aria", caregiverLang)}
               style={{
-                flexShrink: 0, background: "none", color: "#92400E",
+                flexShrink: 0, background: "none", color: "#78350F",
                 // amber-700 = 4.84:1 against the amber-50 card (passes AA);
                 // amber-300 was 1.39:1 and failed non-text contrast.
                 border: "1px solid #B45309",
@@ -1191,17 +1226,17 @@ export function VoiceCapture({
         {fileInput}
         <div style={{ display: "flex", alignItems: "center", gap: btnFloor.gap, marginBottom: compact ? 10 : 12 }}>
           <span aria-hidden="true" style={{ fontSize: ui.iconLg }}>{"\uD83C\uDFA4"}</span>
-          <span style={{ fontSize: ui.textMd, fontWeight: 600, color: "#92400E", flex: 1 }}>
+          <span style={{ fontSize: ui.textMd, fontWeight: 600, color: "#78350F", flex: 1 }}>
             {resolvePhrase("ui.provider.voice_capture.seconds_recorded", caregiverLang).replace("{n}", String(recordSecs))}
           </span>
           <Btn
             onClick={playing ? stopPlayback : () => playBlob(previewBlob)}
             aria-label={playing ? resolvePhrase("ui.provider.voice_capture.stop_preview_aria", caregiverLang) : resolvePhrase("ui.provider.voice_capture.play_preview_aria", caregiverLang)}
             style={{
-              // amber-700 gives 5.02:1 with white text (passes AA small-text).
-              // amber-600 was 3.19:1 — passes AA-large only; 14px bold is not
-              // "large" per WCAG.
-              background: "#B45309", color: "#FFF", border: "none",
+              // amber-950 gives 8.75:1 with white text (AAA-normal). Earlier
+              // amber-700 (#B45309) was 5.02:1 — passed AA but failed AAA,
+              // unsuitable for the patient population.
+              background: "#78350F", color: "#FFF", border: "none",
               minHeight: btnFloor.minHeight, minWidth: btnFloor.minWidth,
               borderRadius: btnFloor.borderRadius,
               padding: btnFloor.padding,
@@ -1213,6 +1248,11 @@ export function VoiceCapture({
             {playing ? resolvePhrase("ui.provider.voice_capture.stop", caregiverLang) : resolvePhrase("ui.provider.voice_capture.play", caregiverLang)}
           </Btn>
         </div>
+        {previewQuality && (
+          <div style={{ marginBottom: compact ? 10 : 12 }}>
+            <QualityBadge quality={previewQuality} locale={caregiverLang} />
+          </div>
+        )}
         <div style={{ display: "flex", gap: btnFloor.gap }}>
           <Btn
             onClick={discardPreview}
@@ -1233,9 +1273,10 @@ export function VoiceCapture({
           <Btn
             onClick={acceptRecording}
             style={{
-              // emerald-700 gives 5.48:1 with white (passes AA small-text).
-              // emerald-600 was 3.77:1 — too low for 14px bold label.
-              flex: 1, background: "#047857", color: "#FFF", border: "none",
+              // emerald-900 gives 7.68:1 with white (AAA-normal). Earlier
+              // emerald-700 (#047857) was 5.48:1 — passed AA but failed AAA,
+              // unsuitable for the patient population.
+              flex: 1, background: "#065F46", color: "#FFF", border: "none",
               minHeight: btnFloor.minHeight,
               borderRadius: btnFloor.borderRadius,
               padding: btnFloor.padding,
@@ -1292,8 +1333,9 @@ export function VoiceCapture({
               onClick={playing ? stopPlayback : () => playBlob((savedBlob || externalBlob)!)}
               aria-label={playing ? resolvePhrase("ui.provider.voice_capture.stop_playback_aria", caregiverLang) : resolvePhrase("ui.provider.voice_capture.play_sample_aria", caregiverLang)}
               style={{
-                // emerald-700 for 5.48:1 contrast with white (passes AA).
-                background: "#047857", color: "#FFF", border: "none",
+                // emerald-900 for 7.68:1 contrast with white (AAA-normal).
+                // emerald-700 (#047857) at 5.48:1 passed AA but failed AAA.
+                background: "#065F46", color: "#FFF", border: "none",
                 minHeight: btnFloor.minHeight, minWidth: btnFloor.minWidth,
                 borderRadius: btnFloor.borderRadius,
                 padding: btnFloor.padding,
@@ -1334,6 +1376,9 @@ export function VoiceCapture({
         >
           <div style={{ display: "flex", alignItems: "center", gap: btnFloor.gap, flexWrap: "wrap" }}>
             <CloneStatusBadge />
+            {savedQuality && (
+              <QualityBadge quality={savedQuality} locale={caregiverLang} compact />
+            )}
             {cloneStatus === "failed" && (
               <Btn
                 onClick={retryEmbedding}

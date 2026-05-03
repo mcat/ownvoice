@@ -153,8 +153,26 @@ describe("PainFlow", () => {
 
       expect(onSelect).toHaveBeenCalledWith(
         "I have sharp pain in my Lower Back, level 8 out of 10",
-        { gloss: undefined }, // same locale → no gloss
+        { gloss: undefined, icon: EMOJI_FPS[4].face }, // same locale → no gloss; pain face attached
       );
+    });
+
+    it("attaches the matching Emoji-FPS face for each severity tap", () => {
+      const onSelect = vi.fn();
+      // Re-render per severity to reset the flow back to step 1 cleanly.
+      for (const face of EMOJI_FPS) {
+        const { unmount } = render(<PainFlow {...baseProps} onSelect={onSelect} />);
+        fireEvent.click(screen.getByText(face.face));
+        fireEvent.click(screen.getByText("Head"));
+        fireEvent.click(screen.getByText("Aching"));
+        unmount();
+      }
+      // Each call's third argument should carry the corresponding face emoji.
+      expect(onSelect).toHaveBeenCalledTimes(EMOJI_FPS.length);
+      for (let i = 0; i < EMOJI_FPS.length; i++) {
+        const opts = onSelect.mock.calls[i][1];
+        expect(opts.icon).toBe(EMOJI_FPS[i].face);
+      }
     });
 
     it("resets to severity after completing the flow", () => {

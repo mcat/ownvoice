@@ -1020,6 +1020,20 @@ const vi: LocaleStrings = {
   "ui.patient.header.voice_status.almost": "Almost ready — using a temporary voice",
   "ui.patient.header.voice_status.failed_message": "Couldn't prepare your voice",
   "ui.patient.header.voice_status.failed_action": "Try again",
+
+  // ── Voice quality score (enrollment feedback) ──
+  "ui.voice_quality.title": "Chất lượng giọng nói",
+  "ui.voice_quality.label.good": "Tốt",
+  "ui.voice_quality.label.ok": "Ổn",
+  "ui.voice_quality.label.poor": "Cần cải thiện",
+  "ui.voice_quality.tip.snr": "Thử ghi âm ở nơi yên tĩnh hơn.",
+  "ui.voice_quality.tip.clipping": "Lùi ra xa micro một chút.",
+  "ui.voice_quality.tip.coverage": "Thử đọc lâu hơn một chút.",
+  "ui.voice_quality.tip.voiced_fraction": "Cố gắng nói liên tục trong suốt quá trình ghi âm.",
+  "ui.voice_quality.tip.pitch_variation": "Đọc tự nhiên hơn — để giọng bạn lên xuống.",
+  "ui.voice_quality.tip.loudness": "Cố gắng giữ âm lượng đều.",
+  "ui.voice_quality.tip.tilt_boomy": "Thử lùi ra xa micro thêm một chút.",
+  "ui.voice_quality.tip.tilt_tinny": "Micro này nghe mỏng — thử cái khác nếu có.",
 };
 
 export default vi;

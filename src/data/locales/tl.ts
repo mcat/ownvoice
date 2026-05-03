@@ -1053,6 +1053,20 @@ const tl: LocaleStrings = {
   "ui.patient.header.voice_status.almost": "Almost ready — using a temporary voice",
   "ui.patient.header.voice_status.failed_message": "Couldn't prepare your voice",
   "ui.patient.header.voice_status.failed_action": "Try again",
+
+  // ── Voice quality score (enrollment feedback) ──
+  "ui.voice_quality.title": "Kalidad ng boses",
+  "ui.voice_quality.label.good": "Maganda",
+  "ui.voice_quality.label.ok": "OK lang",
+  "ui.voice_quality.label.poor": "Kailangang pagandahin",
+  "ui.voice_quality.tip.snr": "Subukang mag-record sa mas tahimik na lugar.",
+  "ui.voice_quality.tip.clipping": "Lumayo nang kaunti sa mikropono.",
+  "ui.voice_quality.tip.coverage": "Subukang magbasa nang mas matagal.",
+  "ui.voice_quality.tip.voiced_fraction": "Subukang patuloy na magsalita sa buong recording.",
+  "ui.voice_quality.tip.pitch_variation": "Magbasa nang mas natural — hayaang umakyat at bumaba ang iyong boses.",
+  "ui.voice_quality.tip.loudness": "Subukang panatilihin ang pantay na lakas ng boses.",
+  "ui.voice_quality.tip.tilt_boomy": "Subukang lumayo nang kaunti pa sa mikropono.",
+  "ui.voice_quality.tip.tilt_tinny": "Mukhang manipis ang tunog ng mikropono — subukan ang iba kung mayroon.",
 };
 
 export default tl;

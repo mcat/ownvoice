@@ -45,6 +45,39 @@ Two grep'able log lines appear in the browser console:
 
 Both lines are space-key-value formatted for easy spreadsheet import. Bench mode is purely additive — the flag is parsed once at boot and the worker-side timing collection is gated behind a `bench` flag in the init message; zero overhead in normal sessions.
 
+## Voice-quality score: when to recalibrate
+
+The voice-clone enrollment flow includes an advisory 0-100 quality score
+(`src/models/voiceQuality.ts`) that nudges users toward better takes.
+Its sub-score curves and weights are calibrated against specific
+assumptions — when those assumptions change, the score drifts off the
+thing it claims to measure. Recalibrate when any of these happen, in
+descending order of impact:
+
+1. **TTS / speech-encoder swap** (e.g., away from Chatterbox Multilingual).
+   The weight on `pitchVariation` is justified by Chatterbox's frame-level
+   conditioning; a different decoder may need different weights. **Always
+   bumps `QUALITY_VERSION`.**
+2. **Target population shift** away from ICU / post-trach / dysphonic
+   patients. The `pitchVariation` curve is anchored on adult read-speech
+   norms; the dysphonia guard threshold is empirical for weak phonation.
+3. **Recording flow / script change.** The 15s target shapes `coverage`;
+   the Rainbow Passage opener shapes the expected `voicedFraction`.
+4. **Real-user telemetry** showing the score distribution doesn't match
+   clinical perception (issue #169 already tracks this for `spectralTilt`).
+5. **Score-vs-perception mismatch reports** from clinicians or QA.
+6. **Microphone hardware shift** — weakest trigger; the score is
+   *supposed* to penalise bad mics, so only recalibrate if a new device
+   produces unfamiliar but actually-fine spectral character.
+
+The recalibration playbook is in
+`docs/superpowers/specs/2026-05-02-voice-quality-score-design.md` and
+the auto-memory entry `project_voice_quality_recalibration.md`. The
+calibration backstop test in
+`src/models/voiceQuality.test.ts` (using
+`sample-voices/mark-voice.wav`) is the empirical anchor for the current
+mapping — if it fails, the algorithm is wrong, not the test.
+
 ## Project Structure
 
 ```

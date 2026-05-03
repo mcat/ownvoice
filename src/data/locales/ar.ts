@@ -984,6 +984,20 @@ const ar: LocaleStrings = {
   "ui.patient.header.voice_status.almost": "Almost ready — using a temporary voice",
   "ui.patient.header.voice_status.failed_message": "Couldn't prepare your voice",
   "ui.patient.header.voice_status.failed_action": "Try again",
+
+  // ── Voice quality score (enrollment feedback) ──
+  "ui.voice_quality.title": "جودة الصوت",
+  "ui.voice_quality.label.good": "جيد",
+  "ui.voice_quality.label.ok": "مقبول",
+  "ui.voice_quality.label.poor": "يحتاج إلى تحسين",
+  "ui.voice_quality.tip.snr": "جرّب التسجيل في مكان أهدأ.",
+  "ui.voice_quality.tip.clipping": "ابتعد قليلاً عن الميكروفون.",
+  "ui.voice_quality.tip.coverage": "حاول القراءة لمدة أطول قليلاً.",
+  "ui.voice_quality.tip.voiced_fraction": "حاول مواصلة الكلام طوال مدة التسجيل.",
+  "ui.voice_quality.tip.pitch_variation": "اقرأ بشكل أكثر طبيعية — دع صوتك يرتفع وينخفض.",
+  "ui.voice_quality.tip.loudness": "حاول الحفاظ على ثبات مستوى الصوت.",
+  "ui.voice_quality.tip.tilt_boomy": "حاول الابتعاد قليلاً عن الميكروفون.",
+  "ui.voice_quality.tip.tilt_tinny": "يبدو الميكروفون رفيع الصوت — جرّب آخر إن أمكن.",
 };
 
 export default ar;

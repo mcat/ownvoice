@@ -1009,6 +1009,20 @@ const he: LocaleStrings = {
   "ui.patient.header.voice_status.almost": "Almost ready — using a temporary voice",
   "ui.patient.header.voice_status.failed_message": "Couldn't prepare your voice",
   "ui.patient.header.voice_status.failed_action": "Try again",
+
+  // ── Voice quality score (enrollment feedback) ──
+  "ui.voice_quality.title": "איכות הקול",
+  "ui.voice_quality.label.good": "טוב",
+  "ui.voice_quality.label.ok": "סביר",
+  "ui.voice_quality.label.poor": "דורש שיפור",
+  "ui.voice_quality.tip.snr": "נסה להקליט במקום שקט יותר.",
+  "ui.voice_quality.tip.clipping": "התרחק מעט מהמיקרופון.",
+  "ui.voice_quality.tip.coverage": "נסה לקרוא קצת יותר זמן.",
+  "ui.voice_quality.tip.voiced_fraction": "נסה לדבר לאורך כל ההקלטה.",
+  "ui.voice_quality.tip.pitch_variation": "קרא בצורה טבעית יותר — תן לקול שלך לעלות ולרדת.",
+  "ui.voice_quality.tip.loudness": "נסה לשמור על עוצמת קול אחידה.",
+  "ui.voice_quality.tip.tilt_boomy": "נסה להתרחק מעט מהמיקרופון.",
+  "ui.voice_quality.tip.tilt_tinny": "המיקרופון נשמע דק — נסה אחר אם יש לך.",
 };
 
 export default he;
