@@ -25,11 +25,19 @@ describe("PhraseButton", () => {
     expect(screen.getByRole("button", { name: "I need water" })).toBeInTheDocument();
   });
 
-  it("calls onTap with phrase text on click", () => {
+  it("calls onTap with phrase text and icon on click", () => {
     const onTap = vi.fn();
     render(<PhraseButton phrase={phrase} onTap={onTap} t={light} />);
     fireEvent.click(screen.getByRole("button"));
-    expect(onTap).toHaveBeenCalledWith("I need water");
+    expect(onTap).toHaveBeenCalledWith("I need water", { icon: "💧" });
+  });
+
+  it("calls onTap with bare text when phrase has no icon and no key", () => {
+    const onTap = vi.fn();
+    const plain: Phrase = { text: "Plain", icon: "" };
+    render(<PhraseButton phrase={plain} onTap={onTap} t={light} />);
+    fireEvent.click(screen.getByRole("button"));
+    expect(onTap).toHaveBeenCalledWith("Plain");
   });
 
   it("forwards the phrase.key so the speak path can resolve caregiverLang", () => {
@@ -40,7 +48,7 @@ describe("PhraseButton", () => {
     const keyed: Phrase = { text: "Sí", icon: "👍", key: "quick.yes" };
     render(<PhraseButton phrase={keyed} onTap={onTap} t={light} />);
     fireEvent.click(screen.getByRole("button"));
-    expect(onTap).toHaveBeenCalledWith("Sí", { key: "quick.yes" });
+    expect(onTap).toHaveBeenCalledWith("Sí", { key: "quick.yes", icon: "👍" });
   });
 
   it("mouse hover tints border; leaving clears it", () => {

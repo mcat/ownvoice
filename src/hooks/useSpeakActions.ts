@@ -11,12 +11,14 @@ import type { Speaker } from "../types";
  *
  *  - `gloss` — pre-composed gloss string (for pain/wish composed sentences)
  *  - `key`   — single PhraseKey; gloss is resolved from the opposite locale
+ *  - `icon`  — decorative emoji from the originating phrase button
  *
  *  When neither is provided (e.g. SentenceBuilder free-text), `gloss` stays
  *  undefined on the stored Message. */
 export interface SpeakGlossOpts {
   gloss?: string;
   key?: PhraseKey;
+  icon?: string;
 }
 
 export function useSpeakActions() {
@@ -50,7 +52,7 @@ export function useSpeakActions() {
       const gloss = opts?.gloss
         ?? (opts?.key ? resolvePhrase(opts.key, caregiverLang) : undefined);
 
-      addMessage(text, "patient", active.name, gloss);
+      addMessage(text, "patient", active.name, gloss, opts?.icon);
       setSpeaking({ text, from: "patient", gloss });
       speak(gloss ?? text, speaker);
     },
@@ -74,7 +76,7 @@ export function useSpeakActions() {
       const gloss = opts?.gloss
         ?? (opts?.key ? resolvePhrase(opts.key, patientLang) : undefined);
 
-      addMessage(text, "provider", provName, gloss);
+      addMessage(text, "provider", provName, gloss, opts?.icon);
       setSpeaking({ text, from: "provider", gloss });
       speak(gloss ?? text, speaker);
     },

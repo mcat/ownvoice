@@ -63,6 +63,9 @@ export interface Message {
   /** Secondary-locale rendering for Thread dual-locale display. Populated
    *  by useSpeakActions at add time in PR 4. */
   gloss?: string;
+  /** Decorative emoji from the originating phrase button. Absent for
+   *  free-text (SentenceBuilder) and provider-typed messages. */
+  icon?: string;
   time: string;
   label: string;
 }

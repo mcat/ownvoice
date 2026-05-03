@@ -100,9 +100,10 @@ describe("SentenceBuilder", () => {
     render(<SentenceBuilder {...baseProps} onSend={onSend} />);
 
     const input = screen.getByRole("textbox", { name: "Your message" });
-    fireEvent.input(input, { target: { value: "hello nurse" } });
+    fireEvent.input(input, { target: { value: "hello team" } });
+    // "hello team" contains no emoji-keyword match, so opts stays undefined.
     fireEvent.click(screen.getByText("Speak"));
-    expect(onSend).toHaveBeenCalledWith("Hello nurse.", undefined);
+    expect(onSend).toHaveBeenCalledWith("Hello team.", undefined);
   });
 
   it("undo pops the last token when pendingFree is empty", async () => {
@@ -219,10 +220,12 @@ describe("SentenceBuilder — token state", () => {
     );
     render(<SentenceBuilder {...baseProps} />);
     await waitFor(() => {
-      expect(screen.getByText("please help me")).toBeInTheDocument();
+      // Trailing 🆘 from the keyword scan ("help" → tier-20 SOS).
+      expect(screen.getByText("please help me 🆘")).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByText("please help me"));
-    // Still appears in token display
+    fireEvent.click(screen.getByText("please help me 🆘"));
+    // Token display shows just the resolved phrase text without the chip's
+    // trailing emoji decoration (the emoji rides on Token.emoji, not text).
     expect(screen.getByTestId("token-display").textContent).toContain(
       "please help me",
     );
@@ -298,6 +301,103 @@ describe("SentenceBuilder — bilingual speak", () => {
   });
 });
 
+// ── Expressive emoji ───────────────────────────────────────────
+
+describe("SentenceBuilder — expressive emoji", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // Chip labels render via t(item.key, patientLang); en.ts has
+    //   suggest.i_need.water   → "water"
+    //   suggest.i_need.blanket → "a blanket"
+    //   suggest.start.i_am     → "I am"
+    mockGetKeyed.mockImplementation(() =>
+      Promise.resolve([
+        { text: "water", key: "suggest.i_need.water" },
+        { text: "I am", key: "suggest.start.i_am" },
+        { text: "a blanket", key: "suggest.i_need.blanket" },
+      ] as SuggestionItem[]),
+    );
+    mockGetLLM.mockImplementation(() => Promise.resolve([]));
+  });
+
+  it("renders trailing emoji on a curated chip whose text has a keyword match", async () => {
+    render(<SentenceBuilder {...baseProps} />);
+    await waitFor(() => {
+      // tier-30 💧 from the "water" keyword
+      expect(screen.getByText("water 💧")).toBeInTheDocument();
+    });
+  });
+
+  it("renders bare text on a curated chip whose text has no keyword match", async () => {
+    render(<SentenceBuilder {...baseProps} />);
+    await waitFor(() => {
+      // "I am" matches nothing in the map (grammatical), no trailing emoji
+      const pill = screen.getAllByText("I am").find((el) => el.tagName === "BUTTON");
+      expect(pill).toBeInTheDocument();
+    });
+  });
+
+  it("handleSpeak forwards the highest-weighted icon across composed tokens", async () => {
+    const onSend = vi.fn();
+    render(<SentenceBuilder {...baseProps} onSend={onSend} />);
+    await waitFor(() => {
+      expect(screen.getByText("water 💧")).toBeInTheDocument();
+    });
+
+    // Tap the water chip — the tier-30 💧 wins on the bubble.
+    const pill = screen.getAllByText("water 💧")
+      .find((el) => el.tagName === "BUTTON")!;
+    fireEvent.click(pill);
+    fireEvent.click(screen.getByText("Speak"));
+
+    expect(onSend).toHaveBeenCalledTimes(1);
+    const [, opts] = onSend.mock.calls[0];
+    expect(opts).toEqual({ icon: "💧" });
+  });
+
+  it("handleSpeak passes no icon when nothing in the sentence matches", async () => {
+    const onSend = vi.fn();
+    render(<SentenceBuilder {...baseProps} onSend={onSend} />);
+
+    const input = screen.getByRole("textbox", { name: "Your message" });
+    fireEvent.input(input, { target: { value: "hello team" } });
+    fireEvent.click(screen.getByText("Speak"));
+
+    expect(onSend).toHaveBeenCalledWith("Hello team.", undefined);
+  });
+
+  it("handleSpeak picks up an icon from unflushed pendingFree input", async () => {
+    const onSend = vi.fn();
+    render(<SentenceBuilder {...baseProps} onSend={onSend} />);
+
+    const input = screen.getByRole("textbox", { name: "Your message" });
+    // Type then immediately Speak — pendingFree never blurs/flushes,
+    // but its emoji should still reach the bubble.
+    fireEvent.input(input, { target: { value: "I need a blanket" } });
+    fireEvent.click(screen.getByText("Speak"));
+
+    const [, opts] = onSend.mock.calls[0];
+    expect(opts?.icon).toBe("🛏️");
+  });
+
+  it("renders trailing emoji on LLM chips when keywords match", async () => {
+    mockGetLLM.mockImplementation(() =>
+      Promise.resolve(["please help me", "rest now"]),
+    );
+
+    render(<SentenceBuilder {...baseProps} />);
+    const input = screen.getByRole("textbox", { name: "Your message" });
+    fireEvent.input(input, { target: { value: "I want to" } });
+
+    await waitFor(() => {
+      // "help" → 🆘 (tier 20); "rest" → 😴 (tier 30 — rest is grouped
+      // with tired/sleep as a fatigue-state).
+      expect(screen.getByText("please help me 🆘")).toBeInTheDocument();
+      expect(screen.getByText("rest now 😴")).toBeInTheDocument();
+    });
+  });
+});
+
 // ── LLM row ─────────────────────────────────────────────────────
 
 describe("SentenceBuilder — LLM row", () => {
@@ -324,9 +424,11 @@ describe("SentenceBuilder — LLM row", () => {
 
     await waitFor(() => {
       expect(screen.getByText("AI")).toBeInTheDocument();
-      expect(screen.getByText("rest now")).toBeInTheDocument();
-      expect(screen.getByText("go home")).toBeInTheDocument();
-      expect(screen.getByText("see the doctor")).toBeInTheDocument();
+      // LLM chips get trailing emoji from the keyword scan when matches exist:
+      // "rest" → 😴 (tier 30); "home" → 🏠 (tier 20); "doctor" → 🩺 (tier 20).
+      expect(screen.getByText("rest now 😴")).toBeInTheDocument();
+      expect(screen.getByText("go home 🏠")).toBeInTheDocument();
+      expect(screen.getByText("see the doctor 🩺")).toBeInTheDocument();
     });
   });
 
@@ -340,10 +442,10 @@ describe("SentenceBuilder — LLM row", () => {
     fireEvent.input(input, { target: { value: "I want to" } });
 
     await waitFor(() => {
-      expect(screen.getByText("rest now")).toBeInTheDocument();
+      expect(screen.getByText("rest now 😴")).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText("rest now"));
+    fireEvent.click(screen.getByText("rest now 😴"));
 
     // "I want to" was pendingFree, gets flushed; "rest now" added as free token
     const display = screen.getByTestId("token-display");
