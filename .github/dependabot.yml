@@ -1,0 +1,48 @@
+version: 2
+updates:
+  # npm — root package.json
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Etc/UTC
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+      - npm
+    commit-message:
+      prefix: "chore(deps)"
+      prefix-development: "chore(deps-dev)"
+      include: scope
+    ignore:
+      # onnxruntime-web is pinned by ORT_VERSION in src/models/assetVersions.ts
+      # because the version string is part of the R2 asset path (/ort/v<X>/*.wasm).
+      # Bumping requires re-running `npm run assets:download && npm run assets:upload`,
+      # so Dependabot must not auto-bump it.
+      - dependency-name: "onnxruntime-web"
+    groups:
+      # Dev deps batched into one weekly PR; production deps get individual PRs
+      # so a regression in Preact / Zustand / ONNX-adjacent code is easy to bisect.
+      dev-dependencies:
+        dependency-type: development
+        update-types:
+          - minor
+          - patch
+
+  # GitHub Actions used by .github/workflows/*.yml
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Etc/UTC
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - github-actions
+    commit-message:
+      prefix: "chore(ci)"
+      include: scope
