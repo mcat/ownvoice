@@ -26,7 +26,7 @@
     "onnxruntime-web": "^1.25.1",
     "preact": "^10.29.1",
     "preact-iso": "^2.11.1",
-    "zustand": "^5.0.12"
+    "zustand": "^5.0.13"
   },
   "devDependencies": {
     "@aws-sdk/client-s3": "^3.1038.0",
