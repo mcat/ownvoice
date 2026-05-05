@@ -66,6 +66,7 @@ __pycache__/
 # working notes, reference PDFs). These are not project source and must
 # never be committed — `git add -A` would otherwise sweep them in.
 .claude/skills/
+.claude/*.lock
 aac-icu-candidacy.md
 # sample-voices/ is gitignored except for the calibration fixture used by
 # voiceQuality.test.ts. Leave the directory rule in place; negate only the
