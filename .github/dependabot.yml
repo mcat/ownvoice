@@ -32,8 +32,17 @@ updates:
       - dependency-name: "markdown-to-jsx"
         versions: [">=8"]
     groups:
-      # Dev deps batched into one weekly PR; production deps get individual PRs
-      # so a regression in Preact / Zustand / ONNX-adjacent code is easy to bisect.
+      # Asymmetric grouping: minor + patch bumps are batched per side
+      # (one weekly rollup PR each for dev and prod), but major bumps still
+      # come as individual PRs so a regression in Preact / Zustand / ONNX-
+      # adjacent code is trivial to bisect and revert. Patches and minors
+      # were the source of the rebase cascade observed in the first batch
+      # (#175-#185) — every prod-dep merge invalidated downstream lockfiles.
+      prod-minor-patch:
+        dependency-type: production
+        update-types:
+          - minor
+          - patch
       dev-dependencies:
         dependency-type: development
         update-types:
