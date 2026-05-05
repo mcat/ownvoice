@@ -1,0 +1,33 @@
+name: Test
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# A new commit on the same ref cancels in-progress runs for that ref.
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: ".nvmrc"
+          cache: "npm"
+      - run: npm ci
+      - name: Vitest
+        run: npm test
+      # `npm run build` = tsc --noEmit + vite build + strip-dist-large.
+      # Mirrors what Cloudflare Pages runs, so a green here matches deploy.
+      # public/models/** and public/ort/** are gitignored; in production those
+      # are served from R2 via Pages Functions, so the build does not need them.
+      - name: Build (typecheck + bundle)
+        run: npm run build
