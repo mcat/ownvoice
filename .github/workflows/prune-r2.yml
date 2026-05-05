@@ -28,7 +28,7 @@ jobs:
           # (otherwise we'd checkout whatever main currently is, which
           # could be ahead of the deploy if rapid commits landed).
           ref: ${{ github.event.deployment.sha || github.sha }}
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           # Reads `.nvmrc` so CI, Cloudflare Pages, and local dev all
           # agree on a single source of truth for the Node major.
