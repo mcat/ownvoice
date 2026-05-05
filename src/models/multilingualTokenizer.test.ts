@@ -13,17 +13,21 @@ import { MODELS_RELEASE } from "./assetVersions";
 
 const CHATTERBOX_DIR = `public/models/${MODELS_RELEASE}/chatterbox-multilingual`;
 const TOKENIZER_PATH = `${CHATTERBOX_DIR}/tokenizer.json`;
+const CANGJIE_PATH = `${CHATTERBOX_DIR}/Cangjie5_TC.json`;
 
 // public/models/** is gitignored, so fresh clones, worktrees, and CI
-// runners without the ~2.7 GB model bundle won't have tokenizer.json on
-// disk. Pure-function suites below (prepareLanguage, puncNorm, cangjie,
-// korean) still run; suites that need the real tokenizer skip.
-const tokenizerAvailable = existsSync(TOKENIZER_PATH);
-const TOKENIZER_JSON = tokenizerAvailable
+// runners without the ~2.7 GB model bundle won't have these files on
+// disk. Suites that need them (encode/decode/round-trip/parity, plus
+// cangjieNormalize which loads the 126k-entry Cangjie5 table) skip;
+// the remaining pure-function suites (prepareLanguage, puncNorm,
+// koreanNormalize) still run.
+const modelsAvailable =
+  existsSync(TOKENIZER_PATH) && existsSync(CANGJIE_PATH);
+const TOKENIZER_JSON = modelsAvailable
   ? JSON.parse(readFileSync(TOKENIZER_PATH, "utf8"))
   : null;
 
-describe.skipIf(!tokenizerAvailable)("multilingualTokenizer encode", () => {
+describe.skipIf(!modelsAvailable)("multilingualTokenizer encode", () => {
   // The post-processor wraps every encoded sequence as:
   //   [EXAGGERATION (6563), BOS (255), <inner>, EOS (0), START_SPEECH (6561), START_SPEECH (6561)]
   // So inner tokens start at index 2 (after EXAGGERATION + BOS) and end at
@@ -125,11 +129,13 @@ describe("puncNorm", () => {
   });
 });
 
-describe("cangjieNormalize (Chinese ideographs → [cj_*] tokens)", () => {
+describe.skipIf(!modelsAvailable)("cangjieNormalize (Chinese ideographs → [cj_*] tokens)", () => {
+  // skipIf still invokes this body — guard before the eager file read.
+  if (!modelsAvailable) return;
   // Load the real Cangjie5 table once for the suite. It's a 126,610-entry
   // tab-separated dataset shipped alongside the tokenizer.
   const cangjieEntries: string[] = JSON.parse(
-    readFileSync(`${CHATTERBOX_DIR}/Cangjie5_TC.json`, "utf8"),
+    readFileSync(CANGJIE_PATH, "utf8"),
   );
 
   // setCangjieData mutates module-level state. beforeEach guarantees every
@@ -233,7 +239,7 @@ describe("koreanNormalize (Hangul → Jamo)", () => {
   });
 });
 
-describe.skipIf(!tokenizerAvailable)("multilingualTokenizer decode", () => {
+describe.skipIf(!modelsAvailable)("multilingualTokenizer decode", () => {
   test("decodes [SPACE] back to literal space", () => {
     const tok = buildMultilingualTokenizer(TOKENIZER_JSON);
     const decoded = tok.decode([2, 2, 2]); // three [SPACE]s
@@ -254,10 +260,10 @@ describe.skipIf(!tokenizerAvailable)("multilingualTokenizer decode", () => {
   });
 });
 
-describe.skipIf(!tokenizerAvailable)("multilingualTokenizer round-trip across languages", () => {
+describe.skipIf(!modelsAvailable)("multilingualTokenizer round-trip across languages", () => {
   // skipIf marks the suite skipped but still invokes this body to register
   // tests; early-return guards the eager buildMultilingualTokenizer call.
-  if (!tokenizerAvailable) return;
+  if (!modelsAvailable) return;
   const tok = buildMultilingualTokenizer(TOKENIZER_JSON);
 
   // Languages whose scripts are fully covered by the BPE vocab (Latin, hiragana)
@@ -296,7 +302,7 @@ describe.skipIf(!tokenizerAvailable)("multilingualTokenizer round-trip across la
   });
 });
 
-describe.skipIf(!tokenizerAvailable)("upstream tokenization parity (byte-for-byte)", () => {
+describe.skipIf(!modelsAvailable)("upstream tokenization parity (byte-for-byte)", () => {
   // Golden token sequences captured from the upstream HuggingFace
   // `tokenizers` library running the full upstream MTLTokenizer.encode +
   // mtl_tts.py SOT/EOT padding pipeline (lowercase + NFKD + per-language
@@ -313,7 +319,7 @@ describe.skipIf(!tokenizerAvailable)("upstream tokenization parity (byte-for-byt
 
   // skipIf still invokes this body — early-return so the eager file read
   // and tokenizer build don't run when models aren't on disk.
-  if (!tokenizerAvailable) return;
+  if (!modelsAvailable) return;
   const cangjieEntries: string[] = JSON.parse(
     readFileSync(`${CHATTERBOX_DIR}/Cangjie5_TC.json`, "utf8"),
   );
