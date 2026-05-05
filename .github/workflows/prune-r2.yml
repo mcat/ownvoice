@@ -22,7 +22,7 @@ jobs:
       pull-requests: read
       deployments: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           # On deployment_status, checkout the SHA that was deployed
           # (otherwise we'd checkout whatever main currently is, which
