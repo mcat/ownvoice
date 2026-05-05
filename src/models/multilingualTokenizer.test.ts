@@ -1,5 +1,5 @@
 import { afterAll, beforeEach, describe, expect, test } from "vitest";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import {
   buildMultilingualTokenizer,
   cangjieNormalize,
@@ -12,12 +12,18 @@ import {
 import { MODELS_RELEASE } from "./assetVersions";
 
 const CHATTERBOX_DIR = `public/models/${MODELS_RELEASE}/chatterbox-multilingual`;
+const TOKENIZER_PATH = `${CHATTERBOX_DIR}/tokenizer.json`;
 
-const TOKENIZER_JSON = JSON.parse(
-  readFileSync(`${CHATTERBOX_DIR}/tokenizer.json`, "utf8"),
-);
+// public/models/** is gitignored, so fresh clones, worktrees, and CI
+// runners without the ~2.7 GB model bundle won't have tokenizer.json on
+// disk. Pure-function suites below (prepareLanguage, puncNorm, cangjie,
+// korean) still run; suites that need the real tokenizer skip.
+const tokenizerAvailable = existsSync(TOKENIZER_PATH);
+const TOKENIZER_JSON = tokenizerAvailable
+  ? JSON.parse(readFileSync(TOKENIZER_PATH, "utf8"))
+  : null;
 
-describe("multilingualTokenizer encode", () => {
+describe.skipIf(!tokenizerAvailable)("multilingualTokenizer encode", () => {
   // The post-processor wraps every encoded sequence as:
   //   [EXAGGERATION (6563), BOS (255), <inner>, EOS (0), START_SPEECH (6561), START_SPEECH (6561)]
   // So inner tokens start at index 2 (after EXAGGERATION + BOS) and end at
@@ -227,7 +233,7 @@ describe("koreanNormalize (Hangul → Jamo)", () => {
   });
 });
 
-describe("multilingualTokenizer decode", () => {
+describe.skipIf(!tokenizerAvailable)("multilingualTokenizer decode", () => {
   test("decodes [SPACE] back to literal space", () => {
     const tok = buildMultilingualTokenizer(TOKENIZER_JSON);
     const decoded = tok.decode([2, 2, 2]); // three [SPACE]s
@@ -248,7 +254,10 @@ describe("multilingualTokenizer decode", () => {
   });
 });
 
-describe("multilingualTokenizer round-trip across languages", () => {
+describe.skipIf(!tokenizerAvailable)("multilingualTokenizer round-trip across languages", () => {
+  // skipIf marks the suite skipped but still invokes this body to register
+  // tests; early-return guards the eager buildMultilingualTokenizer call.
+  if (!tokenizerAvailable) return;
   const tok = buildMultilingualTokenizer(TOKENIZER_JSON);
 
   // Languages whose scripts are fully covered by the BPE vocab (Latin, hiragana)
@@ -287,7 +296,7 @@ describe("multilingualTokenizer round-trip across languages", () => {
   });
 });
 
-describe("upstream tokenization parity (byte-for-byte)", () => {
+describe.skipIf(!tokenizerAvailable)("upstream tokenization parity (byte-for-byte)", () => {
   // Golden token sequences captured from the upstream HuggingFace
   // `tokenizers` library running the full upstream MTLTokenizer.encode +
   // mtl_tts.py SOT/EOT padding pipeline (lowercase + NFKD + per-language
@@ -302,6 +311,9 @@ describe("upstream tokenization parity (byte-for-byte)", () => {
   //
   //   /tmp/cbox-test/bin/python <<<'... see git log dc5d96c.. for harness ...'
 
+  // skipIf still invokes this body — early-return so the eager file read
+  // and tokenizer build don't run when models aren't on disk.
+  if (!tokenizerAvailable) return;
   const cangjieEntries: string[] = JSON.parse(
     readFileSync(`${CHATTERBOX_DIR}/Cangjie5_TC.json`, "utf8"),
   );
