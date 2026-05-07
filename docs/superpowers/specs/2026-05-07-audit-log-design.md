@@ -39,8 +39,12 @@ already partially completed.
 6. Add zero perceptible latency to the patient tap path.
 
 Non-goals: live tail / push UI, cross-device aggregation, cloud upload,
-encrypted exports, server-side workflow recovery, replacing the existing
-`ov-conversation` thread (which remains the user-facing message history).
+encrypted exports, server-side workflow recovery.
+
+The conversation thread (`ov-conversation`) is **subsumed**, not preserved
+alongside the audit log. Phase 1 derives the thread from audit events and
+drops the `ov-conversation` IDB store; spoken-text PHI then lives in
+exactly one place. See Phase 1 below for the migration story.
 
 ## Decisions log
 
@@ -53,7 +57,7 @@ Nine questions from the brainstorming session, in order:
 | 3. OTel library | `@opentelemetry/api` + `@opentelemetry/api-logs` + `@opentelemetry/otlp-transformer` (~17 KB gzipped). No SDK, no exporter, no auto-instrumentation. |
 | 4. Schema | Two TypeScript shapes (`AuditRecord`, `WorkflowState`); closed attribute namespace; OTLP severity ladder; ULID primary key. |
 | 5. PHI / privacy | Spoken text stored on-device as attribute; redacted by default at export; per-patient cascade + reset-all wipe `ov-audit`; 30-day retention with 50 MB hard cap. |
-| 6. Storage | New IndexedDB database `ov-audit` with two object stores (`events`, `workflows`). Same database for cross-store transactional atomicity. |
+| 6. Storage | New IndexedDB database `ov-audit` with two object stores (`events`, `workflows`). Same database for cross-store transactional atomicity. `ov-conversation` is dropped — thread is derived from audit events. |
 | 7. Workflow API | DBOS-shaped: `ov.workflow(name, async (ctx) => ctx.step(name, fn))`. Boot-time recovery sweep; per-workflow `recoveryMode`. |
 | 8. Views | One viewer at Settings → Activity log, with "View as" segmented control (Healthcare worker / Researcher / Developer). PIN gating inherited from Settings. |
 | 9. Export | OTLP/JSON canonical (single file), NDJSON optional convenience. Web Share API primary, anchor-download fallback. Audit-of-audit emitted on every export. |
@@ -67,13 +71,16 @@ shape is borrowed; the runtime is hand-rolled on IndexedDB.
 
 Each phase is independently valuable and lands as its own PR.
 
-### Phase 1 — Audit foundation (~600 LOC)
+### Phase 1 — Audit foundation + thread derivation (~750 LOC)
 
-Land first. Delivers visibility into what the app does.
+Land first. Delivers visibility into what the app does *and* makes the
+audit log the single source of truth for spoken-text PHI by deriving the
+conversation thread from it.
 
 - New `ov-audit` IndexedDB database with both `events` and `workflows`
   object stores defined at v1 (workflows store stays empty until Phase 2).
 - `src/audit/logger.ts` — single `audit.log(event)` writer; passive only.
+  Emits a synchronous in-memory pub-sub notification for live readers.
 - `src/audit/types.ts`, `src/audit/attrs.ts` — record shape + closed
   attribute namespace.
 - `src/audit/ulid.ts` — ~30 LOC dependency-free ULID generator.
@@ -90,6 +97,32 @@ Land first. Delivers visibility into what the app does.
   `name`, JSON export button (no redaction — dev-only context).
 - Per-patient cascade in `src/stores/resetScoped.ts`; `resetAll()` adds
   `indexedDB.deleteDatabase("ov-audit")`.
+
+**Thread derivation (the new piece):**
+
+- Drop `ov-conversation` IDB store entirely. `Message`, `addMessage`,
+  `addToThread`, and `useConversationStore` are removed.
+- New `src/audit/useThreadView.ts` hook: reads from `ov-audit.events`
+  filtered to thread-visible event names (`speak.tap`, `thread.compose`,
+  `thread.transcribed`) and the active patient's `patient_id_hash`. Maps
+  records to a render-friendly shape; memoised; subscribed to the audit
+  pub-sub for live updates.
+- `useSpeakActions.speakAsPatient` / `speakAsProvider` → audit-log
+  `speak.tap` (replaces `addMessage`).
+- `useSpeakActions.addToThread` callers split by intent:
+  - `MyWishes` (composed-but-not-voiced) → `thread.compose` event.
+  - `ListenPanel` (provider STT — already spoken aloud, transcribed for
+    the visible thread) → `thread.transcribed` event.
+- `App.tsx` thread renderer switches from
+  `useConversationStore((s) => s.messagesByPatientId[id])` to
+  `useThreadView(activePatientId)`.
+
+**Migration:** existing `ov-conversation` data cannot be losslessly
+ported (the stored `time` is a `"9:14 AM"` string with no date). On
+first launch after Phase 1 lands, drop the database and emit one
+`migration.thread_dropped` INFO audit event with the row count.
+Acceptable at v0.1 with no shipped users; if a developer is holding
+test conversations they care about, screenshot first.
 
 Phase 1 emits only `kind: "log"` records. The schema's span fields stay
 optional and unused.
@@ -109,7 +142,9 @@ optional and unused.
   - `model_priming` — `recoveryMode: "auto"`. One step per manifest entry;
     wraps the existing `primeOffline` generator.
   - `patient_remove` — `recoveryMode: "auto"`. Steps for each store the
-    cascade touches (settings, conversation, audio cache, audit, OPFS).
+    cascade touches (settings, audio cache, audit, OPFS). The conversation
+    cascade collapses into the audit cascade since the thread is now
+    derived from audit events.
 - Resume prompt UI in `src/components/settings/` for the `prompt` mode
   workflows.
 
@@ -233,6 +268,7 @@ export const ATTR = {
 
   SPEECH_TEXT:         "ownvoice.speech.text",   // PHI
   SPEECH_GLOSS:        "ownvoice.speech.gloss",  // PHI
+  SPEECH_ICON:         "ownvoice.speech.icon",   // decorative emoji from phrase button
   SPEECH_ENGINE:       "ownvoice.speech.engine",
   SPEECH_LANG:         "ownvoice.speech.lang",
   SPEECH_CACHE_HIT:    "ownvoice.speech.cache_hit",
