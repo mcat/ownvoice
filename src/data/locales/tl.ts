@@ -21,6 +21,7 @@ const tl: LocaleStrings = {
   "quick.please_wait": "Sandali lang",
   "quick.dont_understand": "Hindi ko maintindihan",
   "quick.repeat": "Pakiulit",
+  "quick.retract": "Hindi yun ang ibig kong sabihin",
 
   // ── Patient needs: Comfort ─────────────────────────────────────
   "needs.comfort.water": "Kailangan ko ng tubig",
@@ -29,6 +30,13 @@ const tl: LocaleStrings = {
   "needs.comfort.hot": "Naiinitan ako",
   "needs.comfort.bed": "Ayusin ang kama ko",
   "needs.comfort.bathroom": "Kailangan ko pumunta sa banyo",
+  "needs.comfort.hearing_aid": "Kailangan ko ang hearing aid ko",
+  "needs.comfort.glasses": "Kailangan ko ang salamin ko",
+  "needs.comfort.ice": "Kailangan ko ng pirapirasong yelo",
+  "needs.comfort.pillow": "Ayusin ang unan ko",
+  "needs.comfort.turn": "Pakibaling ako",
+  "needs.comfort.sit_up": "Tulungan akong umupo",
+  "needs.comfort.quiet": "Pakitahimik",
 
   // ── Patient needs: Medical ─────────────────────────────────────
   "needs.medical.medication": "Kailangan ko ang gamot ko",
@@ -37,12 +45,26 @@ const tl: LocaleStrings = {
   "needs.medical.breathe": "Hirap akong huminga",
   "needs.medical.nurse": "Kailangan ko ang nars",
   "needs.medical.doctor": "Kailangan ko ang doktor",
+  "needs.medical.call_light": "Kailangan ko ng tulong ngayon",
 
   // ── Patient needs: People ──────────────────────────────────────
   "needs.people.family": "Gusto kong makita ang pamilya ko",
   "needs.people.stay": "Puwede bang may mag-stay kasama ko?",
   "needs.people.call": "Gusto kong tumawag sa isang tao",
   "needs.people.interpreter": "Kailangan ko ng interpreter",
+  "needs.people.respiratory_therapist": "Kailangan ko ang respiratory therapist",
+  "needs.people.speech_therapist": "Kailangan ko ang speech therapist",
+
+  // ── Patient needs: Hygiene ─────────────────────────────────────
+  "needs.hygiene.back": "Hugasan ang likod ko",
+  "needs.hygiene.face": "Hugasan ang mukha ko",
+  "needs.hygiene.feet": "Hugasan ang paa ko",
+  "needs.hygiene.hair": "Hugasan ang buhok ko",
+  "needs.hygiene.hands": "Hugasan ang kamay ko",
+  "needs.hygiene.mouth": "Linis ng bibig",
+  "needs.hygiene.nose": "Punasan ang ilong ko",
+  "needs.hygiene.teeth": "Sipilyuhin ang ngipin ko",
+  "needs.hygiene.wound": "Palitan ang benda ko",
 
   // ── Patient feelings: Physical ─────────────────────────────────
   "feelings.physical.tired": "Pagod na ako",
@@ -51,6 +73,11 @@ const tl: LocaleStrings = {
   "feelings.physical.better": "Bumuti ang pakiramdam ko",
   "feelings.physical.dizzy": "Nahihilo ako",
   "feelings.physical.itchy": "Makati",
+  "feelings.physical.wet": "Basa ako",
+  "feelings.physical.gagging": "Parang isusuka ko",
+  "feelings.physical.short_of_breath": "Hinihingal ako",
+  "feelings.physical.nauseated": "Naduduwal ako",
+  "feelings.physical.worse": "Lumala ang pakiramdam ko",
 
   // ── Patient feelings: Emotional ────────────────────────────────
   "feelings.emotional.scared": "Natatakot ako",
@@ -75,6 +102,7 @@ const tl: LocaleStrings = {
   "questions.nurse_today": "Sino ang nars ko ngayon?",
   "questions.eat_drink": "Puwede ba akong kumain o uminom?",
   "questions.see_family": "Kailan ko makikita ang pamilya ko?",
+  "questions.extubation": "Kailan tatanggalin ang tubo?",
 
   // ── Pain: Emoji-FPS labels (Li et al., JMIR 2023) ─────────────
   "pain.face.0": "Walang sakit",
@@ -515,6 +543,7 @@ const tl: LocaleStrings = {
   "sub.comfort": "Ginhawa",
   "sub.medical": "Medikal",
   "sub.people": "Tao",
+  "sub.hygiene": "Kalinisan",
   "sub.physical": "Pisikal",
   "sub.emotional": "Emosyonal",
 

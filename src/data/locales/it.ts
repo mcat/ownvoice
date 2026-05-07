@@ -21,6 +21,7 @@ const it: LocaleStrings = {
   "quick.please_wait": "Per favore attenda",
   "quick.dont_understand": "Non capisco",
   "quick.repeat": "Per favore ripeta",
+  "quick.retract": "Non intendevo questo",
 
   // ── Patient needs: Comfort ─────────────────────────────────────
   "needs.comfort.water": "Ho bisogno di acqua",
@@ -29,6 +30,13 @@ const it: LocaleStrings = {
   "needs.comfort.hot": "Ho caldo",
   "needs.comfort.bed": "Regolate il mio letto",
   "needs.comfort.bathroom": "Ho bisogno del bagno",
+  "needs.comfort.hearing_aid": "Ho bisogno del mio apparecchio acustico",
+  "needs.comfort.glasses": "Ho bisogno dei miei occhiali",
+  "needs.comfort.ice": "Ho bisogno di pezzetti di ghiaccio",
+  "needs.comfort.pillow": "Sistemate il mio cuscino",
+  "needs.comfort.turn": "Per favore giratemi",
+  "needs.comfort.sit_up": "Aiutatemi a mettermi seduto",
+  "needs.comfort.quiet": "Per favore fate silenzio",
 
   // ── Patient needs: Medical ─────────────────────────────────────
   "needs.medical.medication": "Ho bisogno del mio farmaco",
@@ -37,12 +45,26 @@ const it: LocaleStrings = {
   "needs.medical.breathe": "Non riesco a respirare bene",
   "needs.medical.nurse": "Ho bisogno dell'infermiere",
   "needs.medical.doctor": "Ho bisogno del medico",
+  "needs.medical.call_light": "Ho bisogno di aiuto subito",
 
   // ── Patient needs: People ──────────────────────────────────────
   "needs.people.family": "Voglio la mia famiglia",
   "needs.people.stay": "Qualcuno può restare con me?",
   "needs.people.call": "Voglio chiamare qualcuno",
   "needs.people.interpreter": "Ho bisogno di un interprete",
+  "needs.people.respiratory_therapist": "Ho bisogno del fisioterapista respiratorio",
+  "needs.people.speech_therapist": "Ho bisogno del logopedista",
+
+  // ── Patient needs: Hygiene ─────────────────────────────────────
+  "needs.hygiene.back": "Lavatemi la schiena",
+  "needs.hygiene.face": "Lavatemi il viso",
+  "needs.hygiene.feet": "Lavatemi i piedi",
+  "needs.hygiene.hair": "Lavatemi i capelli",
+  "needs.hygiene.hands": "Lavatemi le mani",
+  "needs.hygiene.mouth": "Igiene orale",
+  "needs.hygiene.nose": "Pulitemi il naso",
+  "needs.hygiene.teeth": "Lavatemi i denti",
+  "needs.hygiene.wound": "Cambiatemi la medicazione",
 
   // ── Patient feelings: Physical ─────────────────────────────────
   "feelings.physical.tired": "Sono stanco",
@@ -51,6 +73,11 @@ const it: LocaleStrings = {
   "feelings.physical.better": "Mi sento meglio",
   "feelings.physical.dizzy": "Mi gira la testa",
   "feelings.physical.itchy": "Ho prurito",
+  "feelings.physical.wet": "Sono bagnato",
+  "feelings.physical.gagging": "Ho conati di vomito",
+  "feelings.physical.short_of_breath": "Mi manca il fiato",
+  "feelings.physical.nauseated": "Ho la nausea",
+  "feelings.physical.worse": "Mi sento peggio",
 
   // ── Patient feelings: Emotional ────────────────────────────────
   "feelings.emotional.scared": "Ho paura",
@@ -74,6 +101,7 @@ const it: LocaleStrings = {
   "questions.nurse_today": "Chi è il mio infermiere oggi?",
   "questions.eat_drink": "Posso mangiare o bere?",
   "questions.see_family": "Quando posso vedere la mia famiglia?",
+  "questions.extubation": "Quando mi tolgono il tubo?",
 
   // ── Pain: Emoji-FPS labels (Li et al., JMIR 2023) ─────────────
   "pain.face.0": "Nessun dolore",
@@ -482,6 +510,7 @@ const it: LocaleStrings = {
   "sub.comfort": "Comfort",
   "sub.medical": "Medico",
   "sub.people": "Persone",
+  "sub.hygiene": "Igiene",
   "sub.physical": "Fisico",
   "sub.emotional": "Emotivo",
 

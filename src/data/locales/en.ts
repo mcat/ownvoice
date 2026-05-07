@@ -17,6 +17,7 @@ const en = {
   "quick.please_wait": "Please wait",
   "quick.dont_understand": "I don't understand",
   "quick.repeat": "Please repeat that",
+  "quick.retract": "That came out wrong",
 
   // ── Patient needs: Comfort ─────────────────────────────────────
   "needs.comfort.water": "I need water",
@@ -25,6 +26,13 @@ const en = {
   "needs.comfort.hot": "I'm hot",
   "needs.comfort.bed": "Adjust my bed",
   "needs.comfort.bathroom": "I need the bathroom",
+  "needs.comfort.hearing_aid": "I need my hearing aid",
+  "needs.comfort.glasses": "I need my glasses",
+  "needs.comfort.ice": "I need ice chips",
+  "needs.comfort.pillow": "Adjust my pillow",
+  "needs.comfort.turn": "Please turn me",
+  "needs.comfort.sit_up": "Help me sit up",
+  "needs.comfort.quiet": "Please be quiet",
 
   // ── Patient needs: Medical ─────────────────────────────────────
   "needs.medical.medication": "I need my medication",
@@ -33,12 +41,26 @@ const en = {
   "needs.medical.breathe": "I can't breathe well",
   "needs.medical.nurse": "I need the nurse",
   "needs.medical.doctor": "I need the doctor",
+  "needs.medical.call_light": "I need help right now",
 
   // ── Patient needs: People ──────────────────────────────────────
   "needs.people.family": "I want my family",
   "needs.people.stay": "Can someone stay with me?",
   "needs.people.call": "I want to call someone",
   "needs.people.interpreter": "I need an interpreter",
+  "needs.people.respiratory_therapist": "I need the respiratory therapist",
+  "needs.people.speech_therapist": "I need the speech therapist",
+
+  // ── Patient needs: Hygiene ─────────────────────────────────────
+  "needs.hygiene.back": "Wash my back",
+  "needs.hygiene.face": "Wash my face",
+  "needs.hygiene.feet": "Wash my feet",
+  "needs.hygiene.hair": "Wash my hair",
+  "needs.hygiene.hands": "Wash my hands",
+  "needs.hygiene.mouth": "Mouth care",
+  "needs.hygiene.nose": "Wipe my nose",
+  "needs.hygiene.teeth": "Brush my teeth",
+  "needs.hygiene.wound": "Change my dressing",
 
   // ── Patient feelings: Physical ─────────────────────────────────
   "feelings.physical.tired": "I'm tired",
@@ -47,6 +69,11 @@ const en = {
   "feelings.physical.better": "I feel better",
   "feelings.physical.dizzy": "I feel dizzy",
   "feelings.physical.itchy": "I feel itchy",
+  "feelings.physical.wet": "I'm wet",
+  "feelings.physical.gagging": "I'm gagging",
+  "feelings.physical.short_of_breath": "I'm short of breath",
+  "feelings.physical.nauseated": "I feel nauseated",
+  "feelings.physical.worse": "I feel worse",
 
   // ── Patient feelings: Emotional ────────────────────────────────
   "feelings.emotional.scared": "I'm scared",
@@ -70,6 +97,7 @@ const en = {
   "questions.nurse_today": "Who is my nurse today?",
   "questions.eat_drink": "Can I eat or drink?",
   "questions.see_family": "When can I see my family?",
+  "questions.extubation": "When is my tube coming out?",
 
   // ── Pain: Emoji-FPS labels (Li et al., JMIR 2023) ─────────────
   "pain.face.0": "No hurt",
@@ -472,6 +500,7 @@ const en = {
   "sub.comfort": "Comfort",
   "sub.medical": "Medical",
   "sub.people": "People",
+  "sub.hygiene": "Hygiene",
   "sub.physical": "Physical",
   "sub.emotional": "Emotional",
 

@@ -21,6 +21,7 @@ const zh: LocaleStrings = {
   "quick.please_wait": "请等一下",
   "quick.dont_understand": "我不明白",
   "quick.repeat": "请再说一遍",
+  "quick.retract": "我说错了",
 
   // ── Patient needs: Comfort ─────────────────────────────────────
   "needs.comfort.water": "我需要水",
@@ -29,6 +30,13 @@ const zh: LocaleStrings = {
   "needs.comfort.hot": "我热",
   "needs.comfort.bed": "调整我的床",
   "needs.comfort.bathroom": "我需要上厕所",
+  "needs.comfort.hearing_aid": "我需要助听器",
+  "needs.comfort.glasses": "我需要眼镜",
+  "needs.comfort.ice": "我需要小冰块",
+  "needs.comfort.pillow": "调整我的枕头",
+  "needs.comfort.turn": "请帮我翻身",
+  "needs.comfort.sit_up": "扶我坐起来",
+  "needs.comfort.quiet": "请保持安静",
 
   // ── Patient needs: Medical ─────────────────────────────────────
   "needs.medical.medication": "我需要吃药",
@@ -37,12 +45,26 @@ const zh: LocaleStrings = {
   "needs.medical.breathe": "我呼吸困难",
   "needs.medical.nurse": "我需要护士",
   "needs.medical.doctor": "我需要医生",
+  "needs.medical.call_light": "我现在就需要帮助",
 
   // ── Patient needs: People ──────────────────────────────────────
   "needs.people.family": "我想见家人",
   "needs.people.stay": "能有人陪着我吗？",
   "needs.people.call": "我想打电话",
   "needs.people.interpreter": "我需要翻译",
+  "needs.people.respiratory_therapist": "我需要呼吸治疗师",
+  "needs.people.speech_therapist": "我需要言语治疗师",
+
+  // ── Patient needs: Hygiene ─────────────────────────────────────
+  "needs.hygiene.back": "帮我擦背",
+  "needs.hygiene.face": "帮我擦脸",
+  "needs.hygiene.feet": "帮我洗脚",
+  "needs.hygiene.hair": "帮我洗头",
+  "needs.hygiene.hands": "帮我洗手",
+  "needs.hygiene.mouth": "口腔护理",
+  "needs.hygiene.nose": "帮我擦鼻子",
+  "needs.hygiene.teeth": "帮我刷牙",
+  "needs.hygiene.wound": "换药包扎",
 
   // ── Patient feelings: Physical ─────────────────────────────────
   "feelings.physical.tired": "我累了",
@@ -51,6 +73,11 @@ const zh: LocaleStrings = {
   "feelings.physical.better": "我感觉好些了",
   "feelings.physical.dizzy": "我头晕",
   "feelings.physical.itchy": "我觉得痒",
+  "feelings.physical.wet": "我湿了",
+  "feelings.physical.gagging": "我想干呕",
+  "feelings.physical.short_of_breath": "我喘不过气",
+  "feelings.physical.nauseated": "我觉得恶心",
+  "feelings.physical.worse": "我觉得更糟了",
 
   // ── Patient feelings: Emotional ────────────────────────────────
   "feelings.emotional.scared": "我害怕",
@@ -74,6 +101,7 @@ const zh: LocaleStrings = {
   "questions.nurse_today": "今天谁是我的护士？",
   "questions.eat_drink": "我可以吃东西或喝水吗？",
   "questions.see_family": "我什么时候能见家人？",
+  "questions.extubation": "我的管子什么时候拔？",
 
   // ── Pain: Emoji-FPS labels (Li et al., JMIR 2023) ─────────────
   "pain.face.0": "不痛",
@@ -467,6 +495,7 @@ const zh: LocaleStrings = {
   "sub.comfort": "舒适",
   "sub.medical": "医疗",
   "sub.people": "人员",
+  "sub.hygiene": "个人卫生",
   "sub.physical": "身体",
   "sub.emotional": "情感",
 

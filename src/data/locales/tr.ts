@@ -21,6 +21,7 @@ const tr: LocaleStrings = {
   "quick.please_wait": "Lütfen bekleyin",
   "quick.dont_understand": "Anlamıyorum",
   "quick.repeat": "Lütfen tekrar edin",
+  "quick.retract": "Yanlış söyledim",
 
   // ── Patient needs: Comfort ─────────────────────────────────────
   "needs.comfort.water": "Suya ihtiyacım var",
@@ -29,6 +30,13 @@ const tr: LocaleStrings = {
   "needs.comfort.hot": "Sıcaklıyorum",
   "needs.comfort.bed": "Yatağımı ayarlayın",
   "needs.comfort.bathroom": "Tuvalete ihtiyacım var",
+  "needs.comfort.hearing_aid": "İşitme cihazıma ihtiyacım var",
+  "needs.comfort.glasses": "Gözlüğüme ihtiyacım var",
+  "needs.comfort.ice": "Buz parçalarına ihtiyacım var",
+  "needs.comfort.pillow": "Yastığımı düzeltin",
+  "needs.comfort.turn": "Lütfen beni çevirin",
+  "needs.comfort.sit_up": "Doğrulmama yardım edin",
+  "needs.comfort.quiet": "Lütfen sessiz olun",
 
   // ── Patient needs: Medical ─────────────────────────────────────
   "needs.medical.medication": "İlacıma ihtiyacım var",
@@ -37,12 +45,26 @@ const tr: LocaleStrings = {
   "needs.medical.breathe": "İyi nefes alamıyorum",
   "needs.medical.nurse": "Hemşireye ihtiyacım var",
   "needs.medical.doctor": "Doktora ihtiyacım var",
+  "needs.medical.call_light": "Şu anda yardıma ihtiyacım var",
 
   // ── Patient needs: People ──────────────────────────────────────
   "needs.people.family": "Ailemi istiyorum",
   "needs.people.stay": "Birisi yanımda kalabilir mi?",
   "needs.people.call": "Birini aramak istiyorum",
   "needs.people.interpreter": "Tercümana ihtiyacım var",
+  "needs.people.respiratory_therapist": "Solunum terapistine ihtiyacım var",
+  "needs.people.speech_therapist": "Konuşma terapistine ihtiyacım var",
+
+  // ── Patient needs: Hygiene ─────────────────────────────────────
+  "needs.hygiene.back": "Sırtımı yıkayın",
+  "needs.hygiene.face": "Yüzümü yıkayın",
+  "needs.hygiene.feet": "Ayaklarımı yıkayın",
+  "needs.hygiene.hair": "Saçımı yıkayın",
+  "needs.hygiene.hands": "Ellerimi yıkayın",
+  "needs.hygiene.mouth": "Ağız bakımı",
+  "needs.hygiene.nose": "Burnumu silin",
+  "needs.hygiene.teeth": "Dişlerimi fırçalayın",
+  "needs.hygiene.wound": "Pansumanımı değiştirin",
 
   // ── Patient feelings: Physical ─────────────────────────────────
   "feelings.physical.tired": "Yorgunum",
@@ -51,6 +73,11 @@ const tr: LocaleStrings = {
   "feelings.physical.better": "Kendimi daha iyi hissediyorum",
   "feelings.physical.dizzy": "Başım dönüyor",
   "feelings.physical.itchy": "Kaşıntım var",
+  "feelings.physical.wet": "Islağım",
+  "feelings.physical.gagging": "Öğürüyorum",
+  "feelings.physical.short_of_breath": "Nefesim daralıyor",
+  "feelings.physical.nauseated": "Midem bulanıyor",
+  "feelings.physical.worse": "Kendimi daha kötü hissediyorum",
 
   // ── Patient feelings: Emotional ────────────────────────────────
   "feelings.emotional.scared": "Korkuyorum",
@@ -74,6 +101,7 @@ const tr: LocaleStrings = {
   "questions.nurse_today": "Bugün hemşirem kim?",
   "questions.eat_drink": "Yiyip içebilir miyim?",
   "questions.see_family": "Ailemi ne zaman görebilirim?",
+  "questions.extubation": "Tüpüm ne zaman çıkacak?",
 
   // ── Pain: Emoji-FPS labels (Li et al., JMIR 2023) ─────────────
   "pain.face.0": "Ağrı yok",
@@ -491,6 +519,7 @@ const tr: LocaleStrings = {
   "sub.comfort": "Konfor",
   "sub.medical": "Tıbbi",
   "sub.people": "Kişiler",
+  "sub.hygiene": "Hijyen",
   "sub.physical": "Fiziksel",
   "sub.emotional": "Duygusal",
 

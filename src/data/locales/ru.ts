@@ -21,6 +21,7 @@ const ru: LocaleStrings = {
   "quick.please_wait": "Подождите, пожалуйста",
   "quick.dont_understand": "Я не понимаю",
   "quick.repeat": "Повторите, пожалуйста",
+  "quick.retract": "Я не то имел в виду",
 
   // ── Patient needs: Comfort ─────────────────────────────────────
   "needs.comfort.water": "Мне нужна вода",
@@ -29,6 +30,13 @@ const ru: LocaleStrings = {
   "needs.comfort.hot": "Мне жарко",
   "needs.comfort.bed": "Отрегулируйте мою кровать",
   "needs.comfort.bathroom": "Мне нужно в туалет",
+  "needs.comfort.hearing_aid": "Мне нужен слуховой аппарат",
+  "needs.comfort.glasses": "Мне нужны очки",
+  "needs.comfort.ice": "Мне нужен лёд кусочками",
+  "needs.comfort.pillow": "Поправьте мне подушку",
+  "needs.comfort.turn": "Поверните меня, пожалуйста",
+  "needs.comfort.sit_up": "Помогите мне сесть",
+  "needs.comfort.quiet": "Соблюдайте тишину, пожалуйста",
 
   // ── Patient needs: Medical ─────────────────────────────────────
   "needs.medical.medication": "Мне нужно лекарство",
@@ -37,12 +45,26 @@ const ru: LocaleStrings = {
   "needs.medical.breathe": "Мне трудно дышать",
   "needs.medical.nurse": "Мне нужна медсестра",
   "needs.medical.doctor": "Мне нужен врач",
+  "needs.medical.call_light": "Мне срочно нужна помощь",
 
   // ── Patient needs: People ──────────────────────────────────────
   "needs.people.family": "Я хочу видеть семью",
   "needs.people.stay": "Кто-нибудь может остаться со мной?",
   "needs.people.call": "Я хочу позвонить кому-нибудь",
   "needs.people.interpreter": "Мне нужен переводчик",
+  "needs.people.respiratory_therapist": "Мне нужен респираторный терапевт",
+  "needs.people.speech_therapist": "Мне нужен логопед",
+
+  // ── Patient needs: Hygiene ─────────────────────────────────────
+  "needs.hygiene.back": "Помойте мне спину",
+  "needs.hygiene.face": "Помойте мне лицо",
+  "needs.hygiene.feet": "Помойте мне ноги",
+  "needs.hygiene.hair": "Помойте мне волосы",
+  "needs.hygiene.hands": "Помойте мне руки",
+  "needs.hygiene.mouth": "Уход за полостью рта",
+  "needs.hygiene.nose": "Вытрите мне нос",
+  "needs.hygiene.teeth": "Почистите мне зубы",
+  "needs.hygiene.wound": "Поменяйте мне повязку",
 
   // ── Patient feelings: Physical ─────────────────────────────────
   // NOTE(translator): Using impersonal or infinitive forms where possible
@@ -53,6 +75,11 @@ const ru: LocaleStrings = {
   "feelings.physical.better": "Мне лучше",
   "feelings.physical.dizzy": "У меня кружится голова",
   "feelings.physical.itchy": "У меня зуд",
+  "feelings.physical.wet": "Я мокрый",
+  "feelings.physical.gagging": "У меня позывы на рвоту",
+  "feelings.physical.short_of_breath": "Мне не хватает воздуха",
+  "feelings.physical.nauseated": "Меня тошнит",
+  "feelings.physical.worse": "Мне хуже",
 
   // ── Patient feelings: Emotional ────────────────────────────────
   "feelings.emotional.scared": "Мне страшно",
@@ -76,6 +103,7 @@ const ru: LocaleStrings = {
   "questions.nurse_today": "Кто моя медсестра сегодня?",
   "questions.eat_drink": "Мне можно есть или пить?",
   "questions.see_family": "Когда я смогу увидеть семью?",
+  "questions.extubation": "Когда мне уберут трубку?",
 
   // ── Pain: Emoji-FPS labels (Li et al., JMIR 2023) ─────────────
   "pain.face.0": "Нет боли",
@@ -485,6 +513,7 @@ const ru: LocaleStrings = {
   "sub.comfort": "Комфорт",
   "sub.medical": "Медицинское",
   "sub.people": "Люди",
+  "sub.hygiene": "Гигиена",
   "sub.physical": "Физическое",
   "sub.emotional": "Эмоциональное",
 

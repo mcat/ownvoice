@@ -21,6 +21,7 @@ const ms: LocaleStrings = {
   "quick.please_wait": "Sila tunggu",
   "quick.dont_understand": "Saya tidak faham",
   "quick.repeat": "Sila ulang",
+  "quick.retract": "Itu salah saya katakan",
 
   // ── Patient needs: Comfort ─────────────────────────────────────
   "needs.comfort.water": "Saya perlukan air",
@@ -29,6 +30,13 @@ const ms: LocaleStrings = {
   "needs.comfort.hot": "Saya panas",
   "needs.comfort.bed": "Tolong laraskan katil saya",
   "needs.comfort.bathroom": "Saya perlu ke bilik air",
+  "needs.comfort.hearing_aid": "Saya perlukan alat bantu pendengaran",
+  "needs.comfort.glasses": "Saya perlukan cermin mata saya",
+  "needs.comfort.ice": "Saya perlukan ketulan ais",
+  "needs.comfort.pillow": "Tolong laraskan bantal saya",
+  "needs.comfort.turn": "Tolong pusingkan saya",
+  "needs.comfort.sit_up": "Tolong bantu saya duduk",
+  "needs.comfort.quiet": "Tolong senyap sedikit",
 
   // ── Patient needs: Medical ─────────────────────────────────────
   "needs.medical.medication": "Saya perlukan ubat saya",
@@ -37,12 +45,26 @@ const ms: LocaleStrings = {
   "needs.medical.breathe": "Saya sukar bernafas",
   "needs.medical.nurse": "Saya perlukan jururawat",
   "needs.medical.doctor": "Saya perlukan doktor",
+  "needs.medical.call_light": "Saya perlukan bantuan sekarang juga",
 
   // ── Patient needs: People ──────────────────────────────────────
   "needs.people.family": "Saya mahu keluarga saya",
   "needs.people.stay": "Bolehkah seseorang tinggal dengan saya?",
   "needs.people.call": "Saya mahu menelefon seseorang",
   "needs.people.interpreter": "Saya perlukan jurubahasa",
+  "needs.people.respiratory_therapist": "Saya perlukan ahli terapi pernafasan",
+  "needs.people.speech_therapist": "Saya perlukan ahli terapi pertuturan",
+
+  // ── Patient needs: Hygiene ─────────────────────────────────────
+  "needs.hygiene.back": "Tolong basuh belakang saya",
+  "needs.hygiene.face": "Tolong basuh muka saya",
+  "needs.hygiene.feet": "Tolong basuh kaki saya",
+  "needs.hygiene.hair": "Tolong basuh rambut saya",
+  "needs.hygiene.hands": "Tolong basuh tangan saya",
+  "needs.hygiene.mouth": "Penjagaan mulut",
+  "needs.hygiene.nose": "Tolong lap hidung saya",
+  "needs.hygiene.teeth": "Tolong gosok gigi saya",
+  "needs.hygiene.wound": "Tolong tukar pembalut luka saya",
 
   // ── Patient feelings: Physical ─────────────────────────────────
   "feelings.physical.tired": "Saya penat",
@@ -51,6 +73,11 @@ const ms: LocaleStrings = {
   "feelings.physical.better": "Saya rasa lebih baik",
   "feelings.physical.dizzy": "Saya rasa pening",
   "feelings.physical.itchy": "Saya rasa gatal",
+  "feelings.physical.wet": "Saya basah",
+  "feelings.physical.gagging": "Saya rasa nak muntah",
+  "feelings.physical.short_of_breath": "Saya tercungap-cungap",
+  "feelings.physical.nauseated": "Saya rasa loya",
+  "feelings.physical.worse": "Saya rasa lebih teruk",
 
   // ── Patient feelings: Emotional ────────────────────────────────
   "feelings.emotional.scared": "Saya takut",
@@ -74,6 +101,7 @@ const ms: LocaleStrings = {
   "questions.nurse_today": "Siapa jururawat saya hari ini?",
   "questions.eat_drink": "Boleh saya makan atau minum?",
   "questions.see_family": "Bila saya boleh jumpa keluarga?",
+  "questions.extubation": "Bila tiub saya akan dikeluarkan?",
 
   // ── Pain: Emoji-FPS labels (Li et al., JMIR 2023) ─────────────
   "pain.face.0": "Tidak sakit",
@@ -495,6 +523,7 @@ const ms: LocaleStrings = {
   "sub.comfort": "Keselesaan",
   "sub.medical": "Perubatan",
   "sub.people": "Orang",
+  "sub.hygiene": "Kebersihan",
   "sub.physical": "Fizikal",
   "sub.emotional": "Emosi",
 

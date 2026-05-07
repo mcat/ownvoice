@@ -21,6 +21,7 @@ const ko: LocaleStrings = {
   "quick.please_wait": "잠시 기다려 주십시오",
   "quick.dont_understand": "이해하지 못하겠습니다",
   "quick.repeat": "다시 말씀해 주십시오",
+  "quick.retract": "그런 뜻이 아니었습니다",
 
   // ── Patient needs: Comfort ─────────────────────────────────────
   "needs.comfort.water": "물이 필요합니다",
@@ -29,6 +30,13 @@ const ko: LocaleStrings = {
   "needs.comfort.hot": "덥습니다",
   "needs.comfort.bed": "침대를 조절해 주십시오",
   "needs.comfort.bathroom": "화장실이 필요합니다",
+  "needs.comfort.hearing_aid": "보청기가 필요합니다",
+  "needs.comfort.glasses": "안경이 필요합니다",
+  "needs.comfort.ice": "얼음 조각이 필요합니다",
+  "needs.comfort.pillow": "베개를 정리해 주십시오",
+  "needs.comfort.turn": "몸을 돌려 주십시오",
+  "needs.comfort.sit_up": "일어나 앉는 것을 도와주십시오",
+  "needs.comfort.quiet": "조용히 해 주십시오",
 
   // ── Patient needs: Medical ─────────────────────────────────────
   "needs.medical.medication": "약이 필요합니다",
@@ -37,12 +45,26 @@ const ko: LocaleStrings = {
   "needs.medical.breathe": "숨쉬기가 힘듭니다",
   "needs.medical.nurse": "간호사가 필요합니다",
   "needs.medical.doctor": "의사 선생님이 필요합니다",
+  "needs.medical.call_light": "지금 도움이 필요합니다",
 
   // ── Patient needs: People ──────────────────────────────────────
   "needs.people.family": "가족을 만나고 싶습니다",
   "needs.people.stay": "누군가 함께 있어 주실 수 있습니까?",
   "needs.people.call": "전화를 하고 싶습니다",
   "needs.people.interpreter": "통역사가 필요합니다",
+  "needs.people.respiratory_therapist": "호흡 치료사가 필요합니다",
+  "needs.people.speech_therapist": "언어 치료사가 필요합니다",
+
+  // ── Patient needs: Hygiene ─────────────────────────────────────
+  "needs.hygiene.back": "등을 닦아 주십시오",
+  "needs.hygiene.face": "얼굴을 닦아 주십시오",
+  "needs.hygiene.feet": "발을 씻겨 주십시오",
+  "needs.hygiene.hair": "머리를 감겨 주십시오",
+  "needs.hygiene.hands": "손을 닦아 주십시오",
+  "needs.hygiene.mouth": "구강 관리",
+  "needs.hygiene.nose": "코를 닦아 주십시오",
+  "needs.hygiene.teeth": "양치질을 해 주십시오",
+  "needs.hygiene.wound": "드레싱을 교체해 주십시오",
 
   // ── Patient feelings: Physical ─────────────────────────────────
   "feelings.physical.tired": "피곤합니다",
@@ -51,6 +73,11 @@ const ko: LocaleStrings = {
   "feelings.physical.better": "좀 나아졌습니다",
   "feelings.physical.dizzy": "어지럽습니다",
   "feelings.physical.itchy": "가렵습니다",
+  "feelings.physical.wet": "젖었습니다",
+  "feelings.physical.gagging": "구역질이 납니다",
+  "feelings.physical.short_of_breath": "숨이 찹니다",
+  "feelings.physical.nauseated": "메스꺼움이 있습니다",
+  "feelings.physical.worse": "더 나빠진 것 같습니다",
 
   // ── Patient feelings: Emotional ────────────────────────────────
   "feelings.emotional.scared": "무섭습니다",
@@ -74,6 +101,7 @@ const ko: LocaleStrings = {
   "questions.nurse_today": "오늘 담당 간호사는 누구입니까?",
   "questions.eat_drink": "음식이나 음료를 먹어도 됩니까?",
   "questions.see_family": "가족을 언제 만날 수 있습니까?",
+  "questions.extubation": "관은 언제 뺍니까?",
 
   // ── Pain: Emoji-FPS labels (Li et al., JMIR 2023) ─────────────
   "pain.face.0": "통증 없음",
@@ -497,6 +525,7 @@ const ko: LocaleStrings = {
   "sub.comfort": "편안함",
   "sub.medical": "의료",
   "sub.people": "사람",
+  "sub.hygiene": "위생",
   "sub.physical": "신체",
   "sub.emotional": "감정",
 

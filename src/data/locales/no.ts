@@ -21,6 +21,7 @@ const no: LocaleStrings = {
   "quick.please_wait": "Vennligst vent",
   "quick.dont_understand": "Jeg forstår ikke",
   "quick.repeat": "Kan du gjenta det?",
+  "quick.retract": "Det ble feil",
 
   // ── Patient needs: Comfort ─────────────────────────────────────
   "needs.comfort.water": "Jeg trenger vann",
@@ -29,6 +30,13 @@ const no: LocaleStrings = {
   "needs.comfort.hot": "Jeg er varm",
   "needs.comfort.bed": "Juster sengen min",
   "needs.comfort.bathroom": "Jeg trenger toalettet",
+  "needs.comfort.hearing_aid": "Jeg trenger høreapparatet mitt",
+  "needs.comfort.glasses": "Jeg trenger brillene mine",
+  "needs.comfort.ice": "Jeg trenger isbiter",
+  "needs.comfort.pillow": "Juster puten min",
+  "needs.comfort.turn": "Vennligst snu meg",
+  "needs.comfort.sit_up": "Hjelp meg å sitte opp",
+  "needs.comfort.quiet": "Vær stille, takk",
 
   // ── Patient needs: Medical ─────────────────────────────────────
   "needs.medical.medication": "Jeg trenger medisinen min",
@@ -37,12 +45,26 @@ const no: LocaleStrings = {
   "needs.medical.breathe": "Jeg klarer ikke å puste godt",
   "needs.medical.nurse": "Jeg trenger sykepleieren",
   "needs.medical.doctor": "Jeg trenger legen",
+  "needs.medical.call_light": "Jeg trenger hjelp nå",
 
   // ── Patient needs: People ──────────────────────────────────────
   "needs.people.family": "Jeg vil ha familien min",
   "needs.people.stay": "Kan noen bli hos meg?",
   "needs.people.call": "Jeg vil ringe noen",
   "needs.people.interpreter": "Jeg trenger en tolk",
+  "needs.people.respiratory_therapist": "Jeg trenger respirasjonsterapeuten",
+  "needs.people.speech_therapist": "Jeg trenger logopeden",
+
+  // ── Patient needs: Hygiene ─────────────────────────────────────
+  "needs.hygiene.back": "Vask ryggen min",
+  "needs.hygiene.face": "Vask ansiktet mitt",
+  "needs.hygiene.feet": "Vask føttene mine",
+  "needs.hygiene.hair": "Vask håret mitt",
+  "needs.hygiene.hands": "Vask hendene mine",
+  "needs.hygiene.mouth": "Munnstell",
+  "needs.hygiene.nose": "Tørk nesen min",
+  "needs.hygiene.teeth": "Puss tennene mine",
+  "needs.hygiene.wound": "Bytt bandasjen min",
 
   // ── Patient feelings: Physical ─────────────────────────────────
   "feelings.physical.tired": "Jeg er sliten",
@@ -51,6 +73,11 @@ const no: LocaleStrings = {
   "feelings.physical.better": "Jeg føler meg bedre",
   "feelings.physical.dizzy": "Jeg er svimmel",
   "feelings.physical.itchy": "Jeg klør",
+  "feelings.physical.wet": "Jeg er våt",
+  "feelings.physical.gagging": "Jeg har brekninger",
+  "feelings.physical.short_of_breath": "Jeg er andpusten",
+  "feelings.physical.nauseated": "Jeg er kvalm",
+  "feelings.physical.worse": "Jeg føler meg verre",
 
   // ── Patient feelings: Emotional ────────────────────────────────
   "feelings.emotional.scared": "Jeg er redd",
@@ -74,6 +101,7 @@ const no: LocaleStrings = {
   "questions.nurse_today": "Hvem er sykepleieren min i dag?",
   "questions.eat_drink": "Kan jeg spise eller drikke?",
   "questions.see_family": "Når kan jeg se familien min?",
+  "questions.extubation": "Når blir slangen tatt ut?",
 
   // ── Pain: Emoji-FPS labels (Li et al., JMIR 2023) ─────────────
   "pain.face.0": "Ingen smerte",
@@ -482,6 +510,7 @@ const no: LocaleStrings = {
   "sub.comfort": "Komfort",
   "sub.medical": "Medisinsk",
   "sub.people": "Personer",
+  "sub.hygiene": "Hygiene",
   "sub.physical": "Fysisk",
   "sub.emotional": "Følelser",
 
