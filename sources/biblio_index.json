@@ -1,0 +1,1286 @@
+{
+  "fetched": [
+    {
+      "raw": "Broyles, L.M., Tate, J.A., Happ, M.B., 2012. Use of augmentative and alternative communication strategies by family members in the intensive care unit. Am. J. Crit. Care 21 (2), e21\u2013e32.",
+      "author": "Broyles",
+      "year": "2012",
+      "title_guess": "Use of augmentative and alternative communication strategies by family members in the intensive care unit",
+      "pmid": "22381993",
+      "doi": null,
+      "sources": [
+        "Happ 2021 qualitative"
+      ],
+      "topic": "aac",
+      "pmcid": "PMC3607206",
+      "path": "docs/research/aac/broyles-2012-use-of-augmentative-and-alternative-communication.pdf"
+    },
+    {
+      "raw": "Choi, J., Donahoe, M.P., Zullo, T.G., Hoffman, L.A., 2011. Caregivers of the chronically critically ill after discharge from the intensive care unit: six months\u2019 experience. Am. J. Crit. Care 20 (1), 12\u201323.",
+      "author": "Choi",
+      "year": "2011",
+      "title_guess": "Caregivers of the chronically critically ill after discharge from the intensive care unit: six months\u2019 experience",
+      "pmid": "21196567",
+      "doi": null,
+      "sources": [
+        "Happ 2021 qualitative"
+      ],
+      "topic": "icu-communication",
+      "pmcid": "PMC3052639",
+      "path": "docs/research/icu-communication/choi-2011-caregivers-of-the-chronically-critically-ill-after.pdf"
+    },
+    {
+      "raw": "Happ, M.B., Swigart, V.A., Tate, J.A., Arnold, R.M., Sereika, S.M., Hoffman, L.A., 2007. Family presence and surveillance during weaning from prolonged mechanical ventilation. Heart Lung 36 (1), 47\u201357.",
+      "author": "Happ",
+      "year": "2007",
+      "title_guess": "Family presence and surveillance during weaning from prolonged mechanical ventilation",
+      "pmid": "17234477",
+      "doi": null,
+      "sources": [
+        "Happ 2021 qualitative"
+      ],
+      "topic": "icu-communication",
+      "pmcid": "PMC2077984",
+      "path": "docs/research/icu-communication/happ-2007-family-presence-and-surveillance-during-weaning-fr.pdf"
+    },
+    {
+      "raw": "Patton, M.Q., 1999. Enhancing the quality and credibility of qualitative analysis. Health Serv. Res. 34 (5 Pt 2), 1189.",
+      "author": "Patton",
+      "year": "1999",
+      "title_guess": "Enhancing the quality and credibility of qualitative analysis",
+      "pmid": "10591279",
+      "doi": null,
+      "sources": [
+        "Happ 2021 qualitative"
+      ],
+      "topic": "methodology",
+      "pmcid": "PMC1089059",
+      "path": "docs/research/methodology/patton-1999-enhancing-the-quality-and-credibility-of-qualitati.pdf"
+    },
+    {
+      "raw": "Rodriguez, C.S., Rowe, M., Thomas, L., Shuster, J., Koeppel, B., Cairns, P., 2016. Enhancing the communication of suddenly speechless critical care patients. Am. J. Crit. Care 25 (3), e40\u2013e47.",
+      "author": "Rodriguez",
+      "year": "2016",
+      "title_guess": "Enhancing the communication of suddenly speechless critical care patients",
+      "pmid": "27134237",
+      "doi": null,
+      "sources": [
+        "Happ 2021 qualitative"
+      ],
+      "topic": "other",
+      "pmcid": "PMC4855698",
+      "path": "docs/research/other/rodriguez-2016-enhancing-the-communication-of-suddenly-speechless.pdf"
+    },
+    {
+      "raw": "Rose, L., Cook, A., Casey, J., Meyer, J., 2020. Restricted family visiting in intensive care during COVID19. Intensive Crit. Care Nurs. 60, 102896. https://doi.org/ 10.1016/j.iccn.2020.102896.",
+      "author": "Rose",
+      "year": "2020",
+      "title_guess": "Restricted family visiting in intensive care during COVID19",
+      "pmid": 32601012,
+      "doi": "10.1016/j.iccn.2020.102896",
+      "sources": [
+        "Happ 2021 qualitative"
+      ],
+      "topic": "icu-communication",
+      "pmcid": "PMC7261454",
+      "path": "docs/research/icu-communication/rose-2020-restricted-family-visiting-in-intensive-care-durin.pdf"
+    },
+    {
+      "raw": "Shin, J.W., Tate, J.A., Happ, M.B., 2020. The facilitated sensemaking model as a framework for family-patient communication during mechanical ventilation in the intensive care unit. Crit. Care Nurs. Clin. N. Am. 32 (2), 335\u2013348. Ten Hoorn, S., Elbers, P.W., Girbes, A.R., Tuinman, P.R., 2016. Communicating with conscious and mechanically ventilated critically ill patients: a systematic review. Crit. Care 20 (1), 333.",
+      "author": "Shin",
+      "year": "2020",
+      "title_guess": "The facilitated sensemaking model as a framework for family-patient communication during mechanical ventilation in the intensive care unit",
+      "pmid": "32402326",
+      "doi": null,
+      "sources": [
+        "Happ 2021 qualitative"
+      ],
+      "topic": "icu-communication",
+      "pmcid": "PMC10726956",
+      "path": "docs/research/icu-communication/shin-2020-the-facilitated-sensemaking-model-as-a-framework-f.pdf"
+    },
+    {
+      "raw": "15. Dind AJ, Starr JS, Arora S. Ipad-based apps to facilitate communication in critically ill patients with impaired ability to communicate: a preclinical analysis. Indian Journal of Critical Care Medicine: Peer-reviewed, Official Publication of Indian Society of Critical Care Medicine. 2021;25(11):1232. [PubMed: 34866819]",
+      "author": "Dind",
+      "year": "2021",
+      "title_guess": "25(11):1232",
+      "pmid": "34866819",
+      "doi": null,
+      "sources": [
+        "Happ 2024 pilot RCT"
+      ],
+      "topic": "icu-communication",
+      "pmcid": "PMC8608643",
+      "path": "docs/research/icu-communication/dind-2021-ipad-based-apps-to-facilitate-communication-in-cri.pdf"
+    },
+    {
+      "raw": "16. Shin JW, Happ MB, Tate JA. VidaTalk\u2122 patient communication application \u201copened up\u201d communication between nonvocal ICU patients and their family. Intensive and Critical Care Nursing. 2021/06/12/ 2021:103075. doi:10.1016/j.iccn.2021.103075",
+      "author": "Shin",
+      "year": "2021",
+      "title_guess": "/06/12/ 2021:103075",
+      "pmid": 34127362,
+      "doi": "10.1016/j.iccn.2021.103075",
+      "sources": [
+        "Happ 2024 pilot RCT"
+      ],
+      "topic": "aac",
+      "pmcid": "PMC10833611",
+      "path": "docs/research/aac/shin-2021-vidatalk-patient-communication-application-opene.pdf"
+    },
+    {
+      "raw": "36. Curtis JR, Treece PD, Nielsen EL, et al. Randomized Trial of Communication Facilitators to Reduce Family Distress and Intensity of End-of-Life Care. American journal of respiratory and critical care medicine. Jan 15 2016;193(2):154\u201362. doi:10.1164/rccm.201505-0900OC [PubMed: 26378963]",
+      "author": "Curtis",
+      "year": "2016",
+      "title_guess": "193(2):154\u201362",
+      "pmid": "26378963",
+      "doi": "10.1164/rccm.201505-0900OC",
+      "sources": [
+        "Happ 2024 pilot RCT"
+      ],
+      "topic": "other",
+      "pmcid": "PMC4731711",
+      "path": "docs/research/other/curtis-2016-randomized-trial-of-communication-facilitators-to.pdf"
+    },
+    {
+      "raw": "41. Van Pelt DC, Milbrandt EB, Qin L, et al. Informal caregiver burden among survivors of prolonged mechanical ventilation. American journal of respiratory and critical care medicine. Jan 15 2007;175(2):167\u201373. doi:10.1164/rccm.200604-493OC [PubMed: 17068327]",
+      "author": "Van",
+      "year": "2007",
+      "title_guess": "175(2):167\u201373",
+      "pmid": "17068327",
+      "doi": "10.1164/rccm.200604-493OC",
+      "sources": [
+        "Happ 2024 pilot RCT"
+      ],
+      "topic": "icu-communication",
+      "pmcid": "PMC1899280",
+      "path": "docs/research/icu-communication/van-2007-informal-caregiver-burden-among-survivors-of-prolo.pdf"
+    },
+    {
+      "raw": "42. Choi J, Sherwood PR, Schulz R, et al. Patterns of depressive symptoms in caregivers of mechanically ventilated critically ill adults from intensive care unit admission to 2 months postintensive care unit discharge: a pilot study. Critical care medicine. May 2012;40(5):1546\u201353. doi:10.1097/CCM.0b013e3182451c58 [PubMed: 22430242]",
+      "author": "Choi",
+      "year": "2012",
+      "title_guess": "40(5):1546\u201353",
+      "pmid": "22430242",
+      "doi": "10.1097/CCM.0b013e3182451c58",
+      "sources": [
+        "Happ 2024 pilot RCT"
+      ],
+      "topic": "icu-communication",
+      "pmcid": "PMC3330166",
+      "path": "docs/research/icu-communication/choi-2012-patterns-of-depressive-symptoms-in-caregivers-of-m.pdf"
+    },
+    {
+      "raw": "43. Choi J, Tate JA, Hoffman LA, et al. Fatigue in family caregivers of adult intensive care unit survivors. Journal of pain and symptom management. 2014;48(3):353\u2013363. [PubMed: 24439845]",
+      "author": "Choi",
+      "year": "2014",
+      "title_guess": "48(3):353\u2013363",
+      "pmid": "24439845",
+      "doi": null,
+      "sources": [
+        "Happ 2024 pilot RCT"
+      ],
+      "topic": "icu-communication",
+      "pmcid": "PMC4101057",
+      "path": "docs/research/icu-communication/choi-2014-fatigue-in-family-caregivers-of-adult-intensive-ca.pdf"
+    },
+    {
+      "raw": "Thomas, L., Troche, M.S., & Paguio, G. (2012). Development of a communication intervention to assist hospitalized suddenly speechless patients. Technology and Health Care, 20, 489-500. doi:10.3233/THC- 2012-0695",
+      "author": "Rodriguez",
+      "year": "2012",
+      "title_guess": "Development of a communication intervention to assist hospitalized suddenly speechless patients",
+      "pmid": "23187014",
+      "doi": "10.3233/THC-",
+      "sources": [
+        "Nilsen 2018 usability"
+      ],
+      "topic": "icu-communication",
+      "pmcid": "PMC4018578",
+      "path": "docs/research/icu-communication/rodriguez-2012-development-of-a-communication-intervention-icu.pdf"
+    }
+  ],
+  "paywalled": [
+    {
+      "raw": "Alasad, J., Ahmad, M., 2005. Communication with critically ill patients. J. Adv. Nurs. 50 (4), 356\u2013362.",
+      "author": "Alasad",
+      "year": "2005",
+      "title_guess": "Communication with critically ill patients",
+      "pmid": "15842442",
+      "doi": null,
+      "sources": [
+        "Happ 2021 qualitative"
+      ],
+      "topic": "icu-communication",
+      "reason": "no PMC OA"
+    },
+    {
+      "raw": "Altschuler, T., Happ, M.B., 2019. Partnering with speech language pathologist to facilitate patient decision making during serious illness. Geriatr Nurs. 40 (3), 333\u2013335.",
+      "author": "Altschuler",
+      "year": "2019",
+      "title_guess": "Partnering with speech language pathologist to facilitate patient decision making during serious illness",
+      "pmid": "31103328",
+      "doi": null,
+      "sources": [
+        "Happ 2021 qualitative"
+      ],
+      "topic": "other",
+      "reason": "no PMC OA"
+    },
+    {
+      "raw": "Davidson, J.E., 2010. Facilitated sensemaking: a strategy and new middle-range theory to support families of intensive care unit patients. Crit. Care Nurse 30 (6), 28\u201339.",
+      "author": "Davidson",
+      "year": "2010",
+      "title_guess": "Facilitated sensemaking: a strategy and new middle-range theory to support families of intensive care unit patients",
+      "pmid": "20436032",
+      "doi": null,
+      "sources": [
+        "Happ 2021 qualitative"
+      ],
+      "topic": "icu-communication",
+      "reason": "no PMC OA"
+    },
+    {
+      "raw": "Swoboda, S.M., Cooke, C.R., Levy, M.M., Azoulay, E., Curtis, J.R., 2017. Guidelines for family-centered care in the neonatal, pediatric, and adult ICU. Crit. Care Med. 45 (1), 103\u2013128.",
+      "author": "Swoboda",
+      "year": "2017",
+      "title_guess": "Guidelines for family-centered care in the neonatal, pediatric, and adult ICU",
+      "pmid": "27984278",
+      "doi": null,
+      "sources": [
+        "Happ 2021 qualitative"
+      ],
+      "topic": "icu-communication",
+      "reason": "no PMC OA"
+    },
+    {
+      "raw": "Davidson, J.E., Daly, B.J., Agan, D., Brady, N.R., Higgins, P.A., 2010. Facilitated sensemaking: a feasibility study for the provision of a family support program in the intensive care unit. Crit. Care Nurs. Quart. 33 (2), 177\u2013189.",
+      "author": "Davidson",
+      "year": "2010",
+      "title_guess": "Facilitated sensemaking: a feasibility study for the provision of a family support program in the intensive care unit",
+      "pmid": "20234207",
+      "doi": null,
+      "sources": [
+        "Happ 2021 qualitative"
+      ],
+      "topic": "icu-communication",
+      "reason": "no PMC OA"
+    },
+    {
+      "raw": "Davidson, J.E., Powers, K., Hedayat, K.M., Tieszen, M., Kon, A.A., Shepard, E., Spuhler, V., Todres, I.D., Levy, M., Barr, J., Ghandi, R., Hirsch, G., Armstrong, D., 2007. Clinical practice guidelines for support of the family in the patient-centered intensive care unit: American College of Critical Care Medicine Task Force 2004\u20132005. Crit. Care Med. 35 (2), 605\u2013622.",
+      "author": "Davidson",
+      "year": "2007",
+      "title_guess": "Clinical practice guidelines for support of the family in the patient-centered intensive care unit: American College of Critical Care Medicine Task Force 2004\u20132005",
+      "pmid": "17205007",
+      "doi": null,
+      "sources": [
+        "Happ 2021 qualitative"
+      ],
+      "topic": "icu-communication",
+      "reason": "no PMC OA"
+    },
+    {
+      "raw": "Dreyer, A., Nortvedt, P., 2008. Sedation of ventilated patients in intensive care units: relatives\u2019 experiences. J. Adv. Nurs. 61 (5), 549\u2013556.",
+      "author": "Dreyer",
+      "year": "2008",
+      "title_guess": "Sedation of ventilated patients in intensive care units: relatives\u2019 experiences",
+      "pmid": "18261064",
+      "doi": null,
+      "sources": [
+        "Happ 2021 qualitative"
+      ],
+      "topic": "icu-communication",
+      "reason": "no PMC OA"
+    },
+    {
+      "raw": "Hamilton, R.J., Bowers, B.J., 2006. Internet recruitment and e-mail interviews in qualitative studies. Qual Health Res. 16 (6), 821\u2013835.",
+      "author": "Hamilton",
+      "year": "2006",
+      "title_guess": "Internet recruitment and e-mail interviews in qualitative studies",
+      "pmid": "16760538",
+      "doi": null,
+      "sources": [
+        "Happ 2021 qualitative"
+      ],
+      "topic": "methodology",
+      "reason": "no PMC OA"
+    },
+    {
+      "raw": "Panhuis, J., Scuilli, A., Paull, B., George, E., Angus, D.C., Barnato, A.E., 2015. Quality of care and resource use among mechanically ventilated patients before and after an intervention to assist nurse-nonvocal patient communication. Heart Lung. 44 (5), 408\u2013415.e2.",
+      "author": "Panhuis",
+      "year": "2015",
+      "title_guess": "Quality of care and resource use among mechanically ventilated patients before and after an intervention to assist nurse-nonvocal patient communication",
+      "pmid": "26354859",
+      "doi": null,
+      "sources": [
+        "Happ 2021 qualitative"
+      ],
+      "topic": "icu-communication",
+      "reason": "no PMC OA"
+    },
+    {
+      "raw": "Karlsson, V., Forsberg, A., Bergbom, I., 2010. Relatives\u2019 experiences of visiting a conscious, mechanically ventilated patient\u2013a hermeneutic study. Intensive Crit Care Nurs. 26 (2), 91\u2013100.",
+      "author": "Karlsson",
+      "year": "2010",
+      "title_guess": "Relatives\u2019 experiences of visiting a conscious, mechanically ventilated patient\u2013a hermeneutic study",
+      "pmid": "20060719",
+      "doi": null,
+      "sources": [
+        "Happ 2021 qualitative"
+      ],
+      "topic": "family-centered-care",
+      "reason": "no PMC OA"
+    },
+    {
+      "raw": "Koszalinski, R.S., Tappen, R.M., Hickman, C., Melhuish, T., 2016. Communication needs of critical care patients who are voiceless. CIN. Comput. Inform. Nurs. 34 (8), 339\u2013344.",
+      "author": "Koszalinski",
+      "year": "2016",
+      "title_guess": "Communication needs of critical care patients who are voiceless",
+      "pmid": "27315366",
+      "doi": null,
+      "sources": [
+        "Happ 2021 qualitative"
+      ],
+      "topic": "icu-communication",
+      "reason": "no PMC OA"
+    },
+    {
+      "raw": "Koszalinski, R.S., Tappen, R.M., Viggiano, D., 2015. Evaluation of speak for myself with patients who are voiceless. Rehabil Nurs. 40 (4), 235\u2013242.",
+      "author": "Koszalinski",
+      "year": "2015",
+      "title_guess": "Evaluation of speak for myself with patients who are voiceless",
+      "pmid": "25424980",
+      "doi": null,
+      "sources": [
+        "Happ 2021 qualitative"
+      ],
+      "topic": "icu-communication",
+      "reason": "no PMC OA"
+    },
+    {
+      "raw": "Magnus, V.S., Turkington, L., 2006. Communication interaction in ICU\u2013Patient and staff experiences and perceptions. Intensive Crit Care Nurs. 22 (3), 167\u2013180.",
+      "author": "Magnus",
+      "year": "2006",
+      "title_guess": "Communication interaction in ICU\u2013Patient and staff experiences and perceptions",
+      "pmid": "16298132",
+      "doi": null,
+      "sources": [
+        "Happ 2021 qualitative"
+      ],
+      "topic": "icu-communication",
+      "reason": "no PMC OA"
+    },
+    {
+      "raw": "Nilsen, M.L., Morrison, A., Lingler, J.H., Myers, B., Johnson, J.T., Happ, M.B., Sereika, S. M., DeVito Dabbs, A., 2018. Evaluating the usability and acceptability of communication tools among older adults. J. Gerontol Nurs. 44 (9), 30\u201339.",
+      "author": "Nilsen",
+      "year": "2018",
+      "title_guess": "Evaluating the usability and acceptability of communication tools among older adults",
+      "pmid": "30148530",
+      "doi": null,
+      "sources": [
+        "Happ 2021 qualitative"
+      ],
+      "topic": "older-adults",
+      "reason": "no PMC OA"
+    },
+    {
+      "raw": "Trotta, R.L., Hermann, R.M., Polomano, R.C., Happ, M.B., 2020. Improving nonvocal critical care patients\u2019 ease of communication using a modified SPEACS-2 program. J. Healthc. Qual. Offic. Publ. Natl. Assoc. Healthc. Qual. 42 (1), e1\u2013e9. J.W. Shin, M.B. Happ and J.A. Tate Intensive & Critical Care Nursing xxx (xxxx) xxx 10",
+      "author": "Trotta",
+      "year": "2020",
+      "title_guess": "Improving nonvocal critical care patients\u2019 ease of communication using a modified SPEACS-2 program",
+      "pmid": "30648998",
+      "doi": null,
+      "sources": [
+        "Happ 2021 qualitative"
+      ],
+      "topic": "icu-communication",
+      "reason": "no PMC OA"
+    },
+    {
+      "raw": "2. Davidson JE, Powers K, Hedayat KM, et al. Clinical practice guidelines for support of the family in the patient-centered intensive care unit: American College of Critical Care Medicine Task Force 2004\u20132005. Critical care medicine. 2007;35(2):605\u2013622. [PubMed: 17205007]",
+      "author": "Davidson",
+      "year": "2004",
+      "title_guess": "\u20132005",
+      "pmid": "17205007",
+      "doi": null,
+      "sources": [
+        "Happ 2024 pilot RCT"
+      ],
+      "topic": "icu-communication",
+      "reason": "no PMC OA"
+    },
+    {
+      "raw": "3. Davidson JE, Aslakson RA, Long AC, et al. Guidelines for Family-Centered Care in the Neonatal, Pediatric, and Adult ICU. Critical care medicine. Jan 2017;45(1):103\u2013128. doi:10.1097/ ccm.0000000000002169 [PubMed: 27984278]",
+      "author": "Davidson",
+      "year": "2017",
+      "title_guess": "45(1):103\u2013128",
+      "pmid": "27984278",
+      "doi": null,
+      "sources": [
+        "Happ 2024 pilot RCT"
+      ],
+      "topic": "icu-communication",
+      "reason": "no PMC OA"
+    },
+    {
+      "raw": "4. Happ MB, Tuite P, Dobbin K, DiVirgilio-Thomas D, Kitutu J. Communication ability, method, and content among nonspeaking nonsurviving patients treated with mechanical ventilation in the intensive care unit. American journal of critical care : an official publication, American Association of Critical-Care Nurses. May 2004;13(3):210\u20138; quiz 219-20. [PubMed: 15149055]",
+      "author": "Happ",
+      "year": "2004",
+      "title_guess": "13(3):210\u20138; quiz 219-20",
+      "pmid": "15149055",
+      "doi": null,
+      "sources": [
+        "Happ 2024 pilot RCT"
+      ],
+      "topic": "icu-communication",
+      "reason": "no PMC OA"
+    },
+    {
+      "raw": "6. Happ MB, Roesch T, Kagan SH. Communication needs, methods, and perceived voice quality following head and neck surgery: a literature review. Cancer Nurs. Jan-Feb 2004;27(1):1\u20139. [PubMed: 15108946]",
+      "author": "Happ",
+      "year": "2004",
+      "title_guess": "27(1):1\u20139",
+      "pmid": "15108946",
+      "doi": null,
+      "sources": [
+        "Happ 2024 pilot RCT"
+      ],
+      "topic": "head-neck-cancer",
+      "reason": "no PMC OA"
+    },
+    {
+      "raw": "7. Happ MB. Interpretation of nonvocal behavior and the meaning of voicelessness in critical care. Soc Sci Med. May 2000;50(9):1247\u201355. [PubMed: 10728845]",
+      "author": "Happ",
+      "year": "2000",
+      "title_guess": "50(9):1247\u201355",
+      "pmid": "10728845",
+      "doi": null,
+      "sources": [
+        "Happ 2024 pilot RCT"
+      ],
+      "topic": "icu-communication",
+      "reason": "no PMC OA"
+    },
+    {
+      "raw": "8. Engstrom A, Soderberg S. The experiences of partners of critically ill persons in an intensive care unit. Intensive & critical care nursing. Oct 2004;20(5):299\u2013308; quiz 309-10. [PubMed: 15450619]",
+      "author": "Engstrom",
+      "year": "2004",
+      "title_guess": "20(5):299\u2013308; quiz 309-10",
+      "pmid": "15450619",
+      "doi": null,
+      "sources": [
+        "Happ 2024 pilot RCT"
+      ],
+      "topic": "icu-communication",
+      "reason": "no PMC OA"
+    },
+    {
+      "raw": "9. Dreyer A, Nortvedt P. Sedation of ventilated patients in intensive care units: relatives' experiences. J Adv Nurs. Mar 2008;61(5):549\u201356. [PubMed: 18261064]",
+      "author": "Dreyer",
+      "year": "2008",
+      "title_guess": "61(5):549\u201356",
+      "pmid": "18261064",
+      "doi": null,
+      "sources": [
+        "Happ 2024 pilot RCT"
+      ],
+      "topic": "icu-communication",
+      "reason": "no PMC OA"
+    },
+    {
+      "raw": "10. Alasad J, Ahmad M. Communication with critically ill patients. J Adv Nurs. May 2005;50(4):356\u2013 62. doi:10.1111/j.1365-2648.2005.03400.x [PubMed: 15842442] Shin et al. Page 10 Heart Lung. Author manuscript; available in PMC 2026 March 01. Author Manuscript Author Manuscript Author Manuscript Author Manuscript 11. Dziadzko V, Dziadzko MA, Johnson MM, Gajic O, Karnatovskaia LV. Acute psychological trauma in the critically ill: Patient and family perspectives. Gen Hosp Psychiatry. Jul 2017;47:68\u201374. doi:10.1016/j.genhosppsych.2017.04.009 [PubMed: 28807140]",
+      "author": "Alasad",
+      "year": "2005",
+      "title_guess": "50(4):356\u2013 62. doi:10.1111/j.1365-2648.2005.03400.x [PubMed: 15842442] Shin et al. Page 10 Heart Lung",
+      "pmid": "15842442",
+      "doi": "10.1111/j.1365-2648.2005.03400.x",
+      "sources": [
+        "Happ 2024 pilot RCT"
+      ],
+      "topic": "icu-communication",
+      "reason": "no PMC OA"
+    },
+    {
+      "raw": "12. Engstrom A, Soderberg S. Receiving power through confirmation: the meaning of close relatives for people who have been critically ill. J Adv Nurs. Sep 2007;59(6):569\u201376. doi:10.1111/ j.1365-2648.2007.04336.x [PubMed: 17672848]",
+      "author": "Engstrom",
+      "year": "2007",
+      "title_guess": "59(6):569\u201376",
+      "pmid": "17672848",
+      "doi": null,
+      "sources": [
+        "Happ 2024 pilot RCT"
+      ],
+      "topic": "icu-communication",
+      "reason": "no PMC OA"
+    },
+    {
+      "raw": "13. Magnus VS, Turkington L. Communication interaction in ICU--Patient and staff experiences and perceptions. Intensive & critical care nursing. Jun 2006;22(3):167\u201380. doi:10.1016/ j.iccn.2005.09.009 [PubMed: 16298132]",
+      "author": "Magnus",
+      "year": "2006",
+      "title_guess": "22(3):167\u201380",
+      "pmid": "16298132",
+      "doi": null,
+      "sources": [
+        "Happ 2024 pilot RCT"
+      ],
+      "topic": "icu-communication",
+      "reason": "no PMC OA"
+    },
+    {
+      "raw": "14. Tolotti A, Bagnasco A, Catania G, et al. The communication experience of tracheostomy patients with nurses in the intensive care unit: A phenomenological study. Intensive and Critical Care Nursing. 2018;46:24\u201331. [PubMed: 29709466]",
+      "author": "Tolotti",
+      "year": "2018",
+      "title_guess": "46:24\u201331",
+      "pmid": "29709466",
+      "doi": null,
+      "sources": [
+        "Happ 2024 pilot RCT"
+      ],
+      "topic": "icu-communication",
+      "reason": "no PMC OA"
+    },
+    {
+      "raw": "20. Cameron JI, Chu LM, Matte A, et al. One-Year Outcomes in Caregivers of Critically Ill Patients. The New England journal of medicine. May 12 2016;374(19):1831\u201341. doi:10.1056/ NEJMoa1511160 [PubMed: 27168433]",
+      "author": "Cameron",
+      "year": "2016",
+      "title_guess": "374(19):1831\u201341",
+      "pmid": "27168433",
+      "doi": null,
+      "sources": [
+        "Happ 2024 pilot RCT"
+      ],
+      "topic": "icu-communication",
+      "reason": "no PMC OA"
+    },
+    {
+      "raw": "21. Zigmond AS, Snaith RP. The hospital anxiety and depression scale. Acta Psychiatr Scand. Jun 1983;67(6):361\u201370. [PubMed: 6880820]",
+      "author": "Zigmond",
+      "year": "1983",
+      "title_guess": "67(6):361\u201370",
+      "pmid": "6880820",
+      "doi": null,
+      "sources": [
+        "Happ 2024 pilot RCT"
+      ],
+      "topic": "icu-symptoms",
+      "reason": "no PMC OA"
+    },
+    {
+      "raw": "22. Bjelland I, Dahl AA, Haug TT, Neckelmann D. The validity of the Hospital Anxiety and Depression Scale: an updated literature review. Journal of psychosomatic research. 2002;52(2):69\u2013 77. [PubMed: 11832252]",
+      "author": "Bjelland",
+      "year": "2002",
+      "title_guess": "52(2):69\u2013 77. [PubMed: 11832252]",
+      "pmid": "11832252",
+      "doi": null,
+      "sources": [
+        "Happ 2024 pilot RCT"
+      ],
+      "topic": "icu-symptoms",
+      "reason": "no PMC OA"
+    },
+    {
+      "raw": "24. Horowitz M, Wilner N, Alvarez W. Impact of Event Scale: a measure of subjective stress. Psychosomatic medicine. 1979;41(3):209\u2013218. [PubMed: 472086]",
+      "author": "Horowitz",
+      "year": "1979",
+      "title_guess": "41(3):209\u2013218",
+      "pmid": "472086",
+      "doi": null,
+      "sources": [
+        "Happ 2024 pilot RCT"
+      ],
+      "topic": "methodology",
+      "reason": "no PMC OA"
+    },
+    {
+      "raw": "28. Garrouste-Orgeas M, Coquet I, P\u00e9rier A, et al. Impact of an intensive care unit diary on psychological distress in patients and relatives. Critical care medicine. 2012;40(7):2033\u20132040. [PubMed: 22584757]",
+      "author": "Garrouste-Orgeas",
+      "year": "2012",
+      "title_guess": "40(7):2033\u20132040",
+      "pmid": "22584757",
+      "doi": null,
+      "sources": [
+        "Happ 2024 pilot RCT"
+      ],
+      "topic": "icu-communication",
+      "reason": "no PMC OA"
+    },
+    {
+      "raw": "29. Happ MB, Roesch TK, Garrett K. Electronic voice-output communication aids for temporarily nonspeaking patients in a medical intensive care unit: a feasibility study. Heart & lung : the journal of critical care. Mar-Apr 2004;33(2):92\u2013101. doi:10.1016/j.hrtlng.2003.12.005 [PubMed: 15024374]",
+      "author": "Happ",
+      "year": "2004",
+      "title_guess": "33(2):92\u2013101",
+      "pmid": "15024374",
+      "doi": "10.1016/j.hrtlng.2003.12.005",
+      "sources": [
+        "Happ 2024 pilot RCT"
+      ],
+      "topic": "icu-communication",
+      "reason": "no PMC OA"
+    },
+    {
+      "raw": "32. Azoulay E, Pochard F, Kentish-Barnes N, et al. Risk of post-traumatic stress symptoms in family members of intensive care unit patients. American journal of respiratory and critical care medicine. May 1 2005;171(9):987\u201394. doi:10.1164/rccm.200409-1295OC [PubMed: 15665319]",
+      "author": "Azoulay",
+      "year": "2005",
+      "title_guess": "171(9):987\u201394",
+      "pmid": "15665319",
+      "doi": "10.1164/rccm.200409-1295OC",
+      "sources": [
+        "Happ 2024 pilot RCT"
+      ],
+      "topic": "icu-communication",
+      "reason": "no PMC OA"
+    },
+    {
+      "raw": "33. Wendlandt B, Pongracz L, Lin FC, et al. Posttraumatic Stress Symptom Trajectories in Family Caregivers of Patients With Acute Cardiorespiratory Failure. JAMA Netw Open. Apr 3 2023;6(4):e237448. doi:10.1001/jamanetworkopen.2023.7448 [PubMed: 37027154]",
+      "author": "Wendlandt",
+      "year": "2023",
+      "title_guess": "6(4):e237448",
+      "pmid": "37027154",
+      "doi": "10.1001/jamanetworkopen.2023.7448",
+      "sources": [
+        "Happ 2024 pilot RCT"
+      ],
+      "topic": "family-centered-care",
+      "pmcid": "PMC10082401",
+      "reason": "PMC PDF fetch failed"
+    },
+    {
+      "raw": "34. Jones C, Backman C, Griffiths RD. Intensive care diaries and relatives' symptoms of posttraumatic stress disorder after critical illness: a pilot study. American journal of critical care : an official publication, American Association of Critical-Care Nurses. May 2012;21(3):172\u20136. doi:10.4037/ ajcc2012569 [PubMed: 22549573]",
+      "author": "Jones",
+      "year": "2012",
+      "title_guess": "21(3):172\u20136",
+      "pmid": "22549573",
+      "doi": null,
+      "sources": [
+        "Happ 2024 pilot RCT"
+      ],
+      "topic": "icu-communication",
+      "reason": "no PMC OA"
+    },
+    {
+      "raw": "37. Garrouste-Orgeas M, Max A, Lerin T, et al. Impact of Proactive Nurse Participation in ICU Family Conferences: A Mixed-Method Study. Critical care medicine. Jun 2016;44(6):1116\u201328. doi:10.1097/CCM.0000000000001632 [PubMed: 26937860]",
+      "author": "Garrouste-Orgeas",
+      "year": "2016",
+      "title_guess": "44(6):1116\u201328",
+      "pmid": "26937860",
+      "doi": "10.1097/CCM.0000000000001632",
+      "sources": [
+        "Happ 2024 pilot RCT"
+      ],
+      "topic": "icu-communication",
+      "reason": "no PMC OA"
+    },
+    {
+      "raw": "38. Davidson JE, Daly BJ, Agan D, Brady NR, Higgins PA. Facilitated sensemaking: a feasibility study for the provision of a family support program in the intensive care unit. Critical Care Nursing Quarterly. 2010;33(2):177\u2013189. [PubMed: 20234207]",
+      "author": "Davidson",
+      "year": "2010",
+      "title_guess": "33(2):177\u2013189",
+      "pmid": "20234207",
+      "doi": null,
+      "sources": [
+        "Happ 2024 pilot RCT"
+      ],
+      "topic": "icu-communication",
+      "reason": "no PMC OA"
+    },
+    {
+      "raw": "40. Huang H, Dong H, Guan X, Zhang L, Zhou Q. The facilitated sensemaking model as a framework for nursing intervention on family members of mechanically ventilated patients in the intensive care unit. Worldviews Evid Based Nurs. Dec 2022;19(6):467\u2013476. doi:10.1111/ wvn.12606 [PubMed: 36209358]",
+      "author": "Huang",
+      "year": "2022",
+      "title_guess": "19(6):467\u2013476",
+      "pmid": "36209358",
+      "doi": null,
+      "sources": [
+        "Happ 2024 pilot RCT"
+      ],
+      "topic": "icu-communication",
+      "reason": "no PMC OA"
+    },
+    {
+      "raw": "44. Stollings JL, Caylor MM. Postintensive care syndrome and the role of a follow-up clinic. American Journal of Health-System Pharmacy. 2015;72(15):1315\u20131323. [PubMed: 26195658] Shin et al. Page 12 Heart Lung. Author manuscript; available in PMC 2026 March 01. Author Manuscript Author Manuscript Author Manuscript Author Manuscript Highlights \u2022 We adopted an Augmented Alternative Communication to enhance family- patient communication. \u2022 We examined the effects of VidaTalk\u2122 communication app on family psychological distress. \u2022 Communication intervention has the potential as ICU family caregiving intervention. Shin et al. Page 13 Heart Lung. Author manuscript; available in PMC 2026 March 01. Author Manuscript Author Manuscript Author Manuscript Author Manuscript Figure 1. Theoretical Concepts and Research Measurement Shin et al. Page 14 Heart Lung. Author manuscript; available in PMC 2026 March 01. Author Manuscript Author Manuscript Author Manuscript Author Manuscript Figure 2. CONSORT diagram Shin et al. Page 15 Heart Lung. Author manuscript; available in PMC 2026 March 01. Author Manuscript Author Manuscript Author Manuscript Author Manuscript Figure 3. Anxiety and Depressive symptom changes over time by each group. Shin et al. Page 16 Heart Lung. Author manuscript; available in PMC 2026 March 01. Author Manuscript Author Manuscript Author Manuscript Author Manuscript Figure 4. Total scores on the IES-R tool at 1-, 3-, and 6-month by study group. Shin et al. Page 17 Heart Lung. Author manuscript; available in PMC 2026 March 01. Author Manuscript Author Manuscript Author Manuscript Author Manuscript Author Manuscript Author Manuscript Author Manuscript Author Manuscript Shin et al. Page 18 Table 1. Participant Characteristics and Baseline (T0) Outcomes Study Group p values Variables (mean, (SD)) VidaTalk (n = 14) AC (n = 14) Family Caregivers Age 48.50 (17.24) 53.36 (14.98) .43 HADS-A 9.14 (5.08) 9.29 (4.83) .94 HADS-D 5.86 (3.98) 5.50 (3.98) .82 FCS total 25.50 (5.53) 26.64 (6.64) .63 Patient Characteristics Age 51.86 (13.42) 50.93 (18.81) .88 Severity of Illness (APACHE III) 74.64 (27.00) 78.07 (28.86) .75 Charlson Comorbidity Score 4.14 (2.48) 3.29 (2.61) .38 Days on MV 26.36 (15.26) 16.69 (13.94) .23 Length of ICU stay 43.25 (27.25) 30.11 (15.14) .12 Variables (n, percentage) Family Caregivers Sex (Female) 11 (78.6) 13 (92.9) .28 Race .35 Caucasian 9 (64.3) 12 (85.7) AA 4 (28.6) 2 (14.3) Asian 1 (7.1) 0 Relationship to patient .71 Spouse/Partner 10 (71.4) 9 (64.3) Parent 1 (7.1) 3 (21.4) Adult child 1 (7.1) 1 (7.1) Sibling 2 (14.3) 1 (7.1) Occupation .48 Employed 6 (42.9) 6 (42.9) Unemployed 3 (21.4) 3 (21.4) Retired 3 (21.4) 5 (35.7) Other (disabled) 2 (14.3) 0 Highest Education .61 Some high school, no diploma 0 2 (14.3) High school graduate 4 (28.6) 3 (21.4) Some college credit, no degree 2 (14.3) 3 (21.4) College graduate 7 (50.0) 5 (35.7) Advanced degree 1 (7.1) 1 (7.1) Previous ICU Experience As caregiver 5 (35.7) 8 (57.1) .26 As patient 0 2 (14.3) n/a History of treatment with psychoactive agents 3 (21.4) 3 (21.4) 1.0 Heart Lung. Author manuscript; available in PMC 2026 March 01. Author Manuscript Author Manuscript Author Manuscript Author Manuscript Shin et al. Page 19 History of Psychologic/psychiatric Support 3 (21.4) 3 (21.4) 1.0 Patient Characteristics Sex (Female) 4 (28.6) 3 (21.4) .66 Race .35 Caucasian 10 (71.4) 12 (85.7) AA 4 (28.6) 2 (14.3) Primary Diagnosis .79 Cardiovascular 4 (28.6) 2 (14.3) Respiratory 6 (42.9) 6 (42.9) Sepsis 2 (14.3) 3 (21.4) Surgery 2 (14.3) 3 (21.4) Type of ICU .28 Medical 5 (35.7) 9 (64.3) Surgical 3 (21.4) 1 (7.1) Cardiovascular 6 (42.9) 4 (28.6) Heart Lung. Author manuscript; available in PMC 2026 March 01. Author Manuscript Author Manuscript Author Manuscript Author Manuscript Shin et al. Page 20 Table 2. Patient Discharge Disposition during Follow-ups Time Point and Study Group T1 (n=22) T2 (n=19) T3 (n=16) T4 (n=14) Variable (n) VidaTalk (n=9) AC (n=13) VidaTalk (n=7) AC (n=12) VidaTalk (n=6) AC (n=10) VidaTalk (n=5) AC (n=9) Discharge disposition Home/self-care 3 5 2 4 3 8 3 8 Rehab 2 0 1 2 1 1 - - Nursing Facility 0 3 0 1 0 0 0 1 Ventilation facility 2 5 0 3 1 0 - - Hospital 2 0 2 2 1 1 - - Deceased 5 1 2 0 - - - - Heart Lung. Author manuscript; available in PMC 2026 March 01. Author Manuscript Author Manuscript Author Manuscript Author Manuscript Shin et al. Page 21 Table 3. Group comparisons of family caregiver anxiety and depressive symptoms Symptom score, Mean \u00b1 SD Change score from baseline, Mean \u00b1 SD Effect Size (Cohen\u2019s d) t statistics p value Variable (range) VidaTalk\u2122 AC VidaTalk\u2122 AC VidaTalk\u2122 vs Control HADS-A (0-21) T0 9.14 \u00b1 5.08 9.29 \u00b1 4.83 - - - - - T1 8.67 \u00b1 4.44 9.62 \u00b1 4.86 .11 \u00b1 3.72 \u2212.08 \u00b1 2.59 .06 \u2212.14 .89 T2 4.86 \u00b1 4.06 9.17 \u00b1 4.80 \u22122.29 \u00b1 3.25 \u2212.83 \u00b1 3.51 \u2212.43 .91 .38 T3 6.83 \u00b1 4.92 6.80 \u00b1 5.07 \u22121.00 \u00b1 4.29 \u22122.20 \u00b1 5.43 .25 \u2212.49 .63 T4 6.80 \u00b1 5.63 6.22 \u00b1 6.48 \u22121.20 \u00b1 3.70 \u22122.22 \u00b1 6.99 .18 \u2212.36 .73 HADS-D (0-21) T0 5.86 \u00b1 3.98 5.50 \u00b1 4.31 - - - - - T1 5.78 \u00b1 4.32 5.15 \u00b1 4.43 \u2212.33 \u00b1 1.66 \u2212.15 \u00b1 2.41 \u2212.09 .21 .84 T2 7.43 \u00b1 2.64 6.20 \u00b1 3.73 .86 \u00b1 3.18 .08 \u00b1 2.81 .26 \u2212.55 .96 T3 7.03 \u00b1 3.98 5.53 \u00b1 3.93 .67 \u00b1 2.25 \u2212.20 \u00b1 3.73 .28 2.11 .17 T4 6.33 \u00b1 4.27 4.33 \u00b1 3.67 .6 \u00b1 2.88 \u22121.00 \u00b1 3.43 .54 \u2212.88 .39 Heart Lung. Author manuscript; available in PMC 2026 March 01. Author Manuscript Author Manuscript Author Manuscript Author Manuscript Shin et al. Page 22 Table 4. Comparisons of PTSD-related symptoms between VidaTalk\u2122 and AC groups IES-R Score VidaTalk\u2122 AC Effect size (\u02732) Odds Ratio (95% CI) p value T2 (1-mos) n = 7 n = 12 Median [IQR] 21.5 [32] 30.5 [37] .07 .26 \u226522, n (%) 3 (42.9) 9 (75) .25 (0.03, 1.82) .29 T3 (3-mos) n =6 n = 10 Median [IQR] 21 [26] 27.50 [23] .09 .25 \u226522, n (%) 3 (50) 7 (70) .43 (0.05, 3.48) .42 T4 (6-mos) n =5 n = 9 Median [IQR] 23 [22] 26 [34] .00 .79 \u226522, n (%) 3 (60) 5 (55.6) 1.2 (0.13, 11.05) .57 Mann-Whitney U test for comparison of median IES-R scores; Chi-square test for comparison of number of participants who had above cut-off IES-R scores Heart Lung. Author manuscript; available in PMC 2026 March 01.",
+      "author": "Stollings",
+      "year": "2015",
+      "title_guess": "72(15):1315\u20131323",
+      "pmid": "26195658",
+      "doi": null,
+      "sources": [
+        "Happ 2024 pilot RCT"
+      ],
+      "topic": "aac",
+      "reason": "no PMC OA"
+    },
+    {
+      "raw": "Anderson, M. (2015, October 29). Technol- ogy device ownership: 2015. Retrieved from http://www.pewinternet.org/2015/10/29/ technology-device-ownership-2015",
+      "author": "Anderson",
+      "year": "2015",
+      "title_guess": "October 29)",
+      "pmid": "26470775",
+      "doi": null,
+      "sources": [
+        "Nilsen 2018 usability"
+      ],
+      "topic": "other",
+      "reason": "no PMC OA"
+    },
+    {
+      "raw": "Faulkner, L. (2003). Beyond the five-user assumption: Benefits of increased sample sizes in usability testing. Behavior Research Methods, Instruments, & Computers, 35, 38 Copyright \u00a9 SLACK Incorporated 379-383. doi:10.3758/bf03195514",
+      "author": "Faulkner",
+      "year": "2003",
+      "title_guess": "Beyond the five-user assumption: Benefits of increased sample sizes in usability testing",
+      "pmid": "14587545",
+      "doi": "10.3758/bf03195514",
+      "sources": [
+        "Nilsen 2018 usability"
+      ],
+      "topic": "other",
+      "reason": "no PMC OA"
+    },
+    {
+      "raw": "Happ, M.B., Roesch, T.K., & Kagan, S.H. (2005). Patient communication following head and neck cancer surgery: A pilot study using electronic speech-generating devices. Oncology Nursing Forum, 32, 1179-1187.",
+      "author": "Happ",
+      "year": "2005",
+      "title_guess": "Patient communication following head and neck cancer surgery: A pilot study using electronic speech-generating devices",
+      "pmid": "16270113",
+      "doi": null,
+      "sources": [
+        "Nilsen 2018 usability"
+      ],
+      "topic": "aac",
+      "reason": "no PMC OA"
+    }
+  ],
+  "skipped": [
+    {
+      "raw": "Creswell, J.W., 2012. Qualitative Inquiry and Research Design: Choosing Among Five Approaches. Sage publications.",
+      "author": "Creswell",
+      "year": "2012",
+      "title_guess": "Qualitative Inquiry and Research Design: Choosing Among Five Approaches",
+      "pmid": null,
+      "doi": null,
+      "sources": [
+        "Happ 2021 qualitative"
+      ],
+      "topic": "methodology",
+      "reason": "book/textbook"
+    },
+    {
+      "raw": "Davidson, J. E., McDuffie, M., Kay, M., 2018. Chapter 10. Family-Centered Care., in: Sandra Goldsworthy P, Ruth Kleinpell, G. Williams. (Eds.). International Best Practices in Critical Care Nursing 2nd Edition World Federation of Critical Care Nurses 2018.",
+      "author": "Davidson",
+      "year": "2018",
+      "title_guess": "Chapter 10. Family-Centered Care., in: Sandra Goldsworthy P, Ruth Kleinpell, G. Williams",
+      "pmid": null,
+      "doi": null,
+      "sources": [
+        "Happ 2021 qualitative"
+      ],
+      "topic": "family-centered-care",
+      "reason": "book/textbook"
+    },
+    {
+      "raw": "Denzin, N.K., 1978. The Research Act: a Theoretical Introduction to Sociological Methods. McGraw-Hill, New York.",
+      "author": "Denzin",
+      "year": "1978",
+      "title_guess": "The Research Act: a Theoretical Introduction to Sociological Methods",
+      "pmid": null,
+      "doi": null,
+      "sources": [
+        "Happ 2021 qualitative"
+      ],
+      "topic": "other",
+      "reason": "book/textbook"
+    },
+    {
+      "raw": "Dziadzko, V., Dziadzko, M.A., Johnson, M.M., Gajic, O., Karnatovskaia, L.V., 2017. Acute psychological trauma in the critically ill: patient and family perspectives. Gen. Hosp. Psychiatry 47, 68\u201374. Engstr\u00f6m, \u00c5., S\u00f6derberg, S., 2004. The experiences of partners of critically ill persons in an intensive care unit. Intensive Crit. Care Nurs.. 20 (5), 299\u2013308. Engstr\u00f6m, \u00c5., S\u00f6derberg, S., 2007. Receiving power through confirmation: the meaning of close relatives for people who have been critically ill. J. Adv. Nurs. 59 (6), 569\u2013576. J.W. Shin, M.B. Happ and J.A. Tate Intensive & Critical Care Nursing xxx (xxxx) xxx 9 Gibbs, G., 2007. Analysing qualitative data. SAGE Publications.",
+      "author": "Dziadzko",
+      "year": "2017",
+      "title_guess": "Acute psychological trauma in the critically ill: patient and family perspectives",
+      "pmid": null,
+      "doi": null,
+      "sources": [
+        "Happ 2021 qualitative"
+      ],
+      "topic": "icu-communication",
+      "reason": "book/textbook"
+    },
+    {
+      "raw": "Miles, M. B., Huberman, A. M., Saldana, J., 2014. Qualitative Data Analysis. SAGE Publications.",
+      "author": "Miles",
+      "year": "2014",
+      "title_guess": "Qualitative Data Analysis",
+      "pmid": null,
+      "doi": null,
+      "sources": [
+        "Happ 2021 qualitative"
+      ],
+      "topic": "methodology",
+      "reason": "book/textbook"
+    },
+    {
+      "raw": "Morse, J.M., Field, P.A., 1995. Qualitative Research Methods for Health Professionals. SAGE Publications, Incorporated.",
+      "author": "Morse",
+      "year": "1995",
+      "title_guess": "Qualitative Research Methods for Health Professionals",
+      "pmid": null,
+      "doi": null,
+      "sources": [
+        "Happ 2021 qualitative"
+      ],
+      "topic": "methodology",
+      "reason": "book/textbook"
+    },
+    {
+      "raw": "1. Davidson JE, McDuffie M, Kay M. Sandra Goldsworthy P, Ruth Kleinpell, Williams G, eds. Chapter 10. Family-Centered Care. World Federation of Critical Care Nurses 2018. Accessed July 15 2021. http://wfccn.org/ebook/",
+      "author": "Davidson",
+      "year": "2018",
+      "title_guess": "Accessed July 15 2021",
+      "pmid": null,
+      "doi": null,
+      "sources": [
+        "Happ 2024 pilot RCT"
+      ],
+      "topic": "family-centered-care",
+      "reason": "book/textbook"
+    },
+    {
+      "raw": "23. McDowell I. Measuring health : a guide to rating scales and questionnaires vol 3rd ed. Oxford University Press; 2006:xvi, 748 p. .",
+      "author": "McDowell",
+      "year": "2006",
+      "title_guess": ":xvi, 748 p. ",
+      "pmid": null,
+      "doi": null,
+      "sources": [
+        "Happ 2024 pilot RCT"
+      ],
+      "topic": "methodology",
+      "reason": "book/textbook"
+    },
+    {
+      "raw": "25. Weiss DS. The Impact of Event Scale: Revised. In: Wilson JP, Tang CS-k, eds. Cross-Cultural Assessment of Psychological Trauma and PTSD. Springer US; 2007:219\u2013238.",
+      "author": "Weiss",
+      "year": "2007",
+      "title_guess": ":219\u2013238",
+      "pmid": null,
+      "doi": null,
+      "sources": [
+        "Happ 2024 pilot RCT"
+      ],
+      "topic": "icu-symptoms",
+      "reason": "book/textbook"
+    },
+    {
+      "raw": "26. Weiss DS, Marmar CR. The Impact of Event Scale-Revised. Assessing psychological trauma and PTSD: A Practitioner\u2019s Handbook. Guilford; 1995:399-411:chap 15. 27. de Miranda S, Pochard F, Chaize M, et al. Postintensive care unit psychological burden in patients with chronic obstructive pulmonary disease and informal caregivers: A multicenter study. Critical care medicine. Jan 2011;39(1):112\u20138. doi:10.1097/CCM.0b013e3181feb824 [PubMed: 21037472]",
+      "author": "Weiss",
+      "year": "1995",
+      "title_guess": ":399-411:chap 15. 27. de Miranda S, Pochard F, Chaize M, et al. Postintensive care unit psychological burden in patients with chronic obstructive pulmonary disease and informal caregivers: A multicenter study",
+      "pmid": "21037472",
+      "doi": "10.1097/CCM.0b013e3181feb824",
+      "sources": [
+        "Happ 2024 pilot RCT"
+      ],
+      "topic": "icu-communication",
+      "reason": "book/textbook"
+    }
+  ],
+  "no_match": [
+    {
+      "raw": "Boeije, H., 2002. A purposeful approach to the constant comparative method in the analysis of qualitative interviews. Qual. Quant. 36 (4), 391\u2013409.",
+      "author": "Boeije",
+      "year": "2002",
+      "title_guess": "A purposeful approach to the constant comparative method in the analysis of qualitative interviews",
+      "pmid": null,
+      "doi": null,
+      "sources": [
+        "Happ 2021 qualitative"
+      ],
+      "topic": "methodology",
+      "reason": "not in pubmed"
+    },
+    {
+      "raw": "Happ, M.B., Garrett, K.L., Tate, J.A., DiVirgilio, D., Houze, M.P., Demirci, J.R., George, E., Sereika, S.M., 2014. Effect of a multi-level intervention on nurse-patient communication in the intensive care unit: results of the SPEACS trial. Heart Lung. 43 (2), 89\u201398.",
+      "author": "Happ",
+      "year": "2014",
+      "title_guess": "Effect of a multi-level intervention on nurse-patient communication in the intensive care unit: results of the SPEACS trial",
+      "pmid": null,
+      "doi": null,
+      "sources": [
+        "Happ 2021 qualitative"
+      ],
+      "topic": "icu-communication",
+      "reason": "not in pubmed"
+    },
+    {
+      "raw": "Keeley, M.P., 2007. Turning toward death together\u2019: the functions of messages during final conversations in close relationships. J. Soc. Personal Relationships 24 (2), 225\u2013253.",
+      "author": "Keeley",
+      "year": "2007",
+      "title_guess": "Turning toward death together\u2019: the functions of messages during final conversations in close relationships",
+      "pmid": null,
+      "doi": null,
+      "sources": [
+        "Happ 2021 qualitative"
+      ],
+      "topic": "other",
+      "reason": "not in pubmed"
+    },
+    {
+      "raw": "Meho, L.I., 2006. E-mail interviewing in qualitative research: a methodological discussion. J. Assoc. Inform. Sci. Technol. 57 (10), 1284\u20131295.",
+      "author": "Meho",
+      "year": "2006",
+      "title_guess": "E-mail interviewing in qualitative research: a methodological discussion",
+      "pmid": null,
+      "doi": null,
+      "sources": [
+        "Happ 2021 qualitative"
+      ],
+      "topic": "methodology",
+      "reason": "not in pubmed"
+    },
+    {
+      "raw": "17. Davidson JE. Facilitated sensemaking: a strategy and new middle-range theory to support families of intensive care unit patients. Critical Care Nurse. 2010;30(6):28\u201339.",
+      "author": "Davidson",
+      "year": "2010",
+      "title_guess": "30(6):28\u201339",
+      "pmid": null,
+      "doi": null,
+      "sources": [
+        "Happ 2024 pilot RCT"
+      ],
+      "topic": "icu-communication",
+      "reason": "not in pubmed"
+    },
+    {
+      "raw": "19. Happ MB. Vidatalk Communication Application: Usability, Acceptability and Efficacy Study. 2019. ClinicalTrials.gov Identifier: NCT02921776. Accessed 2/22/2024.",
+      "author": "Happ",
+      "year": "2019",
+      "title_guess": "ClinicalTrials.gov Identifier: NCT02921776",
+      "pmid": null,
+      "doi": null,
+      "sources": [
+        "Happ 2024 pilot RCT"
+      ],
+      "topic": "aac",
+      "reason": "not in pubmed"
+    },
+    {
+      "raw": "30. Ellis PD. The essential guide to effect sizes: Statistical power, meta-analysis, and the interpretation of research results. Cambridge University Press.; 2010. Shin et al. Page 11 Heart Lung. Author manuscript; available in PMC 2026 March 01. Author Manuscript Author Manuscript Author Manuscript Author Manuscript 31. Levine TR, Hullett CR. Eta squared, partial eta squared, and misreporting of effect size in communication research. Human Communication Research. 2002;28(4):612\u2013625.",
+      "author": "Ellis",
+      "year": "2010",
+      "title_guess": "Shin et al. Page 11 Heart Lung",
+      "pmid": null,
+      "doi": null,
+      "sources": [
+        "Happ 2024 pilot RCT"
+      ],
+      "topic": "other",
+      "reason": "not in pubmed"
+    },
+    {
+      "raw": "35. Kloos JA, Daly BJ. Effect of a Family-Maintained Progress Journal on anxiety of families of critically ill patients. Crit Care Nurs Q. Apr-Jun 2008;31(2):96\u2013107; quiz 108-9. doi:10.1097/01.CNQ.0000314469.41507.cb",
+      "author": "Kloos",
+      "year": "2008",
+      "title_guess": "31(2):96\u2013107; quiz 108-9",
+      "pmid": null,
+      "doi": "10.1097/01.CNQ.0000314469.41507.cb",
+      "sources": [
+        "Happ 2024 pilot RCT"
+      ],
+      "topic": "icu-communication",
+      "reason": "not in pubmed"
+    },
+    {
+      "raw": "39. Skoog M, Milner KA, Gatti-Petito J, Dintyala K. The Impact of Family Engagement on Anxiety Levels in a Cardiothoracic Intensive Care Unit. Crit Care Nurse. Apr 2016;36(2):84\u20139. doi:10.4037/ccn2016246",
+      "author": "Skoog",
+      "year": "2016",
+      "title_guess": "36(2):84\u20139",
+      "pmid": null,
+      "doi": "10.4037/ccn2016246",
+      "sources": [
+        "Happ 2024 pilot RCT"
+      ],
+      "topic": "icu-communication",
+      "reason": "not in pubmed"
+    },
+    {
+      "raw": "Beukelman, D.R., & Mirenda, P. (2005). Augmentative and alternative communica- tion: Supporting children and adults with complex communication needs (4th ed.). Bal- timore, MD: Brookes Publishing.",
+      "author": "Beukelman",
+      "year": "2005",
+      "title_guess": "Augmentative and alternative communica- tion: Supporting children and adults with complex communication needs (4th ed.)",
+      "pmid": null,
+      "doi": null,
+      "sources": [
+        "Nilsen 2018 usability"
+      ],
+      "topic": "aac",
+      "reason": "not in pubmed"
+    },
+    {
+      "raw": "Perkins, A.J., & Hendrie, H.C. (2002). Six-item screener to identify cognitive im- pairment among potential subjects for clinical research. Medical Care, 40, 771-781. doi:10.1097/01.mlr.0000024610.33213.c8",
+      "author": "Perkins",
+      "year": "2002",
+      "title_guess": "Six-item screener to identify cognitive im- pairment among potential subjects for clinical research",
+      "pmid": null,
+      "doi": "10.1097/01.mlr.0000024610.33213.c8",
+      "sources": [
+        "Nilsen 2018 usability"
+      ],
+      "topic": "other",
+      "reason": "not in pubmed"
+    },
+    {
+      "raw": "Charness, N., & Boot, W.R. (2009). Aging and information technology use. Current Direc- tions in Psychological Science, 18, 253-258. doi:10.1111/j.1467-8721.2009.01647.x",
+      "author": "Charness",
+      "year": "2009",
+      "title_guess": "Aging and information technology use",
+      "pmid": null,
+      "doi": "10.1111/j.1467-8721.2009.01647.x",
+      "sources": [
+        "Nilsen 2018 usability"
+      ],
+      "topic": "older-adults",
+      "reason": "not in pubmed"
+    },
+    {
+      "raw": "Davis, F.D., Bagozzi, R.P., & Warshaw, P.R. (1989). User acceptance of computer tech- nology: A comparison of two theoretical models. Management Science, 35, 903-1028. doi:10.1287/mnsc.35.8.982 de Barros, A.C., Leitao, R., & Ribeiro, J. (2014). Design and evaluation of a mobile user interface for older adults: Navigation, interaction and visual design recommenda- tions. Procedia Computer Science, 27, 369- 378. doi:10.1016/j.procs.2014.02.041",
+      "author": "Davis",
+      "year": "1989",
+      "title_guess": "User acceptance of computer tech- nology: A comparison of two theoretical models",
+      "pmid": null,
+      "doi": "10.1287/mnsc.35.8.982",
+      "sources": [
+        "Nilsen 2018 usability"
+      ],
+      "topic": "older-adults",
+      "reason": "not in pubmed"
+    },
+    {
+      "raw": "Ebert, D.A., & Heckerling, P.S. (1998). Com- munication disabilities among medi- cal inpatients. New England Journal of Medicine, 339, 272-273. doi:10.1056/ NEJM199807233390416",
+      "author": "Ebert",
+      "year": "1998",
+      "title_guess": "Com- munication disabilities among medi- cal inpatients",
+      "pmid": null,
+      "doi": null,
+      "sources": [
+        "Nilsen 2018 usability"
+      ],
+      "topic": "other",
+      "reason": "not in pubmed"
+    },
+    {
+      "raw": "Gates, G.A., Cooper, J.C., Jr., Kannel, W.B., & Miller, N.J. (1990). Hearing in the el- derly: The Framingham cohort, 1983-1985: Part 1. Basic audiometric test results. Ear & Hearing, 11, 247-256.",
+      "author": "Gates",
+      "year": "1990",
+      "title_guess": "Hearing in the el- derly: The Framingham cohort, 1983-1985: Part 1. Basic audiometric test results",
+      "pmid": null,
+      "doi": null,
+      "sources": [
+        "Nilsen 2018 usability"
+      ],
+      "topic": "other",
+      "reason": "not in pubmed"
+    },
+    {
+      "raw": "LaCroix, A.Z., & Patel, K.V. (2015). Pat- terns of technology use among older adults with and without disabilities. The Geron- tologist, 55, 412-421. doi:10.1093/geront/ gnt166",
+      "author": "LaCroix",
+      "year": "2015",
+      "title_guess": "Pat- terns of technology use among older adults with and without disabilities",
+      "pmid": null,
+      "doi": "10.1093/geront/",
+      "sources": [
+        "Nilsen 2018 usability"
+      ],
+      "topic": "older-adults",
+      "reason": "not in pubmed"
+    },
+    {
+      "raw": "Happ, M.B., Roesch, T.K., & Garrett, K. (2004). Electronic voice-output commu- nication aids for temporarily nonspeaking patients in a medical intensive care unit: A feasibility study. Heart & Lung, 33, 92-101. doi:10.1016/j.hrtlng.2003.12.005",
+      "author": "Happ",
+      "year": "2004",
+      "title_guess": "Electronic voice-output commu- nication aids for temporarily nonspeaking patients in a medical intensive care unit: A feasibility study",
+      "pmid": null,
+      "doi": "10.1016/j.hrtlng.2003.12.005",
+      "sources": [
+        "Nilsen 2018 usability"
+      ],
+      "topic": "icu-communication",
+      "reason": "not in pubmed"
+    },
+    {
+      "raw": "Patak, L. (2014). 603: Usability and accept- ability testing of an iPad communication ap- plication in the intensive care unit. Critical Care Medicine, 42, A1505. doi:10.1097/01. ccm.0000458100.13793.0c HealthcareCostandUtilizationProject.(2006). HCUP facts and figures: Statistics on hospital- based care in the United States. Rockville, MD: Agency for Healthcare Research and Quality. Kowitlawakul,Y. (2011). The technology accep- tance model: Predicting nurses\u2019 intention to use telemedicine technology (eICU). Com- puters, Informatics, Nursing, 29, 411-418. doi:10.1097/NCN.0b013e3181f9dd4a",
+      "author": "Patak",
+      "year": "2014",
+      "title_guess": "603: Usability and accept- ability testing of an iPad communication ap- plication in the intensive care unit",
+      "pmid": null,
+      "doi": "10.1097/01",
+      "sources": [
+        "Nilsen 2018 usability"
+      ],
+      "topic": "icu-communication",
+      "reason": "not in pubmed"
+    },
+    {
+      "raw": "Leathart, A.J. (1994). Communication and socialisation (1): An exploratory study and explanation for nurse-patient communica- tion in an ITU. Intensive & Critical Care Nursing, 10, 93-104.",
+      "author": "Leathart",
+      "year": "1994",
+      "title_guess": "Communication and socialisation (1): An exploratory study and explanation for nurse-patient communica- tion in an ITU",
+      "pmid": null,
+      "doi": null,
+      "sources": [
+        "Nilsen 2018 usability"
+      ],
+      "topic": "other",
+      "reason": "not in pubmed"
+    },
+    {
+      "raw": "Menzel, L.K. (1998). Factors related to the emotional responses of intubated patients to being unable to speak. Heart & Lung, 27, 245-252.",
+      "author": "Menzel",
+      "year": "1998",
+      "title_guess": "Factors related to the emotional responses of intubated patients to being unable to speak",
+      "pmid": null,
+      "doi": null,
+      "sources": [
+        "Nilsen 2018 usability"
+      ],
+      "topic": "icu-communication",
+      "reason": "not in pubmed"
+    },
+    {
+      "raw": "Charbonneau, S., Whitehead, V., Collin, I.,...Chertkow, H. (2005). The Montreal Cognitive Assessment, MoCA: A brief screening tool for mild cognitive impair- ment. Journal of the American Geriatrics Society, 53, 695-699. doi:10.1111/j.1532- 5415.2005.53221.x",
+      "author": "Charbonneau",
+      "year": "2005",
+      "title_guess": "The Montreal Cognitive Assessment, MoCA: A brief screening tool for mild cognitive impair- ment",
+      "pmid": null,
+      "doi": "10.1111/j.1532-",
+      "sources": [
+        "Nilsen 2018 usability"
+      ],
+      "topic": "older-adults",
+      "reason": "not in pubmed"
+    },
+    {
+      "raw": "Nielsen, J. (1993). Usability engineering. Bos- ton, MA: AP Professionals.",
+      "author": "Nielsen",
+      "year": "1993",
+      "title_guess": "Usability engineering",
+      "pmid": null,
+      "doi": null,
+      "sources": [
+        "Nilsen 2018 usability"
+      ],
+      "topic": "other",
+      "reason": "not in pubmed"
+    },
+    {
+      "raw": "Nielsen, J. (1994). Estimating the number of subjects needed for a thinking aloud test. International Journal of Human-Computer Studies, 41, 385-397. doi:10.1006/ ijhc.1994.1065",
+      "author": "Nielsen",
+      "year": "1994",
+      "title_guess": "Estimating the number of subjects needed for a thinking aloud test",
+      "pmid": null,
+      "doi": null,
+      "sources": [
+        "Nilsen 2018 usability"
+      ],
+      "topic": "other",
+      "reason": "not in pubmed"
+    },
+    {
+      "raw": "Barnato, A., Donovan, H., & Happ, M.B. (2014). Nurse and patient interaction be- haviors\u2019 effects on nursing care quality for mechanically ventilated older adults in the ICU. Research in Gerontological Nurs- ing, 7, 113-125. doi:10.3928/19404921- 20140127-02. Page,T.(2014).Touchscreenmobiledevicesand older adults: A usability study. International Journal of Human Factors and Ergonomics, 3, 65-85. doi:10.1504/IJHFE.2014.062550",
+      "author": "Barnato",
+      "year": "2014",
+      "title_guess": "Nurse and patient interaction be- haviors\u2019 effects on nursing care quality for mechanically ventilated older adults in the ICU",
+      "pmid": null,
+      "doi": "10.3928/19404921-",
+      "sources": [
+        "Nilsen 2018 usability"
+      ],
+      "topic": "icu-communication",
+      "reason": "not in pubmed"
+    },
+    {
+      "raw": "Patak, L., Gawlinski, A., Fung, N.I., Doering, L., & Berg, J. (2004). Patients\u2019 reports of health care practitioner interventions that are related to communication during me- chanical ventilation. Heart & Lung, 33, 308-320. Pew Research Center. (2014, April 3). Older adults and technology use. Retrieved from http://www.pewinternet.org/2014/04/03/ older-adults-and-technology-use/ Pew Research Center. (2015, April 1). U.S. smartphone use in 2015. Retrieved from http://www.pewinternet.org/2015/04/01/ us-smartphone-use-in-2015 Pew Research Center. (2017, May 17). Tech- nology use among seniors. Retrieved from http://www.pewinternet.org/2017/05/17/ technology-use-among-seniors Pew Research Center. (2018, February 5). Mobile fact sheet. Retrieved from http:// www.pewinternet.org/fact-sheet/mobile",
+      "author": "Patak",
+      "year": "2004",
+      "title_guess": "Patients\u2019 reports of health care practitioner interventions that are related to communication during me- chanical ventilation",
+      "pmid": null,
+      "doi": null,
+      "sources": [
+        "Nilsen 2018 usability"
+      ],
+      "topic": "older-adults",
+      "reason": "not in pubmed"
+    },
+    {
+      "raw": "Poelmans, S., Wessa, P., Milis, K., Bloemen, E., & Doom, C. (2008). Usability and ac- ceptance of e-learning in statistics education, based on the compendium platform. Paper presented at the Proceedings of the Interna- tional Conference of Education, Research and Innovation, Madrid, Spain.",
+      "author": "Poelmans",
+      "year": "2008",
+      "title_guess": "Usability and ac- ceptance of e-learning in statistics education, based on the compendium platform",
+      "pmid": null,
+      "doi": null,
+      "sources": [
+        "Nilsen 2018 usability"
+      ],
+      "topic": "icu-symptoms",
+      "reason": "not in pubmed"
+    },
+    {
+      "raw": "Rodriguez, C., & Rowe, M. (2010). Use of a speech-generating device for hospital- ized postoperative patients with head and neck cancer experiencing speechlessness. Oncology Nursing Forum, 37, 199-205. doi:10.1188/10.ONF.199-205",
+      "author": "Rodriguez",
+      "year": "2010",
+      "title_guess": "Use of a speech-generating device for hospital- ized postoperative patients with head and neck cancer experiencing speechlessness",
+      "pmid": null,
+      "doi": "10.1188/10.ONF.199-205",
+      "sources": [
+        "Nilsen 2018 usability"
+      ],
+      "topic": "aac",
+      "reason": "not in pubmed"
+    },
+    {
+      "raw": "Rodriguez, C.S., & Blischak, D.M. (2010). Communication needs of nonspeak- ing hospitalized postoperative patients with head and neck cancer. Applied Nurs- ing Research, 23, 110-115. doi:10.1016/j. apnr.2008.04.001",
+      "author": "Rodriguez",
+      "year": "2010",
+      "title_guess": "Communication needs of nonspeak- ing hospitalized postoperative patients with head and neck cancer",
+      "pmid": null,
+      "doi": "10.1016/j",
+      "sources": [
+        "Nilsen 2018 usability"
+      ],
+      "topic": "head-neck-cancer",
+      "reason": "not in pubmed"
+    },
+    {
+      "raw": "Rodriguez, C.S., & VanCott, M.L. (2005). Speech impairment in the postop- erative head and neck cancer patient: Nurses\u2019 and patients\u2019 perceptions. Quali- tative Health Research, 15, 897-911. doi:10.1177/1049732305278903",
+      "author": "Rodriguez",
+      "year": "2005",
+      "title_guess": "Speech impairment in the postop- erative head and neck cancer patient: Nurses\u2019 and patients\u2019 perceptions",
+      "pmid": null,
+      "doi": "10.1177/1049732305278903",
+      "sources": [
+        "Nilsen 2018 usability"
+      ],
+      "topic": "head-neck-cancer",
+      "reason": "not in pubmed"
+    },
+    {
+      "raw": "Steinhubl, S.R., Muse, E.D., & Topol, E.J. (2013). Can mobile health technologies transform health care? JAMA, 310, 2395- 2396. doi:10.1001/jama.2013.281078",
+      "author": "Steinhubl",
+      "year": "2013",
+      "title_guess": "Can mobile health technologies transform health care? JAMA, 310, 2395- 2396",
+      "pmid": null,
+      "doi": "10.1001/jama.2013.281078",
+      "sources": [
+        "Nilsen 2018 usability"
+      ],
+      "topic": "mobile-health",
+      "reason": "not in pubmed"
+    },
+    {
+      "raw": "Stovsky, B., Rudy, E., & Dragonette, P. (1988). Comparison of two types of communica- tion methods used after cardiac surgery with patients with endotracheal tubes. Heart & Lung, 17, 281-289.",
+      "author": "Stovsky",
+      "year": "1988",
+      "title_guess": "Comparison of two types of communica- tion methods used after cardiac surgery with patients with endotracheal tubes",
+      "pmid": null,
+      "doi": null,
+      "sources": [
+        "Nilsen 2018 usability"
+      ],
+      "topic": "other",
+      "reason": "not in pubmed"
+    }
+  ]
+}
