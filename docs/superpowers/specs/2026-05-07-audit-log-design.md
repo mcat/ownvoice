@@ -499,3 +499,17 @@ loses structure. NDJSON is the right tabular-ish answer.
   on-device privacy promise); a future research-deployment build that
   needs sync should use OTLP/HTTP to a controlled endpoint, not a
   third-party database service.
+- **Vector search / semantic retrieval.** Separate roadmap thread. The
+  audit log is forward-compatible: per-event embeddings can be added as
+  a `speech.embedding` attribute (base64 float32) or as a sibling
+  `events_embeddings` object store keyed by event ULID. The expensive
+  piece is the sentence-encoder model (~120 MB multilingual MiniLM
+  variant on the existing WebGPU/ONNX infra), not the search engine —
+  brute-force cosine over ≤10K vectors in JS is sub-10 ms. Most
+  compelling first features to spec independently when this earns
+  priority: semantic phrase finder in SentenceBuilder (patient-facing
+  daily-driver) and end-of-shift clinical communication summary
+  (healthcare-facing). Vector ops don't change the storage choice;
+  libSQL specifically would only earn its bundle weight if vector ops
+  needed to combine with SQL aggregation in a single query, which is a
+  Phase 4+ analyst concern at earliest.
