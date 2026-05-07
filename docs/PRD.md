@@ -591,34 +591,63 @@ Accessibility is foundational, not additive, for an AAC application. Patients us
 
 ## 12. Business Model
 
+The full strategic context — outcome shape, acquirer thesis, GTM scaling, risk inventory — lives in `docs/strategy/2026-05-06-business-strategy.md`. This section captures the customer-facing structure: distribution, pricing, why this model fits, and the competitive landscape.
+
 ### Distribution
 
 OwnVoice is distributed as a URL. No app store listing, no installation required. This enables:
 
 - Instant pilot deployments (share a link, start using it)
-- No friction for evaluation by nursing leadership
+- No friction for evaluation by nursing leadership and unit clinical leads
 - No dependency on hospital IT for initial rollout
+- Hospital deployment runs on the unit's existing iPad fleet
 
-### Pricing (proposed)
+### Buyer and customer model
 
-| Tier | Price | Includes |
+The buyer is the **clinical organization, structured bottom-up**: the ICU, step-down, or acute-care unit subscribes; multi-unit facilities aggregate; multi-hospital health systems contract at the system level. The patient and family are never asked for money in a clinical setting — voice cloning is included in the unit subscription.
+
+A secondary SKU sits outside the clinical-organization model: voice banking for pre-loss patients (laryngectomy, ALS, MND), sold one-time at clinic referral.
+
+### Pricing
+
+| SKU | Price | Includes |
 |---|---|---|
-| Free | $0 | Full communication tool with standard TTS voices. All categories, all languages, full offline support. |
-| OwnVoice Pro | Per-bed/month or per-device/month | Personal voice cloning (patient + provider), pre-generated audio cache, priority phrase generation. |
-| OwnVoice Enterprise | Per-facility annual contract | SSO/MDM integration, custom phrase libraries, clinical workflow integration, dedicated support, usage analytics dashboard. |
+| Small unit (≤10 beds) | **$3,000/yr** | Unlimited on-device voice cloning, all AAC features, 23 languages, on-device language model and speech-to-text, conversation thread, My Wishes (SICG goals-of-care) |
+| Mid unit (11–20 beds) | **$6,000/yr** | Same |
+| Large unit (21+ beds) | **$12,000/yr** | Same |
+| Hospital aggregate (3+ units, same facility) | **15% volume discount** | Adds CNO/admin dashboard with de-identified usage summary |
+| Health system (5+ hospitals, same system) | **Custom annual** (~$50K–$250K) | Adds admin console, SLA, clinical implementation support |
+| Premium voice clone (cloud-enrolled, hard cases) | **$299 per voice activation** | Charged to the unit subscription as a passthrough; for patients with poor, short, or noisy reference audio where the on-device clone falls below a usability threshold |
+| Voice banking (pre-loss, clinic-referred) | **$99 one-time** | Patient/family pays at SLP/ENT/neurology clinic referral; on-device clone stored for later in-hospital use |
+| Pilot | **30 days, free** | Full product, time-limited, converts to subscription or auto-deactivates |
 
-### Why freemium works
+**Annual prepay only** — no monthly billing. Every tier fits within typical academic-medical-center unit-director discretionary authority and can be put on a credit card for unit-level reimbursement, bypassing central procurement entirely.
 
-The free tier is a fully functional AAC tool that competes with existing solutions on features alone. This lowers the barrier to adoption and lets nursing staff evaluate the product without procurement involvement. The voice cloning upgrade is the premium feature that drives conversion — once a nurse hears a patient's real voice come through the app, the value proposition is self-evident.
+**No permanent free tier.** Free is reserved for 30-day pilots and up to three named clinical-research sites in exchange for being published reference customers.
+
+### Why this model fits the market
+
+Clinical-organization unit subscription, sold to the unit director's discretionary budget, is the pricing structure that aligns with three constraints unique to this market:
+
+- **No procurement gauntlet.** A $3,000–$12,000 annual subscription on the unit director's purchase card avoids the 12–18-month central procurement cycle. The unit-level buyer can decide and act in days, not quarters.
+- **No exploitative pricing at the moment of trauma.** Patient-pays-mid-crisis was rejected on ethical grounds — the conversion moment cannot be the moment a family is most vulnerable. The clinical organization, not the family, pays.
+- **Predictable budgeting for the buyer.** Annual flat fee per unit, with usage uncapped within tier, means no variable bills, no per-encounter accounting, no end-of-month surprises. Hospital finance departments procure on this model routinely; usage-based billing is friction.
+
+Voice cloning is the demand-creating feature; it is included in every tier rather than gated, because gating on emotional intensity is exactly the dynamic the model is designed to avoid. Premium cloud-enrolled voice cloning is offered as honest tier separation for patients with reference audio that exceeds the on-device model's usability threshold (poor, short, or noisy samples) — paid by the clinical organization as a passthrough, not by the family.
 
 ### Competitive landscape
 
-| Product | Distribution | Voice Cloning | Offline | Languages | Two-Way | Price |
-|---|---|---|---|---|---|---|
-| Existing AAC apps | App Store + MDM | No | Partial | Varies | Limited | Per-device license |
-| Hardware AAC devices | Physical hardware | No | Yes | English-focused | No | ~$1,500/device |
-| Picture boards | Physical | No | Yes | Limited | No | ~$20–50 |
-| **OwnVoice** | **URL (PWA)** | **Yes** | **Yes** | **13** | **Full conversation** | **Freemium** |
+The AAC market splits into two segments. OwnVoice differentiates against both.
+
+| Segment | Examples | FDA status | Voice cloning | Languages | On-device AI | Distribution | Buyer / billing |
+|---|---|---|---|---|---|---|---|
+| **Hardware-centric SGDs** | Tobii Dynavox, PRC-Saltillo, Lingraphica | Class II 510(k) cleared | No | English-focused | No | Dedicated hardware or Windows tablets | Patient-by-patient via DME suppliers and HCPCS codes E2500–E2511 |
+| **Software AAC apps for ICU** | VidaTalk, CommuniCare ICU, YoDoc, Proloquo2Go | None (General Wellness Policy) | No | Limited multilingual | No | App Store or hospital MDM | Per-device license, varied |
+| **OwnVoice** | — | None (General Wellness Policy through bootstrap; 510(k) optional Year 4+) | **Yes** (on-device + cloud premium tier) | **23 languages** with cross-lingual capability | **Yes** (LLM, STT, voice clone) | **URL (PWA)**, no MDM, no app store | **Annual unit subscription** to clinical organization |
+
+VidaTalk is the most directly comparable competitor and is the canonical positioning benchmark. Hardware SGDs are not direct competitors at the unit-subscription level — they are a different sales motion (patient-billed via DME) and a different pricing pattern (one-off device purchase rather than recurring unit subscription).
+
+OwnVoice differentiates on four dimensions uncontested by either segment: on-device voice cloning with cloud premium tier; 23-language voice synthesis with cross-lingual capability; browser-based deployment without MDM or installation; and SICG-integrated goals-of-care.
 
 ---
 
