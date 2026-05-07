@@ -9,7 +9,7 @@ describe("Home page", () => {
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(/AAC only 11%/);
   });
 
-  it("renders all six major section headings", () => {
+  it("renders all seven major section headings", () => {
     render(<Home />);
     const h2s = screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent ?? "");
     expect(h2s.some((t) => /communication failure/i.test(t))).toBe(true);
@@ -17,6 +17,7 @@ describe("Home page", () => {
     expect(h2s.some((t) => /four pillars/i.test(t))).toBe(true);
     expect(h2s.some((t) => /clinical validation study/i.test(t))).toBe(true);
     expect(h2s.some((t) => /no PHI ever leaves/i.test(t))).toBe(true);
+    expect(h2s.some((t) => /AAC opportunity/i.test(t))).toBe(true);
     expect(h2s.some((t) => /try the app on your iPad/i.test(t))).toBe(true);
   });
 
