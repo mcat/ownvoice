@@ -21,6 +21,7 @@ const sw: LocaleStrings = {
   "quick.please_wait": "Tafadhali subiri",
   "quick.dont_understand": "Sielewi",
   "quick.repeat": "Tafadhali rudia tena",
+  "quick.retract": "Sikukusudia hivyo",
 
   // ── Patient needs: Comfort ─────────────────────────────────────
   "needs.comfort.water": "Ninahitaji maji",
@@ -29,6 +30,13 @@ const sw: LocaleStrings = {
   "needs.comfort.hot": "Nina joto",
   "needs.comfort.bed": "Nirekebishie kitanda",
   "needs.comfort.bathroom": "Ninahitaji choo",
+  "needs.comfort.hearing_aid": "Ninahitaji kifaa changu cha kusikia",
+  "needs.comfort.glasses": "Ninahitaji miwani yangu",
+  "needs.comfort.ice": "Ninahitaji vipande vya barafu",
+  "needs.comfort.pillow": "Nirekebishie mto",
+  "needs.comfort.turn": "Tafadhali nigeuze",
+  "needs.comfort.sit_up": "Nisaidie kukaa wima",
+  "needs.comfort.quiet": "Tafadhali nyamaza",
 
   // ── Patient needs: Medical ─────────────────────────────────────
   "needs.medical.medication": "Ninahitaji dawa yangu",
@@ -37,12 +45,26 @@ const sw: LocaleStrings = {
   "needs.medical.breathe": "Sipumui vizuri",
   "needs.medical.nurse": "Ninahitaji muuguzi",
   "needs.medical.doctor": "Ninahitaji daktari",
+  "needs.medical.call_light": "Ninahitaji msaada sasa hivi",
 
   // ── Patient needs: People ──────────────────────────────────────
   "needs.people.family": "Nataka familia yangu",
   "needs.people.stay": "Mtu anaweza kukaa nami?",
   "needs.people.call": "Nataka kupiga simu",
   "needs.people.interpreter": "Ninahitaji mkalimani",
+  "needs.people.respiratory_therapist": "Ninahitaji mtaalamu wa upumuaji",
+  "needs.people.speech_therapist": "Ninahitaji mtaalamu wa matamshi",
+
+  // ── Patient needs: Hygiene ─────────────────────────────────────
+  "needs.hygiene.back": "Niosheni mgongo",
+  "needs.hygiene.face": "Niosheni uso",
+  "needs.hygiene.feet": "Niosheni miguu",
+  "needs.hygiene.hair": "Niosheni nywele",
+  "needs.hygiene.hands": "Niosheni mikono",
+  "needs.hygiene.mouth": "Usafi wa kinywa",
+  "needs.hygiene.nose": "Nifutieni pua",
+  "needs.hygiene.teeth": "Nipigeni mswaki",
+  "needs.hygiene.wound": "Nibadilishieni kitambaa cha jeraha",
 
   // ── Patient feelings: Physical ─────────────────────────────────
   "feelings.physical.tired": "Nimechoka",
@@ -51,6 +73,11 @@ const sw: LocaleStrings = {
   "feelings.physical.better": "Ninahisi nafuu",
   "feelings.physical.dizzy": "Ninahisi kizunguzungu",
   "feelings.physical.itchy": "Ninahisi kuwashwa",
+  "feelings.physical.wet": "Nimelowa",
+  "feelings.physical.gagging": "Ninataka kutapika",
+  "feelings.physical.short_of_breath": "Ninahema",
+  "feelings.physical.nauseated": "Ninahisi kichefuchefu",
+  "feelings.physical.worse": "Ninahisi vibaya zaidi",
 
   // ── Patient feelings: Emotional ────────────────────────────────
   "feelings.emotional.scared": "Ninaogopa",
@@ -74,6 +101,7 @@ const sw: LocaleStrings = {
   "questions.nurse_today": "Muuguzi wangu wa leo ni nani?",
   "questions.eat_drink": "Ninaweza kula au kunywa?",
   "questions.see_family": "Nitawaona familia yangu lini?",
+  "questions.extubation": "Mrija utatolewa lini?",
 
   // ── Pain: Emoji-FPS labels (Li et al., JMIR 2023) ─────────────
   "pain.face.0": "Hakuna maumivu",
@@ -494,6 +522,7 @@ const sw: LocaleStrings = {
   "sub.comfort": "Faraja",
   "sub.medical": "Matibabu",
   "sub.people": "Watu",
+  "sub.hygiene": "Usafi",
   "sub.physical": "Kimwili",
   "sub.emotional": "Kihisia",
 

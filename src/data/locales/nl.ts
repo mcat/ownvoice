@@ -21,6 +21,7 @@ const nl: LocaleStrings = {
   "quick.please_wait": "Wacht alstublieft",
   "quick.dont_understand": "Ik begrijp het niet",
   "quick.repeat": "Kunt u dat herhalen?",
+  "quick.retract": "Dat kwam er verkeerd uit",
 
   // ── Patient needs: Comfort ─────────────────────────────────────
   "needs.comfort.water": "Ik heb water nodig",
@@ -29,6 +30,13 @@ const nl: LocaleStrings = {
   "needs.comfort.hot": "Ik heb het warm",
   "needs.comfort.bed": "Kunt u mijn bed verstellen?",
   "needs.comfort.bathroom": "Ik moet naar het toilet",
+  "needs.comfort.hearing_aid": "Ik heb mijn gehoorapparaat nodig",
+  "needs.comfort.glasses": "Ik heb mijn bril nodig",
+  "needs.comfort.ice": "Ik heb ijsschilfers nodig",
+  "needs.comfort.pillow": "Kunt u mijn kussen verleggen?",
+  "needs.comfort.turn": "Kunt u mij omdraaien?",
+  "needs.comfort.sit_up": "Helpt u mij rechtop te zitten",
+  "needs.comfort.quiet": "Wees stil alstublieft",
 
   // ── Patient needs: Medical ─────────────────────────────────────
   "needs.medical.medication": "Ik heb mijn medicatie nodig",
@@ -37,12 +45,26 @@ const nl: LocaleStrings = {
   "needs.medical.breathe": "Ik kan niet goed ademhalen",
   "needs.medical.nurse": "Ik heb de verpleegkundige nodig",
   "needs.medical.doctor": "Ik heb de dokter nodig",
+  "needs.medical.call_light": "Ik heb nu hulp nodig",
 
   // ── Patient needs: People ──────────────────────────────────────
   "needs.people.family": "Ik wil mijn familie",
   "needs.people.stay": "Kan er iemand bij mij blijven?",
   "needs.people.call": "Ik wil iemand bellen",
   "needs.people.interpreter": "Ik heb een tolk nodig",
+  "needs.people.respiratory_therapist": "Ik heb de longtherapeut nodig",
+  "needs.people.speech_therapist": "Ik heb de logopedist nodig",
+
+  // ── Patient needs: Hygiene ─────────────────────────────────────
+  "needs.hygiene.back": "Was mijn rug",
+  "needs.hygiene.face": "Was mijn gezicht",
+  "needs.hygiene.feet": "Was mijn voeten",
+  "needs.hygiene.hair": "Was mijn haar",
+  "needs.hygiene.hands": "Was mijn handen",
+  "needs.hygiene.mouth": "Mondverzorging",
+  "needs.hygiene.nose": "Veeg mijn neus af",
+  "needs.hygiene.teeth": "Poets mijn tanden",
+  "needs.hygiene.wound": "Vervang mijn verband",
 
   // ── Patient feelings: Physical ─────────────────────────────────
   "feelings.physical.tired": "Ik ben moe",
@@ -51,6 +73,11 @@ const nl: LocaleStrings = {
   "feelings.physical.better": "Ik voel me beter",
   "feelings.physical.dizzy": "Ik ben duizelig",
   "feelings.physical.itchy": "Ik heb jeuk",
+  "feelings.physical.wet": "Ik ben nat",
+  "feelings.physical.gagging": "Ik moet kokhalzen",
+  "feelings.physical.short_of_breath": "Ik ben kortademig",
+  "feelings.physical.nauseated": "Ik ben misselijk",
+  "feelings.physical.worse": "Ik voel me slechter",
 
   // ── Patient feelings: Emotional ────────────────────────────────
   "feelings.emotional.scared": "Ik ben bang",
@@ -74,6 +101,7 @@ const nl: LocaleStrings = {
   "questions.nurse_today": "Wie is mijn verpleegkundige vandaag?",
   "questions.eat_drink": "Mag ik eten of drinken?",
   "questions.see_family": "Wanneer kan ik mijn familie zien?",
+  "questions.extubation": "Wanneer gaat mijn buisje eruit?",
 
   // ── Pain: Emoji-FPS labels (Li et al., JMIR 2023) ─────────────
   "pain.face.0": "Geen pijn",
@@ -495,6 +523,7 @@ const nl: LocaleStrings = {
   "sub.comfort": "Comfort",
   "sub.medical": "Medisch",
   "sub.people": "Mensen",
+  "sub.hygiene": "Hygiëne",
   "sub.physical": "Lichamelijk",
   "sub.emotional": "Emotioneel",
 

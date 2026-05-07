@@ -21,6 +21,7 @@ const hi: LocaleStrings = {
   "quick.please_wait": "कृपया रुकिए",
   "quick.dont_understand": "मुझे समझ नहीं आया",
   "quick.repeat": "कृपया दोबारा कहिए",
+  "quick.retract": "मेरा यह मतलब नहीं था",
 
   // ── Patient needs: Comfort ─────────────────────────────────────
   "needs.comfort.water": "मुझे पानी चाहिए",
@@ -29,6 +30,13 @@ const hi: LocaleStrings = {
   "needs.comfort.hot": "मुझे गर्मी लग रही है",
   "needs.comfort.bed": "मेरा बिस्तर ठीक कीजिए",
   "needs.comfort.bathroom": "मुझे बाथरूम जाना है",
+  "needs.comfort.hearing_aid": "मुझे अपनी श्रवण यंत्र चाहिए",
+  "needs.comfort.glasses": "मुझे अपना चश्मा चाहिए",
+  "needs.comfort.ice": "मुझे बर्फ़ के टुकड़े चाहिए",
+  "needs.comfort.pillow": "मेरा तकिया ठीक कीजिए",
+  "needs.comfort.turn": "कृपया मुझे करवट दिलाइए",
+  "needs.comfort.sit_up": "मुझे बैठने में मदद कीजिए",
+  "needs.comfort.quiet": "कृपया शांत रहिए",
 
   // ── Patient needs: Medical ─────────────────────────────────────
   "needs.medical.medication": "मुझे अपनी दवाई चाहिए",
@@ -37,12 +45,26 @@ const hi: LocaleStrings = {
   "needs.medical.breathe": "मुझे साँस लेने में तकलीफ़ हो रही है",
   "needs.medical.nurse": "मुझे नर्स चाहिए",
   "needs.medical.doctor": "मुझे डॉक्टर चाहिए",
+  "needs.medical.call_light": "मुझे अभी मदद चाहिए",
 
   // ── Patient needs: People ──────────────────────────────────────
   "needs.people.family": "मुझे अपना परिवार चाहिए",
   "needs.people.stay": "क्या कोई मेरे पास रह सकता है?",
   "needs.people.call": "मैं किसी को फ़ोन करना चाहता हूँ",
   "needs.people.interpreter": "मुझे दुभाषिया चाहिए",
+  "needs.people.respiratory_therapist": "मुझे श्वसन चिकित्सक चाहिए",
+  "needs.people.speech_therapist": "मुझे वाक् चिकित्सक चाहिए",
+
+  // ── Patient needs: Hygiene ─────────────────────────────────────
+  "needs.hygiene.back": "मेरी पीठ धोइए",
+  "needs.hygiene.face": "मेरा चेहरा धोइए",
+  "needs.hygiene.feet": "मेरे पैर धोइए",
+  "needs.hygiene.hair": "मेरे बाल धोइए",
+  "needs.hygiene.hands": "मेरे हाथ धोइए",
+  "needs.hygiene.mouth": "मुँह की सफ़ाई",
+  "needs.hygiene.nose": "मेरी नाक पोंछिए",
+  "needs.hygiene.teeth": "मेरे दाँत साफ़ कीजिए",
+  "needs.hygiene.wound": "मेरी पट्टी बदलिए",
 
   // ── Patient feelings: Physical ─────────────────────────────────
   "feelings.physical.tired": "मैं थका हुआ हूँ",
@@ -51,6 +73,11 @@ const hi: LocaleStrings = {
   "feelings.physical.better": "मैं बेहतर महसूस कर रहा हूँ",
   "feelings.physical.dizzy": "मुझे चक्कर आ रहा है",
   "feelings.physical.itchy": "मुझे खुजली हो रही है",
+  "feelings.physical.wet": "मैं गीला हूँ",
+  "feelings.physical.gagging": "मेरा दम घुट रहा है",
+  "feelings.physical.short_of_breath": "मेरी साँस फूल रही है",
+  "feelings.physical.nauseated": "मुझे मतली आ रही है",
+  "feelings.physical.worse": "मुझे और बुरा लग रहा है",
 
   // ── Patient feelings: Emotional ────────────────────────────────
   "feelings.emotional.scared": "मुझे डर लग रहा है",
@@ -74,6 +101,7 @@ const hi: LocaleStrings = {
   "questions.nurse_today": "आज मेरी नर्स कौन है?",
   "questions.eat_drink": "क्या मैं कुछ खा या पी सकता हूँ?",
   "questions.see_family": "मैं अपने परिवार से कब मिल सकता हूँ?",
+  "questions.extubation": "मेरी ट्यूब कब निकलेगी?",
 
   // ── Pain: Emoji-FPS labels (Li et al., JMIR 2023) ─────────────
   "pain.face.0": "कोई दर्द नहीं",
@@ -481,6 +509,7 @@ const hi: LocaleStrings = {
   "sub.comfort": "आराम",
   "sub.medical": "चिकित्सा",
   "sub.people": "लोग",
+  "sub.hygiene": "स्वच्छता",
   "sub.physical": "शारीरिक",
   "sub.emotional": "भावनात्मक",
 

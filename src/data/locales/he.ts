@@ -28,6 +28,7 @@ const he: LocaleStrings = {
   "quick.please_wait": "בבקשה חכו",
   "quick.dont_understand": "אני לא מבין",
   "quick.repeat": "בבקשה חזרו על זה",
+  "quick.retract": "לא התכוונתי לזה",
 
   // ── Patient needs: Comfort ─────────────────────────────────────
   "needs.comfort.water": "אני צריך מים",
@@ -36,6 +37,13 @@ const he: LocaleStrings = {
   "needs.comfort.hot": "חם לי",
   "needs.comfort.bed": "תכוונו את המיטה",
   "needs.comfort.bathroom": "אני צריך שירותים",
+  "needs.comfort.hearing_aid": "אני צריך את מכשיר השמיעה שלי",
+  "needs.comfort.glasses": "אני צריך את המשקפיים שלי",
+  "needs.comfort.ice": "אני צריך שבבי קרח",
+  "needs.comfort.pillow": "תסדרו לי את הכרית",
+  "needs.comfort.turn": "בבקשה תהפכו אותי",
+  "needs.comfort.sit_up": "תעזרו לי להתיישב",
+  "needs.comfort.quiet": "בבקשה שקט",
 
   // ── Patient needs: Medical ─────────────────────────────────────
   "needs.medical.medication": "אני צריך את התרופה שלי",
@@ -44,12 +52,26 @@ const he: LocaleStrings = {
   "needs.medical.breathe": "קשה לי לנשום",
   "needs.medical.nurse": "אני צריך את האחות",
   "needs.medical.doctor": "אני צריך את הרופא",
+  "needs.medical.call_light": "אני צריך עזרה עכשיו",
 
   // ── Patient needs: People ──────────────────────────────────────
   "needs.people.family": "אני רוצה את המשפחה שלי",
   "needs.people.stay": "מישהו יכול להישאר איתי?",
   "needs.people.call": "אני רוצה להתקשר למישהו",
   "needs.people.interpreter": "אני צריך מתורגמן",
+  "needs.people.respiratory_therapist": "אני צריך את המטפל הנשימתי",
+  "needs.people.speech_therapist": "אני צריך את הקלינאי תקשורת",
+
+  // ── Patient needs: Hygiene ─────────────────────────────────────
+  "needs.hygiene.back": "תשטפו לי את הגב",
+  "needs.hygiene.face": "תשטפו לי את הפנים",
+  "needs.hygiene.feet": "תשטפו לי את הרגליים",
+  "needs.hygiene.hair": "תשטפו לי את השיער",
+  "needs.hygiene.hands": "תשטפו לי את הידיים",
+  "needs.hygiene.mouth": "טיפול פה",
+  "needs.hygiene.nose": "תנגבו לי את האף",
+  "needs.hygiene.teeth": "תצחצחו לי שיניים",
+  "needs.hygiene.wound": "תחליפו לי את החבישה",
 
   // ── Patient feelings: Physical ─────────────────────────────────
   "feelings.physical.tired": "אני עייף",
@@ -58,6 +80,11 @@ const he: LocaleStrings = {
   "feelings.physical.better": "אני מרגיש יותר טוב",
   "feelings.physical.dizzy": "אני מרגיש סחרחורת",
   "feelings.physical.itchy": "יש לי גירוד",
+  "feelings.physical.wet": "אני רטוב",
+  "feelings.physical.gagging": "אני נחנק",
+  "feelings.physical.short_of_breath": "אני מתקשה לנשום",
+  "feelings.physical.nauseated": "יש לי בחילה",
+  "feelings.physical.worse": "אני מרגיש יותר גרוע",
 
   // ── Patient feelings: Emotional ────────────────────────────────
   "feelings.emotional.scared": "אני מפחד",
@@ -81,6 +108,7 @@ const he: LocaleStrings = {
   "questions.nurse_today": "מי האחות שלי היום?",
   "questions.eat_drink": "אני יכול לאכול או לשתות?",
   "questions.see_family": "מתי אני יכול לראות את המשפחה שלי?",
+  "questions.extubation": "מתי מוציאים לי את הצינור?",
 
   // ── Pain: Emoji-FPS labels (Li et al., JMIR 2023) ─────────────
   "pain.face.0": "בלי כאב",
@@ -502,6 +530,7 @@ const he: LocaleStrings = {
   "sub.comfort": "נוחות",
   "sub.medical": "רפואי",
   "sub.people": "אנשים",
+  "sub.hygiene": "היגיינה",
   "sub.physical": "גופני",
   "sub.emotional": "רגשי",
 

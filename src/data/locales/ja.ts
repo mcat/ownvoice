@@ -21,6 +21,7 @@ const ja: LocaleStrings = {
   "quick.please_wait": "お待ちください",
   "quick.dont_understand": "わかりません",
   "quick.repeat": "もう一度言ってください",
+  "quick.retract": "そういうつもりではありませんでした",
 
   // ── Patient needs: Comfort ─────────────────────────────────────
   "needs.comfort.water": "お水がほしいです",
@@ -29,6 +30,13 @@ const ja: LocaleStrings = {
   "needs.comfort.hot": "暑いです",
   "needs.comfort.bed": "ベッドを調整してください",
   "needs.comfort.bathroom": "トイレに行きたいです",
+  "needs.comfort.hearing_aid": "補聴器がほしいです",
+  "needs.comfort.glasses": "眼鏡がほしいです",
+  "needs.comfort.ice": "氷のかけらがほしいです",
+  "needs.comfort.pillow": "枕を直してください",
+  "needs.comfort.turn": "体の向きを変えてください",
+  "needs.comfort.sit_up": "起き上がるのを手伝ってください",
+  "needs.comfort.quiet": "静かにしてください",
 
   // ── Patient needs: Medical ─────────────────────────────────────
   "needs.medical.medication": "お薬がほしいです",
@@ -37,12 +45,26 @@ const ja: LocaleStrings = {
   "needs.medical.breathe": "うまく息ができません",
   "needs.medical.nurse": "看護師さんを呼んでください",
   "needs.medical.doctor": "医師を呼んでください",
+  "needs.medical.call_light": "今すぐ助けてください",
 
   // ── Patient needs: People ──────────────────────────────────────
   "needs.people.family": "家族に会いたいです",
   "needs.people.stay": "誰かそばにいてくれますか？",
   "needs.people.call": "誰かに電話したいです",
   "needs.people.interpreter": "通訳が必要です",
+  "needs.people.respiratory_therapist": "呼吸療法士を呼んでください",
+  "needs.people.speech_therapist": "言語聴覚士を呼んでください",
+
+  // ── Patient needs: Hygiene ─────────────────────────────────────
+  "needs.hygiene.back": "背中を拭いてください",
+  "needs.hygiene.face": "顔を拭いてください",
+  "needs.hygiene.feet": "足を洗ってください",
+  "needs.hygiene.hair": "髪を洗ってください",
+  "needs.hygiene.hands": "手を拭いてください",
+  "needs.hygiene.mouth": "口腔ケア",
+  "needs.hygiene.nose": "鼻を拭いてください",
+  "needs.hygiene.teeth": "歯を磨いてください",
+  "needs.hygiene.wound": "ガーゼを交換してください",
 
   // ── Patient feelings: Physical ─────────────────────────────────
   "feelings.physical.tired": "疲れています",
@@ -51,6 +73,11 @@ const ja: LocaleStrings = {
   "feelings.physical.better": "気分がよくなりました",
   "feelings.physical.dizzy": "めまいがします",
   "feelings.physical.itchy": "かゆいです",
+  "feelings.physical.wet": "濡れています",
+  "feelings.physical.gagging": "えずいています",
+  "feelings.physical.short_of_breath": "息切れがします",
+  "feelings.physical.nauseated": "吐き気がします",
+  "feelings.physical.worse": "気分が悪くなりました",
 
   // ── Patient feelings: Emotional ────────────────────────────────
   "feelings.emotional.scared": "怖いです",
@@ -74,6 +101,7 @@ const ja: LocaleStrings = {
   "questions.nurse_today": "今日の担当看護師は誰ですか？",
   "questions.eat_drink": "食べたり飲んだりできますか？",
   "questions.see_family": "いつ家族に会えますか？",
+  "questions.extubation": "管はいつ抜けますか？",
 
   // ── Pain: Emoji-FPS labels (Li et al., JMIR 2023) ─────────────
   "pain.face.0": "痛みなし",
@@ -486,6 +514,7 @@ const ja: LocaleStrings = {
   "sub.comfort": "快適さ",
   "sub.medical": "医療",
   "sub.people": "人",
+  "sub.hygiene": "清潔",
   "sub.physical": "からだ",
   "sub.emotional": "きもち",
 

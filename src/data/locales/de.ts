@@ -21,6 +21,7 @@ const de: LocaleStrings = {
   "quick.please_wait": "Bitte warten",
   "quick.dont_understand": "Ich verstehe nicht",
   "quick.repeat": "Bitte wiederholen Sie das",
+  "quick.retract": "Das war falsch ausgedrückt",
 
   // ── Patient needs: Comfort ─────────────────────────────────────
   "needs.comfort.water": "Ich brauche Wasser",
@@ -29,6 +30,13 @@ const de: LocaleStrings = {
   "needs.comfort.hot": "Mir ist heiß",
   "needs.comfort.bed": "Bitte mein Bett verstellen",
   "needs.comfort.bathroom": "Ich brauche die Toilette",
+  "needs.comfort.hearing_aid": "Ich brauche mein Hörgerät",
+  "needs.comfort.glasses": "Ich brauche meine Brille",
+  "needs.comfort.ice": "Ich brauche Eischips",
+  "needs.comfort.pillow": "Bitte mein Kissen zurechtrücken",
+  "needs.comfort.turn": "Bitte drehen Sie mich",
+  "needs.comfort.sit_up": "Bitte helfen Sie mir, mich aufzusetzen",
+  "needs.comfort.quiet": "Bitte seien Sie leise",
 
   // ── Patient needs: Medical ─────────────────────────────────────
   "needs.medical.medication": "Ich brauche mein Medikament",
@@ -37,12 +45,26 @@ const de: LocaleStrings = {
   "needs.medical.breathe": "Ich bekomme schlecht Luft",
   "needs.medical.nurse": "Ich brauche die Pflegekraft",
   "needs.medical.doctor": "Ich brauche den Arzt",
+  "needs.medical.call_light": "Ich brauche sofort Hilfe",
 
   // ── Patient needs: People ──────────────────────────────────────
   "needs.people.family": "Ich möchte meine Familie sehen",
   "needs.people.stay": "Kann jemand bei mir bleiben?",
   "needs.people.call": "Ich möchte jemanden anrufen",
   "needs.people.interpreter": "Ich brauche einen Dolmetscher",
+  "needs.people.respiratory_therapist": "Ich brauche den Atmungstherapeuten",
+  "needs.people.speech_therapist": "Ich brauche den Logopäden",
+
+  // ── Patient needs: Hygiene ─────────────────────────────────────
+  "needs.hygiene.back": "Bitte waschen Sie meinen Rücken",
+  "needs.hygiene.face": "Bitte waschen Sie mein Gesicht",
+  "needs.hygiene.feet": "Bitte waschen Sie meine Füße",
+  "needs.hygiene.hair": "Bitte waschen Sie meine Haare",
+  "needs.hygiene.hands": "Bitte waschen Sie meine Hände",
+  "needs.hygiene.mouth": "Mundpflege",
+  "needs.hygiene.nose": "Bitte putzen Sie mir die Nase",
+  "needs.hygiene.teeth": "Bitte putzen Sie mir die Zähne",
+  "needs.hygiene.wound": "Bitte wechseln Sie meinen Verband",
 
   // ── Patient feelings: Physical ─────────────────────────────────
   "feelings.physical.tired": "Ich bin müde",
@@ -51,6 +73,11 @@ const de: LocaleStrings = {
   "feelings.physical.better": "Ich fühle mich besser",
   "feelings.physical.dizzy": "Mir ist schwindelig",
   "feelings.physical.itchy": "Es juckt mich",
+  "feelings.physical.wet": "Ich bin nass",
+  "feelings.physical.gagging": "Ich muss würgen",
+  "feelings.physical.short_of_breath": "Ich bin kurzatmig",
+  "feelings.physical.nauseated": "Mir ist übel",
+  "feelings.physical.worse": "Es geht mir schlechter",
 
   // ── Patient feelings: Emotional ────────────────────────────────
   "feelings.emotional.scared": "Ich habe Angst",
@@ -74,6 +101,7 @@ const de: LocaleStrings = {
   "questions.nurse_today": "Wer ist heute meine Pflegekraft?",
   "questions.eat_drink": "Darf ich essen oder trinken?",
   "questions.see_family": "Wann kann ich meine Familie sehen?",
+  "questions.extubation": "Wann wird mein Tubus entfernt?",
 
   // ── Pain: Emoji-FPS labels (Li et al., JMIR 2023) ─────────────
   "pain.face.0": "Kein Schmerz",
@@ -499,6 +527,7 @@ const de: LocaleStrings = {
   "sub.comfort": "Komfort",
   "sub.medical": "Medizinisch",
   "sub.people": "Personen",
+  "sub.hygiene": "Hygiene",
   "sub.physical": "Körperlich",
   "sub.emotional": "Emotional",
 

@@ -21,6 +21,7 @@ const vi: LocaleStrings = {
   "quick.please_wait": "Xin chờ",
   "quick.dont_understand": "Tôi không hiểu",
   "quick.repeat": "Xin nhắc lại",
+  "quick.retract": "Tôi nói nhầm",
 
   // ── Patient needs: Comfort ─────────────────────────────────────
   "needs.comfort.water": "Tôi cần nước",
@@ -29,6 +30,13 @@ const vi: LocaleStrings = {
   "needs.comfort.hot": "Tôi nóng",
   "needs.comfort.bed": "Chỉnh giường giúp tôi",
   "needs.comfort.bathroom": "Tôi cần đi vệ sinh",
+  "needs.comfort.hearing_aid": "Tôi cần máy trợ thính",
+  "needs.comfort.glasses": "Tôi cần kính của tôi",
+  "needs.comfort.ice": "Tôi cần đá viên nhỏ",
+  "needs.comfort.pillow": "Chỉnh gối giúp tôi",
+  "needs.comfort.turn": "Xin trở mình giúp tôi",
+  "needs.comfort.sit_up": "Đỡ tôi ngồi dậy",
+  "needs.comfort.quiet": "Xin giữ yên lặng",
 
   // ── Patient needs: Medical ─────────────────────────────────────
   "needs.medical.medication": "Tôi cần uống thuốc",
@@ -37,12 +45,26 @@ const vi: LocaleStrings = {
   "needs.medical.breathe": "Tôi khó thở",
   "needs.medical.nurse": "Tôi cần y tá",
   "needs.medical.doctor": "Tôi cần bác sĩ",
+  "needs.medical.call_light": "Tôi cần giúp đỡ ngay",
 
   // ── Patient needs: People ──────────────────────────────────────
   "needs.people.family": "Tôi muốn gặp gia đình",
   "needs.people.stay": "Có ai ở lại với tôi được không?",
   "needs.people.call": "Tôi muốn gọi điện cho ai đó",
   "needs.people.interpreter": "Tôi cần phiên dịch",
+  "needs.people.respiratory_therapist": "Tôi cần chuyên viên hô hấp",
+  "needs.people.speech_therapist": "Tôi cần chuyên viên ngôn ngữ trị liệu",
+
+  // ── Patient needs: Hygiene ─────────────────────────────────────
+  "needs.hygiene.back": "Lau lưng giúp tôi",
+  "needs.hygiene.face": "Lau mặt giúp tôi",
+  "needs.hygiene.feet": "Rửa chân giúp tôi",
+  "needs.hygiene.hair": "Gội đầu giúp tôi",
+  "needs.hygiene.hands": "Rửa tay giúp tôi",
+  "needs.hygiene.mouth": "Vệ sinh răng miệng",
+  "needs.hygiene.nose": "Lau mũi giúp tôi",
+  "needs.hygiene.teeth": "Đánh răng giúp tôi",
+  "needs.hygiene.wound": "Thay băng giúp tôi",
 
   // ── Patient feelings: Physical ─────────────────────────────────
   "feelings.physical.tired": "Tôi mệt",
@@ -51,6 +73,11 @@ const vi: LocaleStrings = {
   "feelings.physical.better": "Tôi khá hơn",
   "feelings.physical.dizzy": "Tôi chóng mặt",
   "feelings.physical.itchy": "Tôi bị ngứa",
+  "feelings.physical.wet": "Tôi bị ướt",
+  "feelings.physical.gagging": "Tôi bị ọe",
+  "feelings.physical.short_of_breath": "Tôi khó thở",
+  "feelings.physical.nauseated": "Tôi buồn nôn",
+  "feelings.physical.worse": "Tôi thấy tệ hơn",
 
   // ── Patient feelings: Emotional ────────────────────────────────
   "feelings.emotional.scared": "Tôi sợ",
@@ -75,6 +102,7 @@ const vi: LocaleStrings = {
   "questions.nurse_today": "Hôm nay ai là y tá của tôi?",
   "questions.eat_drink": "Tôi có được ăn uống không?",
   "questions.see_family": "Khi nào tôi được gặp gia đình?",
+  "questions.extubation": "Khi nào rút ống của tôi?",
 
   // ── Pain: Emoji-FPS labels (Li et al., JMIR 2023) ─────────────
   "pain.face.0": "Không đau",
@@ -499,6 +527,7 @@ const vi: LocaleStrings = {
   "sub.comfort": "Thoải mái",
   "sub.medical": "Y tế",
   "sub.people": "Người thân",
+  "sub.hygiene": "Vệ sinh",
   "sub.physical": "Thể chất",
   "sub.emotional": "Cảm xúc",
 

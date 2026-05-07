@@ -21,6 +21,7 @@ const ar: LocaleStrings = {
   "quick.please_wait": "انتظر من فضلك",
   "quick.dont_understand": "لا أفهم",
   "quick.repeat": "أعد ذلك من فضلك",
+  "quick.retract": "لم أقصد ذلك",
 
   // ── Patient needs: Comfort ─────────────────────────────────────
   "needs.comfort.water": "أحتاج ماءً",
@@ -29,6 +30,13 @@ const ar: LocaleStrings = {
   "needs.comfort.hot": "أشعر بالحر",
   "needs.comfort.bed": "اضبط سريري",
   "needs.comfort.bathroom": "أحتاج دورة المياه",
+  "needs.comfort.hearing_aid": "أحتاج سمّاعتي",
+  "needs.comfort.glasses": "أحتاج نظارتي",
+  "needs.comfort.ice": "أحتاج قطع ثلج",
+  "needs.comfort.pillow": "اضبط وسادتي",
+  "needs.comfort.turn": "أديروني من فضلكم",
+  "needs.comfort.sit_up": "ساعدوني على الجلوس",
+  "needs.comfort.quiet": "من فضلكم اخفضوا الصوت",
 
   // ── Patient needs: Medical ─────────────────────────────────────
   "needs.medical.medication": "أحتاج دوائي",
@@ -37,12 +45,26 @@ const ar: LocaleStrings = {
   "needs.medical.breathe": "لا أستطيع التنفس جيداً",
   "needs.medical.nurse": "أحتاج الممرض",
   "needs.medical.doctor": "أحتاج الطبيب",
+  "needs.medical.call_light": "أحتاج المساعدة الآن",
 
   // ── Patient needs: People ──────────────────────────────────────
   "needs.people.family": "أريد عائلتي",
   "needs.people.stay": "هل يمكن لأحد البقاء معي؟",
   "needs.people.call": "أريد الاتصال بشخص ما",
   "needs.people.interpreter": "أحتاج مترجماً",
+  "needs.people.respiratory_therapist": "أحتاج أخصائي العلاج التنفسي",
+  "needs.people.speech_therapist": "أحتاج أخصائي علاج النطق",
+
+  // ── Patient needs: Hygiene ─────────────────────────────────────
+  "needs.hygiene.back": "اغسلوا ظهري",
+  "needs.hygiene.face": "اغسلوا وجهي",
+  "needs.hygiene.feet": "اغسلوا قدميّ",
+  "needs.hygiene.hair": "اغسلوا شعري",
+  "needs.hygiene.hands": "اغسلوا يديّ",
+  "needs.hygiene.mouth": "العناية بالفم",
+  "needs.hygiene.nose": "امسحوا أنفي",
+  "needs.hygiene.teeth": "نظّفوا أسناني",
+  "needs.hygiene.wound": "غيّروا الضمادة",
 
   // ── Patient feelings: Physical ─────────────────────────────────
   "feelings.physical.tired": "أنا متعب",
@@ -51,6 +73,11 @@ const ar: LocaleStrings = {
   "feelings.physical.better": "أشعر بتحسن",
   "feelings.physical.dizzy": "أشعر بالدوار",
   "feelings.physical.itchy": "أشعر بالحكة",
+  "feelings.physical.wet": "أنا مبلل",
+  "feelings.physical.gagging": "أشعر بالاختناق",
+  "feelings.physical.short_of_breath": "أشعر بضيق في التنفس",
+  "feelings.physical.nauseated": "أشعر بالغثيان",
+  "feelings.physical.worse": "أشعر بأنني أسوأ",
 
   // ── Patient feelings: Emotional ────────────────────────────────
   "feelings.emotional.scared": "أنا خائف",
@@ -74,6 +101,7 @@ const ar: LocaleStrings = {
   "questions.nurse_today": "من هو ممرضي اليوم؟",
   "questions.eat_drink": "هل يمكنني الأكل أو الشرب؟",
   "questions.see_family": "متى أستطيع رؤية عائلتي؟",
+  "questions.extubation": "متى ستُزال الأنبوبة؟",
 
   // ── Pain: Emoji-FPS labels (Li et al., JMIR 2023) ─────────────
   "pain.face.0": "لا ألم",
@@ -481,6 +509,7 @@ const ar: LocaleStrings = {
   "sub.comfort": "الراحة",
   "sub.medical": "طبي",
   "sub.people": "أشخاص",
+  "sub.hygiene": "نظافة",
   "sub.physical": "جسدي",
   "sub.emotional": "نفسي",
 

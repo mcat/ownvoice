@@ -29,6 +29,7 @@ const el: LocaleStrings = {
   "quick.please_wait": "Παρακαλώ περιμένετε",
   "quick.dont_understand": "Δεν καταλαβαίνω",
   "quick.repeat": "Παρακαλώ επαναλάβετε",
+  "quick.retract": "Δεν το είπα σωστά",
 
   // ── Patient needs: Comfort ─────────────────────────────────────
   "needs.comfort.water": "Χρειάζομαι νερό",
@@ -37,6 +38,13 @@ const el: LocaleStrings = {
   "needs.comfort.hot": "Ζεσταίνομαι",
   "needs.comfort.bed": "Ρυθμίστε το κρεβάτι μου",
   "needs.comfort.bathroom": "Χρειάζομαι την τουαλέτα",
+  "needs.comfort.hearing_aid": "Χρειάζομαι το ακουστικό μου",
+  "needs.comfort.glasses": "Χρειάζομαι τα γυαλιά μου",
+  "needs.comfort.ice": "Χρειάζομαι παγάκια",
+  "needs.comfort.pillow": "Ρυθμίστε το μαξιλάρι μου",
+  "needs.comfort.turn": "Παρακαλώ γυρίστε με",
+  "needs.comfort.sit_up": "Βοηθήστε με να ανακαθίσω",
+  "needs.comfort.quiet": "Παρακαλώ κάντε ησυχία",
 
   // ── Patient needs: Medical ─────────────────────────────────────
   "needs.medical.medication": "Χρειάζομαι το φάρμακό μου",
@@ -45,12 +53,26 @@ const el: LocaleStrings = {
   "needs.medical.breathe": "Δεν μπορώ να αναπνεύσω καλά",
   "needs.medical.nurse": "Χρειάζομαι τη νοσοκόμα",
   "needs.medical.doctor": "Χρειάζομαι τον γιατρό",
+  "needs.medical.call_light": "Χρειάζομαι βοήθεια αμέσως",
 
   // ── Patient needs: People ──────────────────────────────────────
   "needs.people.family": "Θέλω την οικογένειά μου",
   "needs.people.stay": "Μπορεί κάποιος να μείνει μαζί μου;",
   "needs.people.call": "Θέλω να τηλεφωνήσω σε κάποιον",
   "needs.people.interpreter": "Χρειάζομαι διερμηνέα",
+  "needs.people.respiratory_therapist": "Χρειάζομαι τον αναπνευστικό θεραπευτή",
+  "needs.people.speech_therapist": "Χρειάζομαι τον λογοθεραπευτή",
+
+  // ── Patient needs: Hygiene ─────────────────────────────────────
+  "needs.hygiene.back": "Πλύνετε την πλάτη μου",
+  "needs.hygiene.face": "Πλύνετε το πρόσωπό μου",
+  "needs.hygiene.feet": "Πλύνετε τα πόδια μου",
+  "needs.hygiene.hair": "Πλύνετε τα μαλλιά μου",
+  "needs.hygiene.hands": "Πλύνετε τα χέρια μου",
+  "needs.hygiene.mouth": "Στοματική φροντίδα",
+  "needs.hygiene.nose": "Σκουπίστε τη μύτη μου",
+  "needs.hygiene.teeth": "Βουρτσίστε τα δόντια μου",
+  "needs.hygiene.wound": "Αλλάξτε τον επίδεσμό μου",
 
   // ── Patient feelings: Physical ─────────────────────────────────
   "feelings.physical.tired": "Είμαι κουρασμένος",
@@ -59,6 +81,11 @@ const el: LocaleStrings = {
   "feelings.physical.better": "Νιώθω καλύτερα",
   "feelings.physical.dizzy": "Έχω ζαλάδα",
   "feelings.physical.itchy": "Με τρώει — έχω φαγούρα",
+  "feelings.physical.wet": "Είμαι βρεγμένος",
+  "feelings.physical.gagging": "Πνίγομαι",
+  "feelings.physical.short_of_breath": "Λαχανιάζω",
+  "feelings.physical.nauseated": "Έχω ναυτία",
+  "feelings.physical.worse": "Νιώθω χειρότερα",
 
   // ── Patient feelings: Emotional ────────────────────────────────
   "feelings.emotional.scared": "Φοβάμαι",
@@ -82,6 +109,7 @@ const el: LocaleStrings = {
   "questions.nurse_today": "Ποια είναι η νοσοκόμα μου σήμερα;",
   "questions.eat_drink": "Μπορώ να φάω ή να πιω;",
   "questions.see_family": "Πότε μπορώ να δω την οικογένειά μου;",
+  "questions.extubation": "Πότε θα μου βγάλουν τον σωλήνα;",
 
   // ── Pain: Emoji-FPS labels (Li et al., JMIR 2023) ─────────────
   "pain.face.0": "Χωρίς πόνο",
@@ -502,6 +530,7 @@ const el: LocaleStrings = {
   "sub.comfort": "Άνεση",
   "sub.medical": "Ιατρικά",
   "sub.people": "Άνθρωποι",
+  "sub.hygiene": "Υγιεινή",
   "sub.physical": "Σωματικά",
   "sub.emotional": "Συναισθηματικά",
 

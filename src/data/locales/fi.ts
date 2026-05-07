@@ -21,6 +21,7 @@ const fi: LocaleStrings = {
   "quick.please_wait": "Odota hetki",
   "quick.dont_understand": "En ymmärrä",
   "quick.repeat": "Voitko toistaa",
+  "quick.retract": "Sanoin sen väärin",
 
   // ── Patient needs: Comfort ─────────────────────────────────────
   "needs.comfort.water": "Tarvitsen vettä",
@@ -29,6 +30,13 @@ const fi: LocaleStrings = {
   "needs.comfort.hot": "Minulla on kuuma",
   "needs.comfort.bed": "Säädä sänkyäni",
   "needs.comfort.bathroom": "Tarvitsen WC:n",
+  "needs.comfort.hearing_aid": "Tarvitsen kuulolaitteeni",
+  "needs.comfort.glasses": "Tarvitsen silmälasini",
+  "needs.comfort.ice": "Tarvitsen jääpaloja",
+  "needs.comfort.pillow": "Korjaa tyynyäni",
+  "needs.comfort.turn": "Käännä minut",
+  "needs.comfort.sit_up": "Auta minut istumaan",
+  "needs.comfort.quiet": "Olkaa hiljaa",
 
   // ── Patient needs: Medical ─────────────────────────────────────
   "needs.medical.medication": "Tarvitsen lääkkeeni",
@@ -37,12 +45,26 @@ const fi: LocaleStrings = {
   "needs.medical.breathe": "En saa hyvin henkeä",
   "needs.medical.nurse": "Tarvitsen hoitajan",
   "needs.medical.doctor": "Tarvitsen lääkärin",
+  "needs.medical.call_light": "Tarvitsen apua heti",
 
   // ── Patient needs: People ──────────────────────────────────────
   "needs.people.family": "Haluan perheeni luokseni",
   "needs.people.stay": "Voiko joku jäädä luokseni?",
   "needs.people.call": "Haluan soittaa jollekulle",
   "needs.people.interpreter": "Tarvitsen tulkin",
+  "needs.people.respiratory_therapist": "Tarvitsen hengityshoitajan",
+  "needs.people.speech_therapist": "Tarvitsen puheterapeutin",
+
+  // ── Patient needs: Hygiene ─────────────────────────────────────
+  "needs.hygiene.back": "Pese selkäni",
+  "needs.hygiene.face": "Pese kasvoni",
+  "needs.hygiene.feet": "Pese jalkani",
+  "needs.hygiene.hair": "Pese hiukseni",
+  "needs.hygiene.hands": "Pese käteni",
+  "needs.hygiene.mouth": "Suunhoito",
+  "needs.hygiene.nose": "Pyyhi nenäni",
+  "needs.hygiene.teeth": "Harjaa hampaani",
+  "needs.hygiene.wound": "Vaihda sidos",
 
   // ── Patient feelings: Physical ─────────────────────────────────
   "feelings.physical.tired": "Olen väsynyt",
@@ -51,6 +73,11 @@ const fi: LocaleStrings = {
   "feelings.physical.better": "Tunnen oloni paremmaksi",
   "feelings.physical.dizzy": "Minua huimaa",
   "feelings.physical.itchy": "Minua kutittaa",
+  "feelings.physical.wet": "Olen märkä",
+  "feelings.physical.gagging": "Minulla on yökötysrefleksi",
+  "feelings.physical.short_of_breath": "Olen hengästynyt",
+  "feelings.physical.nauseated": "Minua oksettaa",
+  "feelings.physical.worse": "Voin huonommin",
 
   // ── Patient feelings: Emotional ────────────────────────────────
   "feelings.emotional.scared": "Minua pelottaa",
@@ -74,6 +101,7 @@ const fi: LocaleStrings = {
   "questions.nurse_today": "Kuka on hoitajani tänään?",
   "questions.eat_drink": "Saanko syödä tai juoda?",
   "questions.see_family": "Milloin voin nähdä perheeni?",
+  "questions.extubation": "Milloin putki otetaan pois?",
 
   // ── Pain: Emoji-FPS labels (Li et al., JMIR 2023) ─────────────
   "pain.face.0": "Ei kipua",
@@ -480,6 +508,7 @@ const fi: LocaleStrings = {
   "sub.comfort": "Mukavuus",
   "sub.medical": "Hoito",
   "sub.people": "Ihmiset",
+  "sub.hygiene": "Hygienia",
   "sub.physical": "Fyysinen",
   "sub.emotional": "Tunne",
 

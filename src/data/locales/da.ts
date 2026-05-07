@@ -21,6 +21,7 @@ const da: LocaleStrings = {
   "quick.please_wait": "Vent venligst",
   "quick.dont_understand": "Jeg forstår ikke",
   "quick.repeat": "Kan du gentage det?",
+  "quick.retract": "Det kom forkert ud",
 
   // ── Patient needs: Comfort ─────────────────────────────────────
   "needs.comfort.water": "Jeg har brug for vand",
@@ -29,6 +30,13 @@ const da: LocaleStrings = {
   "needs.comfort.hot": "Jeg har det for varmt",
   "needs.comfort.bed": "Juster min seng",
   "needs.comfort.bathroom": "Jeg skal på toilettet",
+  "needs.comfort.hearing_aid": "Jeg har brug for mit høreapparat",
+  "needs.comfort.glasses": "Jeg har brug for mine briller",
+  "needs.comfort.ice": "Jeg har brug for isterninger",
+  "needs.comfort.pillow": "Juster min pude",
+  "needs.comfort.turn": "Vend mig venligst",
+  "needs.comfort.sit_up": "Hjælp mig med at sætte mig op",
+  "needs.comfort.quiet": "Vær stille, tak",
 
   // ── Patient needs: Medical ─────────────────────────────────────
   "needs.medical.medication": "Jeg har brug for min medicin",
@@ -37,12 +45,26 @@ const da: LocaleStrings = {
   "needs.medical.breathe": "Jeg kan ikke trække vejret ordentligt",
   "needs.medical.nurse": "Jeg har brug for sygeplejersken",
   "needs.medical.doctor": "Jeg har brug for lægen",
+  "needs.medical.call_light": "Jeg har brug for hjælp nu",
 
   // ── Patient needs: People ──────────────────────────────────────
   "needs.people.family": "Jeg vil gerne se min familie",
   "needs.people.stay": "Kan nogen blive hos mig?",
   "needs.people.call": "Jeg vil gerne ringe til nogen",
   "needs.people.interpreter": "Jeg har brug for en tolk",
+  "needs.people.respiratory_therapist": "Jeg har brug for respirationsterapeuten",
+  "needs.people.speech_therapist": "Jeg har brug for talepædagogen",
+
+  // ── Patient needs: Hygiene ─────────────────────────────────────
+  "needs.hygiene.back": "Vask min ryg",
+  "needs.hygiene.face": "Vask mit ansigt",
+  "needs.hygiene.feet": "Vask mine fødder",
+  "needs.hygiene.hair": "Vask mit hår",
+  "needs.hygiene.hands": "Vask mine hænder",
+  "needs.hygiene.mouth": "Mundpleje",
+  "needs.hygiene.nose": "Tør min næse",
+  "needs.hygiene.teeth": "Børst mine tænder",
+  "needs.hygiene.wound": "Skift min forbinding",
 
   // ── Patient feelings: Physical ─────────────────────────────────
   "feelings.physical.tired": "Jeg er træt",
@@ -51,6 +73,11 @@ const da: LocaleStrings = {
   "feelings.physical.better": "Jeg har det bedre",
   "feelings.physical.dizzy": "Jeg er svimmel",
   "feelings.physical.itchy": "Det klør",
+  "feelings.physical.wet": "Jeg er våd",
+  "feelings.physical.gagging": "Jeg har opkastfornemmelser",
+  "feelings.physical.short_of_breath": "Jeg er forpustet",
+  "feelings.physical.nauseated": "Jeg har kvalme",
+  "feelings.physical.worse": "Jeg har det værre",
 
   // ── Patient feelings: Emotional ────────────────────────────────
   "feelings.emotional.scared": "Jeg er bange",
@@ -74,6 +101,7 @@ const da: LocaleStrings = {
   "questions.nurse_today": "Hvem er min sygeplejerske i dag?",
   "questions.eat_drink": "Må jeg spise eller drikke?",
   "questions.see_family": "Hvornår kan jeg se min familie?",
+  "questions.extubation": "Hvornår skal røret tages ud?",
 
   // ── Pain: Emoji-FPS labels (Li et al., JMIR 2023) ─────────────
   "pain.face.0": "Ingen smerte",
@@ -494,6 +522,7 @@ const da: LocaleStrings = {
   "sub.comfort": "Komfort",
   "sub.medical": "Medicinsk",
   "sub.people": "Personer",
+  "sub.hygiene": "Hygiejne",
   "sub.physical": "Fysisk",
   "sub.emotional": "Følelsesmæssig",
 
