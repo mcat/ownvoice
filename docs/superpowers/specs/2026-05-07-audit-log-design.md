@@ -488,3 +488,14 @@ loses structure. NDJSON is the right tabular-ish answer.
   spoken text.
 - Span events nested *within* a step (OTel allows timestamped events
   inside a span; we don't surface this until a use case appears).
+- **SQL-in-browser (sqlite-wasm) re-evaluation.** IndexedDB covers Phase
+  1–2 query patterns. Re-evaluate when Phase 3+ researcher view wants
+  full-text search over `speech.text`, multi-dimensional aggregation
+  (per-patient × per-day × per-engine), or an ad-hoc SQL console. The
+  OTLP-shaped schema migrates mechanically. Use sqlite-wasm-official,
+  not libSQL — same capability, no single-vendor dependency, ~1–2 MB
+  bundle cost paid only when the feature lands. Turso Cloud sync is
+  expressly out of scope for the consumer app (conflicts with the
+  on-device privacy promise); a future research-deployment build that
+  needs sync should use OTLP/HTTP to a controlled endpoint, not a
+  third-party database service.
