@@ -117,15 +117,10 @@ conversation thread from it.
   `useConversationStore((s) => s.messagesByPatientId[id])` to
   `useThreadView(activePatientId)`.
 
-**Migration:** existing `ov-conversation` data cannot be losslessly
-ported (the stored `time` is a `"9:14 AM"` string with no date). On
-first launch after Phase 1 lands, drop the database and emit one
-`migration.thread_dropped` INFO audit event with the row count.
-Acceptable at v0.1 with no shipped users; if a developer is holding
-test conversations they care about, screenshot first.
-
 Phase 1 emits only `kind: "log"` records. The schema's span fields stay
-optional and unused.
+optional and unused. The app is in development with no shipped users;
+the `ov-conversation` IDB store is simply removed at deploy and any
+local thread data on dev iPads goes with it.
 
 ### Phase 2 — Durable workflow runtime (~400 LOC)
 
