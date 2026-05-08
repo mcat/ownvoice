@@ -104,9 +104,33 @@ conversation thread from it.
   `addToThread`, and `useConversationStore` are removed.
 - New `src/audit/useThreadView.ts` hook: reads from `ov-audit.events`
   filtered to thread-visible event names (`speak.tap`, `thread.compose`,
-  `thread.transcribed`) and the active patient's `patient_id_hash`. Maps
-  records to a render-friendly shape; memoised; subscribed to the audit
-  pub-sub for live updates.
+  `thread.transcribed`) and the active patient's `patient_id_hash`.
+  Memoised; subscribed to the audit pub-sub for live updates. Returns:
+
+  ```ts
+  export interface ThreadEntry {
+    id: string;                        // event ULID; stable React key
+    from: "patient" | "provider";
+    text: string;
+    gloss?: string;
+    icon?: string;
+    time: number;                      // ms epoch; renderer formats locally
+    label: string;                     // resolved at read time:
+                                       //   patient → cfg.patients[id].name
+                                       //   provider → ATTR.PROVIDER_NAME
+  }
+
+  export function useThreadView(
+    patientId: string | null,
+  ): readonly ThreadEntry[];
+  ```
+
+  `App.tsx` swaps `s.messagesByPatientId[id] ?? EMPTY_MESSAGES` for
+  `useThreadView(activePatientId)`. The renderer reads `entry.text`,
+  `entry.gloss`, `entry.icon`, `entry.label`, and formats `entry.time`
+  locally — the existing pre-formatted `Message.time` string is replaced
+  by epoch-ms so the renderer chooses the format (which fixes a latent
+  bug where stored timestamps weren't sortable across days).
 - `useSpeakActions.speakAsPatient` / `speakAsProvider` → audit-log
   `speak.tap` (replaces `addMessage`).
 - `useSpeakActions.addToThread` callers split by intent:
@@ -167,23 +191,46 @@ Phase 2 starts emitting `kind: "span"` records and populating the
 ov-audit  (IndexedDB database, version 1)
 ├── events       (append-only)
 │   keyPath: "id"  (ULID, time-sortable)
-│   indexes:
-│     by_time            ← researcher full-range scans
-│     by_patient_time    ← healthcare-worker patient filter
-│     by_severity_time   ← developer errors-only filter
-│     by_workflow_id     ← join steps under their workflow span
-│     by_name_time       ← typed event filters (e.g. "speak.tap")
 │
 └── workflows    (mutable in-flight state — Phase 2 only)
     keyPath: "workflow_id"
-    indexes:
-      by_status_started  ← boot-time recovery sweep
-      by_patient_id_hash ← per-patient cascade
 ```
 
 Same database for IndexedDB cross-store transactional atomicity. Two
 stores for lifecycle separation (append-only vs mutable) and clean export
 boundary.
+
+**Hoisted index columns.** The on-disk record carries `attributes` as a
+nested object, but the hot lookup keys are also denormalised to the
+record root so IndexedDB indexes can address them directly. `audit.log`
+performs the hoisting on write; the canonical values still live in
+`attributes` for OTLP export round-tripping.
+
+Hoisted root fields on `events`:
+
+- `id` (ULID, primary key)
+- `time` (number)
+- `name` (string)
+- `severity_number` (number, optional)
+- `patient_id_hash` (string, optional)
+- `workflow_id` (string, optional)
+
+Hoisted root fields on `workflows`:
+
+- `workflow_id` (primary key)
+- `status`, `started_at`, `patient_id_hash`
+
+IndexedDB indexes:
+
+| Store | Index name | keyPath | Purpose |
+|---|---|---|---|
+| events | `by_time` | `time` | Researcher full-range scans |
+| events | `by_patient_time` | `["patient_id_hash", "time"]` | Healthcare-worker patient filter |
+| events | `by_severity_time` | `["severity_number", "time"]` | Developer errors-only filter |
+| events | `by_workflow_id` | `workflow_id` | Steps under their workflow span |
+| events | `by_name_time` | `["name", "time"]` | Typed event filter (e.g. `speak.tap`) |
+| workflows | `by_status_started` | `["status", "started_at"]` | Boot recovery sweep |
+| workflows | `by_patient_id_hash` | `patient_id_hash` | Per-patient cascade |
 
 ### Record schema
 
@@ -293,6 +340,111 @@ export const PHI_ATTR_KEYS: ReadonlySet<string> = new Set([
 Reviewer rule: any new attribute requires a key declared in this file. PRs
 adding ad-hoc string keys at call sites should be rejected on review.
 
+### Closed event-name registry
+
+Same closure discipline as `ATTR`: every event name lands here or the PR
+fails review. Keeping the set closed is what lets the viewer's filters
+and the dev-mode autocomplete stay coherent as the codebase grows.
+
+```ts
+// src/audit/events.ts
+
+export const EVENT = {
+  // Speech & thread (Phase 1)
+  SPEAK_TAP:               "speak.tap",
+  SPEAK_CACHE_HIT:         "speak.cache.hit",
+  SPEAK_CACHE_MISS:        "speak.cache.miss",
+  SPEAK_FALLBACK_WEB:      "speak.fallback.web_speech",
+  SPEAK_FALLBACK_TONE:     "speak.fallback.tone",
+  SPEAK_ERROR:             "speak.error",
+  THREAD_COMPOSE:          "thread.compose",
+  THREAD_TRANSCRIBED:      "thread.transcribed",
+
+  // Model lifecycle (Phase 1)
+  MODEL_BOOT_START:        "model.boot.start",
+  MODEL_BOOT_COMPLETE:     "model.boot.complete",
+  MODEL_VERIFY_SUCCESS:    "model.verify.success",
+  MODEL_VERIFY_FAILURE:    "model.verify.failure",
+  MODEL_DOWNLOAD_START:    "model.download.start",
+  MODEL_DOWNLOAD_COMPLETE: "model.download.complete",
+  MODEL_DOWNLOAD_RESUME:   "model.download.resume",
+
+  // Settings (Phase 1)
+  SETTINGS_PATIENT_ADD:      "settings.patient.add",
+  SETTINGS_PATIENT_REMOVE:   "settings.patient.remove",
+  SETTINGS_PATIENT_ACTIVATE: "settings.patient.activate",
+  SETTINGS_LANG_CHANGE:      "settings.lang.change",
+  SETTINGS_PROVIDER_ADD:     "settings.provider.add",
+
+  // Audit infrastructure (Phase 1)
+  AUDIT_EXPORT:            "audit.export",
+  AUDIT_RETENTION_SWEEP:   "audit.retention.sweep",
+  AUDIT_BUFFER_OVERFLOW:   "audit.buffer_overflow",
+  AUDIT_DEGRADED:          "audit.degraded",
+
+  // Workflow lifecycle (Phase 2)
+  WORKFLOW_START:          "workflow.start",
+  WORKFLOW_COMPLETE:       "workflow.complete",
+  WORKFLOW_FAILED:         "workflow.failed",
+  WORKFLOW_ABANDONED:      "workflow.abandoned",
+  WORKFLOW_RESUMED:        "workflow.resumed",
+  STEP_START:              "step.start",
+  STEP_COMPLETE:           "step.complete",
+  STEP_FAILED:             "step.failed",
+  STEP_REPLAY_HIT:         "step.replay.hit",
+
+  // Errors (any phase)
+  ERROR_UNHANDLED:         "error.unhandled",
+  ERROR_REJECTION:         "error.unhandled_rejection",
+} as const;
+
+export type EventName = (typeof EVENT)[keyof typeof EVENT];
+```
+
+### Logger API and write semantics
+
+```ts
+// src/audit/logger.ts
+
+export interface AuditEvent {
+  name: EventName;
+  severity?: AuditRecord["severity_text"];   // default "INFO"
+  body?: string;
+  attributes?: Record<string, AttrValue>;
+}
+
+/** Fire-and-forget. Returns void; never throws past the caller. */
+export function log(event: AuditEvent): void;
+
+/** Subscribe to live emissions. Fires synchronously from log() BEFORE
+ *  IDB write completes — readers see optimistic state. Persistence is
+ *  best-effort; a tab kill before flush loses the in-flight buffer
+ *  (≤500 records) but never the prior commits. */
+export function subscribe(listener: (record: AuditRecord) => void): () => void;
+```
+
+**Buffering:** writes queue to an in-memory ring buffer (capacity 500).
+A flush is scheduled via `requestIdleCallback` (`setTimeout(0)` fallback)
+on each `log()` call. Each flush opens one `readwrite` IDB transaction
+and `put`s the entire buffer. On overflow the oldest in-buffer records
+are dropped and one `EVENT.AUDIT_BUFFER_OVERFLOW` WARN event is emitted
+with the dropped count.
+
+**Error policy:** any IDB failure during flush is caught; records stay in
+the buffer for the next attempt; `console.warn` fires rate-limited to
+once per minute. After 10 consecutive failed flushes the logger enters
+degraded mode (`log()` becomes a no-op, one `EVENT.AUDIT_DEGRADED`
+record fires via `console.error` only, the viewer surfaces a
+"logging unavailable" banner). The app continues; the patient still
+gets feedback.
+
+**Synchronous patient-id hashing:** `crypto.subtle.digest` is async,
+which would force `log()` async too. To preserve the synchronous
+contract, the SHA-256 hash is precomputed once when a patient becomes
+active (in `settingsStore.setActivePatient`) and stashed on an
+in-memory session object. `log()` reads it synchronously. Re-hashed
+only on patient switch.
+
 ### Severity ladder
 
 | Text | OTLP number | When |
@@ -339,7 +491,36 @@ export const ov = {
 
 export async function sweepAbandonedWorkflows(): Promise<AbandonedWorkflow[]>;
 export async function resumeWorkflow(workflowId: string): Promise<void>;
+
+/** Application code registers each workflow's runner at boot so
+ *  resumeWorkflow can find it by name after a tab kill. */
+export function registerWorkflow<T>(
+  name: WorkflowName,
+  runner: (ctx: StepCtx) => Promise<T>,
+): void;
 ```
+
+**Runner registration.** Workflow runners are application functions; they
+cannot be serialised to IDB. The runtime maintains an in-memory registry
+populated at boot in `src/main-app.tsx`, after settings hydrate and
+before the recovery sweep:
+
+```ts
+registerWorkflow("voice_enrollment", enrollVoice);
+registerWorkflow("audio_cache_pregen", pregenAudio);
+registerWorkflow("model_priming", primeModels);
+registerWorkflow("patient_remove", removePatient);
+
+await sweepAbandonedWorkflows();
+```
+
+`resumeWorkflow(id)` reads the stored `WorkflowState.name`, looks up the
+registered runner, and re-invokes it through the standard
+`ov.workflow(...)` machinery. Replay does the rest — completed steps
+return memoised results from `step_history`; the runner picks up where
+it left off. Registering a workflow whose name doesn't match any
+in-flight workflow is harmless; failing to register one whose name does
+match leaves recovery a no-op (logged WARN, abandoned status preserved).
 
 ### Replay semantics
 
@@ -373,6 +554,32 @@ Every state transition writes to both stores in one IDB transaction:
 
 A tab kill mid-transaction rolls back both stores. A tab kill between
 transactions is detected by the boot-time recovery sweep.
+
+### Boot sequence and failure tolerance
+
+Ordered initialisation in `src/main-app.tsx` after settings hydrate:
+
+1. **Open `ov-audit` IDB.** On failure (quota exceeded, denied, corrupt
+   schema), enter degraded mode: `audit.log` becomes a no-op, the
+   viewer shows a "logging unavailable" banner. **App boots.**
+2. **Precompute active patient hash** if there is an active patient.
+   On failure (no `crypto.subtle` — vanishingly unlikely on iPad
+   Safari), `patient_id_hash` is undefined and per-patient queries
+   return empty. **App boots.**
+3. **Retention sweep** (Phase 1+). Failure logs WARN and continues.
+   **App boots.**
+4. **Register workflows** (Phase 2+). Synchronous, cannot fail.
+5. **Recovery sweep** (Phase 2+). Failure logs WARN and continues;
+   abandoned workflows surface as warnings in the viewer rather than
+   blocking. Runners with `recoveryMode: "prompt"` queue a UI prompt;
+   `"auto"` runners are kicked off immediately; `"manual"` ones are
+   surfaced only in the dev viewer. **App boots.**
+6. **App render.**
+
+Invariant: nothing in this sequence is allowed to refuse boot. The
+"patient must always get feedback" promise from `speak.ts` extends
+upstream to "the app must always become interactive." Audit
+unavailability is a degraded mode, not a fatal error.
 
 ### Per-workflow recovery defaults
 
