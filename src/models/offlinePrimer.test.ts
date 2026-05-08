@@ -123,6 +123,7 @@ describe("primeOffline", () => {
       "c.onnx",
       5,
       undefined, // no onProgress passed to primeOffline in this test
+      "onnx",    // magic forwarded from manifest spec
     );
     expect(events.at(-1)).toEqual({ type: "complete", allOk: false, downloadedCount: 2 });
   });
