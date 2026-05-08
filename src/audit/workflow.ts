@@ -14,8 +14,18 @@ import { EVENT } from "./events";
 import * as superjson from "superjson";
 import { ulid } from "./ulid";
 
+export interface StepOpts {
+  /** Persist `result` into the durable journal so a replay after
+   *  tab-kill can skip re-running this step. Default true. Set to
+   *  false for steps that return binary buffers (Float32Array, etc.) —
+   *  serialising a multi-MB payload per call accumulates gigabytes in
+   *  the workflows store with no replay benefit (e.g. audio cache
+   *  writes are idempotent). When false, replay re-executes the step. */
+  memoize?: boolean;
+}
+
 export interface StepCtx {
-  step<T>(name: string, fn: () => Promise<T>): Promise<T>;
+  step<T>(name: string, fn: () => Promise<T>, opts?: StepOpts): Promise<T>;
   readonly workflowId: string;
 }
 
@@ -89,9 +99,13 @@ async function runWorkflow<T>(
 
   const ctx: StepCtx = {
     workflowId,
-    async step<S>(stepName: string, fn: () => Promise<S>): Promise<S> {
+    async step<S>(stepName: string, fn: () => Promise<S>, opts?: StepOpts): Promise<S> {
+      const memoize = opts?.memoize !== false;
       // Replay path: if a completed step with this name + attempt exists,
-      // return memoised result without calling fn.
+      // return memoised result without calling fn. Steps with memoize=false
+      // never persist a result, so prior.result is undefined and the step
+      // re-executes — caller is responsible for ensuring re-execution is
+      // safe (e.g. idempotent write).
       const prior = state.step_history.find(
         (s) => s.step_name === stepName && s.attempt === state.attempt,
       );
@@ -113,7 +127,7 @@ async function runWorkflow<T>(
           span_id: spanId(),
           attempt: state.attempt,
           status: "completed",
-          result: superjson.stringify(value),
+          result: memoize ? superjson.stringify(value) : undefined,
           started_at: stepStart,
           ended_at: stepEnd,
         };

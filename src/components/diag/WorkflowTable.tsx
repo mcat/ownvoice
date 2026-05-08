@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import { Virtualizer, observeElementOffset, observeElementRect, elementScroll } from "@tanstack/virtual-core";
 import type { WorkflowState, StepRecord } from "../../audit/types";
+import { getWorkflowDetail } from "../../audit/queryWorkflows";
 
 export interface WorkflowTableProps {
   workflows: readonly WorkflowState[];
@@ -42,6 +43,10 @@ function estimateRowHeight(w: WorkflowState, expanded: boolean): number {
 
 export function WorkflowTable({ workflows }: WorkflowTableProps) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  // Per-workflow full detail loaded on expand. The summary list keeps
+  // step.result truncated; the full payload only resides in memory for
+  // workflows the viewer has currently expanded.
+  const [details, setDetails] = useState<Record<string, WorkflowState>>({});
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const [, setTick] = useState(0);
   const virtRef = useRef<Virtualizer<HTMLDivElement, Element> | null>(null);
@@ -85,7 +90,21 @@ export function WorkflowTable({ workflows }: WorkflowTableProps) {
   function toggle(id: string) {
     setExpanded((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+        // Drop the cached full detail so memory tracks current expansion.
+        setDetails((d) => {
+          if (!(id in d)) return d;
+          const { [id]: _drop, ...rest } = d;
+          return rest;
+        });
+      } else {
+        next.add(id);
+        // Lazy-load the full step.result payloads for this workflow.
+        void getWorkflowDetail(id).then((full) => {
+          if (full) setDetails((d) => ({ ...d, [id]: full }));
+        });
+      }
       return next;
     });
   }
@@ -160,7 +179,7 @@ export function WorkflowTable({ workflows }: WorkflowTableProps) {
                   <div style={{ flex: "0 0 60px" }}>{w.attempt}</div>
                   <div style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{lastStepLabel}</div>
                 </button>
-                {isOpen && <StepHistory steps={w.step_history} />}
+                {isOpen && <StepHistory steps={(details[w.workflow_id] ?? w).step_history} />}
               </div>
             );
           })}

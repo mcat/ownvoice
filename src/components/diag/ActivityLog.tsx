@@ -82,6 +82,14 @@ export function ActivityLog({ onClose, limit = DEFAULT_LIMIT }: ActivityLogProps
     setFilters(defaultFiltersForRole(role, activePatientId));
   }, [role, activePatientId]);
 
+  // Free the inactive view's data when the user switches modes — the
+  // workflows array can be tens of MB even after summarization, and
+  // holding a stale records buffer churns rAF batches in the live-tail.
+  useEffect(() => {
+    if (viewMode === "events") setWorkflows([]);
+    else setRecords([]);
+  }, [viewMode]);
+
   // Resolve patientId → hash whenever it changes; cached in a ref so the
   // live-tail subscriber can apply patient filtering without an extra
   // async round-trip per incoming event.
@@ -102,6 +110,11 @@ export function ActivityLog({ onClose, limit = DEFAULT_LIMIT }: ActivityLogProps
   // is set up once on mount) can read fresh values without re-subscribing.
   const filtersRef = useRef(filters);
   useEffect(() => { filtersRef.current = filters; }, [filters]);
+
+  // Same pattern for viewMode — used by the live-tail to skip queueing
+  // events while the user is on the Workflows tab.
+  const viewModeRef = useRef(viewMode);
+  useEffect(() => { viewModeRef.current = viewMode; }, [viewMode]);
 
   // Run the events query whenever filters change.
   useEffect(() => {
@@ -155,6 +168,7 @@ export function ActivityLog({ onClose, limit = DEFAULT_LIMIT }: ActivityLogProps
       // Only events view receives live appends — workflows store updates
       // are reflected via the workflow.* events that trigger UI refresh
       // out-of-band; we re-query on filter change rather than streaming.
+      if (viewModeRef.current !== "events") return;
       if (filtersRef.current === undefined) return;
       const f = filtersRef.current;
       const range = presetToRange(f.datePreset);
