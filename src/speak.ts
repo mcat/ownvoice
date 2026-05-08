@@ -1,5 +1,8 @@
 import type { Speaker } from "./types";
 import { getCachedAudio } from "./models/audioCache";
+import { log } from "./audit/logger";
+import { EVENT } from "./audit/events";
+import { ATTR } from "./audit/attrs";
 
 /** Shared AudioContext for playing synthesized audio */
 let audioCtx: AudioContext | null = null;
@@ -540,24 +543,42 @@ export async function speak(
   opts?: { exaggeration?: number },
 ): Promise<void> {
   void opts; // Reserved for future live-synth path; unused while tap path is cache-only.
-  console.log("[OwnVoice:TTS] speak() called", {
-    text: text.slice(0, 30),
-    hasEmbedding: !!speaker.embedding,
-    speakerType: speaker.type,
-  });
+  // Note: SPEAK_TAP is emitted by useSpeakActions (the tap origin owns the
+  // tap event); this function only emits engine-outcome events.
 
   // Priority 0: pre-generated cached audio in the speaker's cloned voice.
   if (speaker.embedding) {
     try {
       const hit = await getCachedAudio(text, speaker.embedding);
       if (hit) {
-        console.log("[OwnVoice:TTS] Cache hit — playing pre-generated audio");
+        log({
+          name: EVENT.SPEAK_CACHE_HIT,
+          attributes: {
+            [ATTR.SPEECH_TEXT]: text,
+            [ATTR.SPEECH_ENGINE]: "cache",
+            [ATTR.SPEECH_LANG]: speaker.lang ?? null,
+          },
+        });
         await playAudioBuffer(hit.audio, hit.sampleRate);
         return;
       }
-      console.log("[OwnVoice:TTS] Cache miss — falling back to Web Speech");
+      log({
+        name: EVENT.SPEAK_CACHE_MISS,
+        attributes: {
+          [ATTR.SPEECH_TEXT]: text,
+          [ATTR.SPEECH_LANG]: speaker.lang ?? null,
+        },
+      });
     } catch (err) {
-      console.warn("[OwnVoice:TTS] Cache lookup failed, falling back:", err);
+      log({
+        name: EVENT.SPEAK_ERROR,
+        severity: "ERROR",
+        attributes: {
+          [ATTR.ERROR_TYPE]: (err as Error)?.name ?? "Error",
+          [ATTR.ERROR_MESSAGE]: (err as Error)?.message ?? String(err),
+          [ATTR.SPEECH_TEXT]: text,
+        },
+      });
     }
   }
 
@@ -566,11 +587,25 @@ export async function speak(
   // voice: patient utterances speak in caregiverLang, provider in patientLang.
   const speechWorked = await tryWebSpeech(text, speaker.lang);
   if (speechWorked) {
-    console.log("[OwnVoice:TTS] Web Speech played OK");
+    log({
+      name: EVENT.SPEAK_FALLBACK_WEB,
+      attributes: {
+        [ATTR.SPEECH_TEXT]: text,
+        [ATTR.SPEECH_ENGINE]: "webspeech",
+        [ATTR.SPEECH_LANG]: speaker.lang ?? null,
+      },
+    });
     return;
   }
 
   // Priority 2: Confirmation tone (always works via Web Audio API)
-  console.log("[OwnVoice:TTS] All speech failed, playing confirmation tone");
+  log({
+    name: EVENT.SPEAK_FALLBACK_TONE,
+    attributes: {
+      [ATTR.SPEECH_TEXT]: text,
+      [ATTR.SPEECH_ENGINE]: "tone",
+      [ATTR.SPEECH_LANG]: speaker.lang ?? null,
+    },
+  });
   await playConfirmationTone();
 }
