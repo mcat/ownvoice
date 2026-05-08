@@ -894,6 +894,12 @@ const tr: LocaleStrings = {
   "ui.provider.settings.patients.remove_dialog.body":
     "Bu işlem ses örneğini, görüşme geçmişini ve ses klonu için önbelleğe alınmış sesi silecektir. Bakım ekibi ses klonları diğer hastalar için korunur. Bu geri alınamaz.",
   "ui.provider.settings.patients.remove_dialog.confirm": "Kaldır",
+  "ui.provider.settings.patients.active_discharge_hint":
+    "Switch to another patient before discharging this one.",
+  "ui.provider.settings.patients.discharge_dialog.title": "Discharge {name}?",
+  "ui.provider.settings.patients.discharge_dialog.body":
+    "This deletes all of their conversations, audio cache, and audit log entries. Cannot be undone.",
+  "ui.provider.settings.patients.discharge_dialog.confirm": "Discharge",
 
   // ── UI chrome: Settings — Care Team section ───────────────────
   "ui.provider.settings.care_team.heading": "Bakım Ekibi",
@@ -940,6 +946,9 @@ const tr: LocaleStrings = {
     "Ses klonu yüklenirken kullanılan sistem sesi. Önizleme için dokunun.",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
+  "ui.provider.settings.activity_log.heading": "Activity log",
+  "ui.provider.settings.activity_log.description":
+    "Speech, exports, and system events logged on this device.",
   "ui.provider.settings.offline.heading": "Uygulama Tanılama",
   "ui.provider.settings.offline.status_description":
     "Uygulamanın cihaz üzerinde ses üretimi, öneriler ve konuşma tanıma için kullandığı yapay zeka modellerinin durumu.",
@@ -991,6 +1000,7 @@ const tr: LocaleStrings = {
   "ui.provider.patients.actions_aria": "{name} için işlemler",
   "ui.provider.patients.action_edit": "Düzenle",
   "ui.provider.patients.action_remove": "Kaldır",
+  "ui.provider.patients.action_discharge": "Discharge",
   "ui.provider.switch.voice_captured": "Ses kaydedildi",
   "ui.provider.switch.no_voice": "Ses yok",
   "ui.provider.switch.last_active_just_now": "Az önce",

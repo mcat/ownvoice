@@ -882,6 +882,12 @@ const pt: LocaleStrings = {
   "ui.provider.settings.patients.remove_dialog.body":
     "Isso excluirá a amostra de voz, o histórico de conversa e o áudio em cache do clone de voz. Os clones de voz da equipe de cuidados são mantidos para outros pacientes. Isso não pode ser desfeito.",
   "ui.provider.settings.patients.remove_dialog.confirm": "Remover",
+  "ui.provider.settings.patients.active_discharge_hint":
+    "Switch to another patient before discharging this one.",
+  "ui.provider.settings.patients.discharge_dialog.title": "Discharge {name}?",
+  "ui.provider.settings.patients.discharge_dialog.body":
+    "This deletes all of their conversations, audio cache, and audit log entries. Cannot be undone.",
+  "ui.provider.settings.patients.discharge_dialog.confirm": "Discharge",
 
   // ── UI chrome: Settings — Care Team section ───────────────────
   "ui.provider.settings.care_team.heading": "Equipe de cuidados",
@@ -928,6 +934,9 @@ const pt: LocaleStrings = {
     "Voz do sistema usada enquanto o clone de voz carrega. Toque para ouvir.",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
+  "ui.provider.settings.activity_log.heading": "Activity log",
+  "ui.provider.settings.activity_log.description":
+    "Speech, exports, and system events logged on this device.",
   "ui.provider.settings.offline.heading": "Diagnóstico do app",
   "ui.provider.settings.offline.status_description":
     "Status dos modelos de IA que o app usa no dispositivo para geração de voz, sugestões e reconhecimento de fala.",
@@ -979,6 +988,7 @@ const pt: LocaleStrings = {
   "ui.provider.patients.actions_aria": "Ações para {name}",
   "ui.provider.patients.action_edit": "Editar",
   "ui.provider.patients.action_remove": "Remover",
+  "ui.provider.patients.action_discharge": "Discharge",
   "ui.provider.switch.voice_captured": "Voz capturada",
   "ui.provider.switch.no_voice": "Sem voz",
   "ui.provider.switch.last_active_just_now": "Agora mesmo",

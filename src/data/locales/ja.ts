@@ -881,6 +881,12 @@ const ja: LocaleStrings = {
   "ui.provider.settings.patients.remove_dialog.body":
     "この患者の音声サンプル、会話履歴、ボイスクローンのキャッシュ音声が削除されます。ケアチームのボイスクローンは他の患者用に保持されます。この操作は取り消せません。",
   "ui.provider.settings.patients.remove_dialog.confirm": "削除",
+  "ui.provider.settings.patients.active_discharge_hint":
+    "Switch to another patient before discharging this one.",
+  "ui.provider.settings.patients.discharge_dialog.title": "Discharge {name}?",
+  "ui.provider.settings.patients.discharge_dialog.body":
+    "This deletes all of their conversations, audio cache, and audit log entries. Cannot be undone.",
+  "ui.provider.settings.patients.discharge_dialog.confirm": "Discharge",
 
   // ── UI chrome: Settings — Care Team section ───────────────────
   "ui.provider.settings.care_team.heading": "ケアチーム",
@@ -927,6 +933,9 @@ const ja: LocaleStrings = {
     "ボイスクローンの読み込み中に使用するシステム音声です。タップするとプレビューが再生されます。",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
+  "ui.provider.settings.activity_log.heading": "Activity log",
+  "ui.provider.settings.activity_log.description":
+    "Speech, exports, and system events logged on this device.",
   "ui.provider.settings.offline.heading": "アプリ診断",
   "ui.provider.settings.offline.status_description":
     "音声生成、提案、音声認識のためにデバイス上で使用するAIモデルの状態です。",
@@ -978,6 +987,7 @@ const ja: LocaleStrings = {
   "ui.provider.patients.actions_aria": "{name} のアクション",
   "ui.provider.patients.action_edit": "編集",
   "ui.provider.patients.action_remove": "削除",
+  "ui.provider.patients.action_discharge": "Discharge",
   "ui.provider.switch.voice_captured": "音声取得済み",
   "ui.provider.switch.no_voice": "音声なし",
   "ui.provider.switch.last_active_just_now": "今さっき",

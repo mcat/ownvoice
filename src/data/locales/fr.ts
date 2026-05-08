@@ -884,6 +884,12 @@ const fr: LocaleStrings = {
   "ui.provider.settings.patients.remove_dialog.body":
     "Ceci supprimera son échantillon vocal, son historique de conversation et l'audio en cache pour son clone vocal. Les clones vocaux de l'équipe soignante sont conservés pour les autres patients. Cette action est irréversible.",
   "ui.provider.settings.patients.remove_dialog.confirm": "Supprimer",
+  "ui.provider.settings.patients.active_discharge_hint":
+    "Switch to another patient before discharging this one.",
+  "ui.provider.settings.patients.discharge_dialog.title": "Discharge {name}?",
+  "ui.provider.settings.patients.discharge_dialog.body":
+    "This deletes all of their conversations, audio cache, and audit log entries. Cannot be undone.",
+  "ui.provider.settings.patients.discharge_dialog.confirm": "Discharge",
 
   // ── UI chrome: Settings — Care Team section ───────────────────
   "ui.provider.settings.care_team.heading": "Équipe soignante",
@@ -930,6 +936,9 @@ const fr: LocaleStrings = {
     "Voix système utilisée pendant le chargement du clone vocal. Touchez pour écouter.",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
+  "ui.provider.settings.activity_log.heading": "Activity log",
+  "ui.provider.settings.activity_log.description":
+    "Speech, exports, and system events logged on this device.",
   "ui.provider.settings.offline.heading": "Diagnostic de l'application",
   "ui.provider.settings.offline.status_description":
     "État des modèles d'IA que l'application utilise sur l'appareil pour la génération vocale, les suggestions et la reconnaissance de la parole.",
@@ -981,6 +990,7 @@ const fr: LocaleStrings = {
   "ui.provider.patients.actions_aria": "Actions pour {name}",
   "ui.provider.patients.action_edit": "Modifier",
   "ui.provider.patients.action_remove": "Supprimer",
+  "ui.provider.patients.action_discharge": "Discharge",
   "ui.provider.switch.voice_captured": "Voix capturée",
   "ui.provider.switch.no_voice": "Pas de voix",
   "ui.provider.switch.last_active_just_now": "À l'instant",

@@ -844,6 +844,12 @@ const zh: LocaleStrings = {
   "ui.provider.settings.patients.remove_dialog.body":
     "这将删除其语音样本、对话记录和语音克隆的缓存音频。医疗团队的语音克隆会为其他患者保留。此操作无法撤销。",
   "ui.provider.settings.patients.remove_dialog.confirm": "移除",
+  "ui.provider.settings.patients.active_discharge_hint":
+    "Switch to another patient before discharging this one.",
+  "ui.provider.settings.patients.discharge_dialog.title": "Discharge {name}?",
+  "ui.provider.settings.patients.discharge_dialog.body":
+    "This deletes all of their conversations, audio cache, and audit log entries. Cannot be undone.",
+  "ui.provider.settings.patients.discharge_dialog.confirm": "Discharge",
 
   // ── UI chrome: Settings — Care Team section ───────────────────
   "ui.provider.settings.care_team.heading": "医疗团队",
@@ -886,6 +892,9 @@ const zh: LocaleStrings = {
     "语音克隆加载时使用的系统声音。点击可试听。",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
+  "ui.provider.settings.activity_log.heading": "Activity log",
+  "ui.provider.settings.activity_log.description":
+    "Speech, exports, and system events logged on this device.",
   "ui.provider.settings.offline.heading": "应用诊断",
   "ui.provider.settings.offline.status_description":
     "应用在设备端使用的AI模型状态，用于语音生成、建议和语音识别。",
@@ -929,6 +938,7 @@ const zh: LocaleStrings = {
   "ui.provider.patients.actions_aria": "{name} 的操作",
   "ui.provider.patients.action_edit": "编辑",
   "ui.provider.patients.action_remove": "移除",
+  "ui.provider.patients.action_discharge": "Discharge",
   "ui.provider.switch.voice_captured": "声音已采集",
   "ui.provider.switch.no_voice": "无声音",
   "ui.provider.switch.last_active_just_now": "刚刚",

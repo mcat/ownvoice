@@ -879,6 +879,12 @@ const no: LocaleStrings = {
   "ui.provider.settings.patients.remove_dialog.body":
     "Dette vil slette stemmeprøven, samtalehistorikken og hurtigbufret lyd for stemmeklonen. Stemmekloner for behandlingsteamet beholdes for andre pasienter. Dette kan ikke angres.",
   "ui.provider.settings.patients.remove_dialog.confirm": "Fjern",
+  "ui.provider.settings.patients.active_discharge_hint":
+    "Switch to another patient before discharging this one.",
+  "ui.provider.settings.patients.discharge_dialog.title": "Discharge {name}?",
+  "ui.provider.settings.patients.discharge_dialog.body":
+    "This deletes all of their conversations, audio cache, and audit log entries. Cannot be undone.",
+  "ui.provider.settings.patients.discharge_dialog.confirm": "Discharge",
 
   // ── UI chrome: Settings — Care Team section ───────────────────
   "ui.provider.settings.care_team.heading": "Behandlingsteam",
@@ -925,6 +931,9 @@ const no: LocaleStrings = {
     "Systemstemme som brukes mens stemmeklonen lastes. Trykk for å forhåndsvise.",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
+  "ui.provider.settings.activity_log.heading": "Activity log",
+  "ui.provider.settings.activity_log.description":
+    "Speech, exports, and system events logged on this device.",
   "ui.provider.settings.offline.heading": "Appdiagnostikk",
   "ui.provider.settings.offline.status_description":
     "Status for AI-modellene appen bruker på enheten for stemmegenerering, forslag og talegjenkjenning.",
@@ -976,6 +985,7 @@ const no: LocaleStrings = {
   "ui.provider.patients.actions_aria": "Handlinger for {name}",
   "ui.provider.patients.action_edit": "Rediger",
   "ui.provider.patients.action_remove": "Fjern",
+  "ui.provider.patients.action_discharge": "Discharge",
   "ui.provider.switch.voice_captured": "Stemme innhentet",
   "ui.provider.switch.no_voice": "Ingen stemme",
   "ui.provider.switch.last_active_just_now": "Akkurat nå",

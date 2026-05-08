@@ -898,6 +898,12 @@ const sw: LocaleStrings = {
   "ui.provider.settings.patients.remove_dialog.body":
     "Hii itafuta sampuli yake ya sauti, historia ya mazungumzo, na sauti iliyohifadhiwa kwa nakala ya sauti. Nakala za sauti za timu ya huduma zimehifadhiwa kwa wagonjwa wengine. Hii haiwezi kutendwa upya.",
   "ui.provider.settings.patients.remove_dialog.confirm": "Ondoa",
+  "ui.provider.settings.patients.active_discharge_hint":
+    "Switch to another patient before discharging this one.",
+  "ui.provider.settings.patients.discharge_dialog.title": "Discharge {name}?",
+  "ui.provider.settings.patients.discharge_dialog.body":
+    "This deletes all of their conversations, audio cache, and audit log entries. Cannot be undone.",
+  "ui.provider.settings.patients.discharge_dialog.confirm": "Discharge",
 
   // ── UI chrome: Settings — Care Team section ───────────────────
   "ui.provider.settings.care_team.heading": "Timu ya Huduma",
@@ -944,6 +950,9 @@ const sw: LocaleStrings = {
     "Sauti ya mfumo inayotumika wakati nakala ya sauti inapakia. Gusa kusikiliza.",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
+  "ui.provider.settings.activity_log.heading": "Activity log",
+  "ui.provider.settings.activity_log.description":
+    "Speech, exports, and system events logged on this device.",
   "ui.provider.settings.offline.heading": "Uchunguzi wa programu",
   "ui.provider.settings.offline.status_description":
     "Hali ya modeli za AI ambazo programu inatumia kwenye kifaa kwa uzalishaji wa sauti, mapendekezo, na utambuzi wa usemi.",
@@ -995,6 +1004,7 @@ const sw: LocaleStrings = {
   "ui.provider.patients.actions_aria": "Vitendo kwa {name}",
   "ui.provider.patients.action_edit": "Hariri",
   "ui.provider.patients.action_remove": "Ondoa",
+  "ui.provider.patients.action_discharge": "Discharge",
   "ui.provider.switch.voice_captured": "Sauti imenaswa",
   "ui.provider.switch.no_voice": "Hakuna sauti",
   "ui.provider.switch.last_active_just_now": "Sasa hivi",

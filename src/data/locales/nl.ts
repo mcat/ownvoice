@@ -900,6 +900,12 @@ const nl: LocaleStrings = {
   "ui.provider.settings.patients.remove_dialog.body":
     "Dit verwijdert het stemfragment, de gespreksgeschiedenis en de gecachte audio voor de stemkloon. Stemklonen van het zorgteam blijven beschikbaar voor andere patiënten. Dit kan niet ongedaan worden gemaakt.",
   "ui.provider.settings.patients.remove_dialog.confirm": "Verwijderen",
+  "ui.provider.settings.patients.active_discharge_hint":
+    "Switch to another patient before discharging this one.",
+  "ui.provider.settings.patients.discharge_dialog.title": "Discharge {name}?",
+  "ui.provider.settings.patients.discharge_dialog.body":
+    "This deletes all of their conversations, audio cache, and audit log entries. Cannot be undone.",
+  "ui.provider.settings.patients.discharge_dialog.confirm": "Discharge",
 
   // ── UI chrome: Settings — Care Team section ───────────────────
   "ui.provider.settings.care_team.heading": "Zorgteam",
@@ -943,6 +949,9 @@ const nl: LocaleStrings = {
     "Systeemstem die wordt gebruikt terwijl de stemkloon wordt geladen. Tik om te beluisteren.",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
+  "ui.provider.settings.activity_log.heading": "Activity log",
+  "ui.provider.settings.activity_log.description":
+    "Speech, exports, and system events logged on this device.",
   "ui.provider.settings.offline.heading": "App-diagnose",
   "ui.provider.settings.offline.status_description":
     "Status van de AI-modellen die de app op het apparaat gebruikt voor stemgeneratie, suggesties en spraakherkenning.",
@@ -989,6 +998,7 @@ const nl: LocaleStrings = {
   "ui.provider.patients.actions_aria": "Acties voor {name}",
   "ui.provider.patients.action_edit": "Bewerken",
   "ui.provider.patients.action_remove": "Verwijderen",
+  "ui.provider.patients.action_discharge": "Discharge",
   "ui.provider.switch.voice_captured": "Stem vastgelegd",
   "ui.provider.switch.no_voice": "Geen stem",
   "ui.provider.switch.last_active_just_now": "Zojuist",

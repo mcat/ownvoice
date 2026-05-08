@@ -941,6 +941,12 @@ const tl: LocaleStrings = {
     "Mabubura ang kanilang voice sample, conversation history, at cached audio ng voice clone. Ang mga care-team voice clone ay nananatili para sa ibang pasyente. Hindi ito puwedeng i-undo.",
   "ui.provider.settings.patients.remove_dialog.confirm":
     "Alisin",
+  "ui.provider.settings.patients.active_discharge_hint":
+    "Switch to another patient before discharging this one.",
+  "ui.provider.settings.patients.discharge_dialog.title": "Discharge {name}?",
+  "ui.provider.settings.patients.discharge_dialog.body":
+    "This deletes all of their conversations, audio cache, and audit log entries. Cannot be undone.",
+  "ui.provider.settings.patients.discharge_dialog.confirm": "Discharge",
 
   // ── UI chrome: Settings — Care Team section ───────────────────
   "ui.provider.settings.care_team.heading": "Care team",
@@ -989,6 +995,9 @@ const tl: LocaleStrings = {
     "System voice na ginagamit habang naglo-load ang voice clone. I-tap para marinig.",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
+  "ui.provider.settings.activity_log.heading": "Activity log",
+  "ui.provider.settings.activity_log.description":
+    "Speech, exports, and system events logged on this device.",
   "ui.provider.settings.offline.heading":
     "Pagsusuri ng app",
   "ui.provider.settings.offline.status_description":
@@ -1042,6 +1051,7 @@ const tl: LocaleStrings = {
   "ui.provider.patients.actions_aria": "Mga aksyon para kay {name}",
   "ui.provider.patients.action_edit": "I-edit",
   "ui.provider.patients.action_remove": "Tanggalin",
+  "ui.provider.patients.action_discharge": "Discharge",
   "ui.provider.switch.voice_captured": "Na-capture ang boses",
   "ui.provider.switch.no_voice": "Walang boses",
   "ui.provider.switch.last_active_just_now": "Ngayon lang",

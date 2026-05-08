@@ -905,6 +905,12 @@ const he: LocaleStrings = {
   "ui.provider.settings.patients.remove_dialog.body":
     "פעולה זו תמחק את דגימת הקול, היסטוריית השיחה והאודיו השמור לשיבוט הקול. שיבוטי קול של צוות הטיפול נשמרים עבור מטופלים אחרים. לא ניתן לבטל פעולה זו.",
   "ui.provider.settings.patients.remove_dialog.confirm": "הסר",
+  "ui.provider.settings.patients.active_discharge_hint":
+    "Switch to another patient before discharging this one.",
+  "ui.provider.settings.patients.discharge_dialog.title": "Discharge {name}?",
+  "ui.provider.settings.patients.discharge_dialog.body":
+    "This deletes all of their conversations, audio cache, and audit log entries. Cannot be undone.",
+  "ui.provider.settings.patients.discharge_dialog.confirm": "Discharge",
 
   // ── UI chrome: Settings — Care Team section ───────────────────
   "ui.provider.settings.care_team.heading": "צוות טיפול",
@@ -949,6 +955,9 @@ const he: LocaleStrings = {
     "קול מערכת המשמש בזמן טעינת שיבוט הקול. הקש להאזנה.",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
+  "ui.provider.settings.activity_log.heading": "Activity log",
+  "ui.provider.settings.activity_log.description":
+    "Speech, exports, and system events logged on this device.",
   "ui.provider.settings.offline.heading": "אבחון האפליקציה",
   "ui.provider.settings.offline.status_description":
     "מצב מודלי ה-AI שהאפליקציה משתמשת בהם על המכשיר ליצירת קול, הצעות וזיהוי דיבור.",
@@ -1000,6 +1009,7 @@ const he: LocaleStrings = {
   "ui.provider.patients.actions_aria": "פעולות עבור {name}",
   "ui.provider.patients.action_edit": "עריכה",
   "ui.provider.patients.action_remove": "הסרה",
+  "ui.provider.patients.action_discharge": "Discharge",
   "ui.provider.switch.voice_captured": "קול נקלט",
   "ui.provider.switch.no_voice": "ללא קול",
   "ui.provider.switch.last_active_just_now": "הרגע",

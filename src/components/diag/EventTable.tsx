@@ -20,7 +20,10 @@ const DEFAULT_ROW_HEIGHT = 28;
 export function EventTable({ records, columns, rowHeight = DEFAULT_ROW_HEIGHT }: EventTableProps) {
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const [, setTick] = useState(0);
-  const virtRef = useRef<Virtualizer<HTMLDivElement, HTMLDivElement> | null>(null);
+  // Element item-type matches @tanstack/virtual-core's default; we don't
+  // pass a measureElement override so leaving it as Element keeps the
+  // Virtualizer constructor's inferred type compatible with the assignment.
+  const virtRef = useRef<Virtualizer<HTMLDivElement, Element> | null>(null);
 
   useEffect(() => {
     if (!scrollerRef.current) return;
