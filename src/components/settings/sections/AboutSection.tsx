@@ -3,7 +3,7 @@ import { useEffect, useState } from "preact/hooks";
 import type { ThemeTokens } from "../../../theme/tokens";
 import { t as resolvePhrase } from "../../../data/phraseRegistry";
 import { useSettingsStore } from "../../../stores/settingsStore";
-import { ActivityLog } from "../../diag/ActivityLog";
+import { useUIStore } from "../../../stores/uiStore";
 
 interface Props {
   t: ThemeTokens;
@@ -11,6 +11,7 @@ interface Props {
 
 export function AboutSection({ t }: Props) {
   const caregiverLang = useSettingsStore((s) => s.cfg?.caregiverLang ?? "en");
+  const openOverlay = useUIStore((s) => s.openOverlay);
   // SW cache names read live via `caches.keys()`. Lets a clinician (or
   // us during debugging) confirm which service-worker cache is actually
   // persisted on this device — catches the "pulled new build but old
@@ -18,11 +19,9 @@ export function AboutSection({ t }: Props) {
   // the deployed code. `caches.keys()` returns everything under this
   // origin, so we filter to our own `ownvoice-*` prefix.
   const [swCaches, setSwCaches] = useState<string[]>([]);
-  // Hidden 5-tap unlock on the version string opens the dev-only
-  // Diagnostics viewer. Phase 1: not gated by build flag — Phase 2 may
-  // restrict to dev builds.
+  // Hidden 5-tap unlock on the version string opens the Activity log
+  // overlay (mounted by App.tsx via uiStore).
   const [versionTaps, setVersionTaps] = useState(0);
-  const [diagOpen, setDiagOpen] = useState(false);
   useEffect(() => {
     if (!("caches" in self)) return;
     let cancelled = false;
@@ -47,7 +46,7 @@ export function AboutSection({ t }: Props) {
         onClick={() => {
           setVersionTaps((n) => {
             if (n + 1 >= 5) {
-              setDiagOpen(true);
+              openOverlay("activityLog");
               return 0;
             }
             return n + 1;
@@ -65,7 +64,6 @@ export function AboutSection({ t }: Props) {
       <p style={{ fontSize: 13, color: t.muted, margin: "0 0 8px" }}>
         {resolvePhrase("ui.provider.settings.about.attribution_2", caregiverLang)}
       </p>
-      {diagOpen && <ActivityLog onClose={() => setDiagOpen(false)} />}
       {swCaches.length > 0 && (
         <p
           data-testid="about-sw-caches"
