@@ -50,6 +50,46 @@ export function _resetHotCacheForTests(): void {
   hotCache.clear();
 }
 
+/**
+ * Walk a list of phrases and pull each one's pre-generated audio from
+ * OPFS into the in-memory hot cache. Bounded to HOT_CACHE_MAX entries
+ * (the LRU drops the oldest as new ones land). Yields between phrases
+ * via requestIdleCallback so booting + first paint aren't blocked.
+ *
+ * Idempotent: phrases already in the hot cache are skipped without
+ * touching OPFS. Safe to call repeatedly (e.g. on every patient
+ * activation) — extra calls are no-ops once the set is warm.
+ *
+ * Failures on individual phrases are swallowed: a missing OPFS file
+ * just stays cold; a real OPFS error is logged and the loop continues
+ * to the next phrase.
+ */
+export async function prewarmHotCache(
+  speaker: Speaker,
+  phrases: readonly string[],
+): Promise<void> {
+  if (!speaker.embedding) return;
+  const limit = Math.min(phrases.length, HOT_CACHE_MAX);
+
+  for (let i = 0; i < limit; i++) {
+    const phrase = phrases[i];
+    if (hotCacheGet(phrase, speaker.embedding)) continue;
+    try {
+      const hit = await getCachedAudio(phrase, speaker.embedding);
+      if (hit) hotCacheSet(phrase, speaker.embedding, hit);
+    } catch {
+      // OPFS read failed for this phrase; skip and try the next.
+    }
+    // Yield between phrases so we never block a tap that arrives during
+    // pre-warm. requestIdleCallback when available, microtask otherwise.
+    await new Promise<void>((resolve) => {
+      const ric = (globalThis as { requestIdleCallback?: (cb: () => void) => void }).requestIdleCallback;
+      if (ric) ric(() => resolve());
+      else setTimeout(resolve, 0);
+    });
+  }
+}
+
 /** Shared AudioContext for playing synthesized audio */
 let audioCtx: AudioContext | null = null;
 
