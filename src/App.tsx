@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks"
 import { useTheme } from "./hooks/useTheme";
 import { useAssistiveInput } from "./hooks/useAssistiveInput";
 import { useSpeakActions } from "./hooks/useSpeakActions";
-import { useConversationStore } from "./stores/conversationStore";
+import { useThreadView } from "./audit/useThreadView";
 import { useUIStore } from "./stores/uiStore";
 import { useSettingsStore, useActivePatient } from "./stores/settingsStore";
 import { resetAll } from "./stores/resetAll";
@@ -42,12 +42,6 @@ import { MODEL_URLS } from "./models/types";
 import { primeSpeechSynthesis, setFallbackVoice } from "./speak";
 import * as audioCacheRunner from "./models/audioCacheRunner";
 import { embeddingFingerprint } from "./models/audioCache";
-import type { Message } from "./types";
-
-/** Stable empty array for the messages selector. Allocating a fresh []
- *  inside the selector would break Zustand's Object.is equality check
- *  and cause infinite re-renders. */
-const EMPTY_MESSAGES: Message[] = [];
 
 export function App() {
   // Theme state — useTheme attaches the system listener and syncs side effects.
@@ -60,13 +54,11 @@ export function App() {
   useAssistiveInput();
 
   const activePatientId = useSettingsStore((s) => s.cfg?.activePatientId ?? null);
-  // Stable empty-array reference: Zustand selectors default to Object.is
-  // equality, so returning `?? []` inline would allocate a fresh array
-  // on every selector run and trigger infinite re-renders.
-  const messages = useConversationStore((s) =>
-    activePatientId ? (s.messagesByPatientId[activePatientId] ?? EMPTY_MESSAGES) : EMPTY_MESSAGES,
-  );
-  const { speakAsPatient, speakAsProvider, addToThread, repeatSpeak, activeProv } =
+  // Thread is derived from the audit log: useThreadView seeds from
+  // IndexedDB on mount and subscribes to the live logger feed. No
+  // separate conversation store anymore.
+  const messages = useThreadView(activePatientId);
+  const { speakAsPatient, speakAsProvider, composeThread, transcribeThread, repeatSpeak, activeProv } =
     useSpeakActions();
 
   // UI store — transient navigation and overlay state
@@ -445,7 +437,12 @@ export function App() {
       {wishesOpen && (
         <MyWishes
           onSpeak={speakAsPatient}
-          onAddToThread={addToThread}
+          // MyWishes injects the SICG question as a thread entry alongside
+          // the spoken response. composeThread emits THREAD_COMPOSE, which
+          // useThreadView surfaces as a patient-actor entry. The wrapper
+          // adapts MyWishes' legacy 4-arg callsite (text, from, label, gloss)
+          // down to (text, gloss).
+          onAddToThread={(text, _from, _label, gloss) => composeThread(text, gloss)}
           onClose={() => closeOverlay("wishes")}
           t={t}
           theme={theme}
@@ -470,7 +467,7 @@ export function App() {
       {listenOpen && (
         <ListenPanel
           onAddMessage={(text, providerLabel) => {
-            addToThread(text, "provider", providerLabel);
+            transcribeThread(text, providerLabel);
             closeOverlay("listen");
           }}
           onClose={() => closeOverlay("listen")}

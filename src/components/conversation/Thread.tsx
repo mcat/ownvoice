@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState, useCallback } from "preact/hooks";
 import type { JSX } from "preact";
-import type { Message } from "../../types";
+import type { ThreadEntry } from "../../audit/useThreadView";
 import type { ThemeTokens } from "../../theme/tokens";
 import { t as resolvePhrase } from "../../data/phraseRegistry";
 import { useActivePatient } from "../../stores/settingsStore";
@@ -9,8 +9,16 @@ import { DualLocaleText } from "../shared/DualLocaleText";
 import { Btn } from "../shared/Btn";
 import { useReducedMotion } from "../../hooks/useReducedMotion";
 
+/** Thread reads `from`, `text`, `gloss`, `icon`, and `label` — never `id`
+ *  or `time`. Loose alias keeps test fixtures terse without forcing every
+ *  caller to spell out an `id`. */
+type ThreadMessage = Omit<ThreadEntry, "id" | "time"> & {
+  id?: string;
+  time?: number;
+};
+
 interface ThreadProps {
-  messages: Message[];
+  messages: readonly ThreadMessage[];
   t: ThemeTokens;
   onRepeat: (text: string, from: "patient" | "provider") => void;
 }
@@ -116,7 +124,7 @@ export function Thread({ messages, t, onRepeat }: ThreadProps) {
 
   if (!messages || messages.length === 0) return null;
 
-  const handleTap = (msg: Message, idx: number) => {
+  const handleTap = (msg: ThreadMessage, idx: number) => {
     onRepeat(msg.text, msg.from);
     setRepeatingIdx(idx);
     setTimeout(() => setRepeatingIdx(null), 600);

@@ -1,4 +1,12 @@
-import type { Message } from "../types";
+/** Structural shape used by suggestion helpers — accepts both legacy `Message`
+ *  records and the new audit-derived `ThreadEntry`s. Only `from` and `text`
+ *  are read; other fields differ between the two shapes (Message.time is a
+ *  string, ThreadEntry.time is epoch ms) but aren't consumed here. */
+export interface SuggestionContextMessage {
+  from: "patient" | "provider";
+  text: string;
+}
+type Message = SuggestionContextMessage;
 import type { FewShotExample } from "../models/types";
 import { getModelManager } from "../models/modelManager";
 import { getSuggestionTree, getKeyedSuggestionTree, t } from "./phraseRegistry";
