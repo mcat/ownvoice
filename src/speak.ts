@@ -52,26 +52,41 @@ export function _resetHotCacheForTests(): void {
 
 /**
  * Walk a list of phrases and pull each one's pre-generated audio from
- * OPFS into the in-memory hot cache. Bounded to HOT_CACHE_MAX entries
- * (the LRU drops the oldest as new ones land). Yields between phrases
- * via requestIdleCallback so booting + first paint aren't blocked.
+ * OPFS into the in-memory hot cache. Yields between phrases via
+ * requestIdleCallback so booting + first paint aren't blocked.
  *
  * Idempotent: phrases already in the hot cache are skipped without
  * touching OPFS. Safe to call repeatedly (e.g. on every patient
  * activation) — extra calls are no-ops once the set is warm.
  *
  * Failures on individual phrases are swallowed: a missing OPFS file
- * just stays cold; a real OPFS error is logged and the loop continues
- * to the next phrase.
+ * just stays cold; a real OPFS error skips this phrase.
+ *
+ * **Self-throttling**: aborts the warm-up if cumulative time exceeds
+ * PREWARM_TIME_BUDGET_MS. On systems where OPFS is fast (uncontested,
+ * no AV interception) we comfortably warm 64 phrases in <500ms. On
+ * systems where OPFS is slow (e.g. Microsoft Defender on macOS scans
+ * every read at the kernel level, taking 1-3s per file), we bail
+ * after the budget so the renderer doesn't freeze. Tap path stays
+ * functional in either case — late phrases just stay cold and warm
+ * lazily on first user tap.
  */
+const PREWARM_TIME_BUDGET_MS = 5000;
+const PREWARM_MAX_PHRASES = 32;
+
 export async function prewarmHotCache(
   speaker: Speaker,
   phrases: readonly string[],
 ): Promise<void> {
   if (!speaker.embedding) return;
-  const limit = Math.min(phrases.length, HOT_CACHE_MAX);
+  const limit = Math.min(phrases.length, PREWARM_MAX_PHRASES);
+  const startedAt = performance.now();
 
   for (let i = 0; i < limit; i++) {
+    if (performance.now() - startedAt > PREWARM_TIME_BUDGET_MS) {
+      // Out of budget — bail. Remaining phrases warm lazily on first tap.
+      return;
+    }
     const phrase = phrases[i];
     if (hotCacheGet(phrase, speaker.embedding)) continue;
     try {
