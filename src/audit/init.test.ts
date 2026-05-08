@@ -32,4 +32,13 @@ describe("initAudit", () => {
   it("never throws past the caller", async () => {
     await expect(initAudit({ activePatientId: null })).resolves.toBeUndefined();
   });
+
+  it("invokes onAbandoned callback when present", async () => {
+    let called = false;
+    await initAudit({
+      activePatientId: null,
+      onAbandoned: (list) => { called = true; expect(Array.isArray(list)).toBe(true); },
+    });
+    expect(called).toBe(true);
+  });
 });

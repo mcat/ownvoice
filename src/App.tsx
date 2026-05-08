@@ -6,7 +6,8 @@ import { useThreadView } from "./audit/useThreadView";
 import { useUIStore } from "./stores/uiStore";
 import { useSettingsStore, useActivePatient } from "./stores/settingsStore";
 import { resetAll } from "./stores/resetAll";
-import { t as resolvePhrase, getCategories, getKeyedTimeSuggestionsForPeriod } from "./data/phraseRegistry";
+import { t as resolvePhrase, getCategories, getKeyedTimeSuggestionsForPeriod, getPatientSpokenPhrases } from "./data/phraseRegistry";
+import { prewarmHotCache } from "./speak";
 import { Header } from "./components/layout/Header";
 import { TabBar } from "./components/layout/TabBar";
 
@@ -31,6 +32,7 @@ import { PatientEditSheet } from "./components/patient/PatientEditSheet";
 import { PinGate } from "./components/shared/PinGate";
 import { ConfirmDialogHost } from "./components/shared/ConfirmDialog";
 import { StaffSessionTimer } from "./components/shared/StaffSessionTimer";
+import { ResumePromptBanner } from "./components/diag/ResumePromptBanner";
 import { Setup } from "./components/settings/Setup";
 import { getModelManager } from "./models/modelManager";
 import { bootSTTAndLLM, bootTTSWasm, verifyAllOnBoot } from "./models/bootModels";
@@ -259,6 +261,42 @@ export function App() {
     };
   }, [embeddingKey]);
 
+  // Pre-warm the in-memory hot cache from already-cached OPFS entries.
+  // Runs once per active-patient/embedding change, cooperatively (yields
+  // between phrases via requestIdleCallback) so it doesn't compete with
+  // the user's first taps. First-press latency stays cold-OPFS; every
+  // pre-warmed phrase becomes sub-ms on first user tap.
+  useEffect(() => {
+    const initialCfg = cfgRef.current;
+    if (!initialCfg) return;
+    const active = initialCfg.activePatientId
+      ? initialCfg.patients.find((p) => p.id === initialCfg.activePatientId)
+      : null;
+    if (!active?.speakerData) return;
+
+    const phrases = getPatientSpokenPhrases(initialCfg.caregiverLang ?? "en");
+    let cancelled = false;
+    void (async () => {
+      // Defer until after the first paint so initial render isn't blocked.
+      await new Promise<void>((res) => {
+        const ric = (globalThis as { requestIdleCallback?: (cb: () => void) => void }).requestIdleCallback;
+        if (ric) ric(() => res());
+        else setTimeout(res, 0);
+      });
+      if (cancelled) return;
+      await prewarmHotCache(
+        {
+          name: active.name,
+          type: "patient",
+          embedding: active.speakerData,
+          lang: initialCfg.caregiverLang ?? "en",
+        },
+        phrases,
+      );
+    })();
+    return () => { cancelled = true; };
+  }, [embeddingKey]);
+
   // Wait for IndexedDB hydration before deciding setup vs main app
   if (!hasHydrated) return null;
   if (!cfg || cfg.patients.length === 0 || cfg.activePatientId === null) {
@@ -336,6 +374,8 @@ export function App() {
       class="font-sans flex flex-col relative"
       style={{ background: t.bg, color: t.text, height: "100dvh", overflow: "hidden" }}
     >
+      <ResumePromptBanner />
+
       <Header
         cfg={cfg}
         onOpenSettings={handleOpenSettings}
