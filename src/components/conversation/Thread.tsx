@@ -152,10 +152,6 @@ export function Thread({ messages, t, onRepeat }: ThreadProps) {
   // so switch users land on Up → Down before the message bubbles, instead
   // of having to step through every message to reach the scroll affordance.
   // Mouse/touch users see no change.
-  // The thread used to be locked at 200px (about 4 bubbles), so even
-  // though every message was in the DOM the patient could only see the
-  // most recent few. Use clamp(min, preferred, max) so the log grows on
-  // taller viewports without crowding the QuickTap controls below.
   const wrapperStyle: JSX.CSSProperties = {
     marginBottom: 16,
     flexShrink: 0,
@@ -163,14 +159,13 @@ export function Thread({ messages, t, onRepeat }: ThreadProps) {
     flexDirection: "row-reverse",
     gap: 12,
     alignItems: "stretch",
-    height: "clamp(200px, 38vh, 420px)",
   };
 
   const scrollStyle: JSX.CSSProperties = {
     background: t.activeBg,
     borderRadius: 18,
     padding: "14px 16px",
-    height: "100%",
+    height: 200,
     overflowY: "auto",
     border: `1px solid ${t.border}`,
     flex: 1,
