@@ -439,10 +439,12 @@ export function App() {
           onSpeak={speakAsPatient}
           // MyWishes injects the SICG question as a thread entry alongside
           // the spoken response. composeThread emits THREAD_COMPOSE, which
-          // useThreadView surfaces as a patient-actor entry. The wrapper
-          // adapts MyWishes' legacy 4-arg callsite (text, from, label, gloss)
-          // down to (text, gloss).
-          onAddToThread={(text, _from, _label, gloss) => composeThread(text, gloss)}
+          // useThreadView surfaces. SICG question stems are provider-direction
+          // (care team asking the patient), so the `from` and `label` from
+          // MyWishes flow through to flip styling and provider name.
+          onAddToThread={(text, from, label, gloss) =>
+            composeThread(text, { gloss, from, providerLabel: label })
+          }
           onClose={() => closeOverlay("wishes")}
           t={t}
           theme={theme}

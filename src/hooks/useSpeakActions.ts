@@ -105,22 +105,32 @@ export function useSpeakActions() {
     [cfg, active, activeProv, setSpeaking],
   );
 
-  /** Add a patient-direction entry to the thread without speaking it.
+  /** Add a thread entry without speaking it.
    *
    *  Used by surfaces that pre-compose a thread item (e.g. MyWishes injecting
    *  the SICG question alongside the spoken response). Emits THREAD_COMPOSE
-   *  so `useThreadView` picks it up and renders it as a patient-actor entry. */
+   *  so `useThreadView` picks it up and renders it.
+   *
+   *  Defaults to a patient-actor entry. SICG question stems in MyWishes are
+   *  provider-direction (the care team is asking the patient about goals of
+   *  care), so callers pass `from: "provider"` with an optional providerLabel
+   *  to flip the styling. */
   const composeThread = useCallback(
-    (text: string, gloss?: string) => {
+    (
+      text: string,
+      opts?: { gloss?: string; from?: "patient" | "provider"; providerLabel?: string },
+    ) => {
       if (!cfg || !active) return;
-      log({
-        name: EVENT.THREAD_COMPOSE,
-        attributes: {
-          [ATTR.SPEECH_TEXT]: text,
-          [ATTR.SPEECH_GLOSS]: gloss ?? "",
-          [ATTR.ACTOR]: "patient",
-        },
-      });
+      const from = opts?.from ?? "patient";
+      const attributes: Record<string, string> = {
+        [ATTR.SPEECH_TEXT]: text,
+        [ATTR.SPEECH_GLOSS]: opts?.gloss ?? "",
+        [ATTR.ACTOR]: from,
+      };
+      if (from === "provider") {
+        attributes[ATTR.PROVIDER_NAME] = opts?.providerLabel ?? "Care Team";
+      }
+      log({ name: EVENT.THREAD_COMPOSE, attributes });
     },
     [cfg, active],
   );

@@ -313,11 +313,50 @@ describe("useSpeakActions", () => {
       const { result } = renderHook(() => useSpeakActions());
 
       act(() => {
-        result.current.composeThread("Tengo sed", "I am thirsty");
+        result.current.composeThread("Tengo sed", { gloss: "I am thirsty" });
       });
 
       const [event] = logSpy.mock.calls[0] as [logger.AuditEvent];
       expect(event.attributes?.[ATTR.SPEECH_GLOSS]).toBe("I am thirsty");
+    });
+
+    it("emits provider actor + provider name when from='provider' is passed (SICG question stems)", () => {
+      useSettingsStore.setState({ cfg: DEFAULT_CFG });
+
+      const { result } = renderHook(() => useSpeakActions());
+
+      act(() => {
+        result.current.composeThread("What matters most to you?", {
+          from: "provider",
+          providerLabel: "Dr. Lee",
+        });
+      });
+
+      expect(speak).not.toHaveBeenCalled();
+      expect(logSpy).toHaveBeenCalledTimes(1);
+      const [event] = logSpy.mock.calls[0] as [logger.AuditEvent];
+      expect(event.name).toBe(EVENT.THREAD_COMPOSE);
+      expect(event.attributes).toMatchObject({
+        [ATTR.SPEECH_TEXT]: "What matters most to you?",
+        [ATTR.ACTOR]: "provider",
+        [ATTR.PROVIDER_NAME]: "Dr. Lee",
+      });
+    });
+
+    it("defaults provider name to 'Care Team' when from='provider' but no providerLabel", () => {
+      useSettingsStore.setState({ cfg: DEFAULT_CFG });
+
+      const { result } = renderHook(() => useSpeakActions());
+
+      act(() => {
+        result.current.composeThread("What matters most to you?", { from: "provider" });
+      });
+
+      const [event] = logSpy.mock.calls[0] as [logger.AuditEvent];
+      expect(event.attributes).toMatchObject({
+        [ATTR.ACTOR]: "provider",
+        [ATTR.PROVIDER_NAME]: "Care Team",
+      });
     });
   });
 
