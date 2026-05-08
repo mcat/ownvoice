@@ -31,6 +31,7 @@ import { PatientEditSheet } from "./components/patient/PatientEditSheet";
 import { PinGate } from "./components/shared/PinGate";
 import { ConfirmDialogHost } from "./components/shared/ConfirmDialog";
 import { StaffSessionTimer } from "./components/shared/StaffSessionTimer";
+import { ResumePromptBanner } from "./components/diag/ResumePromptBanner";
 import { Setup } from "./components/settings/Setup";
 import { getModelManager } from "./models/modelManager";
 import { bootSTTAndLLM, bootTTSWasm, verifyAllOnBoot } from "./models/bootModels";
@@ -336,6 +337,8 @@ export function App() {
       class="font-sans flex flex-col relative"
       style={{ background: t.bg, color: t.text, height: "100dvh", overflow: "hidden" }}
     >
+      <ResumePromptBanner />
+
       <Header
         cfg={cfg}
         onOpenSettings={handleOpenSettings}

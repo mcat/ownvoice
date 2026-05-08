@@ -9,6 +9,7 @@ import { log } from "./audit/logger";
 import { EVENT } from "./audit/events";
 import { ATTR } from "./audit/attrs";
 import { initAudit } from "./audit/init";
+import { resumeWorkflow } from "./audit/recovery";
 
 window.addEventListener("error", (ev) => {
   log({
@@ -76,7 +77,19 @@ useUIStore.subscribe((state, prev) => {
 {
   const bootAudit = (): void => {
     const cfg = useSettingsStore.getState().cfg;
-    void initAudit({ activePatientId: cfg?.activePatientId ?? null });
+    void initAudit({
+      activePatientId: cfg?.activePatientId ?? null,
+      onAbandoned: (list) => {
+        for (const w of list) {
+          if (w.recoveryMode === "auto") {
+            void resumeWorkflow(w.workflow_id);
+          } else if (w.recoveryMode === "prompt") {
+            useUIStore.getState().queueAbandonedWorkflow(w);
+          }
+          // manual: do nothing
+        }
+      },
+    });
   };
   if (useSettingsStore.getState()._hasHydrated) {
     bootAudit();
