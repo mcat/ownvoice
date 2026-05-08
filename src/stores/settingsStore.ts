@@ -2,7 +2,12 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { createDebouncedIDBStorage } from "./idbStorage";
 import { isValidQualityResult } from "../models/voiceQuality";
-import type { AppSettings, Patient } from "../types";
+import type { AppSettings, Patient, Provider } from "../types";
+import { log } from "../audit/logger";
+import { EVENT } from "../audit/events";
+import { ATTR } from "../audit/attrs";
+import { patientIdHash } from "../audit/hash";
+import { setActivePatientHash } from "../audit/session";
 
 // 300 ms debounce on IDB persistence — avoids a round-trip per keystroke
 // when the Settings panel auto-saves text fields as the user types.
@@ -35,6 +40,16 @@ interface SettingsState extends SettingsPersistedState {
   updateActivePatient: (partial: Partial<Omit<Patient, "id">>) => void;
   setPatientPendingVoiceBlob: (patientId: string, base64: string) => void;
   clearPatientPendingVoiceBlob: (patientId: string) => void;
+
+  // Audit-aware named setters (Phase 1)
+  /** Sets the active patient and emits an audit event. Computes the patient
+   *  id hash and tags subsequent audit log calls via `setActivePatientHash`.
+   *  Pass `null` to clear the active patient (also clears the session hash). */
+  setActivePatient: (id: string | null) => Promise<void>;
+  /** Sets the caregiver language and emits an audit event. */
+  setCaregiverLang: (lang: string) => void;
+  /** Appends a provider to the providers list and emits an audit event. */
+  addProvider: (provider: Provider) => void;
 }
 
 /** Drops the `quality` field on a SpeakerData blob if it fails the runtime
@@ -95,6 +110,10 @@ export const useSettingsStore = create<SettingsState>()(
             activePatientId: patient.id,
           },
         } : {});
+        log({
+          name: EVENT.SETTINGS_PATIENT_ADD,
+          attributes: { [ATTR.PATIENT_LANG]: patient.patientLang },
+        });
         return patient;
       },
 
@@ -132,6 +151,7 @@ export const useSettingsStore = create<SettingsState>()(
             patients: s.cfg.patients.filter((p) => p.id !== id),
           },
         });
+        log({ name: EVENT.SETTINGS_PATIENT_REMOVE });
       },
 
       updatePatient: (id, partial) => {
@@ -174,6 +194,40 @@ export const useSettingsStore = create<SettingsState>()(
           );
           return { cfg: { ...s.cfg, patients } };
         }),
+
+      setActivePatient: async (id) => {
+        set((s) => (s.cfg ? { cfg: { ...s.cfg, activePatientId: id } } : {}));
+        if (id) {
+          const hash = await patientIdHash(id);
+          setActivePatientHash(hash);
+          log({
+            name: EVENT.SETTINGS_PATIENT_ACTIVATE,
+            attributes: { [ATTR.PATIENT_ID_HASH]: hash },
+          });
+        } else {
+          setActivePatientHash(null);
+        }
+      },
+
+      setCaregiverLang: (lang) => {
+        set((s) => (s.cfg ? { cfg: { ...s.cfg, caregiverLang: lang } } : {}));
+        log({
+          name: EVENT.SETTINGS_LANG_CHANGE,
+          attributes: { [ATTR.CAREGIVER_LANG]: lang },
+        });
+      },
+
+      addProvider: (provider) => {
+        set((s) =>
+          s.cfg
+            ? { cfg: { ...s.cfg, providers: [...s.cfg.providers, provider] } }
+            : {},
+        );
+        log({
+          name: EVENT.SETTINGS_PROVIDER_ADD,
+          attributes: { [ATTR.PROVIDER_NAME]: provider.name },
+        });
+      },
     }),
     {
       name: "ov-settings",
