@@ -3,6 +3,7 @@ import { initLogger, log } from "./logger";
 import { setActivePatientHash } from "./session";
 import { patientIdHash } from "./hash";
 import { EVENT } from "./events";
+import { sweepRetention, scheduleHourlyRetention } from "./retention";
 
 export interface InitOpts {
   activePatientId: string | null;
@@ -14,6 +15,9 @@ export async function initAudit(opts: InitOpts): Promise<void> {
   try {
     const db = await openAuditDb();
     initLogger(db);
+
+    void sweepRetention(db);
+    scheduleHourlyRetention(db);
 
     if (opts.activePatientId) {
       try {
