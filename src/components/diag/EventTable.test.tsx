@@ -25,7 +25,11 @@ describe("EventTable", () => {
   it("renders rows for each record", () => {
     const records = Array.from({ length: 10 }, (_, i) => fakeRecord(i));
     render(<EventTable records={records} columns={COLUMNS} />);
-    expect(screen.getByText("speak.tap")).toBeTruthy();
+    // jsdom-based fallback path: when the virtualizer can't measure,
+    // we render all records up to FALLBACK_CAP non-virtualized so the
+    // table is never silently truncated to a single row.
+    expect(screen.getAllByText("speak.tap").length).toBe(5);
+    expect(screen.getAllByText("model.boot.start").length).toBe(5);
   });
 
   it("renders empty state when no records", () => {

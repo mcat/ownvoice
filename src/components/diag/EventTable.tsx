@@ -49,6 +49,10 @@ export function EventTable({ records, columns, rowHeight = DEFAULT_ROW_HEIGHT }:
   }, []);
 
   // Apply count/rowHeight changes via setOptions instead of remount.
+  // measure() invalidates the size cache that was built when count was
+  // still 0 at mount; without it, getVirtualItems() returns [] forever
+  // after the first records update — the table would then collapse onto
+  // the renderItems fallback (a single row at index 0).
   useEffect(() => {
     const v = virtRef.current;
     if (!v) return;
@@ -57,6 +61,7 @@ export function EventTable({ records, columns, rowHeight = DEFAULT_ROW_HEIGHT }:
       count: records.length,
       estimateSize: () => rowHeight,
     });
+    v.measure();
     v._willUpdate();
     setTick((t) => t + 1);
   }, [records.length, rowHeight]);
@@ -69,13 +74,18 @@ export function EventTable({ records, columns, rowHeight = DEFAULT_ROW_HEIGHT }:
     return <div style={{ padding: 24, color: "#666" }}>No events match current filters.</div>;
   }
 
-  // When the virtualizer hasn't measured yet (first render, or jsdom where
-  // ResizeObserver reports a 0-height scroller), fall back to rendering the
-  // first record so the table is non-empty for assistive tech / tests. The
-  // virtualizer takes over once measurements arrive in real browsers.
+  // When the virtualizer hasn't measured yet (first render, jsdom with
+  // 0-height scroller, or a live-tail update that arrives before the
+  // measurement cache rebuilds), render up to FALLBACK_CAP rows
+  // non-virtualized rather than collapsing to a single row. Capped so
+  // a 5000-row buffer doesn't blow the main thread before the
+  // virtualizer takes over.
+  const FALLBACK_CAP = 50;
   const renderItems = items.length > 0
     ? items.map((item) => ({ index: item.index, key: item.key as number | string, start: item.start }))
-    : [{ index: 0, key: 0, start: 0 }];
+    : Array.from({ length: Math.min(records.length, FALLBACK_CAP) }, (_, i) => ({
+        index: i, key: i, start: i * rowHeight,
+      }));
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
