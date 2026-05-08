@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type { SpeakingState } from "../types";
 import type { ThemeName } from "../theme/tokens";
+import type { AbandonedWorkflow } from "../audit/recovery";
 
 export type OverlayName =
   | "wishes"
@@ -47,6 +48,12 @@ interface UIState {
   staffAuthed: boolean;
   /** Unix ms timestamp of the last staff-auth bump. */
   staffAuthedAt: number | null;
+
+  /** Abandoned workflows surfaced after a sweep; banner UI consumes
+   *  the prompt-mode subset. */
+  abandonedWorkflows: AbandonedWorkflow[];
+  queueAbandonedWorkflow: (w: AbandonedWorkflow) => void;
+  dismissAbandonedWorkflow: (workflowId: string) => void;
 
   setTab: (tab: string) => void;
   setSub: (sub: number) => void;
@@ -112,6 +119,7 @@ const INITIAL: Pick<
   | "systemDark"
   | "staffAuthed"
   | "staffAuthedAt"
+  | "abandonedWorkflows"
 > = {
   tab: "quick",
   sub: 0,
@@ -137,6 +145,7 @@ const INITIAL: Pick<
     : false,
   staffAuthed: false,
   staffAuthedAt: null,
+  abandonedWorkflows: [],
 };
 
 export const useUIStore = create<UIState>((set) => ({
@@ -188,5 +197,13 @@ export const useUIStore = create<UIState>((set) => ({
   bumpStaffAuthed: () =>
     set((s) => (s.staffAuthed ? { staffAuthedAt: Date.now() } : {})),
   endStaffSession: () => set({ staffAuthed: false, staffAuthedAt: null }),
+  queueAbandonedWorkflow: (w) =>
+    set((s) => ({ abandonedWorkflows: [...s.abandonedWorkflows, w] })),
+  dismissAbandonedWorkflow: (id) =>
+    set((s) => ({
+      abandonedWorkflows: s.abandonedWorkflows.filter(
+        (w) => w.workflow_id !== id,
+      ),
+    })),
   resetUI: () => set(INITIAL),
 }));
