@@ -3,7 +3,7 @@ import { homepageTheme as t } from "../theme";
 
 /**
  * §6 — References & citing this work. Selected citations with hanging
- * indents, BibTeX block, links to GitHub + bibliography.
+ * indents, BibTeX block, link to the full bibliography.
  *
  * Each citation is paired with the canonical DOI. Citations were verified
  * against Crossref before linking — see docs/BIBLIOGRAPHY.md for the full
@@ -231,15 +231,8 @@ export function References() {
           Full bibliography:{" "}
           <a href="/bibliography" style={{ color: t.color.text }}>
             www.ownvoice.icu/bibliography
-          </a>{" "}
-          (or the source on{" "}
-          <a
-            href="https://github.com/mcat/ownvoice/blob/main/docs/BIBLIOGRAPHY.md"
-            style={{ color: t.color.text }}
-          >
-            GitHub
           </a>
-          ).
+          .
         </div>
       </div>
     </section>
