@@ -1,7 +1,7 @@
 import { homepageTheme as t } from "../theme";
 
 /**
- * Footer. Status line + three external links. The "Not for clinical use"
+ * Footer. Status line + internal links. The "Not for clinical use"
  * disclaimer is non-negotiable per the project README and PRD.
  */
 export function Footer() {
@@ -26,12 +26,6 @@ export function Footer() {
       >
         <div>OwnVoice &middot; v0.1 prototype &middot; Not for clinical use without validation</div>
         <div style={{ display: "flex", gap: 16 }}>
-          <a
-            href="https://github.com/mcat/ownvoice"
-            style={{ color: "#d6d3d1", textDecoration: "none" }}
-          >
-            GitHub
-          </a>
           <a href="/research" style={{ color: "#d6d3d1", textDecoration: "none" }}>
             Research plan
           </a>
