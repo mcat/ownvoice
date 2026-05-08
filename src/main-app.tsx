@@ -4,6 +4,34 @@ import "./app.css";
 import { useUIStore } from "./stores/uiStore";
 import { themes, type ThemeName } from "./theme/tokens";
 import { startVoiceProcessor } from "./models/voiceProcessor";
+import { log } from "./audit/logger";
+import { EVENT } from "./audit/events";
+import { ATTR } from "./audit/attrs";
+
+window.addEventListener("error", (ev) => {
+  log({
+    name: EVENT.ERROR_UNHANDLED,
+    severity: "ERROR",
+    attributes: {
+      [ATTR.ERROR_TYPE]: ev.error?.name ?? "Error",
+      [ATTR.ERROR_MESSAGE]: ev.message,
+      [ATTR.ERROR_STACK]: (ev.error?.stack ?? "").split("\n").slice(0, 5).join("\n"),
+    },
+  });
+});
+
+window.addEventListener("unhandledrejection", (ev) => {
+  const reason = ev.reason;
+  log({
+    name: EVENT.ERROR_REJECTION,
+    severity: "ERROR",
+    attributes: {
+      [ATTR.ERROR_TYPE]: reason?.name ?? "UnhandledRejection",
+      [ATTR.ERROR_MESSAGE]: reason?.message ?? String(reason),
+      [ATTR.ERROR_STACK]: (reason?.stack ?? "").split("\n").slice(0, 5).join("\n"),
+    },
+  });
+});
 
 // `?bench=true` enables per-step timing logs in the TTS workers (encoder
 // load + per-LM-step latencies + decode time + RTF). Used to compare
