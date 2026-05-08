@@ -15,6 +15,7 @@ export const EVENT = {
   MODEL_DOWNLOAD_START:    "model.download.start",
   MODEL_DOWNLOAD_COMPLETE: "model.download.complete",
   MODEL_DOWNLOAD_RESUME:   "model.download.resume",
+  MODEL_DOWNLOAD_FAILURE:  "model.download.failure",
 
   SETTINGS_PATIENT_ADD:      "settings.patient.add",
   SETTINGS_PATIENT_REMOVE:   "settings.patient.remove",

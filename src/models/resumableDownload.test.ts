@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import { resumableDownload } from "./resumableDownload";
+import { ContentValidationError } from "./contentValidator";
 
 type OPFSStore = Map<string, ArrayBuffer>;
 
@@ -355,6 +356,180 @@ describe("resumableDownload", () => {
       expectedSize: 2,
     });
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects an HTML response before opening OPFS, regardless of magic", async () => {
+    // SPA fallback (Vite dev) / captive portal — server returns HTML with 200.
+    // Must throw a ContentValidationError carrying the content-type, and must
+    // NOT create a file at the target path.
+    globalThis.fetch = vi.fn(async () =>
+      new Response(new TextEncoder().encode("<!DOCTYPE html>..."), {
+        status: 200,
+        headers: { "content-type": "text/html; charset=utf-8" },
+      }),
+    ) as typeof fetch;
+
+    await expect(
+      resumableDownload({
+        url: "/models/tts/a.onnx",
+        dir: opfs.root,
+        filename: "a.onnx",
+        expectedSize: 100,
+        magic: "onnx",
+      }),
+    ).rejects.toBeInstanceOf(ContentValidationError);
+
+    expect(opfs.store.has("/a.onnx")).toBe(false);
+    expect(opfs.store.has("/a.onnx._progress.json")).toBe(false);
+  });
+
+  it("attaches diagnostic context to ContentValidationError on HTML response", async () => {
+    globalThis.fetch = vi.fn(async () =>
+      new Response(new TextEncoder().encode("<html>"), {
+        status: 200,
+        headers: { "content-type": "text/html" },
+      }),
+    ) as typeof fetch;
+
+    let caught: unknown;
+    try {
+      await resumableDownload({
+        url: "/models/llm/c.json",
+        dir: opfs.root,
+        filename: "c.json",
+        expectedSize: 50,
+        magic: "json",
+      });
+    } catch (e) {
+      caught = e;
+    }
+    expect(caught).toBeInstanceOf(ContentValidationError);
+    const err = caught as ContentValidationError;
+    expect(err.filename).toBe("c.json");
+    expect(err.contentType).toBe("text/html");
+  });
+
+  it("HTML response wipes a prior partial file so retry starts clean", async () => {
+    // Prior partial bytes from an earlier (good) attempt are present, but the
+    // current response is HTML (proxy regressed). The issue's recovery
+    // contract is "retry starts clean" — partial file and progress marker
+    // must both be removed, even though it costs the previously-good bytes.
+    opfs.store.set("/a.onnx", new Uint8Array([1, 2, 3]).buffer);
+    opfs.store.set(
+      "/a.onnx._progress.json",
+      new TextEncoder()
+        .encode(JSON.stringify({ bytesWritten: 3, expectedSize: 100 }))
+        .slice().buffer,
+    );
+
+    globalThis.fetch = vi.fn(async () =>
+      new Response(new TextEncoder().encode("<!DOCTYPE html>"), {
+        status: 200,
+        headers: { "content-type": "text/html" },
+      }),
+    ) as typeof fetch;
+
+    await expect(
+      resumableDownload({
+        url: "/models/tts/a.onnx",
+        dir: opfs.root,
+        filename: "a.onnx",
+        expectedSize: 100,
+        magic: "onnx",
+      }),
+    ).rejects.toBeInstanceOf(ContentValidationError);
+
+    expect(opfs.store.has("/a.onnx")).toBe(false);
+    expect(opfs.store.has("/a.onnx._progress.json")).toBe(false);
+  });
+
+  it("rejects bytes whose first byte fails the ONNX magic check", async () => {
+    // Server returns 200 with an acceptable Content-Type (e.g. octet-stream)
+    // but the body is HTML — covers misconfigured proxies that don't tag the
+    // response as text/html. The first-byte check is the second layer.
+    const htmlBody = new TextEncoder().encode("<!DOCTYPE html><html>...</html>");
+    globalThis.fetch = vi.fn(async () =>
+      new Response(htmlBody, {
+        status: 200,
+        headers: { "content-type": "application/octet-stream" },
+      }),
+    ) as typeof fetch;
+
+    await expect(
+      resumableDownload({
+        url: "/models/tts/a.onnx",
+        dir: opfs.root,
+        filename: "a.onnx",
+        expectedSize: htmlBody.byteLength,
+        magic: "onnx",
+      }),
+    ).rejects.toBeInstanceOf(ContentValidationError);
+
+    // Partial file and progress marker must be cleaned up.
+    expect(opfs.store.has("/a.onnx")).toBe(false);
+    expect(opfs.store.has("/a.onnx._progress.json")).toBe(false);
+  });
+
+  it("does not run the magic check on a Range-resumed download", async () => {
+    // When resuming, the first byte of the stream is mid-file, not byte 0,
+    // so the magic check would falsely reject most resumes. Guard the
+    // resumeFrom>0 → skip-magic-check path.
+    opfs.store.set("/a.onnx", new Uint8Array([0x08, 1, 2]).buffer);
+    opfs.store.set(
+      "/a.onnx._progress.json",
+      new TextEncoder()
+        .encode(JSON.stringify({ bytesWritten: 3, expectedSize: 5 }))
+        .slice().buffer,
+    );
+
+    // Body for the resume — starts with 0x99, NOT a valid ONNX magic byte.
+    // Must not be rejected because we're past byte 0.
+    globalThis.fetch = vi.fn(async () =>
+      new Response(new Uint8Array([0x99, 0xaa]), {
+        status: 206,
+        headers: {
+          "content-type": "application/octet-stream",
+          "content-length": "2",
+          "content-range": "bytes 3-4/5",
+        },
+      }),
+    ) as typeof fetch;
+
+    await resumableDownload({
+      url: "/models/tts/a.onnx",
+      dir: opfs.root,
+      filename: "a.onnx",
+      expectedSize: 5,
+      magic: "onnx",
+    });
+
+    expect(new Uint8Array(opfs.store.get("/a.onnx")!)).toEqual(
+      new Uint8Array([0x08, 1, 2, 0x99, 0xaa]),
+    );
+  });
+
+  it("skips the magic check when no magic is supplied (raw .onnx_data)", async () => {
+    // .onnx_data files have magic: null in the manifest — the validator
+    // returns no reason for that case. A raw byte stream must not be
+    // rejected just because byte 0 isn't a known magic.
+    globalThis.fetch = vi.fn(async () =>
+      new Response(new Uint8Array([0xff, 0xfe, 0xfd]), {
+        status: 200,
+        headers: { "content-type": "application/octet-stream" },
+      }),
+    ) as typeof fetch;
+
+    await resumableDownload({
+      url: "/models/tts/weights.onnx_data",
+      dir: opfs.root,
+      filename: "weights.onnx_data",
+      expectedSize: 3,
+      magic: null,
+    });
+
+    expect(new Uint8Array(opfs.store.get("/weights.onnx_data")!)).toEqual(
+      new Uint8Array([0xff, 0xfe, 0xfd]),
+    );
   });
 
   it("aborts mid-download and leaves progress marker for next run", async () => {

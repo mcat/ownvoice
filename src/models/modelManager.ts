@@ -1,5 +1,5 @@
 import type { ModelId, ModelStatus, LoadProgress } from "./types";
-import type { ManifestModel } from "./modelsManifest";
+import type { ManifestFile, ManifestModel } from "./modelsManifest";
 import type { IntegrityReport } from "./integrityCheck";
 import { log } from "../audit/logger";
 import { EVENT } from "../audit/events";
@@ -108,6 +108,7 @@ class ModelManager {
     filename: string,
     expectedSize: number,
     onProgress?: (bytesWritten: number) => void,
+    magic?: ManifestFile["magic"],
   ): Promise<{ file: File; fromCache: boolean }> {
     this.updateModel(id, { status: "downloading", total: expectedSize });
 
@@ -155,6 +156,7 @@ class ModelManager {
         dir: modelDir,
         filename,
         expectedSize,
+        magic,
         onProgress: ({ bytesWritten }) => {
           this.updateModel(id, { loaded: bytesWritten });
           onProgress?.(bytesWritten);

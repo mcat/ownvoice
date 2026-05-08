@@ -60,6 +60,7 @@ export async function* primeOffline(
           onProgress
             ? (loaded) => onProgress(id, spec.name, loaded, spec.size)
             : undefined,
+          spec.magic,
         );
         if (!result.fromCache) downloadedCount++;
         // Emit a final "complete" progress tick so aggregate UIs that snapshot
