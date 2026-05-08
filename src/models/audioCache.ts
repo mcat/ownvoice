@@ -2,6 +2,8 @@ import { getModelManager } from "./modelManager";
 import { isGPUReady, synthesizeGPU } from "./ttsEngine";
 import { postProcessAudio } from "../speak";
 import { recordHash } from "../stores/patientIndex";
+import { ov } from "../audit/workflow";
+import { pregenAudio } from "../audit/workflows/audioCachePregen";
 
 // Bumped to v3 to orphan audio generated under the pre-sampling worker:
 // the earlier `USE_GREEDY=true` code path produced stuttered audio for
@@ -386,18 +388,30 @@ export async function* generateAllPhrases(
 
     let failed = false;
     try {
-      const audio = await synthesizeWithRetries(
-        worker,
-        phrase,
-        speakerData,
-        signal,
-        gpuOnly,
-        opts?.languageId ?? "en",
+      const fp = embeddingFingerprint(speakerData);
+      await ov.workflow(
+        "audio_cache_pregen",
+        (ctx) =>
+          pregenAudio(ctx, {
+            phrase,
+            voiceFingerprint: fp,
+            synthesize: () =>
+              synthesizeWithRetries(
+                worker,
+                phrase,
+                speakerData,
+                signal,
+                gpuOnly,
+                opts?.languageId ?? "en",
+              ),
+            // Post-process once here, at cache-write time, so playback in
+            // speak.ts skips the ~10-50ms FFT pipeline on every tap.
+            postProcess: async (audio) => postProcessAudio(audio, SAMPLE_RATE),
+            persist: async (p, audio) =>
+              putCachedAudio(p, speakerData, audio, patientId),
+          }),
+        { recoveryMode: "auto" },
       );
-      // Post-process once here, at cache-write time, so playback in
-      // speak.ts skips the ~10-50ms FFT pipeline on every tap.
-      const processed = postProcessAudio(audio, SAMPLE_RATE);
-      await putCachedAudio(phrase, speakerData, processed, patientId);
       consecutiveFailures = 0;
     } catch (err) {
       if (signal?.aborted) return;
