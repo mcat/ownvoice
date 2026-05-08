@@ -61,7 +61,11 @@ export async function queryEvents(filters: QueryFilters): Promise<AuditRecord[]>
   }
 }
 
-function passesPostFilters(r: AuditRecord, f: QueryFilters): boolean {
+/** Shared predicate so live-tail can apply the same filter logic the
+ *  initial cursor pass did. Without this, incoming records would be
+ *  appended to the rendered list regardless of the active filter. */
+export function eventPassesFilters(r: AuditRecord, f: Omit<QueryFilters, "limit">): boolean {
+  if (f.patientIdHash && r.patient_id_hash !== f.patientIdHash) return false;
   if (f.minSeverity !== undefined && (r.severity_number ?? 0) < f.minSeverity) return false;
   if (f.rangeStart !== undefined && r.time < f.rangeStart) return false;
   if (f.rangeEnd !== undefined && r.time >= f.rangeEnd) return false;
@@ -71,4 +75,8 @@ function passesPostFilters(r: AuditRecord, f: QueryFilters): boolean {
     if (!haystack.includes(f.attributeSubstring)) return false;
   }
   return true;
+}
+
+function passesPostFilters(r: AuditRecord, f: QueryFilters): boolean {
+  return eventPassesFilters(r, f);
 }

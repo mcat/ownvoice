@@ -1,25 +1,33 @@
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { useSettingsStore } from "../../stores/settingsStore";
-import { queryEvents } from "../../audit/queryEvents";
+import { queryEvents, eventPassesFilters } from "../../audit/queryEvents";
+import { queryWorkflows } from "../../audit/queryWorkflows";
 import { patientIdHash } from "../../audit/hash";
 import { buildExport } from "../../audit/exportFormats";
 import { shareExport } from "../../audit/exportShare";
 import { subscribe } from "../../audit/logger";
 import { getServiceMetadata } from "../../audit/serviceMetadata";
-import type { AuditRecord } from "../../audit/types";
+import type { AuditRecord, WorkflowState } from "../../audit/types";
 import { ATTR } from "../../audit/attrs";
 import { z } from "../../theme/z";
 import { RoleToggle, type DiagRole } from "./RoleToggle";
 import { FilterBar, presetToRange, type FilterBarValue } from "./FilterBar";
 import { EventTable, type EventTableColumn } from "./EventTable";
 import { ExportMenu, type ExportRequest } from "./ExportMenu";
+import { WorkflowTable } from "./WorkflowTable";
 import { PinPromptDialog } from "../../audit/pinPrompt";
 
 export interface ActivityLogProps {
   onClose: () => void;
+  /** Maximum rows held in the rendered records buffer. Surfaced as a
+   *  prop so tests can drive the truncation-banner path with a small
+   *  seed; production callers use the default. */
+  limit?: number;
 }
 
 const DEFAULT_LIMIT = 5000;
+
+export type ViewMode = "events" | "workflows";
 
 function defaultFiltersForRole(role: DiagRole, activePatientId: string | null): FilterBarValue {
   switch (role) {
@@ -58,13 +66,15 @@ function columnsForRole(role: DiagRole): EventTableColumn[] {
   }
 }
 
-export function ActivityLog({ onClose }: ActivityLogProps) {
+export function ActivityLog({ onClose, limit = DEFAULT_LIMIT }: ActivityLogProps) {
   const cfg = useSettingsStore((s) => s.cfg);
   const patients = cfg?.patients ?? [];
   const activePatientId = cfg?.activePatientId ?? null;
   const [role, setRole] = useState<DiagRole>("healthcare");
+  const [viewMode, setViewMode] = useState<ViewMode>("events");
   const [filters, setFilters] = useState<FilterBarValue>(() => defaultFiltersForRole("healthcare", activePatientId));
   const [records, setRecords] = useState<readonly AuditRecord[]>([]);
+  const [workflows, setWorkflows] = useState<readonly WorkflowState[]>([]);
   const [pendingExport, setPendingExport] = useState<ExportRequest | null>(null);
 
   // Re-derive default filters when role changes.
@@ -72,8 +82,30 @@ export function ActivityLog({ onClose }: ActivityLogProps) {
     setFilters(defaultFiltersForRole(role, activePatientId));
   }, [role, activePatientId]);
 
-  // Run the query whenever filters change.
+  // Resolve patientId → hash whenever it changes; cached in a ref so the
+  // live-tail subscriber can apply patient filtering without an extra
+  // async round-trip per incoming event.
+  const patientHashRef = useRef<string | undefined>(undefined);
   useEffect(() => {
+    let cancelled = false;
+    if (!filters.patientId) {
+      patientHashRef.current = undefined;
+      return;
+    }
+    void patientIdHash(filters.patientId).then((h) => {
+      if (!cancelled) patientHashRef.current = h;
+    });
+    return () => { cancelled = true; };
+  }, [filters.patientId]);
+
+  // Mirror the active filters into a ref so the subscribe callback (which
+  // is set up once on mount) can read fresh values without re-subscribing.
+  const filtersRef = useRef(filters);
+  useEffect(() => { filtersRef.current = filters; }, [filters]);
+
+  // Run the events query whenever filters change.
+  useEffect(() => {
+    if (viewMode !== "events") return;
     let cancelled = false;
     void (async () => {
       const range = presetToRange(filters.datePreset);
@@ -86,21 +118,56 @@ export function ActivityLog({ onClose }: ActivityLogProps) {
         minSeverity: filters.minSeverity,
         namePrefix: looksLikePrefix ? filters.search : undefined,
         attributeSubstring: !looksLikePrefix && filters.search ? filters.search : undefined,
-        limit: DEFAULT_LIMIT,
+        limit,
       });
       if (!cancelled) setRecords(out);
     })();
     return () => { cancelled = true; };
-  }, [filters]);
+  }, [filters, viewMode]);
+
+  // Run the workflows query whenever filters change.
+  useEffect(() => {
+    if (viewMode !== "workflows") return;
+    let cancelled = false;
+    void (async () => {
+      const range = presetToRange(filters.datePreset);
+      const patientHash = filters.patientId ? await patientIdHash(filters.patientId) : undefined;
+      const out = await queryWorkflows({
+        patientIdHash: patientHash,
+        rangeStart: range.rangeStart,
+        rangeEnd: range.rangeEnd,
+        nameSubstring: filters.search || undefined,
+        limit,
+      });
+      if (!cancelled) setWorkflows(out);
+    })();
+    return () => { cancelled = true; };
+  }, [filters, viewMode]);
 
   // Live append on new audit events. Coalesce into a per-frame buffer
   // so a burst of emits triggers one setRecords (and thus one render +
-  // one Virtualizer setOptions call) instead of N. Without this the
-  // viewer recursively renders itself faster than rAF can clear.
+  // one Virtualizer setOptions call) instead of N. Filter is applied
+  // before queuing so off-filter events never pollute the rendered view.
   const pendingRef = useRef<AuditRecord[]>([]);
   const rafRef = useRef<number | null>(null);
   useEffect(() => {
     return subscribe((rec) => {
+      // Only events view receives live appends — workflows store updates
+      // are reflected via the workflow.* events that trigger UI refresh
+      // out-of-band; we re-query on filter change rather than streaming.
+      if (filtersRef.current === undefined) return;
+      const f = filtersRef.current;
+      const range = presetToRange(f.datePreset);
+      const looksLikePrefix = f.search.endsWith(".");
+      const ok = eventPassesFilters(rec, {
+        patientIdHash: patientHashRef.current,
+        rangeStart: range.rangeStart,
+        rangeEnd: range.rangeEnd,
+        minSeverity: f.minSeverity,
+        namePrefix: looksLikePrefix ? f.search : undefined,
+        attributeSubstring: !looksLikePrefix && f.search ? f.search : undefined,
+      });
+      if (!ok) return;
       pendingRef.current.push(rec);
       if (rafRef.current != null) return;
       rafRef.current = requestAnimationFrame(() => {
@@ -109,10 +176,10 @@ export function ActivityLog({ onClose }: ActivityLogProps) {
         if (batch.length === 0) return;
         pendingRef.current = [];
         setRecords((prev) => {
-          if (prev.length >= DEFAULT_LIMIT) return prev;
+          if (prev.length >= limit) return prev;
           // Newest first, matching the existing layout convention.
           const merged = [...batch.slice().reverse(), ...prev];
-          return merged.length > DEFAULT_LIMIT ? merged.slice(0, DEFAULT_LIMIT) : merged;
+          return merged.length > limit ? merged.slice(0, limit) : merged;
         });
       });
     });
@@ -149,6 +216,10 @@ export function ActivityLog({ onClose }: ActivityLogProps) {
     });
   }
 
+  const truncated = viewMode === "events"
+    ? records.length >= limit
+    : workflows.length >= limit;
+
   return (
     <div role="dialog" aria-label="Activity log" style={{
       position: "fixed", inset: 0, background: "#fff", zIndex: z.sheetStacked,
@@ -157,6 +228,7 @@ export function ActivityLog({ onClose }: ActivityLogProps) {
       <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 8 }}>
         <button onClick={onClose}>Close</button>
         <RoleToggle role={role} onChange={setRole} />
+        <ViewModeToggle viewMode={viewMode} onChange={setViewMode} />
         <div style={{ flex: 1 }} />
         <ExportMenu role={role} onExport={(req) => {
           if (req.needsPin) setPendingExport(req);
@@ -164,8 +236,18 @@ export function ActivityLog({ onClose }: ActivityLogProps) {
         }} />
       </div>
       <FilterBar value={filters} patients={patients} onChange={setFilters} />
+      {truncated && (
+        <div data-testid="truncation-banner" role="status" style={{
+          background: "#fff3cd", color: "#664d03", border: "1px solid #ffe69c",
+          borderRadius: 4, padding: "6px 10px", margin: "4px 0", fontSize: 13,
+        }}>
+          Showing the most recent {limit.toLocaleString()} {viewMode === "events" ? "events" : "workflows"} for this filter. Older entries are not displayed — narrow the date range or add filters to see them.
+        </div>
+      )}
       <div style={{ flex: 1, minHeight: 0 }}>
-        <EventTable records={records} columns={cols} />
+        {viewMode === "events"
+          ? <EventTable records={records} columns={cols} />
+          : <WorkflowTable workflows={workflows} />}
       </div>
       {pendingExport && (
         <PinPromptDialog
@@ -174,6 +256,32 @@ export function ActivityLog({ onClose }: ActivityLogProps) {
           onCancel={() => setPendingExport(null)}
         />
       )}
+    </div>
+  );
+}
+
+function ViewModeToggle({ viewMode, onChange }: { viewMode: ViewMode; onChange: (v: ViewMode) => void }) {
+  const opts: { id: ViewMode; label: string }[] = [
+    { id: "events", label: "Events" },
+    { id: "workflows", label: "Workflows" },
+  ];
+  return (
+    <div role="group" aria-label="Data source" style={{ display: "inline-flex", border: "1px solid #ccc", borderRadius: 4 }}>
+      {opts.map((o) => (
+        <button
+          key={o.id}
+          aria-pressed={o.id === viewMode}
+          onClick={() => onChange(o.id)}
+          style={{
+            padding: "8px 12px", border: "none",
+            background: o.id === viewMode ? "#1976d2" : "transparent",
+            color: o.id === viewMode ? "#fff" : "#000",
+            cursor: "pointer",
+          }}
+        >
+          {o.label}
+        </button>
+      ))}
     </div>
   );
 }
