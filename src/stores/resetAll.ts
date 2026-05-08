@@ -32,6 +32,12 @@ export async function resetAll(): Promise<void> {
   await clearIndex();
   getModelManager().clearAll();
 
+  // Wipe the audit log database (separate IDB, not covered by clearAll())
+  await new Promise<void>((res) => {
+    const r = indexedDB.deleteDatabase("ov-audit");
+    r.onsuccess = r.onerror = r.onblocked = () => res();
+  });
+
   // 2. In-memory Zustand stores
   // Clear conversation BEFORE settings reset — settings reset nulls cfg,
   // making activePatientId unavailable for per-patient clear. Instead,
