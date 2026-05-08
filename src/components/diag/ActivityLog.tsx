@@ -8,6 +8,7 @@ import { subscribe } from "../../audit/logger";
 import { getServiceMetadata } from "../../audit/serviceMetadata";
 import type { AuditRecord } from "../../audit/types";
 import { ATTR } from "../../audit/attrs";
+import { z } from "../../theme/z";
 import { RoleToggle, type DiagRole } from "./RoleToggle";
 import { FilterBar, presetToRange, type FilterBarValue } from "./FilterBar";
 import { EventTable, type EventTableColumn } from "./EventTable";
@@ -124,7 +125,7 @@ export function ActivityLog({ onClose }: ActivityLogProps) {
 
   return (
     <div role="dialog" aria-label="Activity log" style={{
-      position: "fixed", inset: 0, background: "#fff", zIndex: 1000,
+      position: "fixed", inset: 0, background: "#fff", zIndex: z.sheetStacked,
       display: "flex", flexDirection: "column", padding: 16,
     }}>
       <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 8 }}>
