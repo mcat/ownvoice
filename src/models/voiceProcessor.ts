@@ -1,6 +1,9 @@
 import { useSettingsStore } from "../stores/settingsStore";
 import { getModelManager } from "./modelManager";
 import { decodeAudioFromBase64 } from "./audioDecode";
+import { ov } from "../audit/workflow";
+import { enrollVoice } from "../audit/workflows/voiceEnrollment";
+import { patientIdHash } from "../audit/hash";
 
 type ExtractResult =
   | { kind: "ok"; data: unknown }
@@ -11,7 +14,9 @@ interface ProcessorOptions {
    *  base64-encoded audio blob and returns either the extracted speaker
    *  data or a failure reason. The default extractor (used in production)
    *  decodes the audio and runs it through the TTS worker — so injecting
-   *  here means the test doesn't need to mock the audio decoder or worker. */
+   *  here means the test doesn't need to mock the audio decoder or worker.
+   *  When provided, the durable workflow journal is bypassed so tests
+   *  don't need to mock the audit DB. */
   extract?: (base64: string) => Promise<ExtractResult>;
 }
 
@@ -21,8 +26,19 @@ interface ProcessorOptions {
  *  Idempotent — multiple calls are OK; each returned `stop` unsubscribes
  *  its own subscriptions. */
 export function startVoiceProcessor(opts: ProcessorOptions = {}): () => void {
-  const extract = opts.extract ?? defaultExtract;
   const inFlight = new Set<string>();
+
+  function persistSpeakerData(patientId: string, data: unknown) {
+    useSettingsStore.setState((s) => {
+      if (!s.cfg) return s;
+      const patients = s.cfg.patients.map((pp) =>
+        pp.id === patientId
+          ? { ...pp, speakerData: data, pendingVoiceBlob: null }
+          : pp,
+      );
+      return { ...s, cfg: { ...s.cfg, patients } };
+    });
+  }
 
   async function tick() {
     const mgr = getModelManager();
@@ -36,20 +52,40 @@ export function startVoiceProcessor(opts: ProcessorOptions = {}): () => void {
 
       inFlight.add(p.id);
       try {
-        const result = await extract(p.pendingVoiceBlob);
-        if (result.kind === "ok") {
-          useSettingsStore.setState((s) => {
-            if (!s.cfg) return s;
-            const patients = s.cfg.patients.map((pp) =>
-              pp.id === p.id
-                ? { ...pp, speakerData: result.data, pendingVoiceBlob: null }
-                : pp,
+        if (opts.extract) {
+          // Test path: bypass the durable workflow so tests don't need
+          // to mock the audit DB.
+          const result = await opts.extract(p.pendingVoiceBlob);
+          if (result.kind === "ok") {
+            persistSpeakerData(p.id, result.data);
+          } else {
+            console.warn(
+              `[OwnVoice:VoiceProcessor] Extraction failed for ${p.id}: ${result.reason}`,
             );
-            return { ...s, cfg: { ...s.cfg, patients } };
-          });
+          }
         } else {
-          console.warn(
-            `[OwnVoice:VoiceProcessor] Extraction failed for ${p.id}: ${result.reason}`,
+          // Production path: durable workflow journals decode → extract → persist.
+          const hash = await patientIdHash(p.id);
+          const base64 = p.pendingVoiceBlob;
+          const patientId = p.id;
+          await ov.workflow(
+            "voice_enrollment",
+            (ctx) =>
+              enrollVoice(ctx, {
+                base64,
+                patientId,
+                decode: decodeAudioFromBase64,
+                extract: async (audio) => {
+                  const { runEmbedOnWorker } = await import(
+                    "./voiceProcessorImpl"
+                  );
+                  return runEmbedOnWorker(audio);
+                },
+                persist: async (pid, data) => {
+                  persistSpeakerData(pid, data);
+                },
+              }),
+            { patientIdHash: hash, recoveryMode: "prompt" },
           );
         }
       } catch (err) {
@@ -73,21 +109,4 @@ export function startVoiceProcessor(opts: ProcessorOptions = {}): () => void {
     unsubModel();
     unsubStore();
   };
-}
-
-/** Default production extractor — decodes the base64 audio blob and runs
- *  it through the TTS worker's embed call. */
-async function defaultExtract(base64: string): Promise<ExtractResult> {
-  try {
-    const audio = await decodeAudioFromBase64(base64);
-    // Imported lazily to break a potential circular import.
-    const { runEmbedOnWorker } = await import("./voiceProcessorImpl");
-    const data = await runEmbedOnWorker(audio);
-    return { kind: "ok", data };
-  } catch (err) {
-    return {
-      kind: "fail",
-      reason: err instanceof Error ? err.message : String(err),
-    };
-  }
 }

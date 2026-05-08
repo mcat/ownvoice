@@ -1,3 +1,5 @@
+import { registerWorkflow } from "./registry";
+import type { StepCtx } from "./workflow";
 import { openAuditDb } from "./db";
 import { initLogger, log } from "./logger";
 import { setActivePatientHash } from "./session";
@@ -43,6 +45,24 @@ export async function initAudit(opts: InitOpts): Promise<void> {
     const db = await openAuditDb();
     currentDb = db;
     initLogger(db);
+
+    // Phase 2 retrofits: register the three workflow runners. These stubs
+    // exist so resumeWorkflow(id) can find a runner by name during the
+    // recovery sweep. v1 limitation: recovery args (audio blob for
+    // enrollment, phrase list for pre-gen, manifest for priming) aren't
+    // available at sweep time, so each stub no-ops and lets the normal
+    // boot path re-converge:
+    //   - voice_enrollment: pendingVoiceBlob in settings drives the next
+    //     attempt; banner from Phase 2 already prompts the user.
+    //   - audio_cache_pregen: audioCacheRunner re-fires per-phrase
+    //     workflows on its next tick; hasCachedAudio skips already-cached
+    //     entries.
+    //   - model_priming: drivePrimer re-runs at boot via bootModels.
+    registerWorkflow("voice_enrollment", async (_ctx: StepCtx) => {
+      console.warn("[audit] voice_enrollment recovery is a no-op — user must re-enroll");
+    });
+    registerWorkflow("audio_cache_pregen", async (_ctx: StepCtx) => {});
+    registerWorkflow("model_priming", async (_ctx: StepCtx) => {});
 
     void sweepRetention(db);
     cancelHourlyRetention = scheduleHourlyRetention(db);
