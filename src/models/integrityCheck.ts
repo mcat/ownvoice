@@ -73,7 +73,7 @@ export async function verifyModel(
   if (ok) {
     log({
       name: EVENT.MODEL_VERIFY_SUCCESS,
-      attributes: { [ATTR.MODEL_NAME]: model.id },
+      attributes: { [ATTR.MODEL_NAME]: model.baseUrl },
     });
   } else {
     const failed = files.find((f) => !f.ok);
