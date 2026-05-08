@@ -56,4 +56,38 @@ describe("ov.workflow happy path", () => {
     db.close();
     expect(rows[0].step_history.map((s: any) => s.step_name)).toEqual(["a", "b"]);
   });
+
+  it("step throw marks workflow failed and rethrows", async () => {
+    await expect(
+      ov.workflow("voice_enrollment", async (ctx) => {
+        await ctx.step("boom", async () => { throw new Error("nope"); });
+      }),
+    ).rejects.toThrow("nope");
+
+    const db = await openAuditDb();
+    const rows = await new Promise<any[]>((res) => {
+      const r = db.transaction("workflows", "readonly").objectStore("workflows").getAll();
+      r.onsuccess = () => res(r.result);
+    });
+    db.close();
+    expect(rows[0].status).toBe("failed");
+    expect(rows[0].step_history[0].status).toBe("failed");
+    expect(rows[0].step_history[0].error?.message).toBe("nope");
+  });
+
+  it("uncaught throw in runner marks workflow failed", async () => {
+    await expect(
+      ov.workflow("voice_enrollment", async () => {
+        throw new Error("runner exploded");
+      }),
+    ).rejects.toThrow("runner exploded");
+
+    const db = await openAuditDb();
+    const rows = await new Promise<any[]>((res) => {
+      const r = db.transaction("workflows", "readonly").objectStore("workflows").getAll();
+      r.onsuccess = () => res(r.result);
+    });
+    db.close();
+    expect(rows[0].status).toBe("failed");
+  });
 });
