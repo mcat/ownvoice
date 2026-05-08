@@ -3,11 +3,35 @@ import { Thread } from "./Thread";
 import { light } from "../../theme/tokens";
 import { useSettingsStore } from "../../stores/settingsStore";
 import { makeTestCfg } from "../../test/makeCfg";
-import type { Message } from "../../types";
+import type { ThreadEntry } from "../../audit/useThreadView";
+
+/** Minimal ThreadEntry factory — every field aside from `id` is what the
+ *  Thread component actually reads. `time` is epoch ms in the audit-derived
+ *  shape; the Thread doesn't render it, so a fixed timestamp is fine. */
+function entry(
+  from: "patient" | "provider",
+  text: string,
+  label: string,
+  extra: Partial<ThreadEntry> = {},
+): ThreadEntry {
+  return {
+    id: extra.id ?? `${from}-${text}`,
+    from,
+    text,
+    label,
+    time: extra.time ?? 0,
+    gloss: extra.gloss,
+    icon: extra.icon,
+  };
+}
+/** Loose alias used by inline fixtures below: Thread doesn't iterate by
+ *  `id` (it uses array index as React key) so tests don't need to spell
+ *  one out for every record. */
+type Message = Omit<ThreadEntry, "id"> & { id?: string };
 
 const messages: Message[] = [
-  { from: "patient", text: "I need water", time: "2:30 PM", label: "Maria" },
-  { from: "provider", text: "I will get that for you.", time: "2:31 PM", label: "Dr. Smith" },
+  entry("patient", "I need water", "Maria"),
+  entry("provider", "I will get that for you.", "Dr. Smith"),
 ];
 
 /** Install a matchMedia stub for the reduced-motion query only. */
@@ -116,7 +140,7 @@ describe("Thread", () => {
           from: "patient",
           text: "Necesito agua",
           gloss: "I need water",
-          time: "2:30 PM",
+          time: 0,
           label: "Maria",
         },
       ];
@@ -130,7 +154,7 @@ describe("Thread", () => {
         {
           from: "patient",
           text: "please help me breathe",
-          time: "2:30 PM",
+          time: 0,
           label: "Maria",
         },
       ];
@@ -147,7 +171,7 @@ describe("Thread", () => {
           from: "patient",
           text: "I need water",
           gloss: "I need water",
-          time: "2:30 PM",
+          time: 0,
           label: "Maria",
         },
       ];
@@ -166,7 +190,7 @@ describe("Thread", () => {
           from: "provider",
           text: "How are you feeling?",
           gloss: "Como te sientes?",
-          time: "2:31 PM",
+          time: 0,
           label: "Dr. Smith",
         },
       ];
@@ -181,7 +205,7 @@ describe("Thread", () => {
           from: "patient",
           text: "Necesito agua",
           gloss: "I need water",
-          time: "2:30 PM",
+          time: 0,
           label: "Maria",
         },
       ];
@@ -210,7 +234,7 @@ describe("Thread", () => {
           from: "patient",
           text: "I need water",
           icon: "💧",
-          time: "2:30 PM",
+          time: 0,
           label: "Maria",
         },
       ];
@@ -224,7 +248,7 @@ describe("Thread", () => {
 
     it("omits the icon span when msg.icon is undefined", () => {
       const msgs: Message[] = [
-        { from: "patient", text: "plain text", time: "2:30 PM", label: "Maria" },
+        { from: "patient", text: "plain text", time: 0, label: "Maria" },
       ];
       const { container } = render(
         <Thread messages={msgs} t={light} onRepeat={vi.fn()} />,
@@ -254,7 +278,7 @@ describe("Thread", () => {
           text: "Necesito agua",
           gloss: "I need water",
           icon: "💧",
-          time: "2:30 PM",
+          time: 0,
           label: "Maria",
         },
       ];
@@ -408,7 +432,7 @@ describe("Thread", () => {
       // Append a new message — this triggers the suppression path.
       const more: Message[] = [
         ...messages,
-        { from: "patient", text: "I need help", time: "2:32 PM", label: "Maria" },
+        { from: "patient", text: "I need help", time: 0, label: "Maria" },
       ];
       rerender(<Thread messages={more} t={light} onRepeat={vi.fn()} />);
       // Mid-animation a scroll event fires. With the suppression in place,

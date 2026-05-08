@@ -1,7 +1,6 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/preact";
 import { useSettingsStore } from "./stores/settingsStore";
 import { useUIStore } from "./stores/uiStore";
-import { useConversationStore } from "./stores/conversationStore";
 import { makeTestCfg } from "./test/makeCfg";
 import {
   assertFocusOrderMatchesDomOrder,
@@ -39,10 +38,17 @@ vi.mock("./hooks/useSpeakActions", () => ({
   useSpeakActions: () => ({
     speakAsPatient: vi.fn(),
     speakAsProvider: vi.fn(),
-    addToThread: vi.fn(),
+    composeThread: vi.fn(),
+    transcribeThread: vi.fn(),
     repeatSpeak: vi.fn(),
     activeProv: { name: "Care Team", hasVoice: false },
   }),
+}));
+
+// Stub the audit-derived thread view — App-level tests aren't audit
+// integration tests; they just need a stable empty thread.
+vi.mock("./audit/useThreadView", () => ({
+  useThreadView: () => [],
 }));
 
 // Shared mocks so individual tests can drive isGPUReady / onProgress /
@@ -123,7 +129,6 @@ describe("App", () => {
       staffAuthed: false,
       staffAuthedAt: null,
     });
-    useConversationStore.setState({ messagesByPatientId: {} });
     // Reset the shared signal mocks so each test starts "neither path
     // ready" unless it opts into a specific state.
     isGPUReadyMock.mockReset();

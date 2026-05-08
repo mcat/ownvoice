@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { resetPatients, resetCareTeam } from "./resetScoped";
 import { useSettingsStore } from "./settingsStore";
-import { useConversationStore } from "./conversationStore";
 import { useAudioCacheStore } from "./audioCacheStore";
 import { makeTestCfg } from "../test/makeCfg";
 
@@ -34,9 +33,6 @@ function seed() {
     },
   });
   useSettingsStore.setState({ cfg, speakerData: null, _hasHydrated: true });
-  useConversationStore.setState({
-    messagesByPatientId: { p1: [{ id: "m1", who: "patient", text: "hi", time: 0 }] as never[] },
-  });
   useAudioCacheStore.setState({ runs: { "patient:p1": { status: "running", current: 1, total: 5 } } as never, activeKey: "patient:p1" as never });
   return cfg;
 }
@@ -48,7 +44,6 @@ describe("resetScoped", () => {
 
   afterEach(() => {
     useSettingsStore.setState({ cfg: null, speakerData: null, _hasHydrated: false });
-    useConversationStore.setState({ messagesByPatientId: {} });
     useAudioCacheStore.setState({ runs: {}, activeKey: null });
   });
 
@@ -60,12 +55,6 @@ describe("resetScoped", () => {
       expect(cfg?.patients).toEqual([]);
       expect(cfg?.activePatientId).toBeNull();
       expect(cfg?.providers).toHaveLength(2);
-    });
-
-    it("wipes the conversation store", async () => {
-      seed();
-      await resetPatients();
-      expect(useConversationStore.getState().messagesByPatientId).toEqual({});
     });
 
     it("removes patient-tracked audio entries by hash and clears the index", async () => {
@@ -84,14 +73,13 @@ describe("resetScoped", () => {
   });
 
   describe("resetCareTeam", () => {
-    it("clears providers but keeps patients and conversations", async () => {
+    it("clears providers but keeps patients", async () => {
       const original = seed();
       await resetCareTeam();
       const cfg = useSettingsStore.getState().cfg;
       expect(cfg?.providers).toEqual([]);
       expect(cfg?.patients).toEqual(original.patients);
       expect(cfg?.activePatientId).toBe(original.activePatientId);
-      expect(useConversationStore.getState().messagesByPatientId).not.toEqual({});
     });
 
     it("removes audio entries NOT in the patient hash set", async () => {

@@ -6,7 +6,7 @@ import type { PhraseKey, SuggestionItem } from "../../data/phraseRegistry";
 import { resolveEmoji, scanKeywordEmoji, pickBubbleIcon, type EmojiEntry } from "../../data/expressiveEmoji";
 import { useActivePatient, useSettingsStore } from "../../stores/settingsStore";
 import { polishSentence } from "../../utils/polishSentence";
-import type { Message } from "../../types";
+import type { SuggestionContextMessage } from "../../data/suggestion-trees";
 import type { ThemeTokens, ThemeName } from "../../theme/tokens";
 
 // ── Token model ─────────────────────────────────────────────────
@@ -19,7 +19,7 @@ interface SentenceBuilderProps {
   onSend: (text: string, opts?: { gloss?: string; icon?: string }) => void;
   t: ThemeTokens;
   theme: ThemeName;
-  messages: Message[];
+  messages: readonly SuggestionContextMessage[];
 }
 
 /** Resolve a token array + pending free text into a single string in the

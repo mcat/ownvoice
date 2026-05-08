@@ -1,5 +1,4 @@
 import { useSettingsStore } from "./settingsStore";
-import { useConversationStore } from "./conversationStore";
 import { useUIStore } from "./uiStore";
 import { useOfflineStore } from "./offlineStore";
 import { clearIndex } from "./patientIndex";
@@ -12,7 +11,8 @@ import { getModelManager } from "../models/modelManager";
  * Full application reset — clears all persistent and in-memory state.
  *
  * Storage cleared:
- *   - IndexedDB "ownvoice" / "kv" (settings, speaker data, conversation)
+ *   - IndexedDB "ownvoice" / "kv" (settings, speaker data)
+ *   - IndexedDB "ov-audit" (audit log — also the conversation thread)
  *   - OPFS "audio-cache-v3" (pre-generated TTS clips)
  *   - OPFS "audio-cache-v3/patient-index.json" (patient→hashes metadata)
  *   - OPFS "models" (downloaded ONNX weights) + terminates workers
@@ -32,11 +32,13 @@ export async function resetAll(): Promise<void> {
   await clearIndex();
   getModelManager().clearAll();
 
+  // Wipe the audit log database (separate IDB, not covered by clearAll())
+  await new Promise<void>((res) => {
+    const r = indexedDB.deleteDatabase("ov-audit");
+    r.onsuccess = r.onerror = r.onblocked = () => res();
+  });
+
   // 2. In-memory Zustand stores
-  // Clear conversation BEFORE settings reset — settings reset nulls cfg,
-  // making activePatientId unavailable for per-patient clear. Instead,
-  // wipe the entire messagesByPatientId map directly.
-  useConversationStore.setState({ messagesByPatientId: {} });
   useSettingsStore.getState().reset();
   useUIStore.getState().resetUI();
   useOfflineStore.getState().reset();

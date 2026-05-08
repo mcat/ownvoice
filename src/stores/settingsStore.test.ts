@@ -2,6 +2,8 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { useSettingsStore } from "./settingsStore";
 import { makeTestCfg } from "../test/makeCfg";
 import type { AppSettings, Patient } from "../types";
+import * as logger from "../audit/logger";
+import * as session from "../audit/session";
 
 const DEFAULT_CFG: AppSettings = {
   pin: "1234",
@@ -699,6 +701,126 @@ describe("settingsStore — pendingVoiceBlob", () => {
       .getState()
       .cfg!.patients.find((p) => p.id === patient.id);
     expect(updated?.pendingVoiceBlob).toBeFalsy();
+  });
+});
+
+describe("settingsStore audit-aware named setters", () => {
+  beforeEach(() => {
+    vi.spyOn(logger, "log").mockImplementation(() => {});
+    useSettingsStore.setState({
+      cfg: {
+        pin: "",
+        caregiverLang: "en",
+        providers: [],
+        patients: [],
+        activePatientId: null,
+      },
+      speakerData: null,
+      _hasHydrated: false,
+    });
+  });
+
+  it("addPatient emits settings.patient.add with patient lang", () => {
+    useSettingsStore.getState().addPatient({
+      name: "Maria",
+      bed: "1A",
+      patientLang: "es",
+      hasVoice: false,
+      speakerData: null,
+    });
+    expect(logger.log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "settings.patient.add",
+        attributes: expect.objectContaining({
+          "ownvoice.patient.lang": "es",
+        }),
+      }),
+    );
+  });
+
+  it("setCaregiverLang updates cfg and emits settings.lang.change", () => {
+    useSettingsStore.getState().setCaregiverLang("es");
+    expect(useSettingsStore.getState().cfg!.caregiverLang).toBe("es");
+    expect(logger.log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "settings.lang.change",
+        attributes: expect.objectContaining({
+          "ownvoice.caregiver.lang": "es",
+        }),
+      }),
+    );
+  });
+
+  it("addProvider appends to providers and emits settings.provider.add", () => {
+    useSettingsStore.getState().addProvider({ name: "Dr. Lee", hasVoice: false });
+    const cfg = useSettingsStore.getState().cfg!;
+    expect(cfg.providers).toHaveLength(1);
+    expect(cfg.providers[0].name).toBe("Dr. Lee");
+    expect(logger.log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "settings.provider.add",
+        attributes: expect.objectContaining({
+          "ownvoice.provider.name": "Dr. Lee",
+        }),
+      }),
+    );
+  });
+
+  it("removePatient emits settings.patient.remove for non-active target", () => {
+    const a: Patient = { id: "a", name: "A", bed: "", patientLang: "en", hasVoice: false, speakerData: null, addedAt: 0, lastActiveAt: 0 };
+    const b: Patient = { id: "b", name: "B", bed: "", patientLang: "en", hasVoice: false, speakerData: null, addedAt: 0, lastActiveAt: 0 };
+    useSettingsStore.setState({
+      cfg: { pin: "", caregiverLang: "en", providers: [], patients: [a, b], activePatientId: "a" },
+    });
+    useSettingsStore.getState().removePatient("b");
+    expect(logger.log).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "settings.patient.remove" }),
+    );
+  });
+
+  it("removePatient does NOT emit when target is the active patient (throws first)", () => {
+    const a: Patient = { id: "a", name: "A", bed: "", patientLang: "en", hasVoice: false, speakerData: null, addedAt: 0, lastActiveAt: 0 };
+    useSettingsStore.setState({
+      cfg: { pin: "", caregiverLang: "en", providers: [], patients: [a], activePatientId: "a" },
+    });
+    expect(() => useSettingsStore.getState().removePatient("a")).toThrow(/active/);
+    expect(logger.log).not.toHaveBeenCalledWith(
+      expect.objectContaining({ name: "settings.patient.remove" }),
+    );
+  });
+
+  it("setActivePatient(id) updates cfg, computes hash, sets session hash, and emits", async () => {
+    const setHash = vi.spyOn(session, "setActivePatientHash");
+    const a: Patient = { id: "patient-uuid-1", name: "A", bed: "", patientLang: "en", hasVoice: false, speakerData: null, addedAt: 0, lastActiveAt: 0 };
+    useSettingsStore.setState({
+      cfg: { pin: "", caregiverLang: "en", providers: [], patients: [a], activePatientId: null },
+    });
+
+    await useSettingsStore.getState().setActivePatient("patient-uuid-1");
+
+    expect(useSettingsStore.getState().cfg!.activePatientId).toBe("patient-uuid-1");
+    // Hash is 16 hex chars per src/audit/hash.ts
+    expect(setHash).toHaveBeenCalledWith(expect.stringMatching(/^[0-9a-f]{16}$/));
+    expect(logger.log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "settings.patient.activate",
+        attributes: expect.objectContaining({
+          "ownvoice.patient.id_hash": expect.stringMatching(/^[0-9a-f]{16}$/),
+        }),
+      }),
+    );
+  });
+
+  it("setActivePatient(null) clears the active patient and clears the session hash", async () => {
+    const setHash = vi.spyOn(session, "setActivePatientHash");
+    useSettingsStore.setState({
+      cfg: { pin: "", caregiverLang: "en", providers: [], patients: [], activePatientId: "x" },
+    });
+
+    await useSettingsStore.getState().setActivePatient(null);
+
+    expect(useSettingsStore.getState().cfg!.activePatientId).toBeNull();
+    expect(setHash).toHaveBeenCalledWith(null);
   });
 });
 

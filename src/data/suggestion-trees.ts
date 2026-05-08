@@ -1,4 +1,12 @@
-import type { Message } from "../types";
+/** Structural shape used by suggestion helpers — accepts both legacy `Message`
+ *  records and the new audit-derived `ThreadEntry`s. Only `from` and `text`
+ *  are read; other fields differ between the two shapes (Message.time is a
+ *  string, ThreadEntry.time is epoch ms) but aren't consumed here. */
+export interface SuggestionContextMessage {
+  from: "patient" | "provider";
+  text: string;
+}
+type Message = SuggestionContextMessage;
 import type { FewShotExample } from "../models/types";
 import { getModelManager } from "../models/modelManager";
 import { getSuggestionTree, getKeyedSuggestionTree, t } from "./phraseRegistry";
@@ -299,7 +307,7 @@ function getKeywordSuggestions(partialKey: string): string[] {
  */
 export function buildCompletionPrompt(
   partialKey: string,
-  recentMessages: Message[],
+  recentMessages: readonly Message[],
   hour: number,
 ): string {
   const timeContext =
@@ -567,7 +575,7 @@ export function buildLLMFewShot(partialKey: string): FewShotExample[] {
  *     eating into the 1.2B model's prompt budget.
  */
 export function extractPatientVocabulary(
-  messages: Message[],
+  messages: readonly Message[],
   limit: number,
 ): string[] {
   const seen = new Set<string>();
@@ -602,7 +610,7 @@ let nextLLMRequestId = 1;
 
 export async function getLLMSuggestions(
   partialKey: string,
-  recentMessages: Message[],
+  recentMessages: readonly Message[],
   hour: number,
 ): Promise<string[]> {
   if (!partialKey) return [];
@@ -677,7 +685,7 @@ export async function getLLMSuggestions(
  */
 export async function getContextualSuggestions(
   partialKey: string,
-  recentMessages: Message[],
+  recentMessages: readonly Message[],
   hour: number,
 ): Promise<string[]> {
   const base = BASE_SUGGESTIONS[partialKey];
@@ -790,7 +798,7 @@ function sf(text: string): SuggestionItem {
  */
 export async function getKeyedContextualSuggestions(
   partialKey: string,
-  recentMessages: Message[],
+  recentMessages: readonly Message[],
   hour: number,
 ): Promise<SuggestionItem[]> {
   const keyed = KEYED_SUGGESTIONS[partialKey];

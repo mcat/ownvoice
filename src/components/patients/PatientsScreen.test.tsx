@@ -4,7 +4,6 @@ import { PatientsScreen } from "./PatientsScreen";
 import { ConfirmDialogHost } from "../shared/ConfirmDialog";
 import { light } from "../../theme/tokens";
 import { useSettingsStore } from "../../stores/settingsStore";
-import { useConversationStore } from "../../stores/conversationStore";
 import { useUIStore } from "../../stores/uiStore";
 import { makeTestCfg } from "../../test/makeCfg";
 import type { Patient } from "../../types";
@@ -64,17 +63,6 @@ function setupStore(activeId: string = "patient-a") {
     cfg: { activePatientId: activeId },
   });
   useSettingsStore.setState({ cfg, _hasHydrated: true });
-  useConversationStore.setState({
-    messagesByPatientId: {
-      "patient-a": [
-        { from: "patient", text: "Hello", time: "10:00 AM", label: "Alice" },
-      ],
-      "patient-b": [
-        { from: "patient", text: "Hola", time: "10:01 AM", label: "Bob" },
-        { from: "provider", text: "Bien", time: "10:02 AM", label: "Dr. X" },
-      ],
-    },
-  });
 }
 
 function flushMicrotask(): Promise<void> {

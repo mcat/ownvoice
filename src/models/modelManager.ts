@@ -1,6 +1,9 @@
 import type { ModelId, ModelStatus, LoadProgress } from "./types";
 import type { ManifestModel } from "./modelsManifest";
 import type { IntegrityReport } from "./integrityCheck";
+import { log } from "../audit/logger";
+import { EVENT } from "../audit/events";
+import { ATTR } from "../audit/attrs";
 
 interface ModelEntry {
   status: ModelStatus;
@@ -40,6 +43,8 @@ class ModelManager {
   async init(): Promise<void> {
     if (this.initialized) return;
     this.initialized = true;
+
+    log({ name: EVENT.MODEL_BOOT_START });
 
     // Request persistent storage so models aren't evicted
     if (navigator.storage?.persist) {
@@ -112,6 +117,7 @@ class ModelManager {
       const modelDir = await modelsDir.getDirectoryHandle(id, { create: true });
 
       // Fast path: fully present and size matches.
+      let priorBytes = 0;
       try {
         const existing = await modelDir.getFileHandle(filename);
         const file = await existing.getFile();
@@ -120,8 +126,27 @@ class ModelManager {
           this.updateModel(id, { loaded: expectedSize });
           return { file, fromCache: true };
         }
+        priorBytes = file.size;
       } catch {
         // Missing — proceed to download.
+      }
+
+      if (priorBytes > 0) {
+        log({
+          name: EVENT.MODEL_DOWNLOAD_RESUME,
+          attributes: {
+            [ATTR.MODEL_NAME]: `${id}/${filename}`,
+            [ATTR.MODEL_SIZE_BYTES]: expectedSize,
+          },
+        });
+      } else {
+        log({
+          name: EVENT.MODEL_DOWNLOAD_START,
+          attributes: {
+            [ATTR.MODEL_NAME]: `${id}/${filename}`,
+            [ATTR.MODEL_SIZE_BYTES]: expectedSize,
+          },
+        });
       }
 
       const { resumableDownload } = await import("./resumableDownload");
@@ -141,6 +166,13 @@ class ModelManager {
       console.log(
         `[OwnVoice] ${id}/${filename} cached in OPFS (${(file.size / 1e6).toFixed(1)} MB)`,
       );
+      log({
+        name: EVENT.MODEL_DOWNLOAD_COMPLETE,
+        attributes: {
+          [ATTR.MODEL_NAME]: `${id}/${filename}`,
+          [ATTR.MODEL_SIZE_BYTES]: file.size,
+        },
+      });
       return { file, fromCache: false };
     } catch (err) {
       const message = err instanceof Error ? err.message : "Download failed";
@@ -200,6 +232,10 @@ class ModelManager {
   markWarm(id: ModelId): void {
     this.updateModel(id, { status: "warm" });
     console.log(`[OwnVoice] ${id} model warm`);
+    log({
+      name: EVENT.MODEL_BOOT_COMPLETE,
+      attributes: { [ATTR.MODEL_NAME]: id },
+    });
   }
 
   /** Mark a model as errored */

@@ -84,7 +84,7 @@ export function CareTeamSection({
       cancelLabel: resolvePhrase("ui.provider.pin_gate.cancel", cfg.caregiverLang),
     });
     if (ok) {
-      useSettingsStore.getState().updateCfg({ caregiverLang: destLocale });
+      useSettingsStore.getState().setCaregiverLang(destLocale);
     }
   }
 
@@ -94,10 +94,11 @@ export function CareTeamSection({
 
   function addProvider() {
     if (!newProvName.trim()) return;
-    commitProviders([
-      ...providers,
-      { name: newProvName.trim(), hasVoice: false, emoji: newProvEmoji },
-    ]);
+    useSettingsStore.getState().addProvider({
+      name: newProvName.trim(),
+      hasVoice: false,
+      emoji: newProvEmoji,
+    });
     setNewProvName("");
     setNewProvEmoji(EMOJIS[0]);
   }

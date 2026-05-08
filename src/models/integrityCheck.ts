@@ -1,4 +1,7 @@
 import type { ManifestFile, ManifestModel } from "./modelsManifest";
+import { log } from "../audit/logger";
+import { EVENT } from "../audit/events";
+import { ATTR } from "../audit/attrs";
 
 export interface FileIntegrityResult {
   name: string;
@@ -66,5 +69,24 @@ export async function verifyModel(
   model: ManifestModel,
 ): Promise<IntegrityReport> {
   const files = await Promise.all(model.files.map((f) => verifyFile(dir, f)));
-  return { ok: files.every((f) => f.ok), files };
+  const ok = files.every((f) => f.ok);
+  if (ok) {
+    log({
+      name: EVENT.MODEL_VERIFY_SUCCESS,
+      attributes: { [ATTR.MODEL_NAME]: model.baseUrl },
+    });
+  } else {
+    const failed = files.find((f) => !f.ok);
+    log({
+      name: EVENT.MODEL_VERIFY_FAILURE,
+      severity: "ERROR",
+      attributes: {
+        [ATTR.MODEL_NAME]: model.baseUrl,
+        [ATTR.ERROR_MESSAGE]: failed
+          ? `${failed.name}: ${failed.reason ?? "unknown"}`
+          : "unknown failure",
+      },
+    });
+  }
+  return { ok, files };
 }

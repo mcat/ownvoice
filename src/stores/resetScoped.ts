@@ -1,16 +1,18 @@
 import { useSettingsStore } from "./settingsStore";
-import { useConversationStore } from "./conversationStore";
 import { useAudioCacheStore } from "./audioCacheStore";
 import { clearIndex, getAllPatientHashes } from "./patientIndex";
 import { clearAudioByHashes, clearAudioExcept } from "../models/audioCache";
 import * as audioCacheRunner from "../models/audioCacheRunner";
+import { openAuditDb } from "../audit/db";
+import { clearAuditForPatient } from "../audit/cascade";
 
 /**
  * Erase all patient data while preserving care-team configuration.
  *
  * Wiped:
  *  - cfg.patients[] (cleared) and activePatientId (set to null)
- *  - per-patient conversation threads (full messagesByPatientId map)
+ *  - audit-log entries for every patient hash (the thread derives from
+ *    these — wiped via `clearAuditForPatient` below)
  *  - patient-tracked OPFS audio entries
  *  - patient hash index
  *  - in-memory audio-cache run state for patient speakers
@@ -28,7 +30,16 @@ export async function resetPatients(): Promise<void> {
   await clearAudioByHashes(patientHashes);
   await clearIndex();
 
-  useConversationStore.setState({ messagesByPatientId: {} });
+  try {
+    const db = await openAuditDb();
+    for (const hash of patientHashes) {
+      await clearAuditForPatient(db, hash);
+    }
+    db.close();
+  } catch (err) {
+    console.warn("[audit] cascade cleanup failed:", err);
+  }
+
   useAudioCacheStore.setState({ runs: {}, activeKey: null });
 
   const cfg = useSettingsStore.getState().cfg;
