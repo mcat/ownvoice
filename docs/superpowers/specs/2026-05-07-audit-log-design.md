@@ -46,6 +46,15 @@ alongside the audit log. Phase 1 derives the thread from audit events and
 drops the `ov-conversation` IDB store; spoken-text PHI then lives in
 exactly one place. See Phase 1 below for the migration story.
 
+## Platform target
+
+iPadOS 26+ in Safari 26+. This lets the design depend on
+`requestIdleCallback`, `navigator.share` with files, OPFS, `crypto.subtle`,
+and modern IndexedDB without polyfills or fallbacks. Anywhere the spec
+prescribes a behavior backed by one of these APIs, the API is assumed
+available; failures are real failures and route to the degraded modes
+defined here, not to legacy alternatives.
+
 ## Decisions log
 
 Nine questions from the brainstorming session, in order:
@@ -81,22 +90,36 @@ conversation thread from it.
   object stores defined at v1 (workflows store stays empty until Phase 2).
 - `src/audit/logger.ts` — single `audit.log(event)` writer; passive only.
   Emits a synchronous in-memory pub-sub notification for live readers.
-- `src/audit/types.ts`, `src/audit/attrs.ts` — record shape + closed
-  attribute namespace.
+- `src/audit/types.ts`, `src/audit/attrs.ts`, `src/audit/events.ts` —
+  record shape, closed attribute namespace, closed event-name registry.
 - `src/audit/ulid.ts` — ~30 LOC dependency-free ULID generator.
 - `src/audit/otlp.ts` — OTLP/JSON envelope builder using
   `@opentelemetry/otlp-transformer`.
+- `src/audit/storageMeter.ts` — running-total byte counter for the 50 MB
+  cap; persisted in settings; updated on every flush.
+- `src/audit/db.ts` — IDB open / `onupgradeneeded` schema setup with the
+  full hoisted-column index list.
 - Retrofit `audit.log(...)` calls into `src/speak.ts`, `src/main-app.tsx`,
-  `src/models/modelManager.ts`, `src/models/integrityCheck.ts`,
-  `src/stores/settingsStore.ts` setters, and global error handlers
-  (`window.addEventListener("error" | "unhandledrejection")`).
-- Boot-time retention sweep + hourly tick (uses `requestIdleCallback` so the
-  tap path is never blocked).
+  `src/models/modelManager.ts`, `src/models/integrityCheck.ts`, and
+  global error handlers (`window.addEventListener("error" | "unhandledrejection")`).
+- **Settings instrumentation:** introduce explicit named setters on
+  `settingsStore` (`setActivePatient`, `addPatient`, `removePatient`,
+  `setCaregiverLang`, `addProvider`, etc.) and route component callers
+  through them. Every named setter emits exactly one corresponding audit
+  event. This replaces the current pattern of inline `set((s) => ...)`
+  callbacks at component call sites and is the only way to instrument
+  settings exhaustively without spraying `audit.log` calls across the UI
+  layer.
+- Boot-time retention sweep + hourly `requestIdleCallback` tick. iPadOS 26+
+  is the floor so no fallback path is needed.
 - Hidden Settings → Diagnostics viewer (revealed by 5-tap on the Settings
-  version string). Read-only table, severity filter, free-text search over
+  version string). Virtualised list, severity filter, free-text search over
   `name`, JSON export button (no redaction — dev-only context).
 - Per-patient cascade in `src/stores/resetScoped.ts`; `resetAll()` adds
   `indexedDB.deleteDatabase("ov-audit")`.
+- **Service worker:** bump `CACHE_NAME` in `public/sw.js`. Phase 1 ships
+  new modules under `src/audit/` and changes the boot sequence — without
+  the bump, returning iPad sessions serve stale shells.
 
 **Thread derivation (the new piece):**
 
@@ -153,19 +176,37 @@ local thread data on dev iPads goes with it.
 - `src/audit/recovery.ts` — `sweepAbandonedWorkflows()` and
   `resumeWorkflow(id)`.
 - Wire recovery sweep into `src/main-app.tsx` after settings hydrate.
-- Retrofit four candidate flows:
+- Retrofit three candidate flows:
   - `voice_enrollment` — `recoveryMode: "prompt"`. Steps:
     `record_to_blob` → `extract_embedding` → `persist_speaker_data`.
-  - `audio_cache_pregen` — `recoveryMode: "auto"`. One step per phrase per
-    voice; underlying cache write is already idempotent.
-  - `model_priming` — `recoveryMode: "auto"`. One step per manifest entry;
-    wraps the existing `primeOffline` generator.
-  - `patient_remove` — `recoveryMode: "auto"`. Steps for each store the
-    cascade touches (settings, audio cache, audit, OPFS). The conversation
-    cascade collapses into the audit cascade since the thread is now
-    derived from audit events.
-- Resume prompt UI in `src/components/settings/` for the `prompt` mode
-  workflows.
+    Bounded at ~3 steps; comfortably inside the inline `step_history` cap.
+  - `audio_cache_pregen` — `recoveryMode: "auto"`. **One workflow instance
+    per (phrase, voice) tuple**, not one workflow with a step per phrase.
+    Each instance has 3 steps (`synthesize` → `post_process` → `persist`).
+    Thousands of instances over time but each one is small and resumes
+    independently. The recovery sweep handles many parallel orphans
+    correctly because they're independent rows. The underlying cache
+    write was already idempotent at the per-phrase level.
+  - `model_priming` — `recoveryMode: "auto"`. One workflow instance per
+    boot. Steps mirror manifest entries (`download_<file>` → `verify_<file>`
+    → `mark_ready_<file>`). The existing `primeOffline` async generator
+    is wrapped — its yields are translated to `ctx.step(...)` calls in a
+    thin shim, not journaled per-yield (generator state is not
+    replay-safe). Bounded at ~30 steps for the current manifest.
+- **`patient_remove` is *not* a durable workflow.** It runs as a one-shot
+  transactional cleanup wrapped in a single function (`removePatient(id)`
+  in `src/stores/resetScoped.ts`). Reasons: (a) the cascade deletes audit
+  records for the patient including any workflow journal it would have
+  written, which would create a circular self-modification problem; (b)
+  the operation is rare, fast (<100 ms typical), and a partial failure is
+  recoverable by re-invoking it. The function still emits one
+  `settings.patient.remove` audit event with a final
+  `error.message` attribute on failure.
+- Resume prompt UI lives at the **App root**, not inside Settings. A
+  banner above the main shell ("We didn't finish setting up Maria's
+  voice. Resume? / Discard.") because abandoned enrollments need
+  attention before the user can use the patient's clone, and bedside
+  staff might not visit Settings between sessions.
 
 Phase 2 starts emitting `kind: "span"` records and populating the
 `workflows` store. No DB schema migration — the fields were defined at v1.
@@ -232,6 +273,16 @@ IndexedDB indexes:
 | workflows | `by_status_started` | `["status", "started_at"]` | Boot recovery sweep |
 | workflows | `by_patient_id_hash` | `patient_id_hash` | Per-patient cascade |
 
+IndexedDB skips records whose keypath returns `undefined` from any
+index. This is intentional and matches our access patterns:
+
+- System events without patient context are absent from `by_patient_time`
+- Events without `severity_number` (none currently — `audit.log` defaults to INFO) would be absent from `by_severity_time`
+- Events outside a workflow are absent from `by_workflow_id`
+
+A full table scan via `by_time` (or `events.openCursor()` over the PK)
+sees every record regardless.
+
 ### Record schema
 
 ```ts
@@ -288,9 +339,20 @@ export interface StepRecord {
 export type WorkflowName =
   | "voice_enrollment"
   | "audio_cache_pregen"
-  | "model_priming"
-  | "patient_remove";
+  | "model_priming";
 ```
+
+**`attempt` semantics.** `WorkflowState.attempt` is the global retry
+counter for a workflow instance. `StepRecord.attempt` mirrors the
+workflow attempt at the time the step ran. A workflow re-run after
+`abandoned` (recovery) does NOT bump the attempt — it resumes with the
+same attempt number, replays completed steps via memoised results, and
+runs only the steps that hadn't completed. A workflow that ended
+`failed` is not auto-retried; explicit user action triggers a new
+workflow instance with the same `name` and a fresh `workflow_id` (not a
+bumped attempt — failure recovery is a fresh instance, not the same
+one). Phase 2.1 may add per-step retry-with-backoff that does bump
+`StepRecord.attempt`; for v1, attempt stays at 1 for all instances.
 
 ### Closed attribute namespace
 
@@ -329,6 +391,11 @@ export const ATTR = {
   MODEL_NAME:          "ownvoice.model.name",
   MODEL_SIZE_BYTES:    "ownvoice.model.size_bytes",
   MODEL_VERSION:       "ownvoice.model.version",
+
+  // Audit-of-audit (Phase 1)
+  AUDIT_DROPPED_COUNT:    "ownvoice.audit.dropped_count",
+  AUDIT_DEGRADED_REASON:  "ownvoice.audit.degraded_reason",
+  AUDIT_BYTES_USED:       "ownvoice.audit.bytes_used",
 } as const;
 
 export const PHI_ATTR_KEYS: ReadonlySet<string> = new Set([
@@ -423,37 +490,65 @@ export function log(event: AuditEvent): void;
 export function subscribe(listener: (record: AuditRecord) => void): () => void;
 ```
 
-**Buffering:** writes queue to an in-memory ring buffer (capacity 500).
-A flush is scheduled via `requestIdleCallback` (`setTimeout(0)` fallback)
-on each `log()` call. Each flush opens one `readwrite` IDB transaction
-and `put`s the entire buffer. On overflow the oldest in-buffer records
-are dropped and one `EVENT.AUDIT_BUFFER_OVERFLOW` WARN event is emitted
-with the dropped count.
+**Buffering:** writes queue to an in-memory ring buffer (capacity 500
+records — sized for ~50 seconds of 10 events/sec sustained load between
+flushes). A flush is scheduled via `requestIdleCallback` on each `log()`
+call. Each flush opens one `readwrite` IDB transaction and `put`s the
+entire buffer. On overflow the oldest in-buffer records are dropped and
+one `EVENT.AUDIT_BUFFER_OVERFLOW` WARN event is emitted with the
+`AUDIT_DROPPED_COUNT` attribute.
 
-**Error policy:** any IDB failure during flush is caught; records stay in
-the buffer for the next attempt; `console.warn` fires rate-limited to
-once per minute. After 10 consecutive failed flushes the logger enters
-degraded mode (`log()` becomes a no-op, one `EVENT.AUDIT_DEGRADED`
-record fires via `console.error` only, the viewer surfaces a
-"logging unavailable" banner). The app continues; the patient still
-gets feedback.
+**Error policy:** any IDB failure during flush is caught; records stay
+in the buffer for the next attempt; `console.warn` fires rate-limited
+to once per minute. After 10 consecutive failed flushes the logger
+enters degraded mode (`log()` becomes a no-op, one `EVENT.AUDIT_DEGRADED`
+record fires via `console.error` only with `AUDIT_DEGRADED_REASON`, the
+viewer surfaces a "logging unavailable" banner). The app continues;
+the patient still gets feedback.
 
-**Synchronous patient-id hashing:** `crypto.subtle.digest` is async,
-which would force `log()` async too. To preserve the synchronous
-contract, the SHA-256 hash is precomputed once when a patient becomes
-active (in `settingsStore.setActivePatient`) and stashed on an
-in-memory session object. `log()` reads it synchronously. Re-hashed
-only on patient switch.
+**Synchronous patient-id hashing — snapshot at log() time.**
+`crypto.subtle.digest` is async, which would force `log()` async too. To
+preserve the synchronous contract, the SHA-256 hash is precomputed
+once when a patient becomes active (in `settingsStore.setActivePatient`)
+and stashed on an in-memory session object. `log()` reads the current
+hash and **copies it by value into the buffered record before queuing**.
+This is load-bearing: if the user switches patients while the buffer
+holds unflushed events, those events must keep the hash that was
+active when they were emitted, not whatever hash is current at flush
+time. The session object is mutable; the buffered records are not.
+
+**Optimistic UI tradeoff.** Subscribers fire synchronously *before* IDB
+write completes. `useThreadView` and the dev viewer therefore display
+records that may not yet be persisted, so a tab kill in the small
+window between `log()` and the next idle-callback flush can lose those
+records. For v0.1 this trade is acceptable — the alternative (notify
+after write) would delay every render by a buffer-flush interval and
+make the thread feel laggy. Production-grade versions could add an
+"optimistic vs confirmed" flag on each entry and reconcile.
+
+**50 MB cap measurement.** Track approximate bytes added on every
+flush (sum of `JSON.stringify(record).length` over the buffer) and
+persist a running total in `settingsStore.cfg.auditBytesUsed`. When the
+total exceeds 50 MB, drop the oldest 10% of records by ULID prefix in
+the next idle tick and decrement the counter by the dropped sum. The
+counter drifts slightly from real on-disk usage (IndexedDB has overhead
+the simple JSON length doesn't capture) but the drift is bounded and
+the cap is a soft fence anyway. A weekly reconciliation pass during
+idle time can re-measure by full scan if drift becomes a concern.
 
 ### Severity ladder
 
 | Text | OTLP number | When |
 |---|---|---|
-| DEBUG | 5 | Verbose lifecycle / cache stats; off by default in viewer |
+| DEBUG | 5 | Verbose lifecycle / cache stats; replay hits; off by default in viewer |
 | INFO | 9 | Tap events, settings changes, successful workflow completions |
-| WARN | 13 | Fallback chain triggered; recoverable degradation |
-| ERROR | 17 | Caught exceptions, integrity failures, TTS failures |
-| FATAL | 21 | Unrecoverable: model load fail, IDB write fail, OPFS quota exceeded |
+| WARN | 13 | Fallback chain triggered; recoverable degradation; OPFS quota hit (audio cache evicts and continues) |
+| ERROR | 17 | Caught exceptions, integrity failures, TTS failures, IDB write failures inside the audit logger itself |
+| FATAL | 21 | Unrecoverable: model load fail, IDB cannot be opened on boot |
+
+`step.replay.hit` is logged at DEBUG, not INFO — replay is the common
+case for any abandoned-then-resumed workflow and INFO would double the
+log volume during recovery.
 
 ### Resource (per export)
 
@@ -509,7 +604,6 @@ before the recovery sweep:
 registerWorkflow("voice_enrollment", enrollVoice);
 registerWorkflow("audio_cache_pregen", pregenAudio);
 registerWorkflow("model_priming", primeModels);
-registerWorkflow("patient_remove", removePatient);
 
 await sweepAbandonedWorkflows();
 ```
@@ -541,16 +635,21 @@ state. Capture non-deterministic values in steps so they're memoised.
 
 ### Cross-store atomicity invariant
 
-Every state transition writes to both stores in one IDB transaction:
+Every state transition writes to both stores in one IDB transaction.
+The records that appear in `events` are LogRecords (`kind: "log"`)
+emitted as journal markers, not in-flight OTLP Spans — OTLP doesn't
+have spans-in-flight on the wire. The terminal end-of-span records
+(`kind: "span"`) are also LogRecords from a storage standpoint; the
+distinction is the schema fields they populate.
 
-| Transition | events | workflows |
+| Transition | events write | workflows write |
 |---|---|---|
-| Workflow start | Span-start record | put new row, status=running |
-| Step complete | Span-end (OK) | put row with new step_history entry |
-| Step fail | Span-end (ERROR) | put row, status=failed |
-| Workflow complete | Span-end (OK) | put row, status=completed |
-| Workflow fail | Span-end (ERROR) | put row, status=failed |
-| Sweep marks abandoned | Span-end (ERROR, attr error.type=abandoned) | put row, status=abandoned |
+| Workflow start | `workflow.start` log record | put new row, status=running |
+| Step complete | `step.complete` log record (kind=span, status_code=OK) | put row with new step_history entry |
+| Step fail | `step.failed` log record (kind=span, status_code=ERROR) | put row, status=failed |
+| Workflow complete | `workflow.complete` log record (kind=span, status_code=OK) | put row, status=completed |
+| Workflow fail | `workflow.failed` log record (kind=span, status_code=ERROR) | put row, status=failed |
+| Sweep marks abandoned | `workflow.abandoned` log record (kind=span, status_code=ERROR, attr error.type=abandoned) | put row, status=abandoned |
 
 A tab kill mid-transaction rolls back both stores. A tab kill between
 transactions is detected by the boot-time recovery sweep.
@@ -588,7 +687,6 @@ const DEFAULT_RECOVERY: Record<WorkflowName, "auto" | "prompt" | "manual"> = {
   voice_enrollment:    "prompt",
   audio_cache_pregen:  "auto",
   model_priming:       "auto",
-  patient_remove:      "auto",
 };
 ```
 
@@ -622,6 +720,31 @@ Single screen at Settings → Activity log (Phase 1: hidden as
 "Diagnostics" behind 5-tap on version string; Phase 3: visible). Inherits
 the existing Settings PIN.
 
+**Rendering: virtualised list with comprehensive filtering.** A 30-day
+retention window can hold 10–15K records on an active device; rendering
+those as a flat DOM table janks. Use `@tanstack/virtual` (works in Preact
+via `preact/compat`) to render only the visible window plus a small
+overscan. Row height is fixed (one record per row, fixed columns per
+role) so virtualisation is straightforward.
+
+Filtering is comprehensive — every filter narrows the underlying IDB
+query, not a pre-loaded in-memory array. Filters applied in this order:
+
+1. **Patient** — IDB cursor over `by_patient_time` keyed range, or full
+   `by_time` scan if "All".
+2. **Date range** — applied as IDB key range upper/lower bounds.
+3. **Severity** — `by_severity_time` cursor, or post-filter if combined
+   with patient (composite indexes don't span both).
+4. **Event-name prefix** — string-prefix match over `by_name_time`
+   cursor, or substring post-filter for free-text search.
+5. **Attribute search** (Phase 3) — post-filter scan of attributes.
+
+Phase 1 search filters over `name` only because it's indexed. Phase 3
+extends to attribute-deep search via post-filter pass. Result set is
+materialised into the virtualiser's row provider, capped at 5,000
+rendered rows with a "show more" affordance to avoid pathological
+filters returning the entire 15K corpus.
+
 ```
 ┌─ Activity log ───────────────────────────────────────────────┐
 │  [Healthcare worker | Researcher | Developer]   [Export ▼]   │
@@ -646,8 +769,8 @@ Per-role defaults:
 Patient filtering: defaults to active patient for healthcare; All for
 others. Sourced from `cfg.patients`.
 
-Out of scope for the viewer: live tail / streaming, cross-device
-aggregation, attribute-deep search (Phase 1: search over `name` only).
+Out of scope for the viewer: live tail / streaming (records arrive on
+re-render via the audit pub-sub, not via push), cross-device aggregation.
 
 ## Export
 
@@ -665,6 +788,84 @@ WYSIWYG: export honours the on-screen viewer's filters. Researcher's
 
 CSV deliberately not offered — flattening OTel attributes into columns
 loses structure. NDJSON is the right tabular-ish answer.
+
+## Dependencies to add
+
+Phase 1:
+
+- `@opentelemetry/api` — typed instrumentation surface (~5 KB gzipped)
+- `@opentelemetry/api-logs` — logs API surface (~2 KB)
+- `@opentelemetry/otlp-transformer` — OTLP/JSON envelope serialiser (~10 KB)
+- `superjson` — JSON serialisation that preserves `Date`, `Map`, `Set`,
+  `BigInt` (used for `StepRecord.result` memoisation in Phase 2 but
+  introduced in Phase 1 so the schema fields are exercised) (~10 KB)
+- `@tanstack/virtual` — virtualised list rendering (~5 KB; uses Preact
+  via `preact/compat` already aliased in `vite.config.ts`)
+
+Phase 1 dev:
+
+- `fake-indexeddb` — IDB shim for vitest. Replaces the existing
+  custom mocks in store tests so audit tests can run against a
+  consistent fake.
+
+Bundle delta target: ≤25 KB gzipped of audit-related production code
+(library + our own modules). Verified against `npm run build` size
+output and gated in CI as part of the per-phase acceptance criteria.
+
+## Acceptance criteria
+
+Each phase merges only when these checks pass.
+
+### Phase 1
+
+- **Bundle delta ≤25 KB gzipped** for audit-related code (library + our
+  modules). Verified via the existing `npm run build` size pipeline.
+- **Tap-path latency benchmark** in `src/speak.test.ts`: `audit.log` of
+  one `SPEAK_TAP` event adds <1 ms p50 / <5 ms p99 to the synchronous
+  path of a cache-hit speak call. Vitest `bench` over 1000 iterations.
+  CI gate.
+- **Boot time** within `main-app.tsx` from `navigation.responseEnd` to
+  first paint with audit init included is <500 ms median on a target
+  iPad. Manually verified in browser; documented in PR description; not
+  a CI gate.
+- **PHI redaction completeness**: every key in `PHI_ATTR_KEYS` round-trips
+  through `redactPHI()` in test, AND a property-based test that adds an
+  unrecognised ATTR key forces a "redaction policy not declared for new
+  key" failure. Prevents PHI leak from silent attribute additions.
+- **Reset / cascade end-to-end**: vitest integration test creates audit
+  records for two patients via the real (fake-indexeddb) DB, runs
+  `clearForPatient(patient1.id)`, asserts only patient2's records remain.
+- **Thread parity test**: a representative ten-message scenario
+  (patient + provider + composed wish + transcribed STT) renders
+  identically before and after the `useConversationStore` →
+  `useThreadView` swap. Visual snapshot in vitest + DOM-tree assertion.
+- **Service worker `CACHE_NAME` bumped** in `public/sw.js`. PR-description
+  checklist item; reviewer-enforced.
+
+### Phase 2
+
+- **Replay correctness**: integration test for each of the three durable
+  workflows simulates a tab kill after step N and verifies resume
+  completes the remaining steps exactly once. Uses `fake-indexeddb` and
+  synthetic crash points.
+- **Cross-store atomicity**: forced IDB tx abort mid-step leaves neither
+  store updated.
+- **Recovery sweep timing** completes in <100 ms with up to 50 abandoned
+  workflows. CI bench.
+- **Determinism assertion** in dev builds throws when a workflow's runner
+  branches on `Math.random()` or `Date.now()` outside a step.
+- **No regression on Phase 1 acceptance criteria.**
+
+### Phase 3
+
+- **Virtualised viewer** renders 15K records at 60fps scroll. Manual
+  verification on target iPad; not a CI gate.
+- **PHI redaction at export** verified by reading the exported file and
+  asserting `PHI_ATTR_KEYS` values are `[REDACTED]` in researcher
+  default mode, and present in unredacted mode after PIN re-prompt.
+- **OTLP/JSON validity**: exported file passes the OTLP spec validator
+  (Honeycomb's `otel-cli validate logs <file>`).
+- **No regression on earlier phases' acceptance criteria.**
 
 ## Testing notes
 
