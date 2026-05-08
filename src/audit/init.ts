@@ -15,15 +15,37 @@ export interface InitOpts {
   onAbandoned?: (abandoned: AbandonedWorkflow[]) => void;
 }
 
+// Module-level handles so HMR re-eval or a repeat init() can release
+// the prior IDB connection and the hourly-retention interval before
+// opening fresh ones. Without this, every Vite hot-reload leaks one
+// connection and one timer; production loads the module once so there
+// is no accumulation.
+let currentDb: IDBDatabase | null = null;
+let cancelHourlyRetention: (() => void) | null = null;
+
+function disposeAuditResources(): void {
+  if (currentDb) {
+    try { currentDb.close(); } catch { /* already closed */ }
+    currentDb = null;
+  }
+  if (cancelHourlyRetention) {
+    cancelHourlyRetention();
+    cancelHourlyRetention = null;
+  }
+}
+
 /** Idempotent boot orchestrator. Never throws — failures route to
  *  degraded mode in the logger. Call once after settings hydrate. */
 export async function initAudit(opts: InitOpts): Promise<void> {
+  disposeAuditResources();
+
   try {
     const db = await openAuditDb();
+    currentDb = db;
     initLogger(db);
 
     void sweepRetention(db);
-    scheduleHourlyRetention(db);
+    cancelHourlyRetention = scheduleHourlyRetention(db);
 
     if (opts.onAbandoned) {
       try {
@@ -47,4 +69,13 @@ export async function initAudit(opts: InitOpts): Promise<void> {
   } catch (err) {
     console.error("[audit] init failed; logger remains uninitialised:", err);
   }
+}
+
+// Vite HMR: dispose the prior module's resources before this module is
+// replaced. Without this, every save during dev leaks an IDB connection
+// and a setInterval — visible as duplicate "ov-audit" entries in the
+// DevTools Application panel. Production builds skip this branch.
+const hmr = (import.meta as { hot?: { dispose: (cb: () => void) => void } }).hot;
+if (hmr) {
+  hmr.dispose(() => disposeAuditResources());
 }
