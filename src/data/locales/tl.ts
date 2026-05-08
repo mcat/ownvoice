@@ -942,11 +942,11 @@ const tl: LocaleStrings = {
   "ui.provider.settings.patients.remove_dialog.confirm":
     "Alisin",
   "ui.provider.settings.patients.active_discharge_hint":
-    "Switch to another patient before discharging this one.",
-  "ui.provider.settings.patients.discharge_dialog.title": "Discharge {name}?",
+    "Lumipat muna sa ibang pasyente bago i-discharge ito.",
+  "ui.provider.settings.patients.discharge_dialog.title": "I-discharge si {name}?",
   "ui.provider.settings.patients.discharge_dialog.body":
-    "This deletes all of their conversations, audio cache, and audit log entries. Cannot be undone.",
-  "ui.provider.settings.patients.discharge_dialog.confirm": "Discharge",
+    "Bubura nito ang lahat ng kanilang pag-uusap, audio cache, at mga entry sa activity log. Hindi ito puwedeng i-undo.",
+  "ui.provider.settings.patients.discharge_dialog.confirm": "I-discharge",
 
   // ── UI chrome: Settings — Care Team section ───────────────────
   "ui.provider.settings.care_team.heading": "Care team",
@@ -995,9 +995,9 @@ const tl: LocaleStrings = {
     "System voice na ginagamit habang naglo-load ang voice clone. I-tap para marinig.",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
-  "ui.provider.settings.activity_log.heading": "Activity log",
+  "ui.provider.settings.activity_log.heading": "Talaan ng aktibidad",
   "ui.provider.settings.activity_log.description":
-    "Speech, exports, and system events logged on this device.",
+    "Mga pananalita, export, at system event na naitala sa device na ito.",
   "ui.provider.settings.offline.heading":
     "Pagsusuri ng app",
   "ui.provider.settings.offline.status_description":
@@ -1051,7 +1051,7 @@ const tl: LocaleStrings = {
   "ui.provider.patients.actions_aria": "Mga aksyon para kay {name}",
   "ui.provider.patients.action_edit": "I-edit",
   "ui.provider.patients.action_remove": "Tanggalin",
-  "ui.provider.patients.action_discharge": "Discharge",
+  "ui.provider.patients.action_discharge": "I-discharge",
   "ui.provider.switch.voice_captured": "Na-capture ang boses",
   "ui.provider.switch.no_voice": "Walang boses",
   "ui.provider.switch.last_active_just_now": "Ngayon lang",

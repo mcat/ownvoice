@@ -883,11 +883,11 @@ const ru: LocaleStrings = {
     "Будут удалены образец голоса, история разговоров и кэшированное аудио клона голоса. Клоны голосов медицинской команды сохраняются для других пациентов. Это действие нельзя отменить.",
   "ui.provider.settings.patients.remove_dialog.confirm": "Удалить",
   "ui.provider.settings.patients.active_discharge_hint":
-    "Switch to another patient before discharging this one.",
-  "ui.provider.settings.patients.discharge_dialog.title": "Discharge {name}?",
+    "Переключитесь на другого пациента, прежде чем выписывать этого.",
+  "ui.provider.settings.patients.discharge_dialog.title": "Выписать {name}?",
   "ui.provider.settings.patients.discharge_dialog.body":
-    "This deletes all of their conversations, audio cache, and audit log entries. Cannot be undone.",
-  "ui.provider.settings.patients.discharge_dialog.confirm": "Discharge",
+    "Будут удалены все разговоры, аудиокэш и записи журнала активности. Это действие нельзя отменить.",
+  "ui.provider.settings.patients.discharge_dialog.confirm": "Выписать",
 
   // ── UI chrome: Settings — Care Team section ───────────────────
   "ui.provider.settings.care_team.heading": "Медицинская команда",
@@ -934,9 +934,9 @@ const ru: LocaleStrings = {
     "Системный голос, пока загружается клон. Нажмите для прослушивания.",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
-  "ui.provider.settings.activity_log.heading": "Activity log",
+  "ui.provider.settings.activity_log.heading": "Журнал активности",
   "ui.provider.settings.activity_log.description":
-    "Speech, exports, and system events logged on this device.",
+    "Речевые события, экспорты и системные события, зарегистрированные на этом устройстве.",
   "ui.provider.settings.offline.heading": "Диагностика приложения",
   "ui.provider.settings.offline.status_description":
     "Статус моделей ИИ, используемых на устройстве для генерации речи, предложений и распознавания речи.",
@@ -988,7 +988,7 @@ const ru: LocaleStrings = {
   "ui.provider.patients.actions_aria": "Действия для {name}",
   "ui.provider.patients.action_edit": "Редактировать",
   "ui.provider.patients.action_remove": "Удалить",
-  "ui.provider.patients.action_discharge": "Discharge",
+  "ui.provider.patients.action_discharge": "Выписать",
   "ui.provider.switch.voice_captured": "Голос записан",
   "ui.provider.switch.no_voice": "Нет голоса",
   "ui.provider.switch.last_active_just_now": "Только что",

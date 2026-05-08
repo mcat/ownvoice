@@ -898,11 +898,11 @@ const da: LocaleStrings = {
     "Dette sletter stemmeprøve, samtalehistorik og cachet lyd for stemmeklonen. Behandlingsteamets stemmekloner beholdes til andre patienter. Dette kan ikke fortrydes.",
   "ui.provider.settings.patients.remove_dialog.confirm": "Fjern",
   "ui.provider.settings.patients.active_discharge_hint":
-    "Switch to another patient before discharging this one.",
-  "ui.provider.settings.patients.discharge_dialog.title": "Discharge {name}?",
+    "Skift til en anden patient, før du udskriver denne.",
+  "ui.provider.settings.patients.discharge_dialog.title": "Udskriv {name}?",
   "ui.provider.settings.patients.discharge_dialog.body":
-    "This deletes all of their conversations, audio cache, and audit log entries. Cannot be undone.",
-  "ui.provider.settings.patients.discharge_dialog.confirm": "Discharge",
+    "Dette sletter alle deres samtaler, lydcache og poster i aktivitetsloggen. Kan ikke fortrydes.",
+  "ui.provider.settings.patients.discharge_dialog.confirm": "Udskriv",
 
   // ── UI chrome: Settings — Care Team section ───────────────────
   "ui.provider.settings.care_team.heading": "Behandlingsteam",
@@ -949,9 +949,9 @@ const da: LocaleStrings = {
     "Systemstemme, der bruges mens stemmeklonen indlæses. Tryk for at høre.",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
-  "ui.provider.settings.activity_log.heading": "Activity log",
+  "ui.provider.settings.activity_log.heading": "Aktivitetslog",
   "ui.provider.settings.activity_log.description":
-    "Speech, exports, and system events logged on this device.",
+    "Tale, eksport og systemhændelser logget på denne enhed.",
   "ui.provider.settings.offline.heading": "App-diagnostik",
   "ui.provider.settings.offline.status_description":
     "Status for de AI-modeller, appen bruger på enheden til stemmegenerering, forslag og talegenkendelse.",
@@ -1003,7 +1003,7 @@ const da: LocaleStrings = {
   "ui.provider.patients.actions_aria": "Handlinger for {name}",
   "ui.provider.patients.action_edit": "Rediger",
   "ui.provider.patients.action_remove": "Fjern",
-  "ui.provider.patients.action_discharge": "Discharge",
+  "ui.provider.patients.action_discharge": "Udskriv",
   "ui.provider.switch.voice_captured": "Stemme optaget",
   "ui.provider.switch.no_voice": "Ingen stemme",
   "ui.provider.switch.last_active_just_now": "Lige nu",

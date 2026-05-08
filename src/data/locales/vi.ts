@@ -912,11 +912,11 @@ const vi: LocaleStrings = {
     "Thao tác này sẽ xóa mẫu giọng nói, lịch sử trò chuyện và âm thanh đệm của giọng nhân bản. Giọng nhân bản của đội ngũ y tế được giữ cho bệnh nhân khác. Không thể hoàn tác.",
   "ui.provider.settings.patients.remove_dialog.confirm": "Xóa",
   "ui.provider.settings.patients.active_discharge_hint":
-    "Switch to another patient before discharging this one.",
-  "ui.provider.settings.patients.discharge_dialog.title": "Discharge {name}?",
+    "Chuyển sang bệnh nhân khác trước khi cho bệnh nhân này xuất viện.",
+  "ui.provider.settings.patients.discharge_dialog.title": "Cho {name} xuất viện?",
   "ui.provider.settings.patients.discharge_dialog.body":
-    "This deletes all of their conversations, audio cache, and audit log entries. Cannot be undone.",
-  "ui.provider.settings.patients.discharge_dialog.confirm": "Discharge",
+    "Thao tác này sẽ xóa tất cả cuộc trò chuyện, bộ đệm âm thanh và các mục nhật ký hoạt động. Không thể hoàn tác.",
+  "ui.provider.settings.patients.discharge_dialog.confirm": "Xuất viện",
 
   // ── UI chrome: Settings — Care Team section ───────────────────
   "ui.provider.settings.care_team.heading": "Đội ngũ y tế",
@@ -964,9 +964,9 @@ const vi: LocaleStrings = {
     "Giọng hệ thống dùng khi giọng nhân bản đang tải. Chạm để nghe thử.",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
-  "ui.provider.settings.activity_log.heading": "Activity log",
+  "ui.provider.settings.activity_log.heading": "Nhật ký hoạt động",
   "ui.provider.settings.activity_log.description":
-    "Speech, exports, and system events logged on this device.",
+    "Sự kiện nói, xuất dữ liệu và hệ thống được ghi lại trên thiết bị này.",
   "ui.provider.settings.offline.heading": "Chẩn đoán ứng dụng",
   "ui.provider.settings.offline.status_description":
     "Trạng thái các mô hình AI mà ứng dụng dùng trên thiết bị cho tạo giọng nói, gợi ý và nhận dạng giọng nói.",
@@ -1018,7 +1018,7 @@ const vi: LocaleStrings = {
   "ui.provider.patients.actions_aria": "Hành động cho {name}",
   "ui.provider.patients.action_edit": "Chỉnh sửa",
   "ui.provider.patients.action_remove": "Xóa",
-  "ui.provider.patients.action_discharge": "Discharge",
+  "ui.provider.patients.action_discharge": "Xuất viện",
   "ui.provider.switch.voice_captured": "Đã thu giọng nói",
   "ui.provider.switch.no_voice": "Chưa có giọng nói",
   "ui.provider.switch.last_active_just_now": "Vừa xong",

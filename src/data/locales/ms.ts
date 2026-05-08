@@ -895,11 +895,11 @@ const ms: LocaleStrings = {
     "Ini akan memadamkan sampel suara, sejarah perbualan, dan audio cache untuk klon suara mereka. Klon suara pasukan penjagaan disimpan untuk pesakit lain. Tindakan ini tidak boleh dibuat asal.",
   "ui.provider.settings.patients.remove_dialog.confirm": "Buang",
   "ui.provider.settings.patients.active_discharge_hint":
-    "Switch to another patient before discharging this one.",
-  "ui.provider.settings.patients.discharge_dialog.title": "Discharge {name}?",
+    "Tukar ke pesakit lain sebelum melepaskan pesakit ini.",
+  "ui.provider.settings.patients.discharge_dialog.title": "Lepaskan {name}?",
   "ui.provider.settings.patients.discharge_dialog.body":
-    "This deletes all of their conversations, audio cache, and audit log entries. Cannot be undone.",
-  "ui.provider.settings.patients.discharge_dialog.confirm": "Discharge",
+    "Ini akan memadamkan semua perbualan, cache audio dan catatan log aktiviti pesakit. Tindakan ini tidak boleh dibuat asal.",
+  "ui.provider.settings.patients.discharge_dialog.confirm": "Lepaskan",
 
   // ── UI chrome: Settings — Care Team section ───────────────────
   "ui.provider.settings.care_team.heading": "Pasukan penjagaan",
@@ -944,9 +944,9 @@ const ms: LocaleStrings = {
     "Suara sistem digunakan semasa klon suara dimuatkan. Ketik untuk pratonton.",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
-  "ui.provider.settings.activity_log.heading": "Activity log",
+  "ui.provider.settings.activity_log.heading": "Log aktiviti",
   "ui.provider.settings.activity_log.description":
-    "Speech, exports, and system events logged on this device.",
+    "Acara pertuturan, eksport dan sistem yang direkodkan pada peranti ini.",
   "ui.provider.settings.offline.heading": "Diagnostik aplikasi",
   "ui.provider.settings.offline.status_description":
     "Status model AI yang digunakan app dalam peranti untuk penjanaan suara, cadangan, dan pengecaman pertuturan.",
@@ -998,7 +998,7 @@ const ms: LocaleStrings = {
   "ui.provider.patients.actions_aria": "Tindakan untuk {name}",
   "ui.provider.patients.action_edit": "Edit",
   "ui.provider.patients.action_remove": "Buang",
-  "ui.provider.patients.action_discharge": "Discharge",
+  "ui.provider.patients.action_discharge": "Lepaskan",
   "ui.provider.switch.voice_captured": "Suara ditangkap",
   "ui.provider.switch.no_voice": "Tiada suara",
   "ui.provider.switch.last_active_just_now": "Baru sahaja",

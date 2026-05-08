@@ -879,11 +879,11 @@ const ar: LocaleStrings = {
     "سيُحذف عينة الصوت وسجل المحادثات والصوت المخزّن لنسخة الصوت. نُسخ أصوات فريق الرعاية محفوظة للمرضى الآخرين. لا يمكن التراجع عن ذلك.",
   "ui.provider.settings.patients.remove_dialog.confirm": "إزالة",
   "ui.provider.settings.patients.active_discharge_hint":
-    "Switch to another patient before discharging this one.",
-  "ui.provider.settings.patients.discharge_dialog.title": "Discharge {name}?",
+    "بدّل إلى مريض آخر قبل إخراج هذا المريض.",
+  "ui.provider.settings.patients.discharge_dialog.title": "إخراج {name}؟",
   "ui.provider.settings.patients.discharge_dialog.body":
-    "This deletes all of their conversations, audio cache, and audit log entries. Cannot be undone.",
-  "ui.provider.settings.patients.discharge_dialog.confirm": "Discharge",
+    "سيُحذف بذلك جميع محادثاته وذاكرة الصوت المؤقتة وإدخالات سجل النشاط. لا يمكن التراجع عن ذلك.",
+  "ui.provider.settings.patients.discharge_dialog.confirm": "إخراج",
 
   // ── UI chrome: Settings — Care Team section ───────────────────
   "ui.provider.settings.care_team.heading": "فريق الرعاية",
@@ -930,9 +930,9 @@ const ar: LocaleStrings = {
     "صوت النظام المستخدم أثناء تحميل نسخة الصوت. اضغط للمعاينة.",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
-  "ui.provider.settings.activity_log.heading": "Activity log",
+  "ui.provider.settings.activity_log.heading": "سجل النشاط",
   "ui.provider.settings.activity_log.description":
-    "Speech, exports, and system events logged on this device.",
+    "أحداث النطق والتصدير وأحداث النظام المسجَّلة على هذا الجهاز.",
   "ui.provider.settings.offline.heading": "تشخيص التطبيق",
   "ui.provider.settings.offline.status_description":
     "حالة نماذج الذكاء الاصطناعي التي يستخدمها التطبيق على الجهاز لتوليد الصوت والاقتراحات والتعرف على الكلام.",
@@ -984,7 +984,7 @@ const ar: LocaleStrings = {
   "ui.provider.patients.actions_aria": "إجراءات لـ {name}",
   "ui.provider.patients.action_edit": "تعديل",
   "ui.provider.patients.action_remove": "إزالة",
-  "ui.provider.patients.action_discharge": "Discharge",
+  "ui.provider.patients.action_discharge": "إخراج",
   "ui.provider.switch.voice_captured": "تم التقاط الصوت",
   "ui.provider.switch.no_voice": "بدون صوت",
   "ui.provider.switch.last_active_just_now": "الآن",

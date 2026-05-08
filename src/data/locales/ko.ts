@@ -901,11 +901,11 @@ const ko: LocaleStrings = {
     "해당 환자의 음성 샘플, 대화 기록 및 음성 클론 캐시 오디오가 삭제됩니다. 의료진 음성 클론은 다른 환자를 위해 유지됩니다. 이 작업은 되돌릴 수 없습니다.",
   "ui.provider.settings.patients.remove_dialog.confirm": "제거",
   "ui.provider.settings.patients.active_discharge_hint":
-    "Switch to another patient before discharging this one.",
-  "ui.provider.settings.patients.discharge_dialog.title": "Discharge {name}?",
+    "이 환자를 퇴원시키기 전에 다른 환자로 전환하세요.",
+  "ui.provider.settings.patients.discharge_dialog.title": "{name}을(를) 퇴원시키시겠습니까?",
   "ui.provider.settings.patients.discharge_dialog.body":
-    "This deletes all of their conversations, audio cache, and audit log entries. Cannot be undone.",
-  "ui.provider.settings.patients.discharge_dialog.confirm": "Discharge",
+    "이 환자의 모든 대화, 오디오 캐시 및 활동 로그 항목이 삭제됩니다. 이 작업은 되돌릴 수 없습니다.",
+  "ui.provider.settings.patients.discharge_dialog.confirm": "퇴원",
 
   // ── UI chrome: Settings — Care Team section ───────────────────
   "ui.provider.settings.care_team.heading": "의료진",
@@ -950,9 +950,9 @@ const ko: LocaleStrings = {
     "음성 클론이 로딩되는 동안 사용되는 시스템 음성입니다. 탭하여 미리 들으세요.",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
-  "ui.provider.settings.activity_log.heading": "Activity log",
+  "ui.provider.settings.activity_log.heading": "활동 로그",
   "ui.provider.settings.activity_log.description":
-    "Speech, exports, and system events logged on this device.",
+    "이 기기에서 기록된 발화, 내보내기 및 시스템 이벤트입니다.",
   "ui.provider.settings.offline.heading": "앱 진단",
   "ui.provider.settings.offline.status_description":
     "앱이 기기 내에서 음성 생성, 추천 및 음성 인식에 사용하는 AI 모델 상태입니다.",
@@ -1004,7 +1004,7 @@ const ko: LocaleStrings = {
   "ui.provider.patients.actions_aria": "{name} 작업",
   "ui.provider.patients.action_edit": "편집",
   "ui.provider.patients.action_remove": "제거",
-  "ui.provider.patients.action_discharge": "Discharge",
+  "ui.provider.patients.action_discharge": "퇴원",
   "ui.provider.switch.voice_captured": "음성 캡처 완료",
   "ui.provider.switch.no_voice": "음성 없음",
   "ui.provider.switch.last_active_just_now": "방금",

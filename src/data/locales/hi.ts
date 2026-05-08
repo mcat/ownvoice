@@ -878,11 +878,11 @@ const hi: LocaleStrings = {
     "इससे उनका वॉइस सैंपल, बातचीत इतिहास, और वॉइस क्लोन का कैश्ड ऑडियो मिट जाएगा। देखभाल टीम के वॉइस क्लोन अन्य मरीज़ों के लिए रहेंगे। यह वापस नहीं किया जा सकता।",
   "ui.provider.settings.patients.remove_dialog.confirm": "हटाएँ",
   "ui.provider.settings.patients.active_discharge_hint":
-    "Switch to another patient before discharging this one.",
-  "ui.provider.settings.patients.discharge_dialog.title": "Discharge {name}?",
+    "इस मरीज़ को छुट्टी देने से पहले दूसरे मरीज़ पर स्विच करें।",
+  "ui.provider.settings.patients.discharge_dialog.title": "{name} को छुट्टी दें?",
   "ui.provider.settings.patients.discharge_dialog.body":
-    "This deletes all of their conversations, audio cache, and audit log entries. Cannot be undone.",
-  "ui.provider.settings.patients.discharge_dialog.confirm": "Discharge",
+    "इससे उनकी सभी बातचीत, ऑडियो कैश और गतिविधि लॉग की सभी प्रविष्टियाँ मिट जाएँगी। यह वापस नहीं किया जा सकता।",
+  "ui.provider.settings.patients.discharge_dialog.confirm": "छुट्टी दें",
 
   // ── UI chrome: Settings — Care Team section ───────────────────
   "ui.provider.settings.care_team.heading": "देखभाल टीम",
@@ -929,9 +929,9 @@ const hi: LocaleStrings = {
     "वॉइस क्लोन लोड होते समय इस्तेमाल होने वाली सिस्टम आवाज़। प्रीव्यू के लिए टैप करें।",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
-  "ui.provider.settings.activity_log.heading": "Activity log",
+  "ui.provider.settings.activity_log.heading": "गतिविधि लॉग",
   "ui.provider.settings.activity_log.description":
-    "Speech, exports, and system events logged on this device.",
+    "इस डिवाइस पर रिकॉर्ड किए गए बोलने, निर्यात और सिस्टम इवेंट।",
   "ui.provider.settings.offline.heading": "ऐप डायग्नोस्टिक्स",
   "ui.provider.settings.offline.status_description":
     "ऐप जिन AI मॉडल का इस्तेमाल डिवाइस पर आवाज़ बनाने, सुझाव और स्पीच पहचान के लिए करता है उनकी स्थिति।",
@@ -983,7 +983,7 @@ const hi: LocaleStrings = {
   "ui.provider.patients.actions_aria": "{name} के लिए क्रियाएँ",
   "ui.provider.patients.action_edit": "संपादित करें",
   "ui.provider.patients.action_remove": "हटाएँ",
-  "ui.provider.patients.action_discharge": "Discharge",
+  "ui.provider.patients.action_discharge": "छुट्टी दें",
   "ui.provider.switch.voice_captured": "आवाज़ कैप्चर हुई",
   "ui.provider.switch.no_voice": "कोई आवाज़ नहीं",
   "ui.provider.switch.last_active_just_now": "अभी",
