@@ -878,6 +878,12 @@ const es: LocaleStrings = {
   "ui.provider.settings.patients.remove_dialog.body":
     "Esto eliminará su muestra de voz, historial de conversación y audio en caché para su clon de voz. Los clones de voz del equipo de atención se conservan para otros pacientes. Esto no se puede deshacer.",
   "ui.provider.settings.patients.remove_dialog.confirm": "Eliminar",
+  "ui.provider.settings.patients.active_discharge_hint":
+    "Cambie a otro paciente antes de dar de alta a este.",
+  "ui.provider.settings.patients.discharge_dialog.title": "¿Dar de alta a {name}?",
+  "ui.provider.settings.patients.discharge_dialog.body":
+    "Esto eliminará todas sus conversaciones, caché de audio y entradas del registro de actividad. No se puede deshacer.",
+  "ui.provider.settings.patients.discharge_dialog.confirm": "Dar de alta",
 
   // ── UI chrome: Settings — Care Team section ───────────────────
   "ui.provider.settings.care_team.heading": "Equipo de atención",
@@ -924,6 +930,9 @@ const es: LocaleStrings = {
     "Voz del sistema usada mientras se carga el clon de voz. Toque para escuchar.",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
+  "ui.provider.settings.activity_log.heading": "Registro de actividad",
+  "ui.provider.settings.activity_log.description":
+    "Eventos de habla, exportaciones y del sistema registrados en este dispositivo.",
   "ui.provider.settings.offline.heading": "Diagnóstico de la app",
   "ui.provider.settings.offline.status_description":
     "Estado de los modelos de IA que la app usa en el dispositivo para generación de voz, sugerencias y reconocimiento de habla.",
@@ -975,6 +984,7 @@ const es: LocaleStrings = {
   "ui.provider.patients.actions_aria": "Acciones para {name}",
   "ui.provider.patients.action_edit": "Editar",
   "ui.provider.patients.action_remove": "Eliminar",
+  "ui.provider.patients.action_discharge": "Dar de alta",
   "ui.provider.switch.voice_captured": "Voz capturada",
   "ui.provider.switch.no_voice": "Sin voz",
   "ui.provider.switch.last_active_just_now": "Ahora mismo",

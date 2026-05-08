@@ -927,6 +927,12 @@ const pl: LocaleStrings = {
   "ui.provider.settings.patients.remove_dialog.body":
     "To usunie próbkę głosu, historię rozmów i zbuforowany dźwięk klonu głosu. Klony głosów zespołu opiekuńczego są zachowane dla innych pacjentów. Tej operacji nie da się cofnąć.",
   "ui.provider.settings.patients.remove_dialog.confirm": "Usuń",
+  "ui.provider.settings.patients.active_discharge_hint":
+    "Przełącz na innego pacjenta, aby móc wypisać tego.",
+  "ui.provider.settings.patients.discharge_dialog.title": "Wypisać {name}?",
+  "ui.provider.settings.patients.discharge_dialog.body":
+    "Spowoduje to usunięcie wszystkich rozmów, pamięci podręcznej audio i wpisów dziennika aktywności. Tej operacji nie da się cofnąć.",
+  "ui.provider.settings.patients.discharge_dialog.confirm": "Wypisz",
 
   // ── UI chrome: Settings — Care Team section ───────────────────
   "ui.provider.settings.care_team.heading": "Zespół opiekuńczy",
@@ -973,6 +979,9 @@ const pl: LocaleStrings = {
     "Głos systemowy używany podczas ładowania klonu głosu. Dotknij, aby odsłuchać.",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
+  "ui.provider.settings.activity_log.heading": "Dziennik aktywności",
+  "ui.provider.settings.activity_log.description":
+    "Zdarzenia mowy, eksportu i systemu rejestrowane na tym urządzeniu.",
   "ui.provider.settings.offline.heading": "Diagnostyka aplikacji",
   "ui.provider.settings.offline.status_description":
     "Stan modeli AI używanych lokalnie na urządzeniu do generowania głosu, sugestii i rozpoznawania mowy.",
@@ -1024,6 +1033,7 @@ const pl: LocaleStrings = {
   "ui.provider.patients.actions_aria": "Akcje dla {name}",
   "ui.provider.patients.action_edit": "Edytuj",
   "ui.provider.patients.action_remove": "Usuń",
+  "ui.provider.patients.action_discharge": "Wypisz",
   "ui.provider.switch.voice_captured": "Głos przechwycony",
   "ui.provider.switch.no_voice": "Brak głosu",
   "ui.provider.switch.last_active_just_now": "Przed chwilą",

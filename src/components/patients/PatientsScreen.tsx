@@ -7,15 +7,11 @@ import { useStaffActivityBump } from "../../hooks/useStaffActivityBump";
 import type { ThemeTokens, ThemeName } from "../../theme/tokens";
 import { colors } from "../../theme/tokens";
 import { useSettingsStore } from "../../stores/settingsStore";
-import { useAudioCacheStore } from "../../stores/audioCacheStore";
 import { useUIStore } from "../../stores/uiStore";
-import { removePatientHashes } from "../../stores/patientIndex";
+import { removeOnePatient } from "../../stores/resetScoped";
 import { LANGS } from "../../data/phrases";
 import { t as resolvePhrase } from "../../data/phraseRegistry";
 import * as audioCacheRunner from "../../models/audioCacheRunner";
-import { openAuditDb } from "../../audit/db";
-import { patientIdHash } from "../../audit/hash";
-import { clearAuditForPatient } from "../../audit/cascade";
 import type { Patient } from "../../types";
 
 export interface PatientsScreenProps {
@@ -92,46 +88,24 @@ export function PatientsScreen({ open, onClose, t: tokens, theme }: PatientsScre
     [onClose],
   );
 
-  const handleRemove = useCallback(
+  const handleDischarge = useCallback(
     async (patient: Patient) => {
       const ok = await confirm({
-        title: resolvePhrase("ui.provider.settings.patients.remove_dialog.title", caregiverLang)
+        title: resolvePhrase("ui.provider.settings.patients.discharge_dialog.title", caregiverLang)
           .replace("{name}", patient.name),
-        body: resolvePhrase("ui.provider.settings.patients.remove_dialog.body", caregiverLang),
-        confirmLabel: resolvePhrase("ui.provider.settings.patients.remove_dialog.confirm", caregiverLang),
+        body: resolvePhrase("ui.provider.settings.patients.discharge_dialog.body", caregiverLang),
+        confirmLabel: resolvePhrase("ui.provider.settings.patients.discharge_dialog.confirm", caregiverLang),
         cancelLabel: resolvePhrase("ui.provider.pin_gate.cancel", caregiverLang),
         tone: "destructive",
       });
       if (!ok) return;
       try {
-        useSettingsStore.getState().removePatient(patient.id);
-        // Cascade-delete this patient's audit-log entries (the thread
-        // derives from these — same data that conversationStore used to
-        // hold). Best-effort: failure here is logged but doesn't block
-        // the rest of the remove flow.
-        try {
-          const hash = await patientIdHash(patient.id);
-          const auditDb = await openAuditDb();
-          await clearAuditForPatient(auditDb, hash);
-          auditDb.close();
-        } catch (err) {
-          console.warn("[audit] cascade cleanup failed:", err);
-        }
-        const hashes = await removePatientHashes(patient.id);
-        try {
-          const root = await navigator.storage.getDirectory();
-          const dir = await root.getDirectoryHandle("audio-cache-v3").catch(() => null);
-          if (dir) {
-            for (const hash of hashes) {
-              try { await dir.removeEntry(`${hash}.raw`); } catch { /* ok if missing */ }
-            }
-          }
-        } catch {
-          // OPFS not available (e.g. jsdom) — index hashes already cleared
-        }
-        useAudioCacheStore.getState().discardByPatientId(patient.id);
+        // Single-call wrapper that cascades through settings, audit log,
+        // OPFS audio, patient index, and in-memory run state. Best-effort
+        // on the I/O side: helper logs and continues on transient failures.
+        await removeOnePatient(patient.id);
       } catch (err) {
-        console.error("[PatientsScreen] remove failed:", err);
+        console.error("[PatientsScreen] discharge failed:", err);
       }
     },
     [caregiverLang],
@@ -314,12 +288,12 @@ export function PatientsScreen({ open, onClose, t: tokens, theme }: PatientsScre
                         onSelect: () => handleEdit(patient),
                       },
                       {
-                        label: resolvePhrase("ui.provider.patients.action_remove", caregiverLang),
-                        onSelect: () => handleRemove(patient),
+                        label: resolvePhrase("ui.provider.patients.action_discharge", caregiverLang),
+                        onSelect: () => handleDischarge(patient),
                         tone: "destructive",
                         disabled: isActive,
                         disabledHint: isActive
-                          ? resolvePhrase("ui.provider.settings.patients.active_remove_hint", caregiverLang)
+                          ? resolvePhrase("ui.provider.settings.patients.active_discharge_hint", caregiverLang)
                           : undefined,
                       },
                     ]}

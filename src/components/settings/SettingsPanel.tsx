@@ -39,7 +39,7 @@ export function SettingsPanel({
   const providerCount = useSettingsStore((s) => s.cfg?.providers.length ?? 0);
   const bump = useStaffActivityBump();
 
-  function pushTo(overlay: Extract<OverlayName, "switch" | "careTeam" | "accessibility" | "diagnostics" | "about" | "reset">) {
+  function pushTo(overlay: Extract<OverlayName, "switch" | "careTeam" | "accessibility" | "diagnostics" | "activityLog" | "about" | "reset">) {
     useUIStore.getState().closeOverlay("settings");
     useUIStore.getState().openOverlay(overlay);
   }
@@ -95,6 +95,13 @@ export function SettingsPanel({
               icon={"♿"}
               label={resolvePhrase("ui.provider.settings.accessibility.heading", caregiverLang)}
               onClick={() => pushTo("accessibility")}
+              t={t}
+            />
+            <SettingsNavRow
+              icon={"📋"}
+              label={resolvePhrase("ui.provider.settings.activity_log.heading", caregiverLang)}
+              description={resolvePhrase("ui.provider.settings.activity_log.description", caregiverLang)}
+              onClick={() => pushTo("activityLog")}
               t={t}
             />
             <SettingsNavRow

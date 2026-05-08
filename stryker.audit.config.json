@@ -1,0 +1,30 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "_comment": "Tier 1 + Tier 2 audit modules. Tier 1: PHI redaction, query path, export formats — security/correctness critical. Tier 2: workflow runtime, recovery sweep, durable journal — replay correctness.",
+  "packageManager": "npm",
+  "testRunner": "vitest",
+  "vitest": {
+    "configFile": "vitest.stryker.config.ts"
+  },
+  "reporters": ["html", "clear-text", "progress"],
+  "htmlReporter": {
+    "fileName": "reports/mutation/audit/index.html"
+  },
+  "coverageAnalysis": "perTest",
+  "mutate": [
+    "src/audit/redaction.ts",
+    "src/audit/queryEvents.ts",
+    "src/audit/exportFormats.ts",
+    "src/audit/workflow.ts",
+    "src/audit/recovery.ts",
+    "src/audit/workflowDb.ts"
+  ],
+  "incremental": false,
+  "timeoutMS": 90000,
+  "concurrency": 4,
+  "thresholds": {
+    "high": 85,
+    "low": 60,
+    "break": null
+  }
+}

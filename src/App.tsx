@@ -25,6 +25,7 @@ import { SettingsPanel } from "./components/settings/SettingsPanel";
 import { CareTeamSheet } from "./components/settings/CareTeamSheet";
 import { AccessibilitySheet } from "./components/settings/AccessibilitySheet";
 import { DiagnosticsSheet } from "./components/settings/DiagnosticsSheet";
+import { ActivityLog } from "./components/diag/ActivityLog";
 import { AboutSheet } from "./components/settings/AboutSheet";
 import { ResetSheet } from "./components/settings/ResetSheet";
 import { PatientsScreen } from "./components/patients/PatientsScreen";
@@ -75,6 +76,7 @@ export function App() {
   const careTeamOpen = useUIStore((s) => s.careTeamOpen);
   const accessibilityOpen = useUIStore((s) => s.accessibilityOpen);
   const diagnosticsOpen = useUIStore((s) => s.diagnosticsOpen);
+  const activityLogOpen = useUIStore((s) => s.activityLogOpen);
   const aboutOpen = useUIStore((s) => s.aboutOpen);
   const resetOpen = useUIStore((s) => s.resetOpen);
   const pinEntryOpen = useUIStore((s) => s.pinEntryOpen);
@@ -554,6 +556,10 @@ export function App() {
       )}
 
       {diagnosticsOpen && <DiagnosticsSheet t={t} />}
+
+      {activityLogOpen && (
+        <ActivityLog onClose={() => closeOverlay("activityLog")} />
+      )}
 
       {aboutOpen && <AboutSheet t={t} />}
 

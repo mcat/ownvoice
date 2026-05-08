@@ -14,6 +14,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:mutation": "stryker run",
+    "test:mutation:audit": "stryker run stryker.audit.config.json",
     "manifest:regen": "node scripts/regenerate-manifest.mjs",
     "manifest:check": "node scripts/regenerate-manifest.mjs --check",
     "assets:download": "./scripts/download-assets.sh",

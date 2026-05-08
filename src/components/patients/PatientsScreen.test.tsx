@@ -196,38 +196,38 @@ describe("PatientsScreen — Edit", () => {
   });
 });
 
-describe("PatientsScreen — Remove", () => {
-  it("Remove is disabled on the active patient and shows the hint", () => {
+describe("PatientsScreen — Discharge", () => {
+  it("Discharge is disabled on the active patient and shows the hint", () => {
     renderWithHost();
     fireEvent.click(screen.getByRole("button", { name: /Actions for Alice/ }));
-    expect(screen.getByRole("menuitem", { name: "Remove" })).toBeDisabled();
+    expect(screen.getByRole("menuitem", { name: "Discharge" })).toBeDisabled();
     expect(
-      screen.getByText("Switch to another patient before removing this one."),
+      screen.getByText("Switch to another patient before discharging this one."),
     ).toBeInTheDocument();
   });
 
-  it("Remove on a non-active patient opens the destructive confirm dialog", async () => {
+  it("Discharge on a non-active patient opens the destructive confirm dialog", async () => {
     renderWithHost();
     fireEvent.click(screen.getByRole("button", { name: /Actions for Bob/ }));
-    fireEvent.click(screen.getByRole("menuitem", { name: "Remove" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Discharge" }));
 
     // The PatientsScreen BottomSheet is itself role=dialog, so locate the
     // confirm dialog specifically via its title text rather than getByRole.
-    expect(await screen.findByText(/Remove Bob\?/)).toBeInTheDocument();
+    expect(await screen.findByText(/Discharge Bob\?/)).toBeInTheDocument();
   });
 
-  it("confirming Remove deletes the non-active patient from the store", async () => {
+  it("confirming Discharge deletes the non-active patient from the store", async () => {
     renderWithHost();
     fireEvent.click(screen.getByRole("button", { name: /Actions for Bob/ }));
-    fireEvent.click(screen.getByRole("menuitem", { name: "Remove" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Discharge" }));
 
-    const titleEl = await screen.findByText(/Remove Bob\?/);
-    // Walk up to the confirm dialog and click its destructive "Remove" button.
+    const titleEl = await screen.findByText(/Discharge Bob\?/);
+    // Walk up to the confirm dialog and click its destructive "Discharge" button.
     const confirmDialog = titleEl.closest('[role="dialog"]') as HTMLElement | null;
     expect(confirmDialog).toBeTruthy();
     const confirmBtn = Array.from(
       confirmDialog!.querySelectorAll("button"),
-    ).find((b) => b.textContent === "Remove");
+    ).find((b) => b.textContent === "Discharge");
     expect(confirmBtn).toBeTruthy();
     fireEvent.click(confirmBtn!);
 

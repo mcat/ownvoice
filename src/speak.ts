@@ -655,6 +655,7 @@ export async function speak(
       log({
         name: EVENT.SPEAK_CACHE_HIT,
         attributes: {
+          [ATTR.ACTOR]: speaker.type,
           [ATTR.SPEECH_TEXT]: text,
           [ATTR.SPEECH_ENGINE]: "memory",
           [ATTR.SPEECH_LANG]: speaker.lang ?? null,
@@ -673,6 +674,7 @@ export async function speak(
         log({
           name: EVENT.SPEAK_CACHE_HIT,
           attributes: {
+            [ATTR.ACTOR]: speaker.type,
             [ATTR.SPEECH_TEXT]: text,
             [ATTR.SPEECH_ENGINE]: "cache",
             [ATTR.SPEECH_LANG]: speaker.lang ?? null,
@@ -684,6 +686,7 @@ export async function speak(
       log({
         name: EVENT.SPEAK_CACHE_MISS,
         attributes: {
+          [ATTR.ACTOR]: speaker.type,
           [ATTR.SPEECH_TEXT]: text,
           [ATTR.SPEECH_LANG]: speaker.lang ?? null,
         },
@@ -693,6 +696,7 @@ export async function speak(
         name: EVENT.SPEAK_ERROR,
         severity: "ERROR",
         attributes: {
+          [ATTR.ACTOR]: speaker.type,
           [ATTR.ERROR_TYPE]: (err as Error)?.name ?? "Error",
           [ATTR.ERROR_MESSAGE]: (err as Error)?.message ?? String(err),
           [ATTR.SPEECH_TEXT]: text,
@@ -709,6 +713,7 @@ export async function speak(
     log({
       name: EVENT.SPEAK_FALLBACK_WEB,
       attributes: {
+        [ATTR.ACTOR]: speaker.type,
         [ATTR.SPEECH_TEXT]: text,
         [ATTR.SPEECH_ENGINE]: "webspeech",
         [ATTR.SPEECH_LANG]: speaker.lang ?? null,
@@ -721,6 +726,7 @@ export async function speak(
   log({
     name: EVENT.SPEAK_FALLBACK_TONE,
     attributes: {
+      [ATTR.ACTOR]: speaker.type,
       [ATTR.SPEECH_TEXT]: text,
       [ATTR.SPEECH_ENGINE]: "tone",
       [ATTR.SPEECH_LANG]: speaker.lang ?? null,

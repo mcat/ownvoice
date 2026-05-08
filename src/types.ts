@@ -119,6 +119,9 @@ export interface AppSettings {
   /** null when no patient is active (fresh device, or after removing the
    *  last patient). */
   activePatientId: string | null;
+  /** Generated once on first export; reused across exports so a researcher
+   *  can correlate audit log files from the same device. Not PII. */
+  deviceInstanceId?: string;
 }
 
 export interface SpeakingState {

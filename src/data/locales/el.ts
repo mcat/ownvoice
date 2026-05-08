@@ -905,6 +905,12 @@ const el: LocaleStrings = {
   "ui.provider.settings.patients.remove_dialog.body":
     "Θα διαγραφεί το δείγμα φωνής, το ιστορικό συνομιλίας και ο αποθηκευμένος ήχος κλώνου φωνής. Οι κλώνοι φωνής της ομάδας φροντίδας διατηρούνται για άλλους ασθενείς. Δεν μπορεί να αναιρεθεί.",
   "ui.provider.settings.patients.remove_dialog.confirm": "Αφαίρεση",
+  "ui.provider.settings.patients.active_discharge_hint":
+    "Αλλάξτε σε άλλον ασθενή πριν δώσετε εξιτήριο σε αυτόν.",
+  "ui.provider.settings.patients.discharge_dialog.title": "Εξιτήριο για {name};",
+  "ui.provider.settings.patients.discharge_dialog.body":
+    "Θα διαγραφούν όλες οι συνομιλίες, η προσωρινή μνήμη ήχου και οι καταχωρίσεις του αρχείου δραστηριότητας. Δεν μπορεί να αναιρεθεί.",
+  "ui.provider.settings.patients.discharge_dialog.confirm": "Εξιτήριο",
 
   // ── UI chrome: Settings — Care Team section ───────────────────
   "ui.provider.settings.care_team.heading": "Ομάδα φροντίδας",
@@ -948,6 +954,9 @@ const el: LocaleStrings = {
     "Φωνή συστήματος κατά τη φόρτωση κλώνου φωνής. Πατήστε για ακρόαση.",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
+  "ui.provider.settings.activity_log.heading": "Αρχείο δραστηριότητας",
+  "ui.provider.settings.activity_log.description":
+    "Ομιλία, εξαγωγές και συμβάντα συστήματος που καταγράφονται σε αυτή τη συσκευή.",
   "ui.provider.settings.offline.heading": "Διαγνωστικά εφαρμογής",
   "ui.provider.settings.offline.status_description":
     "Κατάσταση των μοντέλων AI που χρησιμοποιεί η εφαρμογή στη συσκευή για δημιουργία φωνής, προτάσεις και αναγνώριση ομιλίας.",
@@ -991,6 +1000,7 @@ const el: LocaleStrings = {
   "ui.provider.patients.actions_aria": "Ενέργειες για {name}",
   "ui.provider.patients.action_edit": "Επεξεργασία",
   "ui.provider.patients.action_remove": "Αφαίρεση",
+  "ui.provider.patients.action_discharge": "Εξιτήριο",
   "ui.provider.switch.voice_captured": "Φωνή καταγράφηκε",
   "ui.provider.switch.no_voice": "Χωρίς φωνή",
   "ui.provider.switch.last_active_just_now": "Μόλις τώρα",

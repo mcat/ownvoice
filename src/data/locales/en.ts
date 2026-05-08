@@ -809,6 +809,10 @@ const en = {
   // ── UI chrome: Settings — Patients section ────────────────────
   "ui.provider.settings.patients.title": "Patients",
   "ui.provider.settings.patients.active_remove_hint": "Switch to another patient before removing this one.",
+  "ui.provider.settings.patients.active_discharge_hint": "Switch to another patient before discharging this one.",
+  "ui.provider.settings.patients.discharge_dialog.title": "Discharge {name}?",
+  "ui.provider.settings.patients.discharge_dialog.body": "This deletes all of their conversations, audio cache, and audit log entries. Cannot be undone.",
+  "ui.provider.settings.patients.discharge_dialog.confirm": "Discharge",
   "ui.provider.settings.patients.remove_button": "Remove",
   "ui.provider.settings.patients.add_patient": "+ Add Patient",
   "ui.provider.settings.patients.remove_dialog.title": "Remove {name}?",
@@ -845,6 +849,10 @@ const en = {
   "ui.provider.settings.patient_info.backup_voice_label": "Backup voice",
   "ui.provider.settings.patient_info.backup_voice_body": "System voice used while the voice clone loads. Tap to preview.",
 
+  // ── UI chrome: Settings — Activity log entry ─────────────────
+  "ui.provider.settings.activity_log.heading": "Activity log",
+  "ui.provider.settings.activity_log.description": "Speech, exports, and system events logged on this device.",
+
   // ── UI chrome: Settings — Offline Readiness section ───────────
   "ui.provider.settings.offline.heading": "App Diagnostics",
   "ui.provider.settings.offline.status_description": "Status of the AI models the app uses on-device for voice generation, suggestions, and speech recognition.",
@@ -880,6 +888,7 @@ const en = {
   "ui.provider.patients.actions_aria": "Actions for {name}",
   "ui.provider.patients.action_edit": "Edit",
   "ui.provider.patients.action_remove": "Remove",
+  "ui.provider.patients.action_discharge": "Discharge",
   "ui.provider.switch.voice_captured": "Voice captured",
   "ui.provider.switch.no_voice": "No voice",
   "ui.provider.switch.last_active_just_now": "Just now",

@@ -7,6 +7,7 @@ import { patientIdHash } from "./hash";
 import { EVENT } from "./events";
 import { sweepRetention, scheduleHourlyRetention } from "./retention";
 import { sweepAbandonedWorkflows, type AbandonedWorkflow } from "./recovery";
+import { trimOversizedJournalResults } from "./journalCleanup";
 
 export interface InitOpts {
   activePatientId: string | null;
@@ -66,6 +67,13 @@ export async function initAudit(opts: InitOpts): Promise<void> {
 
     void sweepRetention(db);
     cancelHourlyRetention = scheduleHourlyRetention(db);
+
+    // Trim oversized step.result payloads carried over from before
+    // memoize:false landed. Idempotent — already-trimmed records are
+    // a no-op write skip.
+    void trimOversizedJournalResults(db).catch((err) => {
+      console.warn("[audit] journal cleanup failed:", err);
+    });
 
     if (opts.onAbandoned) {
       try {

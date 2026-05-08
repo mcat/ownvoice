@@ -58,6 +58,13 @@ export function Thread({ messages, t, onRepeat }: ThreadProps) {
   // initial mount — there's no prior state to flicker from there.
   const autoScrollSuppressUntil = useRef(0);
   const prevMessagesLength = useRef<number | null>(null);
+  // Tracks whether the user was pinned to the bottom *before* the next
+  // message arrives. If they've scrolled up to read history, we honour
+  // that and don't yank them back. Without this, tapping a new phrase
+  // (or any new event in the thread) hides the older context they were
+  // reading — which is what surfaced as "the log only shows the most
+  // recent phrase."
+  const wasAtBottomRef = useRef(true);
 
   // Recompute boundary flags so the arrow buttons reflect aria-disabled
   // state. 1px tolerance covers sub-pixel rounding from smooth scroll.
@@ -67,22 +74,32 @@ export function Thread({ messages, t, onRepeat }: ThreadProps) {
     if (!el) return;
     const { scrollTop, scrollHeight, clientHeight } = el;
     const overflow = scrollHeight - clientHeight;
-    setAtTop(scrollTop <= 1);
-    setAtBottom(overflow <= 1 || scrollTop >= overflow - 1);
+    const top = scrollTop <= 1;
+    const bottom = overflow <= 1 || scrollTop >= overflow - 1;
+    setAtTop(top);
+    setAtBottom(bottom);
+    wasAtBottomRef.current = bottom;
   }, []);
 
-  // Auto-scroll to bottom whenever messages change.
+  // Auto-scroll to bottom on new messages, but only if the user is
+  // already pinned to the bottom (or this is the first paint). If they
+  // scrolled up to read history, leave their position alone.
   // The `behavior` JS option overrides CSS `scroll-behavior`, so the
   // `prefers-reduced-motion` media rule in app.css does NOT silence this
   // call — we must branch explicitly (WCAG 2.3.3 AAA).
   useEffect(() => {
+    const isFirstPaint = prevMessagesLength.current === null;
+    const isMessageArrival =
+      !isFirstPaint && prevMessagesLength.current !== messages.length;
+    prevMessagesLength.current = messages.length;
+    const shouldScroll = isFirstPaint || (isMessageArrival && wasAtBottomRef.current);
+    if (!shouldScroll) {
+      updateBounds();
+      return;
+    }
     endRef.current?.scrollIntoView({
       behavior: reducedMotion ? "auto" : "smooth",
     });
-    const isMessageArrival =
-      prevMessagesLength.current !== null &&
-      prevMessagesLength.current !== messages.length;
-    prevMessagesLength.current = messages.length;
     if (!isMessageArrival) {
       updateBounds();
       return;

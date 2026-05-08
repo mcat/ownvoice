@@ -903,6 +903,12 @@ const de: LocaleStrings = {
   "ui.provider.settings.patients.remove_dialog.body":
     "Hiermit werden Stimmprobe, Gesprächsverlauf und zwischengespeichertes Audio für den Stimmklon gelöscht. Stimmklone des Behandlungsteams werden für andere Patienten behalten. Dies kann nicht rückgängig gemacht werden.",
   "ui.provider.settings.patients.remove_dialog.confirm": "Entfernen",
+  "ui.provider.settings.patients.active_discharge_hint":
+    "Wechseln Sie zu einem anderen Patienten, bevor Sie diesen entlassen.",
+  "ui.provider.settings.patients.discharge_dialog.title": "{name} entlassen?",
+  "ui.provider.settings.patients.discharge_dialog.body":
+    "Dadurch werden alle Gespräche, der Audio-Cache und die Einträge im Aktivitätsprotokoll gelöscht. Dies kann nicht rückgängig gemacht werden.",
+  "ui.provider.settings.patients.discharge_dialog.confirm": "Entlassen",
 
   // ── UI chrome: Settings — Care Team section ───────────────────
   "ui.provider.settings.care_team.heading": "Behandlungsteam",
@@ -949,6 +955,9 @@ const de: LocaleStrings = {
     "Systemstimme, die verwendet wird, während der Stimmklon lädt. Tippen Sie zum Vorhören.",
 
   // ── UI chrome: Settings — Offline Readiness section ───────────
+  "ui.provider.settings.activity_log.heading": "Aktivitätsprotokoll",
+  "ui.provider.settings.activity_log.description":
+    "Sprach-, Export- und Systemereignisse, die auf diesem Gerät protokolliert werden.",
   "ui.provider.settings.offline.heading": "App-Diagnose",
   "ui.provider.settings.offline.status_description":
     "Status der KI-Modelle, die die App auf dem Gerät für Sprachgenerierung, Vorschläge und Spracherkennung verwendet.",
@@ -1000,6 +1009,7 @@ const de: LocaleStrings = {
   "ui.provider.patients.actions_aria": "Aktionen für {name}",
   "ui.provider.patients.action_edit": "Bearbeiten",
   "ui.provider.patients.action_remove": "Entfernen",
+  "ui.provider.patients.action_discharge": "Entlassen",
   "ui.provider.switch.voice_captured": "Stimme aufgenommen",
   "ui.provider.switch.no_voice": "Keine Stimme",
   "ui.provider.switch.last_active_just_now": "Gerade eben",

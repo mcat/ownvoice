@@ -9,6 +9,8 @@ import { log } from "./audit/logger";
 import { EVENT } from "./audit/events";
 import { ATTR } from "./audit/attrs";
 import { initAudit } from "./audit/init";
+import { setActivePatientHash } from "./audit/session";
+import { patientIdHash } from "./audit/hash";
 import { resumeWorkflow } from "./audit/recovery";
 
 window.addEventListener("error", (ev) => {
@@ -98,6 +100,32 @@ useUIStore.subscribe((state, prev) => {
       bootAudit();
     });
   }
+
+  // Keep audit/session.ts patient hash in sync with the store. initAudit
+  // sets it once on boot, and setActivePatient updates it on user
+  // switches — but neither covers Vite HMR replacing audit/session.ts.
+  // The fresh module instance has patientIdHash=undefined, so subsequent
+  // events lose their patient hash and the conversation thread (which
+  // filters by hash) falls silent until a manual reload. Subscribe so
+  // the live store value is re-applied any time activePatientId is
+  // observed — including immediately after this subscribe runs.
+  let lastSyncedId: string | null | undefined = undefined;
+  const syncPatientHash = (id: string | null): void => {
+    if (id === lastSyncedId) return;
+    lastSyncedId = id;
+    if (!id) {
+      setActivePatientHash(null);
+      return;
+    }
+    void patientIdHash(id).then((h) => {
+      // If a newer change has landed while we awaited, don't clobber it.
+      if (lastSyncedId === id) setActivePatientHash(h);
+    });
+  };
+  syncPatientHash(useSettingsStore.getState().cfg?.activePatientId ?? null);
+  useSettingsStore.subscribe((s) => {
+    syncPatientHash(s.cfg?.activePatientId ?? null);
+  });
 }
 
 // One-shot best-effort cleanup of the deprecated `ov-conversation`
