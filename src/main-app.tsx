@@ -2,11 +2,13 @@ import { render } from "preact";
 import { App } from "./App";
 import "./app.css";
 import { useUIStore } from "./stores/uiStore";
+import { useSettingsStore } from "./stores/settingsStore";
 import { themes, type ThemeName } from "./theme/tokens";
 import { startVoiceProcessor } from "./models/voiceProcessor";
 import { log } from "./audit/logger";
 import { EVENT } from "./audit/events";
 import { ATTR } from "./audit/attrs";
+import { initAudit } from "./audit/init";
 
 window.addEventListener("error", (ev) => {
   log({
@@ -67,6 +69,23 @@ useUIStore.subscribe((state, prev) => {
     });
   }
 });
+
+// Boot the audit logger after settings hydrate so the active patient id
+// (used to derive the patient hash) is known. Hydration may have already
+// completed by the time this runs — handle both cases.
+{
+  const bootAudit = (): void => {
+    const cfg = useSettingsStore.getState().cfg;
+    void initAudit({ activePatientId: cfg?.activePatientId ?? null });
+  };
+  if (useSettingsStore.getState()._hasHydrated) {
+    bootAudit();
+  } else {
+    useSettingsStore.persist.onFinishHydration?.(() => {
+      bootAudit();
+    });
+  }
+}
 
 startVoiceProcessor();
 
