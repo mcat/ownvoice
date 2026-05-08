@@ -3,6 +3,7 @@ import { useEffect, useState } from "preact/hooks";
 import type { ThemeTokens } from "../../../theme/tokens";
 import { t as resolvePhrase } from "../../../data/phraseRegistry";
 import { useSettingsStore } from "../../../stores/settingsStore";
+import { DiagnosticsView } from "../../diag/DiagnosticsView";
 
 interface Props {
   t: ThemeTokens;
@@ -17,6 +18,11 @@ export function AboutSection({ t }: Props) {
   // the deployed code. `caches.keys()` returns everything under this
   // origin, so we filter to our own `ownvoice-*` prefix.
   const [swCaches, setSwCaches] = useState<string[]>([]);
+  // Hidden 5-tap unlock on the version string opens the dev-only
+  // Diagnostics viewer. Phase 1: not gated by build flag — Phase 2 may
+  // restrict to dev builds.
+  const [versionTaps, setVersionTaps] = useState(0);
+  const [diagOpen, setDiagOpen] = useState(false);
   useEffect(() => {
     if (!("caches" in self)) return;
     let cancelled = false;
@@ -36,7 +42,18 @@ export function AboutSection({ t }: Props) {
 
   return (
     <Section label={resolvePhrase("ui.provider.settings.about.heading", caregiverLang)} t={t}>
-      <p style={{ fontSize: 15, fontWeight: 600, color: t.text, margin: "0 0 8px" }}>
+      <p
+        style={{ fontSize: 15, fontWeight: 600, color: t.text, margin: "0 0 8px", cursor: "pointer" }}
+        onClick={() => {
+          setVersionTaps((n) => {
+            if (n + 1 >= 5) {
+              setDiagOpen(true);
+              return 0;
+            }
+            return n + 1;
+          });
+        }}
+      >
         OwnVoice v0.1
       </p>
       <p style={{ fontSize: 14, color: t.sub, margin: "0 0 4px" }}>
@@ -48,6 +65,7 @@ export function AboutSection({ t }: Props) {
       <p style={{ fontSize: 13, color: t.muted, margin: "0 0 8px" }}>
         {resolvePhrase("ui.provider.settings.about.attribution_2", caregiverLang)}
       </p>
+      {diagOpen && <DiagnosticsView onClose={() => setDiagOpen(false)} />}
       {swCaches.length > 0 && (
         <p
           data-testid="about-sw-caches"
