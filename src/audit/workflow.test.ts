@@ -90,4 +90,15 @@ describe("ov.workflow happy path", () => {
     db.close();
     expect(rows[0].status).toBe("failed");
   });
+
+  it("ctx.step returns memoised result on duplicate call within a workflow", async () => {
+    let calls = 0;
+    const result = await ov.workflow("voice_enrollment", async (ctx) => {
+      const a = await ctx.step("once", async () => { calls += 1; return 42; });
+      const b = await ctx.step("once", async () => { calls += 1; return 99; });
+      return [a, b];
+    });
+    expect(calls).toBe(1);
+    expect(result).toEqual([42, 42]);
+  });
 });

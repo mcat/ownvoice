@@ -90,6 +90,20 @@ async function runWorkflow<T>(
   const ctx: StepCtx = {
     workflowId,
     async step<S>(stepName: string, fn: () => Promise<S>): Promise<S> {
+      // Replay path: if a completed step with this name + attempt exists,
+      // return memoised result without calling fn.
+      const prior = state.step_history.find(
+        (s) => s.step_name === stepName && s.attempt === state.attempt,
+      );
+      if (prior?.status === "completed" && prior.result !== undefined) {
+        return superjson.parse<S>(prior.result);
+      }
+      if (prior?.status === "failed" && prior.error) {
+        const e = new Error(prior.error.message);
+        e.name = prior.error.type;
+        throw e;
+      }
+
       const stepStart = Date.now();
       try {
         const value = await fn();
