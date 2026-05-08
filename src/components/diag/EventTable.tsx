@@ -25,6 +25,11 @@ export function EventTable({ records, columns, rowHeight = DEFAULT_ROW_HEIGHT }:
   // Virtualizer constructor's inferred type compatible with the assignment.
   const virtRef = useRef<Virtualizer<HTMLDivElement, Element> | null>(null);
 
+  // Mount the virtualizer ONCE per scroller. Recreating on every
+  // records.length change tore down the ResizeObserver and cascaded
+  // through onChange→setTick re-renders; with the live subscribe in
+  // ActivityLog firing on every audit event, that loop locked the
+  // main thread.
   useEffect(() => {
     if (!scrollerRef.current) return;
     const v = new Virtualizer({
@@ -40,6 +45,20 @@ export function EventTable({ records, columns, rowHeight = DEFAULT_ROW_HEIGHT }:
     const cleanup = v._didMount();
     v._willUpdate();
     return () => { cleanup(); virtRef.current = null; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Apply count/rowHeight changes via setOptions instead of remount.
+  useEffect(() => {
+    const v = virtRef.current;
+    if (!v) return;
+    v.setOptions({
+      ...v.options,
+      count: records.length,
+      estimateSize: () => rowHeight,
+    });
+    v._willUpdate();
+    setTick((t) => t + 1);
   }, [records.length, rowHeight]);
 
   const v = virtRef.current;

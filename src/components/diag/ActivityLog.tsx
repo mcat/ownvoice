@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "preact/hooks";
+import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { useSettingsStore } from "../../stores/settingsStore";
 import { queryEvents } from "../../audit/queryEvents";
 import { patientIdHash } from "../../audit/hash";
@@ -93,11 +93,37 @@ export function ActivityLog({ onClose }: ActivityLogProps) {
     return () => { cancelled = true; };
   }, [filters]);
 
-  // Live append on new audit events.
+  // Live append on new audit events. Coalesce into a per-frame buffer
+  // so a burst of emits triggers one setRecords (and thus one render +
+  // one Virtualizer setOptions call) instead of N. Without this the
+  // viewer recursively renders itself faster than rAF can clear.
+  const pendingRef = useRef<AuditRecord[]>([]);
+  const rafRef = useRef<number | null>(null);
   useEffect(() => {
     return subscribe((rec) => {
-      setRecords((prev) => prev.length < DEFAULT_LIMIT ? [rec, ...prev].slice(0, DEFAULT_LIMIT) : prev);
+      pendingRef.current.push(rec);
+      if (rafRef.current != null) return;
+      rafRef.current = requestAnimationFrame(() => {
+        rafRef.current = null;
+        const batch = pendingRef.current;
+        if (batch.length === 0) return;
+        pendingRef.current = [];
+        setRecords((prev) => {
+          if (prev.length >= DEFAULT_LIMIT) return prev;
+          // Newest first, matching the existing layout convention.
+          const merged = [...batch.slice().reverse(), ...prev];
+          return merged.length > DEFAULT_LIMIT ? merged.slice(0, DEFAULT_LIMIT) : merged;
+        });
+      });
     });
+  }, []);
+
+  // Cancel any pending rAF on unmount.
+  useEffect(() => () => {
+    if (rafRef.current != null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
   }, []);
 
   const cols = useMemo(() => columnsForRole(role), [role]);
