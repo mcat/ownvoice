@@ -3,7 +3,7 @@ import { useEffect, useState } from "preact/hooks";
 import type { ThemeTokens } from "../../../theme/tokens";
 import { t as resolvePhrase } from "../../../data/phraseRegistry";
 import { useSettingsStore } from "../../../stores/settingsStore";
-import { DiagnosticsView } from "../../diag/DiagnosticsView";
+import { ActivityLog } from "../../diag/ActivityLog";
 
 interface Props {
   t: ThemeTokens;
@@ -65,7 +65,7 @@ export function AboutSection({ t }: Props) {
       <p style={{ fontSize: 13, color: t.muted, margin: "0 0 8px" }}>
         {resolvePhrase("ui.provider.settings.about.attribution_2", caregiverLang)}
       </p>
-      {diagOpen && <DiagnosticsView onClose={() => setDiagOpen(false)} />}
+      {diagOpen && <ActivityLog onClose={() => setDiagOpen(false)} />}
       {swCaches.length > 0 && (
         <p
           data-testid="about-sw-caches"

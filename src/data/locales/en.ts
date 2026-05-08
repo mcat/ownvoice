@@ -845,6 +845,10 @@ const en = {
   "ui.provider.settings.patient_info.backup_voice_label": "Backup voice",
   "ui.provider.settings.patient_info.backup_voice_body": "System voice used while the voice clone loads. Tap to preview.",
 
+  // ── UI chrome: Settings — Activity log entry ─────────────────
+  "ui.provider.settings.activity_log.heading": "Activity log",
+  "ui.provider.settings.activity_log.description": "Speech, exports, and system events logged on this device.",
+
   // ── UI chrome: Settings — Offline Readiness section ───────────
   "ui.provider.settings.offline.heading": "App Diagnostics",
   "ui.provider.settings.offline.status_description": "Status of the AI models the app uses on-device for voice generation, suggestions, and speech recognition.",
