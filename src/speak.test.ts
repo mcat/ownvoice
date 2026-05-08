@@ -15,6 +15,9 @@ vi.mock("./models/modelManager", () => ({
 const mockGetCachedAudio = vi.fn();
 vi.mock("./models/audioCache", () => ({
   getCachedAudio: mockGetCachedAudio,
+  // The hot-cache key derives from this; deterministic non-"none" makes
+  // every test phrase eligible for the in-memory cache.
+  embeddingFingerprint: (_: unknown) => "test-fp",
 }));
 
 // --- Helpers ---
@@ -87,6 +90,10 @@ beforeEach(async () => {
   mockGetWorker.mockReturnValue(null);
   mockGetCachedAudio.mockReset();
   mockGetCachedAudio.mockResolvedValue(null);
+  // Drop the in-memory hot cache between tests so the second test in a
+  // sequence still sees a cold OPFS path.
+  const { _resetHotCacheForTests } = await import("./speak");
+  _resetHotCacheForTests();
 
   // Re-install AudioContext mock before each test
   audioCtxCtor = installAudioContextMock();

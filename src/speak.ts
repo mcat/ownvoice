@@ -1,8 +1,54 @@
 import type { Speaker } from "./types";
-import { getCachedAudio } from "./models/audioCache";
+import { getCachedAudio, embeddingFingerprint } from "./models/audioCache";
 import { log } from "./audit/logger";
 import { EVENT } from "./audit/events";
 import { ATTR } from "./audit/attrs";
+
+/**
+ * In-memory hot cache of recently-played cloned-voice audio. The first
+ * tap of a phrase reads from OPFS (which is intrinsically slow on some
+ * Chromes — 50KB takes ~1s); subsequent taps of the same phrase pull
+ * from this map in microseconds. Sized at 64 entries × ~100KB ≈ 6 MB,
+ * well under the renderer's typical heap budget.
+ *
+ * Key: `${embeddingFingerprint(embedding)}::${phrase}`. Bound: 64 LRU.
+ */
+const HOT_CACHE_MAX = 64;
+const hotCache = new Map<string, { audio: Float32Array; sampleRate: number }>();
+
+function hotCacheKey(phrase: string, embedding: unknown): string | null {
+  const fp = embeddingFingerprint(embedding);
+  if (fp === "none") return null;
+  return `${fp}::${phrase}`;
+}
+
+function hotCacheGet(phrase: string, embedding: unknown) {
+  const key = hotCacheKey(phrase, embedding);
+  if (!key) return undefined;
+  const hit = hotCache.get(key);
+  if (hit) {
+    // Touch for LRU: re-insert at end of insertion order.
+    hotCache.delete(key);
+    hotCache.set(key, hit);
+  }
+  return hit;
+}
+
+function hotCacheSet(phrase: string, embedding: unknown, value: { audio: Float32Array; sampleRate: number }): void {
+  const key = hotCacheKey(phrase, embedding);
+  if (!key) return;
+  hotCache.set(key, value);
+  if (hotCache.size > HOT_CACHE_MAX) {
+    // Evict oldest (first-inserted) — Map iterates in insertion order.
+    const oldest = hotCache.keys().next().value;
+    if (oldest) hotCache.delete(oldest);
+  }
+}
+
+/** Test-only — drop the in-memory hot cache. */
+export function _resetHotCacheForTests(): void {
+  hotCache.clear();
+}
 
 /** Shared AudioContext for playing synthesized audio */
 let audioCtx: AudioContext | null = null;
@@ -546,11 +592,29 @@ export async function speak(
   // Note: SPEAK_TAP is emitted by useSpeakActions (the tap origin owns the
   // tap event); this function only emits engine-outcome events.
 
-  // Priority 0: pre-generated cached audio in the speaker's cloned voice.
+  // Priority 0a: in-memory hot cache. Sub-ms, no awaits. Populated by
+  // priority 0b after the first OPFS read of each phrase.
   if (speaker.embedding) {
+    const hot = hotCacheGet(text, speaker.embedding);
+    if (hot) {
+      log({
+        name: EVENT.SPEAK_CACHE_HIT,
+        attributes: {
+          [ATTR.SPEECH_TEXT]: text,
+          [ATTR.SPEECH_ENGINE]: "memory",
+          [ATTR.SPEECH_LANG]: speaker.lang ?? null,
+        },
+      });
+      await playAudioBuffer(hot.audio, hot.sampleRate);
+      return;
+    }
+
+    // Priority 0b: pre-generated cached audio in OPFS. Slow first hit;
+    // promotes into the hot cache so subsequent taps stay fast.
     try {
       const hit = await getCachedAudio(text, speaker.embedding);
       if (hit) {
+        hotCacheSet(text, speaker.embedding, hit);
         log({
           name: EVENT.SPEAK_CACHE_HIT,
           attributes: {
