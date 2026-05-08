@@ -7,13 +7,15 @@ import { useStaffActivityBump } from "../../hooks/useStaffActivityBump";
 import type { ThemeTokens, ThemeName } from "../../theme/tokens";
 import { colors } from "../../theme/tokens";
 import { useSettingsStore } from "../../stores/settingsStore";
-import { useConversationStore } from "../../stores/conversationStore";
 import { useAudioCacheStore } from "../../stores/audioCacheStore";
 import { useUIStore } from "../../stores/uiStore";
 import { removePatientHashes } from "../../stores/patientIndex";
 import { LANGS } from "../../data/phrases";
 import { t as resolvePhrase } from "../../data/phraseRegistry";
 import * as audioCacheRunner from "../../models/audioCacheRunner";
+import { openAuditDb } from "../../audit/db";
+import { patientIdHash } from "../../audit/hash";
+import { clearAuditForPatient } from "../../audit/cascade";
 import type { Patient } from "../../types";
 
 export interface PatientsScreenProps {
@@ -52,7 +54,6 @@ export function PatientsScreen({ open, onClose, t: tokens, theme }: PatientsScre
   const caregiverLang = cfg?.caregiverLang ?? "en";
   const patients = cfg?.patients ?? [];
   const activePatientId = cfg?.activePatientId ?? null;
-  const messagesByPatientId = useConversationStore((s) => s.messagesByPatientId);
 
   const sorted = [...patients].sort((a, b) => b.lastActiveAt - a.lastActiveAt);
 
@@ -63,18 +64,23 @@ export function PatientsScreen({ open, onClose, t: tokens, theme }: PatientsScre
       if (patient.id === activePatientId) return; // no-op
       audioCacheRunner.pauseAll();
       useSettingsStore.getState().switchPatient(patient.id);
-      const messageCount = messagesByPatientId[patient.id]?.length ?? 0;
+      // Thread is now derived from the audit log, which is async-loaded
+      // by useThreadView. We could query it here for the message count,
+      // but the announcement fires synchronously on the SR live region
+      // and any async wait would race the screen close. Drop the count
+      // and announce just the name — assistive-tech users still get the
+      // switch confirmation; the count was incidental context.
       const announcementText = resolvePhrase(
         "ui.provider.switch.switched_announcement",
         caregiverLang,
       )
         .replace("{name}", patient.name)
-        .replace("{count}", String(messageCount));
+        .replace("{count}", "");
       setAnnouncement(announcementText);
       // Allow the live region to update before closing.
       queueMicrotask(() => onClose());
     },
-    [activePatientId, messagesByPatientId, caregiverLang, onClose],
+    [activePatientId, caregiverLang, onClose],
   );
 
   const handleEdit = useCallback(
@@ -99,7 +105,18 @@ export function PatientsScreen({ open, onClose, t: tokens, theme }: PatientsScre
       if (!ok) return;
       try {
         useSettingsStore.getState().removePatient(patient.id);
-        useConversationStore.getState().clearForPatient(patient.id);
+        // Cascade-delete this patient's audit-log entries (the thread
+        // derives from these — same data that conversationStore used to
+        // hold). Best-effort: failure here is logged but doesn't block
+        // the rest of the remove flow.
+        try {
+          const hash = await patientIdHash(patient.id);
+          const auditDb = await openAuditDb();
+          await clearAuditForPatient(auditDb, hash);
+          auditDb.close();
+        } catch (err) {
+          console.warn("[audit] cascade cleanup failed:", err);
+        }
         const hashes = await removePatientHashes(patient.id);
         try {
           const root = await navigator.storage.getDirectory();

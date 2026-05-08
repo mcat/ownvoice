@@ -87,6 +87,18 @@ useUIStore.subscribe((state, prev) => {
   }
 }
 
+// One-shot best-effort cleanup of the deprecated `ov-conversation`
+// IndexedDB database. The conversation thread now derives from the
+// audit log (`ov-audit`); the old DB is dead weight on existing
+// installs. Failures are silent — if the user has it open in another
+// tab, the deletion is "blocked" and we'll try again on the next
+// boot. Brand-new installs are no-ops.
+try {
+  indexedDB.deleteDatabase("ov-conversation");
+} catch {
+  /* ignore — best-effort cleanup */
+}
+
 startVoiceProcessor();
 
 render(<App />, document.getElementById("root")!);

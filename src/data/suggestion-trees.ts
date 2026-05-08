@@ -307,7 +307,7 @@ function getKeywordSuggestions(partialKey: string): string[] {
  */
 export function buildCompletionPrompt(
   partialKey: string,
-  recentMessages: Message[],
+  recentMessages: readonly Message[],
   hour: number,
 ): string {
   const timeContext =
@@ -575,7 +575,7 @@ export function buildLLMFewShot(partialKey: string): FewShotExample[] {
  *     eating into the 1.2B model's prompt budget.
  */
 export function extractPatientVocabulary(
-  messages: Message[],
+  messages: readonly Message[],
   limit: number,
 ): string[] {
   const seen = new Set<string>();
@@ -610,7 +610,7 @@ let nextLLMRequestId = 1;
 
 export async function getLLMSuggestions(
   partialKey: string,
-  recentMessages: Message[],
+  recentMessages: readonly Message[],
   hour: number,
 ): Promise<string[]> {
   if (!partialKey) return [];
@@ -685,7 +685,7 @@ export async function getLLMSuggestions(
  */
 export async function getContextualSuggestions(
   partialKey: string,
-  recentMessages: Message[],
+  recentMessages: readonly Message[],
   hour: number,
 ): Promise<string[]> {
   const base = BASE_SUGGESTIONS[partialKey];
@@ -798,7 +798,7 @@ function sf(text: string): SuggestionItem {
  */
 export async function getKeyedContextualSuggestions(
   partialKey: string,
-  recentMessages: Message[],
+  recentMessages: readonly Message[],
   hour: number,
 ): Promise<SuggestionItem[]> {
   const keyed = KEYED_SUGGESTIONS[partialKey];

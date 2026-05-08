@@ -1,5 +1,4 @@
 import { useSettingsStore } from "./settingsStore";
-import { useConversationStore } from "./conversationStore";
 import { useUIStore } from "./uiStore";
 import { useOfflineStore } from "./offlineStore";
 import { makeTestCfg } from "../test/makeCfg";
@@ -38,8 +37,6 @@ import { clearAudioCache } from "../models/audioCache";
 import * as audioCacheRunner from "../models/audioCacheRunner";
 import { getModelManager } from "../models/modelManager";
 
-const TEST_PATIENT_ID = "test-patient-1";
-
 beforeEach(() => {
   vi.clearAllMocks();
   // Set up some non-default state so we can verify the reset
@@ -50,11 +47,6 @@ beforeEach(() => {
   useSettingsStore.setState({
     cfg,
     speakerData: null,
-  });
-  useConversationStore.setState({
-    messagesByPatientId: {
-      [TEST_PATIENT_ID]: [{ from: "patient", text: "Help", time: "1:00 PM", label: "quick" }],
-    },
   });
   useUIStore.getState().setTab("pain");
   useUIStore.getState().openOverlay("wishes");
@@ -103,11 +95,6 @@ describe("resetAll", () => {
     const s = useSettingsStore.getState();
     expect(s.cfg).toBeNull();
     expect(s.speakerData).toBeNull();
-  });
-
-  it("clears conversation store", async () => {
-    await resetAll();
-    expect(useConversationStore.getState().messagesByPatientId).toEqual({});
   });
 
   it("resets UI store", async () => {
