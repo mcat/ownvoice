@@ -1,9 +1,11 @@
 import { renderHook, act } from "@testing-library/preact";
 import { useSpeakActions } from "./useSpeakActions";
 import { useSettingsStore } from "../stores/settingsStore";
-import { useConversationStore } from "../stores/conversationStore";
 import { useUIStore } from "../stores/uiStore";
 import { speak } from "../speak";
+import * as logger from "../audit/logger";
+import { EVENT } from "../audit/events";
+import { ATTR } from "../audit/attrs";
 import { makeTestCfg } from "../test/makeCfg";
 
 vi.mock("../speak", () => ({
@@ -21,15 +23,20 @@ const DEFAULT_CFG = makeTestCfg({
   },
 });
 
+let logSpy: ReturnType<typeof vi.spyOn>;
+
 beforeEach(() => {
   vi.useFakeTimers();
   vi.mocked(speak).mockClear();
+  // Spy on the audit logger and silence its real implementation for the
+  // duration of the unit. The logger no-ops without an initialised DB
+  // anyway, but spying lets us assert call shapes.
+  logSpy = vi.spyOn(logger, "log").mockImplementation(() => {});
   useSettingsStore.setState({
     cfg: null,
     speakerData: null,
     _hasHydrated: false,
   });
-  useConversationStore.setState({ messagesByPatientId: {} });
   useUIStore.setState({
     speaking: null,
     activeProvIdx: 0,
@@ -38,14 +45,8 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.useRealTimers();
+  logSpy.mockRestore();
 });
-
-/** Helper to get messages for the active patient. */
-function activeMessages() {
-  const activeId = useSettingsStore.getState().cfg?.activePatientId;
-  if (!activeId) return [];
-  return useConversationStore.getState().messagesByPatientId[activeId] ?? [];
-}
 
 describe("useSpeakActions", () => {
   describe("when cfg is null (no-ops)", () => {
@@ -57,7 +58,7 @@ describe("useSpeakActions", () => {
       });
 
       expect(speak).not.toHaveBeenCalled();
-      expect(activeMessages()).toHaveLength(0);
+      expect(logSpy).not.toHaveBeenCalled();
     });
 
     it("speakAsProvider does nothing", () => {
@@ -68,17 +69,27 @@ describe("useSpeakActions", () => {
       });
 
       expect(speak).not.toHaveBeenCalled();
-      expect(activeMessages()).toHaveLength(0);
+      expect(logSpy).not.toHaveBeenCalled();
     });
 
-    it("addToThread does nothing", () => {
+    it("composeThread does nothing", () => {
       const { result } = renderHook(() => useSpeakActions());
 
       act(() => {
-        result.current.addToThread("Hello", "patient");
+        result.current.composeThread("Hello");
       });
 
-      expect(activeMessages()).toHaveLength(0);
+      expect(logSpy).not.toHaveBeenCalled();
+    });
+
+    it("transcribeThread does nothing", () => {
+      const { result } = renderHook(() => useSpeakActions());
+
+      act(() => {
+        result.current.transcribeThread("Hello", "Dr. Jones");
+      });
+
+      expect(logSpy).not.toHaveBeenCalled();
     });
 
     it("repeatSpeak does nothing", () => {
@@ -93,7 +104,7 @@ describe("useSpeakActions", () => {
   });
 
   describe("speakAsPatient", () => {
-    it("adds message to conversation and calls speak", () => {
+    it("emits a SPEAK_TAP audit event with patient actor and calls speak", () => {
       useSettingsStore.setState({ cfg: DEFAULT_CFG });
 
       const { result } = renderHook(() => useSpeakActions());
@@ -102,14 +113,15 @@ describe("useSpeakActions", () => {
         result.current.speakAsPatient("I need water");
       });
 
-      // Check conversation message was added
-      const messages = activeMessages();
-      expect(messages).toHaveLength(1);
-      expect(messages[0].text).toBe("I need water");
-      expect(messages[0].from).toBe("patient");
-      expect(messages[0].label).toBe("Alice");
+      expect(logSpy).toHaveBeenCalledTimes(1);
+      const [event] = logSpy.mock.calls[0] as [logger.AuditEvent];
+      expect(event.name).toBe(EVENT.SPEAK_TAP);
+      expect(event.attributes).toMatchObject({
+        [ATTR.SPEECH_TEXT]: "I need water",
+        [ATTR.ACTOR]: "patient",
+        [ATTR.SPEECH_LANG]: "en",
+      });
 
-      // Check speak was called with patient speaker
       expect(speak).toHaveBeenCalledTimes(1);
       expect(speak).toHaveBeenCalledWith("I need water", {
         name: "Alice",
@@ -177,7 +189,7 @@ describe("useSpeakActions", () => {
   });
 
   describe("speakAsProvider", () => {
-    it("adds message to conversation and calls speak with provider speaker", () => {
+    it("emits a SPEAK_TAP audit event with provider actor + provider name", () => {
       useSettingsStore.setState({ cfg: DEFAULT_CFG });
 
       const { result } = renderHook(() => useSpeakActions());
@@ -186,11 +198,15 @@ describe("useSpeakActions", () => {
         result.current.speakAsProvider("Can you rate your pain?");
       });
 
-      const messages = activeMessages();
-      expect(messages).toHaveLength(1);
-      expect(messages[0].text).toBe("Can you rate your pain?");
-      expect(messages[0].from).toBe("provider");
-      expect(messages[0].label).toBe("Dr. Jones");
+      expect(logSpy).toHaveBeenCalledTimes(1);
+      const [event] = logSpy.mock.calls[0] as [logger.AuditEvent];
+      expect(event.name).toBe(EVENT.SPEAK_TAP);
+      expect(event.attributes).toMatchObject({
+        [ATTR.SPEECH_TEXT]: "Can you rate your pain?",
+        [ATTR.ACTOR]: "provider",
+        [ATTR.PROVIDER_NAME]: "Dr. Jones",
+        [ATTR.SPEECH_LANG]: "en",
+      });
 
       expect(speak).toHaveBeenCalledWith("Can you rate your pain?", {
         name: "Dr. Jones",
@@ -210,8 +226,8 @@ describe("useSpeakActions", () => {
         result.current.speakAsProvider("Take deep breaths");
       });
 
-      const messages = activeMessages();
-      expect(messages[0].label).toBe("Nurse Lee");
+      const [event] = logSpy.mock.calls[0] as [logger.AuditEvent];
+      expect(event.attributes?.[ATTR.PROVIDER_NAME]).toBe("Nurse Lee");
 
       expect(speak).toHaveBeenCalledWith("Take deep breaths", {
         name: "Nurse Lee",
@@ -265,59 +281,70 @@ describe("useSpeakActions", () => {
         result.current.speakAsProvider("Hello");
       });
 
-      const messages = activeMessages();
-      expect(messages[0].label).toBe("Care Team");
+      const [event] = logSpy.mock.calls[0] as [logger.AuditEvent];
+      expect(event.attributes?.[ATTR.PROVIDER_NAME]).toBe("Care Team");
     });
   });
 
-  describe("addToThread", () => {
-    it("adds message without calling speak", () => {
+  describe("composeThread", () => {
+    it("emits THREAD_COMPOSE with patient actor and no speak call", () => {
       useSettingsStore.setState({ cfg: DEFAULT_CFG });
 
       const { result } = renderHook(() => useSpeakActions());
 
       act(() => {
-        result.current.addToThread("Note from nurse", "provider", "Nurse Lee");
+        result.current.composeThread("I'm thirsty");
       });
-
-      const messages = activeMessages();
-      expect(messages).toHaveLength(1);
-      expect(messages[0].text).toBe("Note from nurse");
-      expect(messages[0].from).toBe("provider");
-      expect(messages[0].label).toBe("Nurse Lee");
 
       expect(speak).not.toHaveBeenCalled();
+      expect(logSpy).toHaveBeenCalledTimes(1);
+      const [event] = logSpy.mock.calls[0] as [logger.AuditEvent];
+      expect(event.name).toBe(EVENT.THREAD_COMPOSE);
+      expect(event.attributes).toMatchObject({
+        [ATTR.SPEECH_TEXT]: "I'm thirsty",
+        [ATTR.ACTOR]: "patient",
+        [ATTR.SPEECH_GLOSS]: "",
+      });
     });
 
-    it("uses patient name as label for patient messages", () => {
+    it("includes gloss when provided", () => {
       useSettingsStore.setState({ cfg: DEFAULT_CFG });
 
       const { result } = renderHook(() => useSpeakActions());
 
       act(() => {
-        result.current.addToThread("I'm thirsty", "patient");
+        result.current.composeThread("Tengo sed", "I am thirsty");
       });
 
-      const messages = activeMessages();
-      expect(messages[0].label).toBe("Alice");
+      const [event] = logSpy.mock.calls[0] as [logger.AuditEvent];
+      expect(event.attributes?.[ATTR.SPEECH_GLOSS]).toBe("I am thirsty");
     });
+  });
 
-    it("falls back to 'Care Team' for provider messages without label", () => {
+  describe("transcribeThread", () => {
+    it("emits THREAD_TRANSCRIBED with provider actor + label and no speak call", () => {
       useSettingsStore.setState({ cfg: DEFAULT_CFG });
 
       const { result } = renderHook(() => useSpeakActions());
 
       act(() => {
-        result.current.addToThread("Noted", "provider");
+        result.current.transcribeThread("Note from nurse", "Nurse Lee");
       });
 
-      const messages = activeMessages();
-      expect(messages[0].label).toBe("Care Team");
+      expect(speak).not.toHaveBeenCalled();
+      expect(logSpy).toHaveBeenCalledTimes(1);
+      const [event] = logSpy.mock.calls[0] as [logger.AuditEvent];
+      expect(event.name).toBe(EVENT.THREAD_TRANSCRIBED);
+      expect(event.attributes).toMatchObject({
+        [ATTR.SPEECH_TEXT]: "Note from nurse",
+        [ATTR.ACTOR]: "provider",
+        [ATTR.PROVIDER_NAME]: "Nurse Lee",
+      });
     });
   });
 
   describe("repeatSpeak", () => {
-    it("calls speak without adding a message to conversation", () => {
+    it("calls speak without emitting any audit event", () => {
       useSettingsStore.setState({ cfg: DEFAULT_CFG });
 
       const { result } = renderHook(() => useSpeakActions());
@@ -326,8 +353,8 @@ describe("useSpeakActions", () => {
         result.current.repeatSpeak("I need help", "patient");
       });
 
-      // Should NOT add to conversation
-      expect(activeMessages()).toHaveLength(0);
+      // Should NOT log a thread event (the original utterance already did)
+      expect(logSpy).not.toHaveBeenCalled();
 
       // Should call speak
       expect(speak).toHaveBeenCalledWith("I need help", {
@@ -412,10 +439,10 @@ describe("useSpeakActions", () => {
         result.current.speakAsPatient("Yes", { key: "quick.yes" });
       });
 
-      const msgs = activeMessages();
-      expect(msgs).toHaveLength(1);
+      const [event] = logSpy.mock.calls[0] as [logger.AuditEvent];
       // Same locale → gloss resolves to the same value as text
-      expect(msgs[0].gloss).toBe("Yes");
+      expect(event.attributes?.[ATTR.SPEECH_GLOSS]).toBe("Yes");
+      expect(event.attributes?.[ATTR.SPEECH_PHRASE_KEY]).toBe("quick.yes");
     });
 
     it("speakAsPatient with explicit gloss uses the provided gloss", () => {
@@ -429,11 +456,13 @@ describe("useSpeakActions", () => {
         });
       });
 
-      const msgs = activeMessages();
-      expect(msgs[0].gloss).toBe("I have sharp pain in my Head, level 8 out of 10");
+      const [event] = logSpy.mock.calls[0] as [logger.AuditEvent];
+      expect(event.attributes?.[ATTR.SPEECH_GLOSS]).toBe(
+        "I have sharp pain in my Head, level 8 out of 10",
+      );
     });
 
-    it("speakAsPatient without opts leaves gloss undefined (free-text)", () => {
+    it("speakAsPatient without opts records empty gloss/key (free-text)", () => {
       useSettingsStore.setState({ cfg: DEFAULT_CFG });
 
       const { result } = renderHook(() => useSpeakActions());
@@ -442,8 +471,9 @@ describe("useSpeakActions", () => {
         result.current.speakAsPatient("please help me breathe");
       });
 
-      const msgs = activeMessages();
-      expect(msgs[0].gloss).toBeUndefined();
+      const [event] = logSpy.mock.calls[0] as [logger.AuditEvent];
+      expect(event.attributes?.[ATTR.SPEECH_GLOSS]).toBe("");
+      expect(event.attributes?.[ATTR.SPEECH_PHRASE_KEY]).toBe("");
     });
 
     it("speakAsProvider with key resolves gloss in patientLang", () => {
@@ -463,12 +493,11 @@ describe("useSpeakActions", () => {
         result.current.speakAsProvider("How are you feeling?", { key: "provider.questions.feeling" });
       });
 
-      const msgs = activeMessages();
-      expect(msgs).toHaveLength(1);
-      expect(msgs[0].gloss).toBe("How are you feeling?");
+      const [event] = logSpy.mock.calls[0] as [logger.AuditEvent];
+      expect(event.attributes?.[ATTR.SPEECH_GLOSS]).toBe("How are you feeling?");
     });
 
-    it("speakAsProvider without opts leaves gloss undefined", () => {
+    it("speakAsProvider without opts records empty gloss", () => {
       useSettingsStore.setState({ cfg: DEFAULT_CFG });
 
       const { result } = renderHook(() => useSpeakActions());
@@ -477,8 +506,8 @@ describe("useSpeakActions", () => {
         result.current.speakAsProvider("Take deep breaths");
       });
 
-      const msgs = activeMessages();
-      expect(msgs[0].gloss).toBeUndefined();
+      const [event] = logSpy.mock.calls[0] as [logger.AuditEvent];
+      expect(event.attributes?.[ATTR.SPEECH_GLOSS]).toBe("");
     });
   });
 

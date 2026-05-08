@@ -1,9 +1,11 @@
 import { useCallback } from "preact/hooks";
 import { useSettingsStore, useActivePatient } from "../stores/settingsStore";
-import { useConversationStore } from "../stores/conversationStore";
 import { useUIStore } from "../stores/uiStore";
 import { speak } from "../speak";
 import { t as resolvePhrase } from "../data/phraseRegistry";
+import { log } from "../audit/logger";
+import { EVENT } from "../audit/events";
+import { ATTR } from "../audit/attrs";
 import type { PhraseKey } from "../data/locales/en";
 import type { Speaker } from "../types";
 
@@ -24,7 +26,6 @@ export interface SpeakGlossOpts {
 export function useSpeakActions() {
   const cfg = useSettingsStore((s) => s.cfg);
   const active = useActivePatient();
-  const addMessage = useConversationStore((s) => s.addMessage);
   const setSpeaking = useUIStore((s) => s.setSpeaking);
   const activeProvIdx = useUIStore((s) => s.activeProvIdx);
 
@@ -52,11 +53,21 @@ export function useSpeakActions() {
       const gloss = opts?.gloss
         ?? (opts?.key ? resolvePhrase(opts.key, caregiverLang) : undefined);
 
-      addMessage(text, "patient", active.name, gloss, opts?.icon);
+      log({
+        name: EVENT.SPEAK_TAP,
+        attributes: {
+          [ATTR.SPEECH_TEXT]: text,
+          [ATTR.SPEECH_GLOSS]: gloss ?? "",
+          [ATTR.SPEECH_ICON]: opts?.icon ?? "",
+          [ATTR.SPEECH_PHRASE_KEY]: opts?.key ?? "",
+          [ATTR.ACTOR]: "patient",
+          [ATTR.SPEECH_LANG]: caregiverLang,
+        },
+      });
       setSpeaking({ text, from: "patient", gloss });
       speak(gloss ?? text, speaker);
     },
-    [cfg, active, addMessage, setSpeaking],
+    [cfg, active, setSpeaking],
   );
 
   const speakAsProvider = useCallback(
@@ -76,21 +87,62 @@ export function useSpeakActions() {
       const gloss = opts?.gloss
         ?? (opts?.key ? resolvePhrase(opts.key, patientLang) : undefined);
 
-      addMessage(text, "provider", provName, gloss, opts?.icon);
+      log({
+        name: EVENT.SPEAK_TAP,
+        attributes: {
+          [ATTR.SPEECH_TEXT]: text,
+          [ATTR.SPEECH_GLOSS]: gloss ?? "",
+          [ATTR.SPEECH_ICON]: opts?.icon ?? "",
+          [ATTR.SPEECH_PHRASE_KEY]: opts?.key ?? "",
+          [ATTR.ACTOR]: "provider",
+          [ATTR.PROVIDER_NAME]: provName,
+          [ATTR.SPEECH_LANG]: patientLang,
+        },
+      });
       setSpeaking({ text, from: "provider", gloss });
       speak(gloss ?? text, speaker);
     },
-    [cfg, active, activeProv, addMessage, setSpeaking],
+    [cfg, active, activeProv, setSpeaking],
   );
 
-  const addToThread = useCallback(
-    (text: string, from: "patient" | "provider", label?: string, gloss?: string) => {
+  /** Add a patient-direction entry to the thread without speaking it.
+   *
+   *  Used by surfaces that pre-compose a thread item (e.g. MyWishes injecting
+   *  the SICG question alongside the spoken response). Emits THREAD_COMPOSE
+   *  so `useThreadView` picks it up and renders it as a patient-actor entry. */
+  const composeThread = useCallback(
+    (text: string, gloss?: string) => {
       if (!cfg || !active) return;
-      const fallbackLabel =
-        from === "patient" ? active.name : label ?? "Care Team";
-      addMessage(text, from, fallbackLabel, gloss);
+      log({
+        name: EVENT.THREAD_COMPOSE,
+        attributes: {
+          [ATTR.SPEECH_TEXT]: text,
+          [ATTR.SPEECH_GLOSS]: gloss ?? "",
+          [ATTR.ACTOR]: "patient",
+        },
+      });
     },
-    [cfg, active, addMessage],
+    [cfg, active],
+  );
+
+  /** Add a provider-direction entry to the thread without speaking it.
+   *
+   *  Used by ListenPanel after a transcription completes — the spoken text
+   *  came from a provider in the room, so the system records it as a
+   *  thread.transcribed event. */
+  const transcribeThread = useCallback(
+    (text: string, providerLabel: string) => {
+      if (!cfg || !active) return;
+      log({
+        name: EVENT.THREAD_TRANSCRIBED,
+        attributes: {
+          [ATTR.SPEECH_TEXT]: text,
+          [ATTR.ACTOR]: "provider",
+          [ATTR.PROVIDER_NAME]: providerLabel,
+        },
+      });
+    },
+    [cfg, active],
   );
 
   const repeatSpeak = useCallback(
@@ -119,5 +171,12 @@ export function useSpeakActions() {
     [cfg, active, activeProv, setSpeaking],
   );
 
-  return { speakAsPatient, speakAsProvider, addToThread, repeatSpeak, activeProv };
+  return {
+    speakAsPatient,
+    speakAsProvider,
+    composeThread,
+    transcribeThread,
+    repeatSpeak,
+    activeProv,
+  };
 }
