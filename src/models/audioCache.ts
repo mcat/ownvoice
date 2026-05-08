@@ -207,10 +207,31 @@ export function embeddingFingerprint(speakerData: unknown): string {
   return `${arr.length}_${first}_${last}`;
 }
 
-/** Get the OPFS cache directory, creating it if needed */
+/** Get the OPFS cache directory, creating it if needed.
+ *  Memoised: navigator.storage.getDirectory() and the per-version
+ *  directory handle are stable for the page lifetime, and resolving
+ *  them fresh on every cache op was adding ~600ms per call when pre-gen
+ *  was running concurrently — taps could stack 5+ such waits and feel
+ *  multi-second laggy. clearAudioCache() invalidates these handles. */
+let cachedRoot: FileSystemDirectoryHandle | null = null;
+let cachedCacheDir: FileSystemDirectoryHandle | null = null;
+
 async function getCacheDir(): Promise<FileSystemDirectoryHandle> {
-  const root = await navigator.storage.getDirectory();
-  return root.getDirectoryHandle(CACHE_DIR, { create: true });
+  if (cachedCacheDir) return cachedCacheDir;
+  if (!cachedRoot) cachedRoot = await navigator.storage.getDirectory();
+  cachedCacheDir = await cachedRoot.getDirectoryHandle(CACHE_DIR, { create: true });
+  return cachedCacheDir;
+}
+
+function invalidateCacheDirHandles(): void {
+  cachedRoot = null;
+  cachedCacheDir = null;
+}
+
+/** Test-only — drop the memoised OPFS handles so a freshly installed
+ *  OPFS mock isn't shadowed by stale references from a prior test. */
+export function _resetCacheDirForTests(): void {
+  invalidateCacheDirHandles();
 }
 
 /** Check if a phrase is in the cache */
@@ -618,6 +639,7 @@ async function listCachedKeys(): Promise<Set<string>> {
 
 /** Clear all cached audio (for patient reset) */
 export async function clearAudioCache(): Promise<void> {
+  invalidateCacheDirHandles();
   try {
     const root = await navigator.storage.getDirectory();
     await root.removeEntry(CACHE_DIR, { recursive: true });

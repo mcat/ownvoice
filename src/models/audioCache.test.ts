@@ -7,6 +7,7 @@ import {
   generateAllPhrases,
   retryFailed,
   embeddingFingerprint,
+  _resetCacheDirForTests,
 } from "./audioCache";
 
 // Mock the modelManager for generateAllPhrases tests
@@ -166,10 +167,16 @@ let opfs: ReturnType<typeof createOPFSMock>;
 beforeEach(() => {
   opfs = createOPFSMock();
   opfs.install();
+  // The cache module memoises navigator.storage.getDirectory + the cache
+  // dir handle for the page lifetime. In tests, each beforeEach installs
+  // a fresh OPFS mock, so we must drop the stale memo before any cache
+  // op runs against the new mock.
+  _resetCacheDirForTests();
 });
 
 afterEach(() => {
   opfs.clear();
+  _resetCacheDirForTests();
   // Guard against one test's fake timers starving another's setTimeout-based
   // mocks. Real timers is the safe default between tests.
   vi.useRealTimers();
