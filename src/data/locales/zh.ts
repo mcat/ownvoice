@@ -540,7 +540,8 @@ const zh: LocaleStrings = {
   "ui.patient.wishes.none_shared": "没有分享心愿。",
   "ui.patient.wishes.share_all_again": "再次分享所有心愿",
   "ui.patient.wishes.close": "关闭",
-  "ui.patient.wishes.share": "分享",
+  "ui.patient.wishes.speak": "说话",
+  "ui.patient.wishes.back": "返回",
   "ui.patient.wishes.skip": "跳过",
 
   // ── UI chrome: SentenceBuilder ─────────────────────────────────

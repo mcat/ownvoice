@@ -575,7 +575,8 @@ const el: LocaleStrings = {
   "ui.patient.wishes.none_shared": "Δεν μοιράστηκαν επιθυμίες.",
   "ui.patient.wishes.share_all_again": "Μοιράσου ξανά όλες τις επιθυμίες",
   "ui.patient.wishes.close": "Κλείσιμο",
-  "ui.patient.wishes.share": "Μοιράσου",
+  "ui.patient.wishes.speak": "Μίλα",
+  "ui.patient.wishes.back": "Πίσω",
   "ui.patient.wishes.skip": "Παράλειψη",
 
   // ── UI chrome: SentenceBuilder ─────────────────────────────────

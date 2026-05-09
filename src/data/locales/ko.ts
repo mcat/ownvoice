@@ -570,7 +570,8 @@ const ko: LocaleStrings = {
   "ui.patient.wishes.none_shared": "공유된 바람이 없습니다.",
   "ui.patient.wishes.share_all_again": "모든 바람 다시 공유하기",
   "ui.patient.wishes.close": "닫기",
-  "ui.patient.wishes.share": "공유",
+  "ui.patient.wishes.speak": "말하기",
+  "ui.patient.wishes.back": "뒤로",
   "ui.patient.wishes.skip": "건너뛰기",
 
   // ── UI chrome: SentenceBuilder ─────────────────────────────────

@@ -575,7 +575,8 @@ const he: LocaleStrings = {
   "ui.patient.wishes.none_shared": "לא שותפו משאלות.",
   "ui.patient.wishes.share_all_again": "שתף את כל המשאלות שוב",
   "ui.patient.wishes.close": "סגור",
-  "ui.patient.wishes.share": "שתף",
+  "ui.patient.wishes.speak": "דבר",
+  "ui.patient.wishes.back": "חזור",
   "ui.patient.wishes.skip": "דלג",
 
   // ── UI chrome: SentenceBuilder ─────────────────────────────────

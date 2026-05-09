@@ -554,7 +554,8 @@ const hi: LocaleStrings = {
   "ui.patient.wishes.none_shared": "कोई इच्छा साझा नहीं की गई।",
   "ui.patient.wishes.share_all_again": "सभी इच्छाएँ दोबारा साझा करें",
   "ui.patient.wishes.close": "बंद करें",
-  "ui.patient.wishes.share": "साझा करें",
+  "ui.patient.wishes.speak": "बोलें",
+  "ui.patient.wishes.back": "पीछे",
   "ui.patient.wishes.skip": "छोड़ें",
 
   // ── UI chrome: SentenceBuilder ─────────────────────────────────

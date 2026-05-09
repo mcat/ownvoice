@@ -567,7 +567,8 @@ const da: LocaleStrings = {
   "ui.patient.wishes.none_shared": "Ingen ønsker blev delt.",
   "ui.patient.wishes.share_all_again": "Del alle ønsker igen",
   "ui.patient.wishes.close": "Luk",
-  "ui.patient.wishes.share": "Del",
+  "ui.patient.wishes.speak": "Tal",
+  "ui.patient.wishes.back": "Tilbage",
   "ui.patient.wishes.skip": "Spring over",
 
   // ── UI chrome: SentenceBuilder ─────────────────────────────────

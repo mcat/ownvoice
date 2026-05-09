@@ -558,7 +558,8 @@ const ru: LocaleStrings = {
   "ui.patient.wishes.none_shared": "Пожелания не были озвучены.",
   "ui.patient.wishes.share_all_again": "Озвучить все пожелания снова",
   "ui.patient.wishes.close": "Закрыть",
-  "ui.patient.wishes.share": "Озвучить",
+  "ui.patient.wishes.speak": "Произнести",
+  "ui.patient.wishes.back": "Назад",
   "ui.patient.wishes.skip": "Пропустить",
 
   // ── UI chrome: SentenceBuilder ─────────────────────────────────

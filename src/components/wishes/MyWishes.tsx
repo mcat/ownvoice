@@ -91,6 +91,10 @@ export function MyWishes({
     advance();
   }
 
+  function handleBack() {
+    if (currentIdx > 0) setCurrentIdx(currentIdx - 1);
+  }
+
   function advance() {
     if (currentIdx < SICG_TOPICS.length - 1) {
       setCurrentIdx(currentIdx + 1);
@@ -338,6 +342,24 @@ export function MyWishes({
 
       <BottomSheet.Actions>
         <Btn
+          onClick={handleBack}
+          disabled={currentIdx === 0}
+          style={{
+            padding: "16px 24px",
+            borderRadius: 12,
+            border: `2px solid ${t.border}`,
+            fontSize: 18,
+            fontWeight: 600,
+            color: t.sub,
+            backgroundColor: t.card,
+            minHeight: 64,
+            minWidth: 64,
+            opacity: currentIdx === 0 ? 0.4 : 1,
+          }}
+        >
+          {resolvePhrase("ui.patient.wishes.back", patientLang)}
+        </Btn>
+        <Btn
           onClick={handleShare}
           disabled={selected.length === 0}
           style={{
@@ -358,7 +380,7 @@ export function MyWishes({
             opacity: selected.length === 0 ? 0.6 : 1,
           }}
         >
-          {resolvePhrase("ui.patient.wishes.share", patientLang)}
+          {resolvePhrase("ui.patient.wishes.speak", patientLang)}
         </Btn>
         <Btn
           onClick={handleSkip}

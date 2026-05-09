@@ -573,7 +573,8 @@ const vi: LocaleStrings = {
   "ui.patient.wishes.share_all_again":
     "Chia sẻ lại tất cả mong muốn",
   "ui.patient.wishes.close": "Đóng",
-  "ui.patient.wishes.share": "Chia sẻ",
+  "ui.patient.wishes.speak": "Nói",
+  "ui.patient.wishes.back": "Quay lại",
   "ui.patient.wishes.skip": "Bỏ qua",
 
   // ── UI chrome: SentenceBuilder ─────────────────────────────────

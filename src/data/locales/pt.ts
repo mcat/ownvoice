@@ -558,7 +558,8 @@ const pt: LocaleStrings = {
   "ui.patient.wishes.none_shared": "Nenhum desejo foi compartilhado.",
   "ui.patient.wishes.share_all_again": "Compartilhar todos os desejos novamente",
   "ui.patient.wishes.close": "Fechar",
-  "ui.patient.wishes.share": "Compartilhar",
+  "ui.patient.wishes.speak": "Falar",
+  "ui.patient.wishes.back": "Voltar",
   "ui.patient.wishes.skip": "Pular",
 
   // ── UI chrome: SentenceBuilder ─────────────────────────────────

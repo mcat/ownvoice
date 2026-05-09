@@ -559,7 +559,8 @@ const ja: LocaleStrings = {
   "ui.patient.wishes.none_shared": "まだ望みは共有されていません。",
   "ui.patient.wishes.share_all_again": "すべての望みをもう一度共有する",
   "ui.patient.wishes.close": "閉じる",
-  "ui.patient.wishes.share": "共有する",
+  "ui.patient.wishes.speak": "話す",
+  "ui.patient.wishes.back": "戻る",
   "ui.patient.wishes.skip": "スキップ",
 
   // ── UI chrome: SentenceBuilder ─────────────────────────────────
