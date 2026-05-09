@@ -130,7 +130,23 @@ export async function resumableDownload(opts: ResumableDownloadOpts): Promise<vo
   const headers: HeadersInit = {};
   if (resumeFrom > 0) headers["Range"] = `bytes=${resumeFrom}-`;
 
-  const response = await fetch(url, { cache: "no-store", headers, signal });
+  let response = await fetch(url, { cache: "no-store", headers, signal });
+  if (response.status === 416 && resumeFrom > 0) {
+    // Stale progress marker is past EOF (e.g. manifest size changed under us).
+    // Wipe partial state and retry without Range.
+    console.warn(
+      `[OwnVoice] Server returned 416 for Range bytes=${resumeFrom}- — discarding stale progress and restarting`,
+    );
+    try {
+      await response.body?.cancel();
+    } catch {
+      // Body already drained — fine.
+    }
+    await removePartial(dir, filename);
+    await clearProgress(dir, filename);
+    resumeFrom = 0;
+    response = await fetch(url, { cache: "no-store", headers: {}, signal });
+  }
   if (!response.ok) {
     throw new Error(`download failed: HTTP ${response.status} ${response.statusText}`);
   }
