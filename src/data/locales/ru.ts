@@ -871,8 +871,8 @@ const ru: LocaleStrings = {
     "Обнаружен внешний указатель.",
   "ui.provider.settings.accessibility.pointer_hint_body":
     "Рассмотрите возможность включения режима вспомогательного ввода для этого пациента.",
-  "ui.provider.settings.accessibility.keep_screen_awake_label": "Keep screen awake",
-  "ui.provider.settings.accessibility.keep_screen_awake_description": "Prevents the iPad from dimming or locking while OwnVoice is open. Disable for stations on battery-only carts.",
+  "ui.provider.settings.accessibility.keep_screen_awake_label": "Не выключать экран",
+  "ui.provider.settings.accessibility.keep_screen_awake_description": "Не позволяет iPad гаснуть или блокироваться, пока OwnVoice открыт. Отключите на станциях, работающих только от аккумулятора.",
 
   // ── UI chrome: Settings — Patients section ────────────────────
   "ui.provider.settings.patients.title": "Пациенты",

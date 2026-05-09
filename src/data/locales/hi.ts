@@ -866,8 +866,8 @@ const hi: LocaleStrings = {
     "बाहरी पॉइंटर पाया गया।",
   "ui.provider.settings.accessibility.pointer_hint_body":
     "इस मरीज़ के लिए सहायक इनपुट मोड चालू करने पर विचार करें।",
-  "ui.provider.settings.accessibility.keep_screen_awake_label": "Keep screen awake",
-  "ui.provider.settings.accessibility.keep_screen_awake_description": "Prevents the iPad from dimming or locking while OwnVoice is open. Disable for stations on battery-only carts.",
+  "ui.provider.settings.accessibility.keep_screen_awake_label": "स्क्रीन जगाए रखें",
+  "ui.provider.settings.accessibility.keep_screen_awake_description": "जब OwnVoice खुला हो, iPad को धुंधला होने या लॉक होने से रोकता है। केवल बैटरी पर चलने वाले स्टेशनों के लिए बंद करें।",
 
   // ── UI chrome: Settings — Patients section ────────────────────
   "ui.provider.settings.patients.title": "मरीज़",

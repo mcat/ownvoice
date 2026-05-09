@@ -868,8 +868,8 @@ const no: LocaleStrings = {
     "Ekstern peker oppdaget.",
   "ui.provider.settings.accessibility.pointer_hint_body":
     "Vurder å aktivere Assistert inndatamodus for denne pasienten.",
-  "ui.provider.settings.accessibility.keep_screen_awake_label": "Keep screen awake",
-  "ui.provider.settings.accessibility.keep_screen_awake_description": "Prevents the iPad from dimming or locking while OwnVoice is open. Disable for stations on battery-only carts.",
+  "ui.provider.settings.accessibility.keep_screen_awake_label": "Hold skjermen våken",
+  "ui.provider.settings.accessibility.keep_screen_awake_description": "Hindrer at iPad-en dimmes eller låses mens OwnVoice er åpent. Slå av på stasjoner som kun går på batteri.",
 
   // ── UI chrome: Settings — Patients section ────────────────────
   "ui.provider.settings.patients.title": "Pasienter",

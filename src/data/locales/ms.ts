@@ -883,8 +883,8 @@ const ms: LocaleStrings = {
     "Penuding luaran dikesan.",
   "ui.provider.settings.accessibility.pointer_hint_body":
     "Pertimbangkan untuk mengaktifkan Mod input bantuan untuk pesakit ini.",
-  "ui.provider.settings.accessibility.keep_screen_awake_label": "Keep screen awake",
-  "ui.provider.settings.accessibility.keep_screen_awake_description": "Prevents the iPad from dimming or locking while OwnVoice is open. Disable for stations on battery-only carts.",
+  "ui.provider.settings.accessibility.keep_screen_awake_label": "Pastikan skrin aktif",
+  "ui.provider.settings.accessibility.keep_screen_awake_description": "Menghalang iPad daripada malap atau dikunci semasa OwnVoice dibuka. Matikan untuk stesen yang bergantung pada bateri sahaja.",
 
   // ── UI chrome: Settings — Patients section ────────────────────
   "ui.provider.settings.patients.title": "Pesakit",

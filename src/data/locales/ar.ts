@@ -867,8 +867,8 @@ const ar: LocaleStrings = {
     "تم اكتشاف مؤشر خارجي.",
   "ui.provider.settings.accessibility.pointer_hint_body":
     "ضع في الاعتبار تفعيل وضع الإدخال المساعد لهذا المريض.",
-  "ui.provider.settings.accessibility.keep_screen_awake_label": "Keep screen awake",
-  "ui.provider.settings.accessibility.keep_screen_awake_description": "Prevents the iPad from dimming or locking while OwnVoice is open. Disable for stations on battery-only carts.",
+  "ui.provider.settings.accessibility.keep_screen_awake_label": "إبقاء الشاشة مضاءة",
+  "ui.provider.settings.accessibility.keep_screen_awake_description": "يمنع iPad من الخفت أو القفل أثناء فتح OwnVoice. عطّله للمحطات التي تعمل بالبطارية فقط.",
 
   // ── UI chrome: Settings — Patients section ────────────────────
   "ui.provider.settings.patients.title": "المرضى",

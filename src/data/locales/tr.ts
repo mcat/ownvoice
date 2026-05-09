@@ -883,8 +883,8 @@ const tr: LocaleStrings = {
     "Harici işaretçi algılandı.",
   "ui.provider.settings.accessibility.pointer_hint_body":
     "Bu hasta için Yardımcı Giriş Modunu etkinleştirmeyi düşünün.",
-  "ui.provider.settings.accessibility.keep_screen_awake_label": "Keep screen awake",
-  "ui.provider.settings.accessibility.keep_screen_awake_description": "Prevents the iPad from dimming or locking while OwnVoice is open. Disable for stations on battery-only carts.",
+  "ui.provider.settings.accessibility.keep_screen_awake_label": "Ekranı açık tut",
+  "ui.provider.settings.accessibility.keep_screen_awake_description": "OwnVoice açıkken iPad'in kararmasını veya kilitlenmesini önler. Yalnızca pil ile çalışan istasyonlarda devre dışı bırakın.",
 
   // ── UI chrome: Settings — Patients section ────────────────────
   "ui.provider.settings.patients.title": "Hastalar",

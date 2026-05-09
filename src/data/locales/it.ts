@@ -868,8 +868,8 @@ const it: LocaleStrings = {
     "Puntatore esterno rilevato.",
   "ui.provider.settings.accessibility.pointer_hint_body":
     "Valuti l'attivazione della Modalità input assistito per questo paziente.",
-  "ui.provider.settings.accessibility.keep_screen_awake_label": "Keep screen awake",
-  "ui.provider.settings.accessibility.keep_screen_awake_description": "Prevents the iPad from dimming or locking while OwnVoice is open. Disable for stations on battery-only carts.",
+  "ui.provider.settings.accessibility.keep_screen_awake_label": "Mantieni lo schermo attivo",
+  "ui.provider.settings.accessibility.keep_screen_awake_description": "Impedisce all'iPad di affievolirsi o bloccarsi mentre OwnVoice è aperto. Disattiva per stazioni alimentate solo a batteria.",
 
   // ── UI chrome: Settings — Patients section ────────────────────
   "ui.provider.settings.patients.title": "Pazienti",

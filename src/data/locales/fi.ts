@@ -866,8 +866,8 @@ const fi: LocaleStrings = {
     "Ulkoinen osoitin havaittu.",
   "ui.provider.settings.accessibility.pointer_hint_body":
     "Harkitse avustetun syöttötilan ottamista käyttöön tälle potilaalle.",
-  "ui.provider.settings.accessibility.keep_screen_awake_label": "Keep screen awake",
-  "ui.provider.settings.accessibility.keep_screen_awake_description": "Prevents the iPad from dimming or locking while OwnVoice is open. Disable for stations on battery-only carts.",
+  "ui.provider.settings.accessibility.keep_screen_awake_label": "Pidä näyttö hereillä",
+  "ui.provider.settings.accessibility.keep_screen_awake_description": "Estää iPadin himmentymisen tai lukittumisen, kun OwnVoice on auki. Poista käytöstä asemilla, jotka toimivat vain akulla.",
 
   // ── UI chrome: Settings — Patients section ────────────────────
   "ui.provider.settings.patients.title": "Potilaat",

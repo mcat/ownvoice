@@ -889,8 +889,8 @@ const ko: LocaleStrings = {
     "외부 포인터가 감지되었습니다.",
   "ui.provider.settings.accessibility.pointer_hint_body":
     "이 환자에 대해 보조 입력 모드를 활성화하는 것을 고려하세요.",
-  "ui.provider.settings.accessibility.keep_screen_awake_label": "Keep screen awake",
-  "ui.provider.settings.accessibility.keep_screen_awake_description": "Prevents the iPad from dimming or locking while OwnVoice is open. Disable for stations on battery-only carts.",
+  "ui.provider.settings.accessibility.keep_screen_awake_label": "화면 켜짐 유지",
+  "ui.provider.settings.accessibility.keep_screen_awake_description": "OwnVoice가 열려 있는 동안 iPad가 어두워지거나 잠기지 않도록 합니다. 배터리만 사용하는 스테이션에서는 비활성화하세요.",
 
   // ── UI chrome: Settings — Patients section ────────────────────
   "ui.provider.settings.patients.title": "환자",
