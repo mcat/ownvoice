@@ -50,6 +50,7 @@
     "fake-indexeddb": "^6.2.5",
     "jsdom": "^29.1.1",
     "onnxruntime-node": "^1.25.1",
+    "opentype.js": "^2.0.0",
     "sharp": "^0.34.5",
     "tailwindcss": "^4.2.2",
     "typescript": "^6.0.3",

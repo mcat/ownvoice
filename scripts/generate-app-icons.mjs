@@ -1,14 +1,18 @@
 #!/usr/bin/env node
-// Renders apple-touch-icon, PWA icons, and iPad Pro splash screens from a
-// runtime SVG that base64-embeds Atkinson Hyperlegible 700 — the only way
-// to guarantee identical glyph rendering on dev and CI without relying on
-// fontconfig knowing the brand font. PNGs are committed artifacts; this
-// script regenerates them deterministically when invoked.
+// Renders apple-touch-icon, PWA icons, and iPad Pro splash screens.
+//
+// Glyphs are converted to SVG paths at build time via opentype.js, NOT
+// rendered through SVG <text>. Sharp uses librsvg, which routes text
+// through Pango/fontconfig and silently ignores @font-face data URLs —
+// resulting in a fallback typeface. Path conversion sidesteps font
+// resolution entirely: the rendered PNG is byte-identical to the glyph
+// outlines stored in the TTF.
 
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import sharp from "sharp";
+import opentype from "opentype.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, "..");
@@ -16,13 +20,24 @@ const fontPath = resolve(root, "public/fonts/atkinson-next-700.ttf");
 const iconsDir = resolve(root, "public/icons");
 const splashDir = resolve(root, "public/splash");
 
-const fontBase64 = readFileSync(fontPath).toString("base64");
-const fontFace = `
-@font-face {
-  font-family: "Atkinson";
-  font-weight: 700;
-  src: url(data:font/ttf;base64,${fontBase64}) format("truetype");
-}`;
+const fontBuffer = readFileSync(fontPath);
+const font = opentype.parse(
+  fontBuffer.buffer.slice(fontBuffer.byteOffset, fontBuffer.byteOffset + fontBuffer.byteLength),
+);
+
+// Returns SVG path data for `text` at the given font size, horizontally
+// centered around `cx` and with its visual baseline anchored so the
+// glyph is vertically centered around `cy`.
+function centeredGlyphPath(text, cx, cy, fontSize) {
+  const advance = font.getAdvanceWidth(text, fontSize);
+  // Place the baseline at cy + (cap-height / 2) so optical center
+  // matches geometric center for all-caps strings like "V" and "OwnVoice".
+  const unitsPerEm = font.unitsPerEm;
+  const capHeight = (font.tables.os2?.sCapHeight ?? unitsPerEm * 0.7) / unitsPerEm * fontSize;
+  const x = cx - advance / 2;
+  const baselineY = cy + capHeight / 2;
+  return font.getPath(text, x, baselineY, fontSize).toPathData(2);
+}
 
 const BRAND_BLUE = "#2563EB";
 const LIGHT_BG = "#FAFAF8";
@@ -38,13 +53,13 @@ function iconSvg({ size, maskable }) {
   const bg = maskable
     ? `<rect width="${size}" height="${size}" fill="${BRAND_BLUE}"/>`
     : `<rect width="${size}" height="${size}" rx="${size * 0.22}" fill="${BRAND_BLUE}"/>`;
-  const fontSize = maskable ? size * 0.5 : size * 0.62;
-  const yOffset = maskable ? size * 0.66 : size * 0.72;
+  const fontSize = maskable ? size * 0.55 : size * 0.66;
+  const cx = size / 2;
+  const cy = size / 2;
+  const vPath = centeredGlyphPath("V", cx, cy, fontSize);
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
-    <defs><style>${fontFace}</style></defs>
     ${bg}
-    <text x="${size / 2}" y="${yOffset}" font-family="Atkinson" font-weight="700"
-          font-size="${fontSize}" fill="white" text-anchor="middle">V</text>
+    <path d="${vPath}" fill="white"/>
   </svg>`;
 }
 
@@ -61,16 +76,14 @@ function splashSvg({ width, height, dark }) {
   const cy = height / 2;
   const markX = cx - markSize / 2;
   const markY = cy - groupH / 2;
-  const wordY = markY + markSize + gap + wordSize * 0.85;
+  const wordCy = markY + markSize + gap + wordSize / 2;
+  const vPath = centeredGlyphPath("V", cx, markY + markSize / 2, markSize * 0.66);
+  const wordPath = centeredGlyphPath("OwnVoice", cx, wordCy, wordSize);
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
-    <defs><style>${fontFace}</style></defs>
     <rect width="${width}" height="${height}" fill="${bg}"/>
     <rect x="${markX}" y="${markY}" width="${markSize}" height="${markSize}" rx="${markSize * 0.22}" fill="${BRAND_BLUE}"/>
-    <text x="${cx}" y="${markY + markSize * 0.72}" font-family="Atkinson" font-weight="700"
-          font-size="${markSize * 0.62}" fill="white" text-anchor="middle">V</text>
-    <text x="${cx}" y="${wordY}" font-family="Atkinson" font-weight="700"
-          font-size="${wordSize}" fill="${fg}" text-anchor="middle"
-          letter-spacing="${wordSize * 0.005}">OwnVoice</text>
+    <path d="${vPath}" fill="white"/>
+    <path d="${wordPath}" fill="${fg}"/>
   </svg>`;
 }
 
