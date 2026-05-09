@@ -23,6 +23,10 @@ export function AccessibilitySection({ cfg, updateCfg, t }: Props) {
   const pointerFine = usePointerFine();
   const showHint = pointerFine && !enabled;
 
+  // `keepScreenAwake` defaults to true (undefined ≡ on); the toggle
+  // shows on unless explicitly set to false.
+  const keepAwake = cfg.keepScreenAwake !== false;
+
   return (
     <Section label={resolvePhrase("ui.provider.settings.accessibility.heading", caregiverLang)} t={t}>
       <ToggleRow
@@ -30,6 +34,14 @@ export function AccessibilitySection({ cfg, updateCfg, t }: Props) {
         description={resolvePhrase("ui.provider.settings.accessibility.toggle_description", caregiverLang)}
         checked={enabled}
         onChange={(next) => updateCfg({ assistiveInput: next })}
+        t={t}
+      />
+      <div style={{ height: 1, background: t.border, margin: "18px 0" }} />
+      <ToggleRow
+        label={resolvePhrase("ui.provider.settings.accessibility.keep_screen_awake_label", caregiverLang)}
+        description={resolvePhrase("ui.provider.settings.accessibility.keep_screen_awake_description", caregiverLang)}
+        checked={keepAwake}
+        onChange={(next) => updateCfg({ keepScreenAwake: next })}
         t={t}
       />
       {showHint && (

@@ -5,6 +5,7 @@ import { useUIStore } from "./stores/uiStore";
 import { useSettingsStore } from "./stores/settingsStore";
 import { themes, type ThemeName } from "./theme/tokens";
 import { startVoiceProcessor } from "./models/voiceProcessor";
+import { startWakeLock } from "./models/wakeLock";
 import { log } from "./audit/logger";
 import { EVENT } from "./audit/events";
 import { ATTR } from "./audit/attrs";
@@ -184,5 +185,9 @@ try {
 }
 
 startVoiceProcessor();
+
+// Wake-lock subscribes to settingsStore, so it can be started before
+// hydration — it'll request the lock once `cfg.keepScreenAwake` settles.
+startWakeLock();
 
 render(<App />, document.getElementById("root")!);

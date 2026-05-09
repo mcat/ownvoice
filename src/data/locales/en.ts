@@ -806,6 +806,8 @@ const en = {
   "ui.provider.settings.accessibility.toggle_description": "Amplifies focus rings, lengthens tap debounce, and strengthens hover feedback for patients using a trackball, joystick, AssistiveTouch cursor, or switch.",
   "ui.provider.settings.accessibility.pointer_hint_strong": "External pointer detected.",
   "ui.provider.settings.accessibility.pointer_hint_body": "Consider enabling Assistive Input Mode for this patient.",
+  "ui.provider.settings.accessibility.keep_screen_awake_label": "Keep screen awake",
+  "ui.provider.settings.accessibility.keep_screen_awake_description": "Prevents the iPad from dimming or locking while OwnVoice is open. Disable for stations on battery-only carts.",
 
   // ── UI chrome: Settings — Patients section ────────────────────
   "ui.provider.settings.patients.title": "Patients",
