@@ -59,3 +59,9 @@
 
 /models/*
   Cache-Control: public, max-age=31536000, immutable
+
+# /icons/* and /splash/* are intentionally NOT listed here. They're
+# served as direct static assets, and per the Cache-Control note above
+# (lines 14–20), CF Pages strips any Cache-Control we set on static
+# routes. CF's default `public, max-age=14400, must-revalidate` is
+# acceptable for home-screen icons + splash PNGs.

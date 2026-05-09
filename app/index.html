@@ -19,8 +19,12 @@
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="OwnVoice" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="theme-color" content="#FAFAF8" />
+    <meta name="format-detection" content="telephone=no, address=no, email=no, date=no" />
+    <meta name="theme-color" content="#FAFAF8" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#111113" media="(prefers-color-scheme: dark)" />
     <!--
       Defense-in-depth for crossOriginIsolated. COOP cannot be set via meta
       (HTTP header only — dev server + sw.js handle that), but COEP can, and
@@ -31,7 +35,31 @@
     <meta http-equiv="Cross-Origin-Embedder-Policy" content="credentialless" />
     <link rel="canonical" href="https://www.ownvoice.icu/app/" />
     <link rel="manifest" href="/manifest.json" />
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%232563EB'/><text x='16' y='23' font-size='20' text-anchor='middle' fill='white'>V</text></svg>" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon-180.png" />
+
+    <!--
+      iPad Pro M4/M5 splash screens. Filename encodes device-pixel resolution;
+      media queries use CSS-pixel resolution (device pixels / 2). Light + dark
+      variants per orientation, per device.
+    -->
+    <link rel="apple-touch-startup-image" href="/splash/launch-1668x2420-light.png"
+          media="(device-width: 834px) and (device-height: 1210px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait) and (prefers-color-scheme: light)" />
+    <link rel="apple-touch-startup-image" href="/splash/launch-1668x2420-dark.png"
+          media="(device-width: 834px) and (device-height: 1210px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait) and (prefers-color-scheme: dark)" />
+    <link rel="apple-touch-startup-image" href="/splash/launch-2420x1668-light.png"
+          media="(device-width: 1210px) and (device-height: 834px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape) and (prefers-color-scheme: light)" />
+    <link rel="apple-touch-startup-image" href="/splash/launch-2420x1668-dark.png"
+          media="(device-width: 1210px) and (device-height: 834px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape) and (prefers-color-scheme: dark)" />
+    <link rel="apple-touch-startup-image" href="/splash/launch-2064x2752-light.png"
+          media="(device-width: 1032px) and (device-height: 1376px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait) and (prefers-color-scheme: light)" />
+    <link rel="apple-touch-startup-image" href="/splash/launch-2064x2752-dark.png"
+          media="(device-width: 1032px) and (device-height: 1376px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait) and (prefers-color-scheme: dark)" />
+    <link rel="apple-touch-startup-image" href="/splash/launch-2752x2064-light.png"
+          media="(device-width: 1376px) and (device-height: 1032px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape) and (prefers-color-scheme: light)" />
+    <link rel="apple-touch-startup-image" href="/splash/launch-2752x2064-dark.png"
+          media="(device-width: 1376px) and (device-height: 1032px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape) and (prefers-color-scheme: dark)" />
     <title>OwnVoice</title>
   </head>
   <body>

@@ -2,17 +2,63 @@
   "name": "OwnVoice",
   "short_name": "OwnVoice",
   "description": "In-patient AAC with personal voice",
+  "id": "/app/",
   "start_url": "/app/",
   "scope": "/app/",
   "display": "standalone",
   "orientation": "any",
   "background_color": "#FAFAF8",
-  "theme_color": "#2563EB",
+  "theme_color": "#FAFAF8",
+  "categories": ["medical", "health", "accessibility"],
+  "prefer_related_applications": false,
   "icons": [
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='96' fill='%232563EB'/><text x='256' y='370' font-size='320' text-anchor='middle' fill='white' font-family='serif' font-weight='bold'>V</text></svg>",
-      "sizes": "any",
-      "type": "image/svg+xml"
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Pain scale",
+      "short_name": "Pain",
+      "description": "Open the validated Emoji-FPS pain scale",
+      "url": "/app/?tab=pain",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "My Wishes",
+      "short_name": "Wishes",
+      "description": "Open the goals-of-care conversation overlay",
+      "url": "/app/?overlay=wishes",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Listen",
+      "short_name": "Listen",
+      "description": "Transcribe what the provider is saying",
+      "url": "/app/?overlay=listen",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Provider mode",
+      "short_name": "Provider",
+      "description": "Open the clinician-facing surfaces",
+      "url": "/app/?overlay=provider",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
     }
   ]
 }
