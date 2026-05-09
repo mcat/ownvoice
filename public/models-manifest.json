@@ -61,7 +61,7 @@
       "files": [
         {
           "name": "model_q4.onnx",
-          "size": 183676,
+          "size": 183173,
           "magic": "onnx"
         },
         {
@@ -71,17 +71,17 @@
         },
         {
           "name": "tokenizer.json",
-          "size": 3296940,
+          "size": 3297799,
           "magic": "json"
         },
         {
           "name": "config.json",
-          "size": 1528,
+          "size": 1599,
           "magic": "json"
         },
         {
           "name": "chat_template.jinja",
-          "size": 1349,
+          "size": 1783,
           "magic": null
         }
       ]
