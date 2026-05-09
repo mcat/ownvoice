@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "preact/hooks";
+import { useRef } from "preact/hooks";
 import type { JSX } from "preact";
 import { PhraseButton } from "./PhraseButton";
 import type { Phrase } from "../../types";
@@ -54,27 +54,30 @@ function nextActiveIdx(
 
 export function PhraseGrid({ phrases, onTap, t, ariaLabel }: PhraseGridProps) {
   const cols = pickColumns(phrases.length);
-  const [activeIdx, setActiveIdx] = useState(0);
   const gridRef = useRef<HTMLDivElement>(null);
-  // Skip auto-focus on the very first render so opening the grid doesn't
-  // steal focus from the page. Only re-focus when the user advances via
-  // keyboard.
-  const isInitialRender = useRef(true);
 
-  useEffect(() => {
-    if (isInitialRender.current) {
-      isInitialRender.current = false;
-      return;
-    }
-    const cells = gridRef.current?.querySelectorAll<HTMLElement>('[role="gridcell"]');
-    cells?.[activeIdx]?.focus();
-  }, [activeIdx]);
-
+  // Sequential tab order rather than a single-stop roving tabindex —
+  // the WAI-ARIA grid pattern's "Tab into the grid, arrows to navigate"
+  // contract assumes the user has arrow keys and knows the convention.
+  // Our audience (ICU patients on AssistiveTouch / single-button switches /
+  // sip-and-puff devices) advances focus by repeatedly firing the Tab key
+  // equivalent; a roving tabindex makes the entire grid one stop and
+  // strands those users on whichever cell happened to be active.
+  //
+  // Every cell now sits in the natural tab order. Arrow keys still work
+  // as a power-user shortcut: the keydown handler reads document.active
+  // Element to figure out where focus is and moves it to the next
+  // grid-position so a sighted keyboard user can hop a row at a time.
   const handleKeyDown = (e: JSX.TargetedKeyboardEvent<HTMLDivElement>) => {
-    const next = nextActiveIdx(activeIdx, e.key, cols, phrases.length);
+    const cells = Array.from(
+      gridRef.current?.querySelectorAll<HTMLElement>('[role="gridcell"]') ?? [],
+    );
+    const cur = cells.indexOf(document.activeElement as HTMLElement);
+    if (cur < 0) return;
+    const next = nextActiveIdx(cur, e.key, cols, phrases.length);
     if (next == null) return;
     e.preventDefault();
-    setActiveIdx(next);
+    cells[next]?.focus();
   };
 
   // Chunk phrases into rows of `cols`. Last row may have fewer cells.
@@ -106,19 +109,16 @@ export function PhraseGrid({ phrases, onTap, t, ariaLabel }: PhraseGridProps) {
         // Verified support: Chrome 121+, Safari 17+ (well below our target
         // of iPadOS 26 / Safari 26).
         <div key={rowIdx} role="row" style={{ display: "contents" }}>
-          {row.map((p, colIdx) => {
-            const flatIdx = rowIdx * cols + colIdx;
-            return (
-              <PhraseButton
-                key={p.text}
-                phrase={p}
-                onTap={onTap}
-                t={t}
-                role="gridcell"
-                tabIndex={flatIdx === activeIdx ? 0 : -1}
-              />
-            );
-          })}
+          {row.map((p) => (
+            <PhraseButton
+              key={p.text}
+              phrase={p}
+              onTap={onTap}
+              t={t}
+              role="gridcell"
+              tabIndex={0}
+            />
+          ))}
         </div>
       ))}
     </div>

@@ -5,7 +5,6 @@ import { light } from "../../theme/tokens";
 import type { Phrase } from "../../types";
 import {
   assertGridStructure,
-  assertRovingTabindex,
   assertGroupContainersHaveLabels,
   assertNoAriaHiddenAncestorOnFocusables,
   assertFocusOrderMatchesDomOrder,
@@ -27,21 +26,28 @@ describe("PhraseGrid a11y", () => {
     assertFocusOrderMatchesDomOrder(container);
   });
 
-  it("uses roving tabindex (one cell tabbable, rest -1)", () => {
+  it("every cell is sequentially tabbable (no roving tabindex)", () => {
+    // Sequential Tab is required because our audience (switch users,
+    // sip-and-puff, single-button assistive devices) advances focus one
+    // step at a time and lacks arrow keys; a roving tabindex strands them
+    // on whichever cell was last active.
     const { container } = render(
       <PhraseGrid phrases={phrases} onTap={() => {}} t={light} ariaLabel="Comfort phrases" />,
     );
-    assertRovingTabindex(container, '[role="gridcell"]');
+    const cells = container.querySelectorAll('[role="gridcell"]');
+    for (const cell of cells) {
+      expect(cell.getAttribute("tabindex")).toBe("0");
+    }
   });
 
   it("ArrowRight moves focus to the next cell in the row", () => {
     const { container } = render(
       <PhraseGrid phrases={phrases} onTap={() => {}} t={light} ariaLabel="Comfort phrases" />,
     );
-    const cells = container.querySelectorAll('[role="gridcell"]');
+    const cells = container.querySelectorAll<HTMLElement>('[role="gridcell"]');
+    cells[0].focus();
     fireEvent.keyDown(cells[0], { key: "ArrowRight" });
-    expect(cells[1].getAttribute("tabindex")).toBe("0");
-    expect(cells[0].getAttribute("tabindex")).toBe("-1");
+    expect(document.activeElement).toBe(cells[1]);
   });
 
   it("ArrowDown moves focus to the next row, same column", () => {
@@ -49,24 +55,21 @@ describe("PhraseGrid a11y", () => {
     const { container } = render(
       <PhraseGrid phrases={phrases} onTap={() => {}} t={light} ariaLabel="Comfort phrases" />,
     );
-    const cells = container.querySelectorAll('[role="gridcell"]');
+    const cells = container.querySelectorAll<HTMLElement>('[role="gridcell"]');
+    cells[0].focus();
     fireEvent.keyDown(cells[0], { key: "ArrowDown" });
-    expect(cells[4].getAttribute("tabindex")).toBe("0");
+    expect(document.activeElement).toBe(cells[4]);
   });
 
   it("ArrowRight at last cell of row stops at the row edge (no wrap)", () => {
     const { container } = render(
       <PhraseGrid phrases={phrases} onTap={() => {}} t={light} ariaLabel="Comfort phrases" />,
     );
-    const cells = container.querySelectorAll('[role="gridcell"]');
-    // 12 phrases, 4 cols. Walk from 0 → 1 → 2 → 3 (last in row 0), then
+    const cells = container.querySelectorAll<HTMLElement>('[role="gridcell"]');
+    // 12 phrases, 4 cols. Land focus on cell 3 (last in row 0), then
     // assert another ArrowRight stops at 3 instead of advancing to 4.
-    fireEvent.keyDown(cells[0], { key: "ArrowRight" });
-    fireEvent.keyDown(cells[1], { key: "ArrowRight" });
-    fireEvent.keyDown(cells[2], { key: "ArrowRight" });
-    expect(cells[3].getAttribute("tabindex")).toBe("0");
+    cells[3].focus();
     fireEvent.keyDown(cells[3], { key: "ArrowRight" });
-    expect(cells[3].getAttribute("tabindex")).toBe("0");
-    expect(cells[4].getAttribute("tabindex")).toBe("-1");
+    expect(document.activeElement).toBe(cells[3]);
   });
 });
