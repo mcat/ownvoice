@@ -7,13 +7,15 @@
 // surface. Wiring this stub in PR C means the Badging API path is
 // review-tested before any feature actually drives it.
 
-interface NavigatorWithBadging extends Navigator {
+// `Navigator.setAppBadge` is in the DOM lib but is not implemented in
+// every runtime; treat it as optional via runtime feature detection.
+type MaybeBadging = {
   setAppBadge?: (count?: number) => Promise<void>;
   clearAppBadge?: () => Promise<void>;
-}
+};
 
-function nav(): NavigatorWithBadging | null {
-  return typeof navigator === "undefined" ? null : (navigator as NavigatorWithBadging);
+function nav(): MaybeBadging | null {
+  return typeof navigator === "undefined" ? null : (navigator as unknown as MaybeBadging);
 }
 
 /**

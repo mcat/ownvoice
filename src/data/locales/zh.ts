@@ -833,6 +833,8 @@ const zh: LocaleStrings = {
     "检测到外部指针设备。",
   "ui.provider.settings.accessibility.pointer_hint_body":
     "建议为此患者启用辅助输入模式。",
+  "ui.provider.settings.accessibility.keep_screen_awake_label": "Keep screen awake",
+  "ui.provider.settings.accessibility.keep_screen_awake_description": "Prevents the iPad from dimming or locking while OwnVoice is open. Disable for stations on battery-only carts.",
 
   // ── UI chrome: Settings — Patients section ────────────────────
   "ui.provider.settings.patients.title": "患者",
