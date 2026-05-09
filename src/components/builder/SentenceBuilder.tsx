@@ -5,6 +5,7 @@ import { t as resolvePhrase } from "../../data/phraseRegistry";
 import type { PhraseKey, SuggestionItem } from "../../data/phraseRegistry";
 import { resolveEmoji, scanKeywordEmoji, pickBubbleIcon, type EmojiEntry } from "../../data/expressiveEmoji";
 import { useActivePatient, useSettingsStore } from "../../stores/settingsStore";
+import { useKeyboardInsets } from "../../hooks/useKeyboardInsets";
 import { polishSentence } from "../../utils/polishSentence";
 import type { SuggestionContextMessage } from "../../data/suggestion-trees";
 import type { ThemeTokens, ThemeName } from "../../theme/tokens";
@@ -38,6 +39,7 @@ function resolveTokens(tokens: Token[], pendingFree: string, locale: string): st
 export function SentenceBuilder({ onSend, t, theme, messages }: SentenceBuilderProps) {
   const patientLang = useActivePatient()?.patientLang ?? "en";
   const caregiverLang = useSettingsStore((s) => s.cfg?.caregiverLang ?? "en");
+  const { keyboardHeight } = useKeyboardInsets();
 
   const [tokens, setTokens] = useState<Token[]>([]);
   const [pendingFree, setPendingFree] = useState("");
@@ -192,7 +194,18 @@ export function SentenceBuilder({ onSend, t, theme, messages }: SentenceBuilderP
   } as const;
 
   return (
-    <div style={{ padding: 16, animation: "fadeUp 0.25s ease-out backwards" }}>
+    <div
+      style={{
+        padding: 16,
+        // Lift the suggestion pills above the on-screen keyboard. App.tsx
+        // root is `height: 100dvh; overflow: hidden`, so iPadOS can't
+        // auto-scroll the focused input into view — adding the keyboard
+        // height as bottom padding gives the internal scroll container
+        // room to bring the input above the keyboard fold.
+        paddingBottom: 16 + keyboardHeight,
+        animation: "fadeUp 0.25s ease-out backwards",
+      }}
+    >
       {/* Input row: token display + free-text input */}
       <div style={{
         display: "flex", alignItems: "center", gap: 8,
