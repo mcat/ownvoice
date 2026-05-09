@@ -568,7 +568,8 @@ const nl: LocaleStrings = {
   "ui.patient.wishes.none_shared": "Er zijn geen wensen gedeeld.",
   "ui.patient.wishes.share_all_again": "Alle wensen opnieuw delen",
   "ui.patient.wishes.close": "Sluiten",
-  "ui.patient.wishes.share": "Delen",
+  "ui.patient.wishes.speak": "Spreken",
+  "ui.patient.wishes.back": "Terug",
   "ui.patient.wishes.skip": "Overslaan",
 
   // ── UI chrome: SentenceBuilder ─────────────────────────────────

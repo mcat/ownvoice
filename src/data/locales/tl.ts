@@ -592,7 +592,8 @@ const tl: LocaleStrings = {
   "ui.patient.wishes.share_all_again":
     "I-share ulit lahat ng mga gusto",
   "ui.patient.wishes.close": "Isara",
-  "ui.patient.wishes.share": "I-share",
+  "ui.patient.wishes.speak": "Magsalita",
+  "ui.patient.wishes.back": "Bumalik",
   "ui.patient.wishes.skip": "Laktawan",
 
   // ── UI chrome: SentenceBuilder ─────────────────────────────────

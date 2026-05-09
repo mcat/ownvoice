@@ -554,7 +554,8 @@ const ar: LocaleStrings = {
   "ui.patient.wishes.none_shared": "لم تتم مشاركة أي رغبات.",
   "ui.patient.wishes.share_all_again": "مشاركة جميع الرغبات مرة أخرى",
   "ui.patient.wishes.close": "إغلاق",
-  "ui.patient.wishes.share": "مشاركة",
+  "ui.patient.wishes.speak": "تحدث",
+  "ui.patient.wishes.back": "رجوع",
   "ui.patient.wishes.skip": "تخطي",
 
   // ── UI chrome: SentenceBuilder ─────────────────────────────────

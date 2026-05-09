@@ -603,7 +603,8 @@ const pl: LocaleStrings = {
   "ui.patient.wishes.none_shared": "Nie udostępniono żadnych życzeń.",
   "ui.patient.wishes.share_all_again": "Udostępnij wszystkie życzenia ponownie",
   "ui.patient.wishes.close": "Zamknij",
-  "ui.patient.wishes.share": "Udostępnij",
+  "ui.patient.wishes.speak": "Mów",
+  "ui.patient.wishes.back": "Wstecz",
   "ui.patient.wishes.skip": "Pomiń",
 
   // ── UI chrome: SentenceBuilder ─────────────────────────────────

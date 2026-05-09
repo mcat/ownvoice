@@ -41,10 +41,37 @@ describe("MyWishes", () => {
     }
   });
 
-  it("has Share and Skip buttons", () => {
+  it("has Speak, Back, and Skip buttons", () => {
     render(<MyWishes {...baseProps} />);
-    expect(screen.getByText("Share")).toBeInTheDocument();
+    expect(screen.getByText("Speak")).toBeInTheDocument();
+    expect(screen.getByText("Back")).toBeInTheDocument();
     expect(screen.getByText("Skip")).toBeInTheDocument();
+  });
+
+  it("Back button is disabled on the first step", () => {
+    render(<MyWishes {...baseProps} />);
+    expect(screen.getByText("Back").closest("button")).toBeDisabled();
+  });
+
+  it("Back returns to the previous topic and preserves prior selections", () => {
+    vi.useFakeTimers();
+    render(<MyWishes {...baseProps} />);
+    // Select a response on topic 0 and Speak (advances to topic 1).
+    const firstResponse = t(SICG_TOPICS[0].responseKeys[0], "en");
+    fireEvent.click(screen.getByText(firstResponse));
+    vi.advanceTimersByTime(300);
+    fireEvent.click(screen.getByText("Speak"));
+    vi.advanceTimersByTime(300);
+    // Now on topic 1.
+    expect(screen.getByText(t(SICG_TOPICS[1].questionKey, "en"))).toBeInTheDocument();
+    // Back returns to topic 0 with the prior selection still pressed.
+    fireEvent.click(screen.getByText("Back"));
+    vi.advanceTimersByTime(300);
+    expect(screen.getByText(t(SICG_TOPICS[0].questionKey, "en"))).toBeInTheDocument();
+    expect(
+      screen.getByText(firstResponse).closest("button"),
+    ).toHaveAttribute("aria-pressed", "true");
+    vi.useRealTimers();
   });
 
   it("toggling a response marks it as selected", () => {
@@ -59,7 +86,7 @@ describe("MyWishes", () => {
     ).toHaveAttribute("aria-pressed", "true");
   });
 
-  it("tapping Share calls onSpeak with composed sentence and onAddToThread", () => {
+  it("tapping Speak calls onSpeak with composed sentence and onAddToThread", () => {
     const onSpeak = vi.fn();
     const onAddToThread = vi.fn();
     render(
@@ -69,8 +96,8 @@ describe("MyWishes", () => {
     // Select a response
     fireEvent.click(screen.getByText(t(SICG_TOPICS[0].responseKeys[0], "en")));
 
-    // Tap Share
-    fireEvent.click(screen.getByText("Share"));
+    // Tap Speak
+    fireEvent.click(screen.getByText("Speak"));
 
     expect(onAddToThread).toHaveBeenCalledWith(
       t(SICG_TOPICS[0].questionKey, "en"),
@@ -127,7 +154,7 @@ describe("MyWishes", () => {
     // Answer first topic
     fireEvent.click(screen.getByText(t(SICG_TOPICS[0].responseKeys[0], "en")));
     vi.advanceTimersByTime(300);
-    fireEvent.click(screen.getByText("Share"));
+    fireEvent.click(screen.getByText("Speak"));
     vi.advanceTimersByTime(300);
     // Skip the rest
     for (let i = 1; i < SICG_TOPICS.length; i++) {
@@ -148,13 +175,13 @@ describe("MyWishes", () => {
     // Answer first topic
     fireEvent.click(screen.getByText(t(SICG_TOPICS[0].responseKeys[0], "en")));
     vi.advanceTimersByTime(300);
-    fireEvent.click(screen.getByText("Share"));
+    fireEvent.click(screen.getByText("Speak"));
     vi.advanceTimersByTime(300);
 
     // Answer second topic
     fireEvent.click(screen.getByText(t(SICG_TOPICS[1].responseKeys[0], "en")));
     vi.advanceTimersByTime(300);
-    fireEvent.click(screen.getByText("Share"));
+    fireEvent.click(screen.getByText("Speak"));
     vi.advanceTimersByTime(300);
 
     // Skip the rest
@@ -163,7 +190,7 @@ describe("MyWishes", () => {
       vi.advanceTimersByTime(300);
     }
 
-    // Clear calls from Share taps
+    // Clear calls from Speak taps
     onSpeak.mockClear();
 
     // Click "Share all wishes again"
@@ -198,15 +225,15 @@ describe("MyWishes", () => {
     vi.useRealTimers();
   });
 
-  it("Share with no selections does nothing", () => {
+  it("Speak with no selections does nothing", () => {
     const onSpeak = vi.fn();
     const onAddToThread = vi.fn();
     render(
       <MyWishes {...baseProps} onSpeak={onSpeak} onAddToThread={onAddToThread} />,
     );
 
-    // Click Share without selecting any responses
-    fireEvent.click(screen.getByText("Share"));
+    // Click Speak without selecting any responses
+    fireEvent.click(screen.getByText("Speak"));
 
     // Nothing should be called
     expect(onSpeak).not.toHaveBeenCalled();

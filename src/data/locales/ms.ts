@@ -568,7 +568,8 @@ const ms: LocaleStrings = {
   "ui.patient.wishes.none_shared": "Tiada hasrat yang dikongsi.",
   "ui.patient.wishes.share_all_again": "Kongsi semua hasrat sekali lagi",
   "ui.patient.wishes.close": "Tutup",
-  "ui.patient.wishes.share": "Kongsi",
+  "ui.patient.wishes.speak": "Cakap",
+  "ui.patient.wishes.back": "Kembali",
   "ui.patient.wishes.skip": "Langkau",
 
   // ── UI chrome: SentenceBuilder ─────────────────────────────────

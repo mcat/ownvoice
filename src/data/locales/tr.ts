@@ -564,7 +564,8 @@ const tr: LocaleStrings = {
   "ui.patient.wishes.none_shared": "Hiç dilek paylaşılmadı.",
   "ui.patient.wishes.share_all_again": "Tüm dilekleri tekrar paylaş",
   "ui.patient.wishes.close": "Kapat",
-  "ui.patient.wishes.share": "Paylaş",
+  "ui.patient.wishes.speak": "Konuş",
+  "ui.patient.wishes.back": "Geri",
   "ui.patient.wishes.skip": "Atla",
 
   // ── UI chrome: SentenceBuilder ─────────────────────────────────

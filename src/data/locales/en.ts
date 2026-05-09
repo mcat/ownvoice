@@ -545,7 +545,8 @@ const en = {
   "ui.patient.wishes.none_shared": "No wishes were shared.",
   "ui.patient.wishes.share_all_again": "Share all wishes again",
   "ui.patient.wishes.close": "Close",
-  "ui.patient.wishes.share": "Share",
+  "ui.patient.wishes.speak": "Speak",
+  "ui.patient.wishes.back": "Back",
   "ui.patient.wishes.skip": "Skip",
 
   // ── UI chrome: SentenceBuilder ─────────────────────────────────

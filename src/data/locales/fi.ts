@@ -553,7 +553,8 @@ const fi: LocaleStrings = {
   "ui.patient.wishes.none_shared": "Toiveita ei jaettu.",
   "ui.patient.wishes.share_all_again": "Jaa kaikki toiveet uudelleen",
   "ui.patient.wishes.close": "Sulje",
-  "ui.patient.wishes.share": "Jaa",
+  "ui.patient.wishes.speak": "Puhu",
+  "ui.patient.wishes.back": "Takaisin",
   "ui.patient.wishes.skip": "Ohita",
 
   // ── UI chrome: SentenceBuilder ─────────────────────────────────

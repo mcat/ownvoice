@@ -567,7 +567,8 @@ const sw: LocaleStrings = {
   "ui.patient.wishes.none_shared": "Hakuna matakwa yaliyoshirikiwa.",
   "ui.patient.wishes.share_all_again": "Shiriki matakwa yote tena",
   "ui.patient.wishes.close": "Funga",
-  "ui.patient.wishes.share": "Shiriki",
+  "ui.patient.wishes.speak": "Sema",
+  "ui.patient.wishes.back": "Rudi",
   "ui.patient.wishes.skip": "Ruka",
 
   // ── UI chrome: SentenceBuilder ─────────────────────────────────
