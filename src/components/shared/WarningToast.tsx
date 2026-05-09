@@ -75,7 +75,7 @@ export function WarningToast({
 
   const containerStyle: JSX.CSSProperties = {
     position: "fixed",
-    top: 16,
+    top: "max(16px, var(--ov-safe-top))",
     left: "50%",
     transform: "translateX(-50%)",
     zIndex: z.toast,

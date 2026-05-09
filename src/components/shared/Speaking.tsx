@@ -91,7 +91,10 @@ export function Speaking({
         right: 0,
         background: t.speakBg,
         color: "#F5F5F5",
-        padding: "10px 32px",
+        paddingTop: "max(10px, var(--ov-safe-top))",
+        paddingRight: "max(32px, var(--ov-safe-right))",
+        paddingBottom: 10,
+        paddingLeft: "max(32px, var(--ov-safe-left))",
         zIndex: z.speaking,
         animation: exiting
           ? "slideUp 0.4s ease-in forwards"
