@@ -899,8 +899,8 @@ const vi: LocaleStrings = {
     "Phát hiện thiết bị trỏ bên ngoài.",
   "ui.provider.settings.accessibility.pointer_hint_body":
     "Cân nhắc bật Chế độ nhập hỗ trợ cho bệnh nhân này.",
-  "ui.provider.settings.accessibility.keep_screen_awake_label": "Keep screen awake",
-  "ui.provider.settings.accessibility.keep_screen_awake_description": "Prevents the iPad from dimming or locking while OwnVoice is open. Disable for stations on battery-only carts.",
+  "ui.provider.settings.accessibility.keep_screen_awake_label": "Giữ màn hình sáng",
+  "ui.provider.settings.accessibility.keep_screen_awake_description": "Ngăn iPad bị mờ hoặc khóa khi OwnVoice đang mở. Tắt cho các trạm chỉ dùng pin.",
 
   // ── UI chrome: Settings — Patients section ────────────────────
   "ui.provider.settings.patients.title": "Bệnh nhân",

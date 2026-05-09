@@ -928,8 +928,8 @@ const tl: LocaleStrings = {
     "May nakitang external pointer.",
   "ui.provider.settings.accessibility.pointer_hint_body":
     "Isaalang-alang ang pag-enable ng Assistive Input Mode para sa pasyenteng ito.",
-  "ui.provider.settings.accessibility.keep_screen_awake_label": "Keep screen awake",
-  "ui.provider.settings.accessibility.keep_screen_awake_description": "Prevents the iPad from dimming or locking while OwnVoice is open. Disable for stations on battery-only carts.",
+  "ui.provider.settings.accessibility.keep_screen_awake_label": "Panatilihing gising ang screen",
+  "ui.provider.settings.accessibility.keep_screen_awake_description": "Pumipigil sa iPad na dumilim o ma-lock habang nakabukas ang OwnVoice. I-off para sa mga istasyong baterya lamang ang gamit.",
 
   // ── UI chrome: Settings — Patients section ────────────────────
   "ui.provider.settings.patients.title": "Mga pasyente",

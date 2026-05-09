@@ -873,8 +873,8 @@ const fr: LocaleStrings = {
     "Pointeur externe détecté.",
   "ui.provider.settings.accessibility.pointer_hint_body":
     "Envisagez d'activer le Mode de saisie assistée pour ce patient.",
-  "ui.provider.settings.accessibility.keep_screen_awake_label": "Keep screen awake",
-  "ui.provider.settings.accessibility.keep_screen_awake_description": "Prevents the iPad from dimming or locking while OwnVoice is open. Disable for stations on battery-only carts.",
+  "ui.provider.settings.accessibility.keep_screen_awake_label": "Garder l'écran allumé",
+  "ui.provider.settings.accessibility.keep_screen_awake_description": "Empêche l'iPad de s'assombrir ou de se verrouiller pendant qu'OwnVoice est ouvert. Désactivez pour les postes alimentés uniquement par batterie.",
 
   // ── UI chrome: Settings — Patients section ────────────────────
   "ui.provider.settings.patients.title": "Patients",

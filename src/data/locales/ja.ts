@@ -870,8 +870,8 @@ const ja: LocaleStrings = {
     "外部ポインターを検出しました。",
   "ui.provider.settings.accessibility.pointer_hint_body":
     "この患者に支援入力モードの有効化をご検討ください。",
-  "ui.provider.settings.accessibility.keep_screen_awake_label": "Keep screen awake",
-  "ui.provider.settings.accessibility.keep_screen_awake_description": "Prevents the iPad from dimming or locking while OwnVoice is open. Disable for stations on battery-only carts.",
+  "ui.provider.settings.accessibility.keep_screen_awake_label": "画面をスリープさせない",
+  "ui.provider.settings.accessibility.keep_screen_awake_description": "OwnVoice を開いている間、iPad の画面が暗くなったりロックされたりするのを防ぎます。バッテリー駆動のみのステーションでは無効にしてください。",
 
   // ── UI chrome: Settings — Patients section ────────────────────
   "ui.provider.settings.patients.title": "患者",

@@ -916,8 +916,8 @@ const pl: LocaleStrings = {
     "Wykryto zewnętrzny wskaźnik.",
   "ui.provider.settings.accessibility.pointer_hint_body":
     "Rozważ włączenie Trybu wspomaganego wprowadzania dla tego pacjenta.",
-  "ui.provider.settings.accessibility.keep_screen_awake_label": "Keep screen awake",
-  "ui.provider.settings.accessibility.keep_screen_awake_description": "Prevents the iPad from dimming or locking while OwnVoice is open. Disable for stations on battery-only carts.",
+  "ui.provider.settings.accessibility.keep_screen_awake_label": "Nie wyłączaj ekranu",
+  "ui.provider.settings.accessibility.keep_screen_awake_description": "Zapobiega przyciemnieniu lub zablokowaniu iPada, gdy OwnVoice jest otwarty. Wyłącz dla stanowisk pracujących wyłącznie na baterii.",
 
   // ── UI chrome: Settings — Patients section ────────────────────
   "ui.provider.settings.patients.title": "Pacjenci",
