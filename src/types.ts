@@ -114,6 +114,10 @@ export interface AppSettings {
   /** Accessibility: amplifies feedback + lengthens debounce for patients using
    *  assistive input devices (trackball, joystick, AssistiveTouch, switch). */
   assistiveInput?: boolean;
+  /** When true (default), holds an iPadOS Screen Wake Lock while OwnVoice is
+   *  foregrounded so the device doesn't dim/lock mid-conversation. Stations
+   *  on battery-only carts may opt out via Settings. Undefined ≡ true. */
+  keepScreenAwake?: boolean;
   providers: Provider[];
   patients: Patient[];
   /** null when no patient is active (fresh device, or after removing the

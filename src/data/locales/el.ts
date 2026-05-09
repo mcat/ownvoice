@@ -894,6 +894,8 @@ const el: LocaleStrings = {
     "Εντοπίστηκε εξωτερικός δείκτης.",
   "ui.provider.settings.accessibility.pointer_hint_body":
     "Σκεφτείτε να ενεργοποιήσετε τη Λειτουργία υποβοηθούμενης εισόδου για αυτόν τον ασθενή.",
+  "ui.provider.settings.accessibility.keep_screen_awake_label": "Keep screen awake",
+  "ui.provider.settings.accessibility.keep_screen_awake_description": "Prevents the iPad from dimming or locking while OwnVoice is open. Disable for stations on battery-only carts.",
 
   // ── UI chrome: Settings — Patients section ────────────────────
   "ui.provider.settings.patients.title": "Ασθενείς",

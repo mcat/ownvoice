@@ -40,6 +40,10 @@ export const EVENT = {
 
   ERROR_UNHANDLED:         "error.unhandled",
   ERROR_REJECTION:         "error.unhandled_rejection",
+
+  WAKE_LOCK_ACQUIRED:      "wake_lock.acquired",
+  WAKE_LOCK_RELEASED:      "wake_lock.released",
+  WAKE_LOCK_FAILED:        "wake_lock.failed",
 } as const;
 
 export type EventName = (typeof EVENT)[keyof typeof EVENT];
