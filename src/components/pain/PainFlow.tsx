@@ -269,6 +269,10 @@ export function PainFlow({ onSelect, t, theme }: PainFlowProps) {
               }}
             >
               <span style={{ fontSize: 40, lineHeight: 1 }}>{face.face}</span>
+              {/* Single composed label per PhraseButton's contract: the
+                  clinical Emoji-FPS scale value (0/2/4/6/8/10) and the
+                  descriptive text share one 18/600 line, so all three
+                  Pain steps render with identical typography. */}
               <span
                 class="font-sans"
                 style={{
@@ -280,22 +284,7 @@ export function PainFlow({ onSelect, t, theme }: PainFlowProps) {
                   lineHeight: 1.35,
                 }}
               >
-                {resolvePhrase(face.labelKey, patientLang)}
-              </span>
-              {/* Clinical Emoji-FPS scale value (0/2/4/6/8/10), retained as
-                  a small muted subtitle so the validated number stays
-                  visible without competing with the descriptive label. */}
-              <span
-                class="font-sans"
-                style={{
-                  fontSize: 13,
-                  color: t.muted,
-                  marginTop: 2,
-                  fontWeight: 600,
-                  lineHeight: 1,
-                }}
-              >
-                {face.n}
+                {face.n} · {resolvePhrase(face.labelKey, patientLang)}
               </span>
             </Btn>
             );
