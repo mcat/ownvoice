@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import { Virtualizer, observeElementOffset, observeElementRect, elementScroll } from "@tanstack/virtual-core";
 import type { WorkflowState, StepRecord } from "../../audit/types";
 import { getWorkflowDetail } from "../../audit/queryWorkflows";
+import { formatLogTimestamp } from "./formatTime";
 
 export interface WorkflowTableProps {
   workflows: readonly WorkflowState[];
@@ -150,7 +151,7 @@ export function WorkflowTable({ workflows }: WorkflowTableProps) {
         }}
       >
         <div style={{ flex: "0 0 24px" }} />
-        <div style={{ flex: "0 0 180px" }}>Started</div>
+        <div style={{ flex: "0 0 220px" }}>Started</div>
         <div style={{ flex: "0 0 100px" }}>Status</div>
         <div style={{ flex: "0 0 180px" }}>Workflow</div>
         <div style={{ flex: "0 0 80px" }}>Duration</div>
@@ -198,7 +199,7 @@ export function WorkflowTable({ workflows }: WorkflowTableProps) {
                   }}
                 >
                   <div style={{ flex: "0 0 24px" }}>{isOpen ? "▼" : "▶"}</div>
-                  <div style={{ flex: "0 0 180px" }}>{new Date(w.started_at).toLocaleString()}</div>
+                  <div style={{ flex: "0 0 220px" }}>{formatLogTimestamp(w.started_at)}</div>
                   <div style={{ flex: "0 0 100px", color: STATUS_COLOR[w.status], fontWeight: 600 }}>{w.status}</div>
                   <div style={{ flex: "0 0 180px" }}>{w.name}</div>
                   <div style={{ flex: "0 0 80px" }}>{fmtDuration(w.started_at, w.ended_at)}</div>

@@ -16,6 +16,7 @@ import { EventTable, type EventTableColumn } from "./EventTable";
 import { ExportMenu, type ExportRequest } from "./ExportMenu";
 import { WorkflowTable } from "./WorkflowTable";
 import { PinPromptDialog } from "../../audit/pinPrompt";
+import { formatLogTimestamp } from "./formatTime";
 
 export interface ActivityLogProps {
   onClose: () => void;
@@ -41,23 +42,32 @@ function defaultFiltersForRole(role: DiagRole, activePatientId: string | null): 
 }
 
 function columnsForRole(role: DiagRole): EventTableColumn[] {
+  // Single timestamp format across roles — see formatLogTimestamp. The
+  // 19-char fixed-width string aligns the column and sorts correctly,
+  // so column sizing can be uniform too.
+  const timeColumn: EventTableColumn = {
+    id: "time",
+    header: "Time",
+    render: (r) => formatLogTimestamp(r.time),
+    width: "0 0 220px",
+  };
   switch (role) {
     case "healthcare":
       return [
-        { id: "time", header: "Time", render: (r) => new Date(r.time).toLocaleTimeString(), width: "0 0 120px" },
+        timeColumn,
         { id: "actor", header: "Actor", render: (r) => String(r.attributes[ATTR.ACTOR] ?? ""), width: "0 0 100px" },
         { id: "text", header: "Spoken text", render: (r) => String(r.attributes[ATTR.SPEECH_TEXT] ?? "") },
       ];
     case "researcher":
       return [
-        { id: "time", header: "Time", render: (r) => new Date(r.time).toLocaleString(), width: "0 0 180px" },
+        timeColumn,
         { id: "actor", header: "Actor", render: (r) => String(r.attributes[ATTR.ACTOR] ?? "system"), width: "0 0 100px" },
         { id: "name", header: "Event", render: (r) => r.name, width: "0 0 200px" },
         { id: "attrs", header: "Attributes", render: (r) => JSON.stringify(r.attributes) },
       ];
     case "developer":
       return [
-        { id: "time", header: "Time", render: (r) => new Date(r.time).toISOString(), width: "0 0 200px" },
+        timeColumn,
         { id: "sev", header: "Severity", render: (r) => r.severity_text ?? "INFO", width: "0 0 80px" },
         { id: "name", header: "Event", render: (r) => r.name, width: "0 0 200px" },
         { id: "stack", header: "Detail", render: (r) =>
