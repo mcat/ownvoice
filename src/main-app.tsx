@@ -49,6 +49,49 @@ if (new URLSearchParams(globalThis.location?.search ?? "").get("bench") === "tru
   console.log("[OwnVoice:Bench] Bench mode active. Per-step TTS timings will be logged.");
 }
 
+// Handle PWA shortcut deep-links: ?tab=… and ?overlay=… are dispatched
+// after settings hydrate (so onboarding gates still apply), then stripped
+// from the URL so a reload doesn't re-fire them.
+{
+  type OverlayName = "wishes" | "provider" | "listen";
+  const ALLOWED_TABS = new Set(["quick", "needs", "feelings", "questions", "pain"]);
+  const ALLOWED_OVERLAYS: ReadonlySet<OverlayName> = new Set([
+    "wishes",
+    "provider",
+    "listen",
+  ]);
+
+  const applyDeepLink = (): void => {
+    const params = new URLSearchParams(globalThis.location?.search ?? "");
+    const tab = params.get("tab");
+    const overlay = params.get("overlay");
+    let touched = false;
+    if (tab && ALLOWED_TABS.has(tab)) {
+      useUIStore.getState().setTab(tab);
+      touched = true;
+    }
+    if (overlay && ALLOWED_OVERLAYS.has(overlay as OverlayName)) {
+      useUIStore.getState().openOverlay(overlay as OverlayName);
+      touched = true;
+    }
+    if (touched) {
+      params.delete("tab");
+      params.delete("overlay");
+      const qs = params.toString();
+      const url = globalThis.location.pathname + (qs ? `?${qs}` : "") + globalThis.location.hash;
+      history.replaceState(null, "", url);
+    }
+  };
+
+  if (useSettingsStore.getState()._hasHydrated) {
+    applyDeepLink();
+  } else {
+    useSettingsStore.persist.onFinishHydration?.(() => {
+      applyDeepLink();
+    });
+  }
+}
+
 // Subscribe to theme changes outside of Preact to guarantee DOM updates.
 // Uses requestAnimationFrame to run AFTER Preact's re-render commits.
 useUIStore.subscribe((state, prev) => {
