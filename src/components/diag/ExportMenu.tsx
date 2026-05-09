@@ -41,17 +41,60 @@ export function ExportMenu({ role, onExport }: ExportMenuProps) {
   const items = itemsForRole(role);
   return (
     <div style={{ position: "relative" }}>
-      <button onClick={() => setOpen((o) => !o)}>Export ▼</button>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        style={{
+          padding: "8px 14px",
+          background: "var(--color-ov-patient)",
+          color: "#fff",
+          border: "none",
+          borderRadius: 8,
+          cursor: "pointer",
+          fontFamily: "var(--font-sans)",
+          fontSize: 14,
+          fontWeight: 700,
+        }}
+      >
+        Export ▾
+      </button>
       {open && (
-        <ul role="menu" style={{
-          position: "absolute", right: 0, top: "100%",
-          background: "#fff", border: "1px solid #ccc", listStyle: "none",
-          margin: 0, padding: 4, minWidth: 220, zIndex: 100,
-        }}>
+        <ul
+          role="menu"
+          style={{
+            position: "absolute",
+            right: 0,
+            top: "calc(100% + 4px)",
+            background: "var(--color-ov-card)",
+            border: "1px solid var(--color-ov-border)",
+            boxShadow: "0 6px 20px rgba(0,0,0,0.10)",
+            listStyle: "none",
+            margin: 0,
+            padding: 4,
+            minWidth: 240,
+            borderRadius: 8,
+            zIndex: 100,
+            fontFamily: "var(--font-sans)",
+          }}
+        >
           {items.map((it) => (
-            <li role="menuitem" key={it.label}
-                style={{ padding: "8px 12px", cursor: "pointer" }}
-                onClick={() => { onExport(it.request); setOpen(false); }}>
+            <li
+              role="menuitem"
+              key={it.label}
+              style={{
+                padding: "10px 12px",
+                cursor: "pointer",
+                fontSize: 14,
+                color: "var(--color-ov-text)",
+                borderRadius: 6,
+              }}
+              onMouseOver={(e) => {
+                (e.currentTarget as HTMLElement).style.background = "var(--color-ov-active-bg)";
+              }}
+              onMouseOut={(e) => {
+                (e.currentTarget as HTMLElement).style.background = "transparent";
+              }}
+              onClick={() => { onExport(it.request); setOpen(false); }}
+            >
               {it.label}
             </li>
           ))}

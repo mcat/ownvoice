@@ -25,6 +25,14 @@
   src: url("/fonts/source-serif-600-700.woff2") format("truetype");
 }
 
+@font-face {
+  font-family: "Atkinson Hyperlegible Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/atkinson-mono-400.woff2") format("woff2");
+}
+
 @theme {
   /* ── OwnVoice color tokens (light mode defaults) ── */
   --color-ov-bg: #FAFAF8;
@@ -55,6 +63,7 @@
   /* ── Font families ── */
   --font-sans: "Atkinson Hyperlegible Next", system-ui, sans-serif;
   --font-brand: "Source Serif 4", serif;
+  --font-mono: "Atkinson Hyperlegible Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
   /* ── Touch target sizing ── */
   --size-target: 64px;

@@ -235,12 +235,58 @@ export function ActivityLog({ onClose, limit = DEFAULT_LIMIT }: ActivityLogProps
     : workflows.length >= limit;
 
   return (
-    <div role="dialog" aria-label="Activity log" style={{
-      position: "fixed", inset: 0, background: "#fff", zIndex: z.sheetStacked,
-      display: "flex", flexDirection: "column", padding: 16,
-    }}>
-      <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 8 }}>
-        <button onClick={onClose}>Close</button>
+    <div
+      role="dialog"
+      aria-label="Activity log"
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "var(--color-ov-bg)",
+        zIndex: z.sheetStacked,
+        display: "flex",
+        flexDirection: "column",
+        padding: 20,
+        fontFamily: "var(--font-sans)",
+        color: "var(--color-ov-text)",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          gap: 12,
+          alignItems: "center",
+          marginBottom: 12,
+          flexWrap: "wrap",
+        }}
+      >
+        <button
+          onClick={onClose}
+          style={{
+            padding: "8px 14px",
+            background: "var(--color-ov-card)",
+            color: "var(--color-ov-text)",
+            border: "1px solid var(--color-ov-border)",
+            borderRadius: 8,
+            cursor: "pointer",
+            fontFamily: "var(--font-sans)",
+            fontSize: 14,
+            fontWeight: 700,
+          }}
+        >
+          ‹ Close
+        </button>
+        <h1
+          style={{
+            margin: 0,
+            marginRight: 8,
+            fontFamily: "var(--font-sans)",
+            fontSize: 18,
+            fontWeight: 700,
+            color: "var(--color-ov-text)",
+          }}
+        >
+          Activity log
+        </h1>
         <RoleToggle role={role} onChange={setRole} />
         <ViewModeToggle viewMode={viewMode} onChange={setViewMode} />
         <div style={{ flex: 1 }} />
@@ -251,14 +297,34 @@ export function ActivityLog({ onClose, limit = DEFAULT_LIMIT }: ActivityLogProps
       </div>
       <FilterBar value={filters} patients={patients} onChange={setFilters} />
       {truncated && (
-        <div data-testid="truncation-banner" role="status" style={{
-          background: "#fff3cd", color: "#664d03", border: "1px solid #ffe69c",
-          borderRadius: 4, padding: "6px 10px", margin: "4px 0", fontSize: 13,
-        }}>
+        <div
+          data-testid="truncation-banner"
+          role="status"
+          style={{
+            background: "var(--color-ov-card)",
+            color: "var(--color-ov-text)",
+            border: "1px solid var(--color-ov-border)",
+            borderLeft: "4px solid var(--color-ov-amber)",
+            borderRadius: 8,
+            padding: "10px 14px",
+            margin: "4px 0 8px",
+            fontFamily: "var(--font-sans)",
+            fontSize: 13,
+          }}
+        >
           Showing the most recent {limit.toLocaleString()} {viewMode === "events" ? "events" : "workflows"} for this filter. Older entries are not displayed — narrow the date range or add filters to see them.
         </div>
       )}
-      <div style={{ flex: 1, minHeight: 0 }}>
+      <div
+        style={{
+          flex: 1,
+          minHeight: 0,
+          background: "var(--color-ov-card)",
+          border: "1px solid var(--color-ov-border)",
+          borderRadius: 10,
+          overflow: "hidden",
+        }}
+      >
         {viewMode === "events"
           ? <EventTable records={records} columns={cols} />
           : <WorkflowTable workflows={workflows} />}
@@ -280,17 +346,32 @@ function ViewModeToggle({ viewMode, onChange }: { viewMode: ViewMode; onChange: 
     { id: "workflows", label: "Workflows" },
   ];
   return (
-    <div role="group" aria-label="Data source" style={{ display: "inline-flex", border: "1px solid #ccc", borderRadius: 4 }}>
-      {opts.map((o) => (
+    <div
+      role="group"
+      aria-label="Data source"
+      style={{
+        display: "inline-flex",
+        border: "1px solid var(--color-ov-border)",
+        borderRadius: 8,
+        overflow: "hidden",
+        background: "var(--color-ov-card)",
+      }}
+    >
+      {opts.map((o, i) => (
         <button
           key={o.id}
           aria-pressed={o.id === viewMode}
           onClick={() => onChange(o.id)}
           style={{
-            padding: "8px 12px", border: "none",
-            background: o.id === viewMode ? "#1976d2" : "transparent",
-            color: o.id === viewMode ? "#fff" : "#000",
+            padding: "8px 14px",
+            border: "none",
+            borderLeft: i === 0 ? "none" : "1px solid var(--color-ov-border)",
+            background: o.id === viewMode ? "var(--color-ov-patient)" : "transparent",
+            color: o.id === viewMode ? "#fff" : "var(--color-ov-text)",
             cursor: "pointer",
+            fontFamily: "var(--font-sans)",
+            fontSize: 14,
+            fontWeight: o.id === viewMode ? 700 : 400,
           }}
         >
           {o.label}
