@@ -11,6 +11,9 @@ export interface FilterBarProps {
   value: FilterBarValue;
   patients: Array<{ id: string; name: string }>;
   onChange: (value: FilterBarValue) => void;
+  /** Search input placeholder. Varies by diag role — Healthcare's view
+   *  pins a namespace filter, so the placeholder reflects that. */
+  searchPlaceholder?: string;
 }
 
 const labelStyle = {
@@ -30,7 +33,7 @@ const controlStyle = {
   padding: "6px 10px",
 };
 
-export function FilterBar({ value, patients, onChange }: FilterBarProps) {
+export function FilterBar({ value, patients, onChange, searchPlaceholder = "speak. or substring" }: FilterBarProps) {
   return (
     <div
       style={{
@@ -84,7 +87,7 @@ export function FilterBar({ value, patients, onChange }: FilterBarProps) {
         id="filter-search"
         type="search"
         value={value.search}
-        placeholder="speak. or substring"
+        placeholder={searchPlaceholder}
         onInput={(e) => onChange({ ...value, search: (e.target as HTMLInputElement).value })}
         style={{ ...controlStyle, flex: 1, minWidth: 200 }}
       />

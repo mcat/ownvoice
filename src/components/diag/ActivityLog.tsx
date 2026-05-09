@@ -33,12 +33,45 @@ export type ViewMode = "events" | "workflows";
 function defaultFiltersForRole(role: DiagRole, activePatientId: string | null): FilterBarValue {
   switch (role) {
     case "healthcare":
-      return { patientId: activePatientId, datePreset: "today", minSeverity: 9, search: "speak." };
+      // Healthcare = spoken-text events only; the `speak.` namespace is
+      // pinned by resolveQueryFilters() rather than seeded into the
+      // search box (which used to leave the view empty when cleared).
+      return { patientId: activePatientId, datePreset: "today", minSeverity: 9, search: "" };
     case "researcher":
       return { patientId: null, datePreset: "last7d", minSeverity: 9, search: "" };
     case "developer":
       return { patientId: null, datePreset: "last30d", minSeverity: 13, search: "" };
   }
+}
+
+/**
+ * Translate the role + the user's search string into queryEvents params.
+ * Healthcare always passes `namePrefix: "speak."` so the spoken-text view
+ * cannot collapse to "all events with empty Actor/Spoken-text columns";
+ * a typed search narrows within that prefix as a substring. The user can
+ * still override with their own deeper prefix (e.g. `speak.tts.`).
+ *
+ * Researcher/Developer keep the legacy "ends-with-dot = prefix, else
+ * substring" heuristic since their columns work for any event name.
+ */
+function resolveQueryFilters(
+  role: DiagRole,
+  search: string,
+): { namePrefix?: string; attributeSubstring?: string } {
+  const trimmed = search.trim();
+  const looksLikePrefix = trimmed.endsWith(".");
+  if (role === "healthcare") {
+    if (!trimmed) return { namePrefix: "speak." };
+    if (looksLikePrefix) return { namePrefix: trimmed };
+    return { namePrefix: "speak.", attributeSubstring: trimmed };
+  }
+  if (looksLikePrefix) return { namePrefix: trimmed };
+  if (trimmed) return { attributeSubstring: trimmed };
+  return {};
+}
+
+function searchPlaceholderForRole(role: DiagRole): string {
+  return role === "healthcare" ? "Filter spoken text…" : "speak. or substring";
 }
 
 function columnsForRole(role: DiagRole): EventTableColumn[] {
@@ -126,6 +159,11 @@ export function ActivityLog({ onClose, limit = DEFAULT_LIMIT }: ActivityLogProps
   const viewModeRef = useRef(viewMode);
   useEffect(() => { viewModeRef.current = viewMode; }, [viewMode]);
 
+  // Role is also referenced by the live-tail subscriber (for the role's
+  // pinned namePrefix). Mirror it through a ref for the same reason.
+  const roleRef = useRef(role);
+  useEffect(() => { roleRef.current = role; }, [role]);
+
   // Run the events query whenever filters change.
   useEffect(() => {
     if (viewMode !== "events") return;
@@ -133,14 +171,13 @@ export function ActivityLog({ onClose, limit = DEFAULT_LIMIT }: ActivityLogProps
     void (async () => {
       const range = presetToRange(filters.datePreset);
       const patientHash = filters.patientId ? await patientIdHash(filters.patientId) : undefined;
-      const looksLikePrefix = filters.search.endsWith(".");
+      const searchFilters = resolveQueryFilters(role, filters.search);
       const out = await queryEvents({
         patientIdHash: patientHash,
         rangeStart: range.rangeStart,
         rangeEnd: range.rangeEnd,
         minSeverity: filters.minSeverity,
-        namePrefix: looksLikePrefix ? filters.search : undefined,
-        attributeSubstring: !looksLikePrefix && filters.search ? filters.search : undefined,
+        ...searchFilters,
         limit,
       });
       if (!cancelled) setRecords(out);
@@ -182,14 +219,13 @@ export function ActivityLog({ onClose, limit = DEFAULT_LIMIT }: ActivityLogProps
       if (filtersRef.current === undefined) return;
       const f = filtersRef.current;
       const range = presetToRange(f.datePreset);
-      const looksLikePrefix = f.search.endsWith(".");
+      const searchFilters = resolveQueryFilters(roleRef.current, f.search);
       const ok = eventPassesFilters(rec, {
         patientIdHash: patientHashRef.current,
         rangeStart: range.rangeStart,
         rangeEnd: range.rangeEnd,
         minSeverity: f.minSeverity,
-        namePrefix: looksLikePrefix ? f.search : undefined,
-        attributeSubstring: !looksLikePrefix && f.search ? f.search : undefined,
+        ...searchFilters,
       });
       if (!ok) return;
       pendingRef.current.push(rec);
@@ -327,7 +363,12 @@ export function ActivityLog({ onClose, limit = DEFAULT_LIMIT }: ActivityLogProps
           else void performExport(req);
         }} />
       </div>
-      <FilterBar value={filters} patients={patients} onChange={setFilters} />
+      <FilterBar
+        value={filters}
+        patients={patients}
+        onChange={setFilters}
+        searchPlaceholder={searchPlaceholderForRole(role)}
+      />
       {truncated && (
         <div
           data-testid="truncation-banner"
