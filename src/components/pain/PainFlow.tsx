@@ -268,30 +268,34 @@ export function PainFlow({ onSelect, t, theme }: PainFlowProps) {
                 transition: "background 0.12s ease",
               }}
             >
-              <span style={{ fontSize: 52, lineHeight: 1 }}>{face.face}</span>
-              <span
-                class="font-sans"
-                style={{
-                  fontSize: 24,
-                  color: t.text,
-                  marginTop: 6,
-                  fontWeight: 700,
-                  lineHeight: 1,
-                }}
-              >
-                {face.n}
-              </span>
+              <span style={{ fontSize: 40, lineHeight: 1 }}>{face.face}</span>
               <span
                 class="font-sans"
                 style={{
                   fontSize: 18,
-                  color: t.sub,
-                  marginTop: 4,
+                  fontWeight: 600,
+                  color: t.text,
+                  marginTop: 8,
                   textAlign: "center",
-                  fontWeight: 500,
+                  lineHeight: 1.35,
                 }}
               >
                 {resolvePhrase(face.labelKey, patientLang)}
+              </span>
+              {/* Clinical Emoji-FPS scale value (0/2/4/6/8/10), retained as
+                  a small muted subtitle so the validated number stays
+                  visible without competing with the descriptive label. */}
+              <span
+                class="font-sans"
+                style={{
+                  fontSize: 13,
+                  color: t.muted,
+                  marginTop: 2,
+                  fontWeight: 600,
+                  lineHeight: 1,
+                }}
+              >
+                {face.n}
               </span>
             </Btn>
             );
@@ -362,10 +366,11 @@ export function PainFlow({ onSelect, t, theme }: PainFlowProps) {
               <span
                 class="font-sans"
                 style={{
-                  fontSize: 16,
+                  fontSize: 18,
+                  fontWeight: 600,
                   color: t.text,
                   textAlign: "center",
-                  fontWeight: 500,
+                  lineHeight: 1.35,
                 }}
               >
                 {resolvePhrase(region.key, patientLang)}
@@ -436,15 +441,16 @@ export function PainFlow({ onSelect, t, theme }: PainFlowProps) {
               transition: "background 0.12s ease",
             }}
           >
-            <span style={{ fontSize: 24, lineHeight: 1 }}>{desc.icon}</span>
+            <span style={{ fontSize: 40, lineHeight: 1 }}>{desc.icon}</span>
             <span
               class="font-sans"
               style={{
-                fontSize: 15,
+                fontSize: 18,
+                fontWeight: 600,
                 color: t.text,
-                marginTop: 6,
+                marginTop: 8,
                 textAlign: "center",
-                fontWeight: 500,
+                lineHeight: 1.35,
               }}
             >
               {resolvePhrase(desc.key, patientLang)}
