@@ -262,6 +262,9 @@ export function ActivityLog({ onClose, limit = DEFAULT_LIMIT }: ActivityLogProps
         <button
           onClick={onClose}
           style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
             padding: "8px 14px",
             background: "var(--color-ov-card)",
             color: "var(--color-ov-text)",
@@ -273,7 +276,26 @@ export function ActivityLog({ onClose, limit = DEFAULT_LIMIT }: ActivityLogProps
             fontWeight: 700,
           }}
         >
-          ‹ Close
+          {/* SVG chevron sized to the label's cap height — the Unicode ‹
+              glyph in Atkinson Hyperlegible Next sits above the baseline
+              and visually floats. Same workaround as BottomSheet.BackButton. */}
+          <svg
+            aria-hidden="true"
+            width="7"
+            height="11"
+            viewBox="0 0 9 15"
+            fill="none"
+            style={{ flexShrink: 0 }}
+          >
+            <path
+              d="M7.5 1.5L1.5 7.5L7.5 13.5"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          Close
         </button>
         <h1
           style={{
