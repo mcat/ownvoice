@@ -20,7 +20,10 @@ export function Header({ onOpenSettings, onEditPatient }: HeaderProps) {
     <header
       style={{
         background: "transparent",
-        padding: "10px 32px",
+        paddingTop: "max(10px, var(--ov-safe-top))",
+        paddingRight: "max(32px, var(--ov-safe-right))",
+        paddingBottom: 10,
+        paddingLeft: "max(32px, var(--ov-safe-left))",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",

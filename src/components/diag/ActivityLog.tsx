@@ -291,7 +291,10 @@ export function ActivityLog({ onClose, limit = DEFAULT_LIMIT }: ActivityLogProps
         zIndex: z.sheetStacked,
         display: "flex",
         flexDirection: "column",
-        padding: 20,
+        paddingTop: "max(20px, var(--ov-safe-top))",
+        paddingRight: "max(20px, var(--ov-safe-right))",
+        paddingBottom: "max(20px, var(--ov-safe-bottom))",
+        paddingLeft: "max(20px, var(--ov-safe-left))",
         fontFamily: "var(--font-sans)",
         color: "var(--color-ov-text)",
       }}
@@ -389,6 +392,7 @@ export function ActivityLog({ onClose, limit = DEFAULT_LIMIT }: ActivityLogProps
         </div>
       )}
       <div
+        data-selectable="true"
         style={{
           flex: 1,
           minHeight: 0,

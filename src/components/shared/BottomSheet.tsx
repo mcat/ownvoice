@@ -117,8 +117,9 @@ export function BottomSheet({
     display: "flex",
     flexDirection: "column",
     overflow: "hidden",
-    height: heightVh === "auto" ? undefined : `${heightVh}vh`,
-    maxHeight: heightVh === "auto" ? "92vh" : undefined,
+    height: heightVh === "auto" ? undefined : `${heightVh}dvh`,
+    maxHeight: heightVh === "auto" ? "92dvh" : undefined,
+    paddingBottom: "var(--ov-safe-bottom)",
     boxShadow: "0 -4px 24px rgba(0,0,0,0.18)",
     transform: reducedMotion
       ? "translateY(0)"

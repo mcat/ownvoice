@@ -112,6 +112,43 @@ button {
   touch-action: manipulation;
 }
 
+/* ── Kiosk-like lockdown for installed PWA ──
+   AAC use is by definition single-tap on large fixed targets, and the
+   iOS long-press magnifier / copy-share callout fires inside ongoing
+   conversations (a clinician hovers, the menu pops, the patient sees
+   noise instead of a phrase). Disable callout + selection globally
+   and re-allow it only on inputs and explicitly-marked surfaces.
+   `overscroll-behavior: none` kills the rubber-band that leaks a
+   "browser, not app" feel on tabs that aren't internally scrollable. */
+html,
+body {
+  overscroll-behavior: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+input,
+textarea,
+[contenteditable="true"],
+[data-selectable="true"],
+[data-selectable="true"] * {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+}
+
+/* Reusable safe-area inset tokens. iPad standalone PWA with
+   `viewport-fit=cover` + `black-translucent` status bar means content
+   slides under the system chrome unless we pad with these. Each
+   top-level container that owns its own layout reads from here. */
+:root {
+  --ov-safe-top: env(safe-area-inset-top, 0px);
+  --ov-safe-right: env(safe-area-inset-right, 0px);
+  --ov-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --ov-safe-left: env(safe-area-inset-left, 0px);
+}
+
 /* ── Focus ring (WCAG 2.4.7 AA + 2.4.13 AAA) ──
    3px outline gives the 2px perimeter coverage 2.4.13 requires, at >= 3:1
    against both themes. Outline-offset stays at 0 so the ring sits immediately

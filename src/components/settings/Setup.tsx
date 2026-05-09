@@ -203,6 +203,9 @@ export function Setup({ mode = "first-run", onFirstRunDone, onAddPatientDone, on
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
+        paddingTop: "var(--ov-safe-top)",
+        paddingLeft: "var(--ov-safe-left)",
+        paddingRight: "var(--ov-safe-right)",
         fontFamily:
           "'Atkinson Hyperlegible Next', system-ui, -apple-system, sans-serif",
       }}
@@ -382,10 +385,12 @@ export function Setup({ mode = "first-run", onFirstRunDone, onAddPatientDone, on
           maxWidth: 700,
           display: "flex",
           gap: 12,
-          padding: "16px 24px",
+          paddingTop: 40,
+          paddingRight: "max(24px, var(--ov-safe-right))",
+          paddingBottom: "max(16px, var(--ov-safe-bottom))",
+          paddingLeft: "max(24px, var(--ov-safe-left))",
           boxSizing: "border-box",
           background: "linear-gradient(transparent, #FAFAF8 20%)",
-          paddingTop: 40,
         }}
       >
         {step > 0 && (
