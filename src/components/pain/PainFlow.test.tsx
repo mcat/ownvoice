@@ -66,8 +66,11 @@ describe("PainFlow", () => {
 
     it("shows severity labels for each face", () => {
       render(<PainFlow {...baseProps} />);
-      expect(screen.getByText("No hurt")).toBeInTheDocument();
-      expect(screen.getByText("Hurts worst")).toBeInTheDocument();
+      // Label is composed as "{n} · {label}" so the clinical scale value
+      // and descriptive text share a single 18/600 line per the
+      // PhraseButton type contract.
+      expect(screen.getByText("0 · No hurt")).toBeInTheDocument();
+      expect(screen.getByText("10 · Hurts worst")).toBeInTheDocument();
     });
 
     it("shows breadcrumb with Severity highlighted as the current step", () => {

@@ -11,26 +11,56 @@ export interface FilterBarProps {
   value: FilterBarValue;
   patients: Array<{ id: string; name: string }>;
   onChange: (value: FilterBarValue) => void;
+  /** Search input placeholder. Varies by diag role — Healthcare's view
+   *  pins a namespace filter, so the placeholder reflects that. */
+  searchPlaceholder?: string;
 }
 
-export function FilterBar({ value, patients, onChange }: FilterBarProps) {
+const labelStyle = {
+  fontFamily: "var(--font-sans)",
+  fontSize: 13,
+  fontWeight: 700,
+  color: "var(--color-ov-sub)",
+};
+
+const controlStyle = {
+  fontFamily: "var(--font-sans)",
+  fontSize: 14,
+  color: "var(--color-ov-text)",
+  background: "var(--color-ov-card)",
+  border: "1px solid var(--color-ov-border)",
+  borderRadius: 6,
+  padding: "6px 10px",
+};
+
+export function FilterBar({ value, patients, onChange, searchPlaceholder = "speak. or substring" }: FilterBarProps) {
   return (
-    <div style={{ display: "flex", gap: 8, alignItems: "center", padding: "8px 0", flexWrap: "wrap" }}>
-      <label htmlFor="filter-patient">Patient</label>
+    <div
+      style={{
+        display: "flex",
+        gap: 10,
+        alignItems: "center",
+        padding: "10px 0",
+        flexWrap: "wrap",
+      }}
+    >
+      <label htmlFor="filter-patient" style={labelStyle}>Patient</label>
       <select
         id="filter-patient"
         value={value.patientId ?? ""}
         onChange={(e) => onChange({ ...value, patientId: (e.target as HTMLSelectElement).value || null })}
+        style={controlStyle}
       >
         <option value="">All</option>
         {patients.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
       </select>
 
-      <label htmlFor="filter-date">Date</label>
+      <label htmlFor="filter-date" style={labelStyle}>Date</label>
       <select
         id="filter-date"
         value={value.datePreset}
         onChange={(e) => onChange({ ...value, datePreset: (e.target as HTMLSelectElement).value as DatePreset })}
+        style={controlStyle}
       >
         <option value="today">Today</option>
         <option value="last24h">Last 24h</option>
@@ -39,11 +69,12 @@ export function FilterBar({ value, patients, onChange }: FilterBarProps) {
         <option value="all">All (retention)</option>
       </select>
 
-      <label htmlFor="filter-severity">Severity</label>
+      <label htmlFor="filter-severity" style={labelStyle}>Severity</label>
       <select
         id="filter-severity"
         value={String(value.minSeverity)}
         onChange={(e) => onChange({ ...value, minSeverity: Number((e.target as HTMLSelectElement).value) })}
+        style={controlStyle}
       >
         <option value="5">DEBUG+</option>
         <option value="9">INFO+</option>
@@ -51,14 +82,14 @@ export function FilterBar({ value, patients, onChange }: FilterBarProps) {
         <option value="17">ERROR+</option>
       </select>
 
-      <label htmlFor="filter-search">Search</label>
+      <label htmlFor="filter-search" style={labelStyle}>Search</label>
       <input
         id="filter-search"
         type="search"
         value={value.search}
-        placeholder="speak. or substring"
+        placeholder={searchPlaceholder}
         onInput={(e) => onChange({ ...value, search: (e.target as HTMLInputElement).value })}
-        style={{ flex: 1, minWidth: 160 }}
+        style={{ ...controlStyle, flex: 1, minWidth: 200 }}
       />
     </div>
   );

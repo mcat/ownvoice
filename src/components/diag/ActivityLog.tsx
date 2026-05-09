@@ -16,6 +16,7 @@ import { EventTable, type EventTableColumn } from "./EventTable";
 import { ExportMenu, type ExportRequest } from "./ExportMenu";
 import { WorkflowTable } from "./WorkflowTable";
 import { PinPromptDialog } from "../../audit/pinPrompt";
+import { formatLogTimestamp } from "./formatTime";
 
 export interface ActivityLogProps {
   onClose: () => void;
@@ -32,7 +33,10 @@ export type ViewMode = "events" | "workflows";
 function defaultFiltersForRole(role: DiagRole, activePatientId: string | null): FilterBarValue {
   switch (role) {
     case "healthcare":
-      return { patientId: activePatientId, datePreset: "today", minSeverity: 9, search: "speak." };
+      // Healthcare = spoken-text events only; the `speak.` namespace is
+      // pinned by resolveQueryFilters() rather than seeded into the
+      // search box (which used to leave the view empty when cleared).
+      return { patientId: activePatientId, datePreset: "today", minSeverity: 9, search: "" };
     case "researcher":
       return { patientId: null, datePreset: "last7d", minSeverity: 9, search: "" };
     case "developer":
@@ -40,24 +44,63 @@ function defaultFiltersForRole(role: DiagRole, activePatientId: string | null): 
   }
 }
 
+/**
+ * Translate the role + the user's search string into queryEvents params.
+ * Healthcare always passes `namePrefix: "speak."` so the spoken-text view
+ * cannot collapse to "all events with empty Actor/Spoken-text columns";
+ * a typed search narrows within that prefix as a substring. The user can
+ * still override with their own deeper prefix (e.g. `speak.tts.`).
+ *
+ * Researcher/Developer keep the legacy "ends-with-dot = prefix, else
+ * substring" heuristic since their columns work for any event name.
+ */
+function resolveQueryFilters(
+  role: DiagRole,
+  search: string,
+): { namePrefix?: string; attributeSubstring?: string } {
+  const trimmed = search.trim();
+  const looksLikePrefix = trimmed.endsWith(".");
+  if (role === "healthcare") {
+    if (!trimmed) return { namePrefix: "speak." };
+    if (looksLikePrefix) return { namePrefix: trimmed };
+    return { namePrefix: "speak.", attributeSubstring: trimmed };
+  }
+  if (looksLikePrefix) return { namePrefix: trimmed };
+  if (trimmed) return { attributeSubstring: trimmed };
+  return {};
+}
+
+function searchPlaceholderForRole(role: DiagRole): string {
+  return role === "healthcare" ? "Filter spoken text…" : "speak. or substring";
+}
+
 function columnsForRole(role: DiagRole): EventTableColumn[] {
+  // Single timestamp format across roles — see formatLogTimestamp. The
+  // 19-char fixed-width string aligns the column and sorts correctly,
+  // so column sizing can be uniform too.
+  const timeColumn: EventTableColumn = {
+    id: "time",
+    header: "Time",
+    render: (r) => formatLogTimestamp(r.time),
+    width: "0 0 220px",
+  };
   switch (role) {
     case "healthcare":
       return [
-        { id: "time", header: "Time", render: (r) => new Date(r.time).toLocaleTimeString(), width: "0 0 120px" },
+        timeColumn,
         { id: "actor", header: "Actor", render: (r) => String(r.attributes[ATTR.ACTOR] ?? ""), width: "0 0 100px" },
         { id: "text", header: "Spoken text", render: (r) => String(r.attributes[ATTR.SPEECH_TEXT] ?? "") },
       ];
     case "researcher":
       return [
-        { id: "time", header: "Time", render: (r) => new Date(r.time).toLocaleString(), width: "0 0 180px" },
+        timeColumn,
         { id: "actor", header: "Actor", render: (r) => String(r.attributes[ATTR.ACTOR] ?? "system"), width: "0 0 100px" },
         { id: "name", header: "Event", render: (r) => r.name, width: "0 0 200px" },
         { id: "attrs", header: "Attributes", render: (r) => JSON.stringify(r.attributes) },
       ];
     case "developer":
       return [
-        { id: "time", header: "Time", render: (r) => new Date(r.time).toISOString(), width: "0 0 200px" },
+        timeColumn,
         { id: "sev", header: "Severity", render: (r) => r.severity_text ?? "INFO", width: "0 0 80px" },
         { id: "name", header: "Event", render: (r) => r.name, width: "0 0 200px" },
         { id: "stack", header: "Detail", render: (r) =>
@@ -116,6 +159,11 @@ export function ActivityLog({ onClose, limit = DEFAULT_LIMIT }: ActivityLogProps
   const viewModeRef = useRef(viewMode);
   useEffect(() => { viewModeRef.current = viewMode; }, [viewMode]);
 
+  // Role is also referenced by the live-tail subscriber (for the role's
+  // pinned namePrefix). Mirror it through a ref for the same reason.
+  const roleRef = useRef(role);
+  useEffect(() => { roleRef.current = role; }, [role]);
+
   // Run the events query whenever filters change.
   useEffect(() => {
     if (viewMode !== "events") return;
@@ -123,14 +171,13 @@ export function ActivityLog({ onClose, limit = DEFAULT_LIMIT }: ActivityLogProps
     void (async () => {
       const range = presetToRange(filters.datePreset);
       const patientHash = filters.patientId ? await patientIdHash(filters.patientId) : undefined;
-      const looksLikePrefix = filters.search.endsWith(".");
+      const searchFilters = resolveQueryFilters(role, filters.search);
       const out = await queryEvents({
         patientIdHash: patientHash,
         rangeStart: range.rangeStart,
         rangeEnd: range.rangeEnd,
         minSeverity: filters.minSeverity,
-        namePrefix: looksLikePrefix ? filters.search : undefined,
-        attributeSubstring: !looksLikePrefix && filters.search ? filters.search : undefined,
+        ...searchFilters,
         limit,
       });
       if (!cancelled) setRecords(out);
@@ -172,14 +219,13 @@ export function ActivityLog({ onClose, limit = DEFAULT_LIMIT }: ActivityLogProps
       if (filtersRef.current === undefined) return;
       const f = filtersRef.current;
       const range = presetToRange(f.datePreset);
-      const looksLikePrefix = f.search.endsWith(".");
+      const searchFilters = resolveQueryFilters(roleRef.current, f.search);
       const ok = eventPassesFilters(rec, {
         patientIdHash: patientHashRef.current,
         rangeStart: range.rangeStart,
         rangeEnd: range.rangeEnd,
         minSeverity: f.minSeverity,
-        namePrefix: looksLikePrefix ? f.search : undefined,
-        attributeSubstring: !looksLikePrefix && f.search ? f.search : undefined,
+        ...searchFilters,
       });
       if (!ok) return;
       pendingRef.current.push(rec);
@@ -235,12 +281,80 @@ export function ActivityLog({ onClose, limit = DEFAULT_LIMIT }: ActivityLogProps
     : workflows.length >= limit;
 
   return (
-    <div role="dialog" aria-label="Activity log" style={{
-      position: "fixed", inset: 0, background: "#fff", zIndex: z.sheetStacked,
-      display: "flex", flexDirection: "column", padding: 16,
-    }}>
-      <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 8 }}>
-        <button onClick={onClose}>Close</button>
+    <div
+      role="dialog"
+      aria-label="Activity log"
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "var(--color-ov-bg)",
+        zIndex: z.sheetStacked,
+        display: "flex",
+        flexDirection: "column",
+        padding: 20,
+        fontFamily: "var(--font-sans)",
+        color: "var(--color-ov-text)",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          gap: 12,
+          alignItems: "center",
+          marginBottom: 12,
+          flexWrap: "wrap",
+        }}
+      >
+        <button
+          onClick={onClose}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            padding: "8px 14px",
+            background: "var(--color-ov-card)",
+            color: "var(--color-ov-text)",
+            border: "1px solid var(--color-ov-border)",
+            borderRadius: 8,
+            cursor: "pointer",
+            fontFamily: "var(--font-sans)",
+            fontSize: 14,
+            fontWeight: 700,
+          }}
+        >
+          {/* SVG chevron sized to the label's cap height — the Unicode ‹
+              glyph in Atkinson Hyperlegible Next sits above the baseline
+              and visually floats. Same workaround as BottomSheet.BackButton. */}
+          <svg
+            aria-hidden="true"
+            width="7"
+            height="11"
+            viewBox="0 0 9 15"
+            fill="none"
+            style={{ flexShrink: 0 }}
+          >
+            <path
+              d="M7.5 1.5L1.5 7.5L7.5 13.5"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          Close
+        </button>
+        <h1
+          style={{
+            margin: 0,
+            marginRight: 8,
+            fontFamily: "var(--font-sans)",
+            fontSize: 18,
+            fontWeight: 700,
+            color: "var(--color-ov-text)",
+          }}
+        >
+          Activity log
+        </h1>
         <RoleToggle role={role} onChange={setRole} />
         <ViewModeToggle viewMode={viewMode} onChange={setViewMode} />
         <div style={{ flex: 1 }} />
@@ -249,16 +363,41 @@ export function ActivityLog({ onClose, limit = DEFAULT_LIMIT }: ActivityLogProps
           else void performExport(req);
         }} />
       </div>
-      <FilterBar value={filters} patients={patients} onChange={setFilters} />
+      <FilterBar
+        value={filters}
+        patients={patients}
+        onChange={setFilters}
+        searchPlaceholder={searchPlaceholderForRole(role)}
+      />
       {truncated && (
-        <div data-testid="truncation-banner" role="status" style={{
-          background: "#fff3cd", color: "#664d03", border: "1px solid #ffe69c",
-          borderRadius: 4, padding: "6px 10px", margin: "4px 0", fontSize: 13,
-        }}>
+        <div
+          data-testid="truncation-banner"
+          role="status"
+          style={{
+            background: "var(--color-ov-card)",
+            color: "var(--color-ov-text)",
+            border: "1px solid var(--color-ov-border)",
+            borderLeft: "4px solid var(--color-ov-amber)",
+            borderRadius: 8,
+            padding: "10px 14px",
+            margin: "4px 0 8px",
+            fontFamily: "var(--font-sans)",
+            fontSize: 13,
+          }}
+        >
           Showing the most recent {limit.toLocaleString()} {viewMode === "events" ? "events" : "workflows"} for this filter. Older entries are not displayed — narrow the date range or add filters to see them.
         </div>
       )}
-      <div style={{ flex: 1, minHeight: 0 }}>
+      <div
+        style={{
+          flex: 1,
+          minHeight: 0,
+          background: "var(--color-ov-card)",
+          border: "1px solid var(--color-ov-border)",
+          borderRadius: 10,
+          overflow: "hidden",
+        }}
+      >
         {viewMode === "events"
           ? <EventTable records={records} columns={cols} />
           : <WorkflowTable workflows={workflows} />}
@@ -280,17 +419,32 @@ function ViewModeToggle({ viewMode, onChange }: { viewMode: ViewMode; onChange: 
     { id: "workflows", label: "Workflows" },
   ];
   return (
-    <div role="group" aria-label="Data source" style={{ display: "inline-flex", border: "1px solid #ccc", borderRadius: 4 }}>
-      {opts.map((o) => (
+    <div
+      role="group"
+      aria-label="Data source"
+      style={{
+        display: "inline-flex",
+        border: "1px solid var(--color-ov-border)",
+        borderRadius: 8,
+        overflow: "hidden",
+        background: "var(--color-ov-card)",
+      }}
+    >
+      {opts.map((o, i) => (
         <button
           key={o.id}
           aria-pressed={o.id === viewMode}
           onClick={() => onChange(o.id)}
           style={{
-            padding: "8px 12px", border: "none",
-            background: o.id === viewMode ? "#1976d2" : "transparent",
-            color: o.id === viewMode ? "#fff" : "#000",
+            padding: "8px 14px",
+            border: "none",
+            borderLeft: i === 0 ? "none" : "1px solid var(--color-ov-border)",
+            background: o.id === viewMode ? "var(--color-ov-patient)" : "transparent",
+            color: o.id === viewMode ? "#fff" : "var(--color-ov-text)",
             cursor: "pointer",
+            fontFamily: "var(--font-sans)",
+            fontSize: 14,
+            fontWeight: o.id === viewMode ? 700 : 400,
           }}
         >
           {o.label}

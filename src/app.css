@@ -25,6 +25,14 @@
   src: url("/fonts/source-serif-600-700.woff2") format("truetype");
 }
 
+@font-face {
+  font-family: "Atkinson Hyperlegible Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/atkinson-mono-400.woff2") format("woff2");
+}
+
 @theme {
   /* ── OwnVoice color tokens (light mode defaults) ── */
   --color-ov-bg: #FAFAF8;
@@ -55,11 +63,34 @@
   /* ── Font families ── */
   --font-sans: "Atkinson Hyperlegible Next", system-ui, sans-serif;
   --font-brand: "Source Serif 4", serif;
+  --font-mono: "Atkinson Hyperlegible Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
   /* ── Touch target sizing ── */
   --size-target: 64px;
   --size-target-critical: 80px;
   --spacing-target-gap: 12px;
+}
+
+/* ── Dark theme overrides ──
+   Tailwind v4 @theme is compile-time only; useTheme() toggles a `.dark`
+   class on <html>, so we re-declare the neutral tokens here for the dark
+   palette (mirrors tokens.ts `dark`). Component code that consumes
+   var(--color-ov-*) automatically tracks the active theme. */
+:root.dark,
+:root[data-theme="dark"] {
+  --color-ov-bg: #111113;
+  --color-ov-bg-secondary: #1C1C1E;
+  --color-ov-card: #1C1C1E;
+  --color-ov-text: #F5F5F5;
+  --color-ov-sub: #B0B7C0;
+  --color-ov-muted: #A0A7B0;
+  --color-ov-border: rgba(255, 255, 255, 0.08);
+  --color-ov-active-bg: rgba(255, 255, 255, 0.05);
+
+  /* Status colors used as text on the dark card need lighter shades to
+     hold AA contrast (the light-palette greens/ambers don't). */
+  --color-ov-provider: #34D399;
+  --color-ov-amber: #FBBF24;
 }
 
 /* ── Base resets ── */

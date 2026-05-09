@@ -2,16 +2,17 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import { Virtualizer, observeElementOffset, observeElementRect, elementScroll } from "@tanstack/virtual-core";
 import type { WorkflowState, StepRecord } from "../../audit/types";
 import { getWorkflowDetail } from "../../audit/queryWorkflows";
+import { formatLogTimestamp } from "./formatTime";
 
 export interface WorkflowTableProps {
   workflows: readonly WorkflowState[];
 }
 
 const STATUS_COLOR: Record<WorkflowState["status"], string> = {
-  running: "#1976d2",
-  completed: "#2e7d32",
-  failed: "#c62828",
-  abandoned: "#ed6c02",
+  running: "var(--color-ov-patient)",
+  completed: "var(--color-ov-provider)",
+  failed: "var(--color-ov-urgent)",
+  abandoned: "var(--color-ov-amber)",
 };
 
 function fmtDuration(start: number, end?: number): string {
@@ -110,7 +111,18 @@ export function WorkflowTable({ workflows }: WorkflowTableProps) {
   }
 
   if (workflows.length === 0) {
-    return <div style={{ padding: 24, color: "#666" }}>No workflows match current filters.</div>;
+    return (
+      <div
+        style={{
+          padding: 24,
+          color: "var(--color-ov-muted)",
+          fontFamily: "var(--font-sans)",
+          fontSize: 14,
+        }}
+      >
+        No workflows match current filters.
+      </div>
+    );
   }
 
   const v = virtRef.current;
@@ -124,9 +136,22 @@ export function WorkflowTable({ workflows }: WorkflowTableProps) {
 
   return (
     <div data-testid="workflow-table" style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      <div style={{ display: "flex", borderBottom: "2px solid #888", fontWeight: "bold", padding: "4px 8px", fontSize: 12 }}>
+      <div
+        style={{
+          display: "flex",
+          borderBottom: "1px solid var(--color-ov-border)",
+          fontFamily: "var(--font-sans)",
+          fontWeight: 700,
+          fontSize: 12,
+          letterSpacing: "0.04em",
+          textTransform: "uppercase",
+          color: "var(--color-ov-sub)",
+          padding: "8px 10px",
+          background: "var(--color-ov-card)",
+        }}
+      >
         <div style={{ flex: "0 0 24px" }} />
-        <div style={{ flex: "0 0 180px" }}>Started</div>
+        <div style={{ flex: "0 0 220px" }}>Started</div>
         <div style={{ flex: "0 0 100px" }}>Status</div>
         <div style={{ flex: "0 0 180px" }}>Workflow</div>
         <div style={{ flex: "0 0 80px" }}>Duration</div>
@@ -153,9 +178,10 @@ export function WorkflowTable({ workflows }: WorkflowTableProps) {
                   left: 0,
                   right: 0,
                   transform: `translateY(${item.start}px)`,
-                  fontFamily: "monospace",
+                  fontFamily: "var(--font-mono)",
                   fontSize: 12,
-                  borderBottom: "1px solid #eee",
+                  color: "var(--color-ov-text)",
+                  borderBottom: "1px solid var(--color-ov-border)",
                 }}
               >
                 <button
@@ -163,15 +189,17 @@ export function WorkflowTable({ workflows }: WorkflowTableProps) {
                   aria-expanded={isOpen}
                   aria-label={`Toggle ${w.name} details`}
                   style={{
-                    display: "flex", width: "100%", padding: "6px 8px",
+                    display: "flex", width: "100%", padding: "6px 10px",
                     background: "transparent", border: "none", cursor: "pointer",
-                    fontFamily: "inherit", fontSize: "inherit", textAlign: "left",
+                    fontFamily: "inherit", fontSize: "inherit", color: "inherit",
+                    textAlign: "left",
                     height: COLLAPSED_ROW_HEIGHT,
                     boxSizing: "border-box",
+                    alignItems: "center",
                   }}
                 >
                   <div style={{ flex: "0 0 24px" }}>{isOpen ? "▼" : "▶"}</div>
-                  <div style={{ flex: "0 0 180px" }}>{new Date(w.started_at).toLocaleString()}</div>
+                  <div style={{ flex: "0 0 220px" }}>{formatLogTimestamp(w.started_at)}</div>
                   <div style={{ flex: "0 0 100px", color: STATUS_COLOR[w.status], fontWeight: 600 }}>{w.status}</div>
                   <div style={{ flex: "0 0 180px" }}>{w.name}</div>
                   <div style={{ flex: "0 0 80px" }}>{fmtDuration(w.started_at, w.ended_at)}</div>
@@ -191,25 +219,64 @@ export function WorkflowTable({ workflows }: WorkflowTableProps) {
 
 function StepHistory({ steps }: { steps: StepRecord[] }) {
   if (steps.length === 0) {
-    return <div style={{ padding: "8px 32px", color: "#888" }}>No steps recorded.</div>;
+    return (
+      <div
+        style={{
+          padding: "8px 32px",
+          color: "var(--color-ov-muted)",
+          fontFamily: "var(--font-sans)",
+          fontSize: 13,
+        }}
+      >
+        No steps recorded.
+      </div>
+    );
   }
   return (
-    <div style={{ padding: "0 8px 8px 32px", background: "#fafafa" }}>
+    <div
+      style={{
+        padding: "0 10px 8px 34px",
+        background: "var(--color-ov-active-bg)",
+        fontFamily: "var(--font-mono)",
+      }}
+    >
       {steps.map((s, i) => (
-        <div key={s.span_id ?? i} data-testid="workflow-step" style={{ padding: "4px 0", borderBottom: i === steps.length - 1 ? "none" : "1px dashed #ddd" }}>
+        <div
+          key={s.span_id ?? i}
+          data-testid="workflow-step"
+          style={{
+            padding: "4px 0",
+            borderBottom: i === steps.length - 1 ? "none" : "1px dashed var(--color-ov-border)",
+          }}
+        >
           <div style={{ display: "flex", gap: 12 }}>
             <span style={{ flex: "0 0 200px" }}>{s.step_name}</span>
-            <span style={{ flex: "0 0 80px", color: s.status === "failed" ? "#c62828" : "#2e7d32", fontWeight: 600 }}>{s.status}</span>
+            <span
+              style={{
+                flex: "0 0 80px",
+                color: s.status === "failed" ? "var(--color-ov-urgent)" : "var(--color-ov-provider)",
+                fontWeight: 700,
+              }}
+            >
+              {s.status}
+            </span>
             <span style={{ flex: "0 0 80px" }}>{fmtDuration(s.started_at, s.ended_at)}</span>
             <span style={{ flex: "0 0 60px" }}>attempt {s.attempt}</span>
           </div>
           {s.error && (
-            <div style={{ color: "#c62828", paddingTop: 2 }}>
+            <div style={{ color: "var(--color-ov-urgent)", paddingTop: 2 }}>
               {s.error.type}: {s.error.message}
             </div>
           )}
           {s.result && (
-            <div style={{ color: "#555", paddingTop: 2, whiteSpace: "pre-wrap", wordBreak: "break-all" }}>
+            <div
+              style={{
+                color: "var(--color-ov-sub)",
+                paddingTop: 2,
+                whiteSpace: "pre-wrap",
+                wordBreak: "break-all",
+              }}
+            >
               {previewResult(s.result)}
             </div>
           )}

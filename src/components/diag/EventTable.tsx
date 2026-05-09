@@ -71,7 +71,18 @@ export function EventTable({ records, columns, rowHeight = DEFAULT_ROW_HEIGHT }:
   const totalSize = v?.getTotalSize() ?? 0;
 
   if (records.length === 0) {
-    return <div style={{ padding: 24, color: "#666" }}>No events match current filters.</div>;
+    return (
+      <div
+        style={{
+          padding: 24,
+          color: "var(--color-ov-muted)",
+          fontFamily: "var(--font-sans)",
+          fontSize: 14,
+        }}
+      >
+        No events match current filters.
+      </div>
+    );
   }
 
   // When the virtualizer hasn't measured yet (first render, jsdom with
@@ -89,7 +100,20 @@ export function EventTable({ records, columns, rowHeight = DEFAULT_ROW_HEIGHT }:
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      <div style={{ display: "flex", borderBottom: "2px solid #888", fontWeight: "bold", padding: "4px 8px" }}>
+      <div
+        style={{
+          display: "flex",
+          borderBottom: "1px solid var(--color-ov-border)",
+          fontFamily: "var(--font-sans)",
+          fontSize: 12,
+          fontWeight: 700,
+          letterSpacing: "0.04em",
+          textTransform: "uppercase",
+          color: "var(--color-ov-sub)",
+          padding: "8px 10px",
+          background: "var(--color-ov-card)",
+        }}
+      >
         {columns.map((c) => (
           <div key={c.id} style={{ flex: c.width ?? "1 1 0" }}>{c.header}</div>
         ))}
@@ -109,10 +133,12 @@ export function EventTable({ records, columns, rowHeight = DEFAULT_ROW_HEIGHT }:
                   height: rowHeight,
                   transform: `translateY(${item.start}px)`,
                   display: "flex",
-                  padding: "4px 8px",
-                  borderBottom: "1px solid #eee",
-                  fontFamily: "monospace",
+                  padding: "4px 10px",
+                  borderBottom: "1px solid var(--color-ov-border)",
+                  fontFamily: "var(--font-mono)",
                   fontSize: 12,
+                  color: "var(--color-ov-text)",
+                  alignItems: "center",
                 }}
               >
                 {columns.map((c) => (
