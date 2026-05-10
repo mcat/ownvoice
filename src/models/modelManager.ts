@@ -219,9 +219,11 @@ class ModelManager {
     return this.models[id].worker;
   }
 
-  /** Mark a model as ready */
+  /** Mark a model as ready. Clears any prior `error` string — once the
+   *  worker reports a successful (re)init, the previous failure is no
+   *  longer the active state. */
   setReady(id: ModelId): void {
-    this.updateModel(id, { status: "ready" });
+    this.updateModel(id, { status: "ready", error: undefined });
     console.log(`[OwnVoice] ${id} model ready`);
   }
 
@@ -230,9 +232,12 @@ class ModelManager {
     return this.models[id].status === "warm";
   }
 
-  /** Mark a model as warm — the worker has confirmed it can run inference. */
+  /** Mark a model as warm — the worker has confirmed it can run inference.
+   *  Clears any prior `error`: a successful warmup supersedes the previous
+   *  failure, otherwise consumers reading `getError` keep seeing the old
+   *  message after recovery. */
   markWarm(id: ModelId): void {
-    this.updateModel(id, { status: "warm" });
+    this.updateModel(id, { status: "warm", error: undefined });
     console.log(`[OwnVoice] ${id} model warm`);
     log({
       name: EVENT.MODEL_BOOT_COMPLETE,
@@ -244,6 +249,16 @@ class ModelManager {
   setError(id: ModelId, error: string): void {
     this.updateModel(id, { status: "error", error });
     console.error(`[OwnVoice] ${id} model error: ${error}`);
+  }
+
+  /** Clear the error state for a model without changing its lifecycle
+   *  status. Used by the in-header retry affordance: clearing the error
+   *  flips the patient pill from red ("Couldn't prepare your voice") to
+   *  the neutral "Using a temporary voice" state immediately on click,
+   *  so the tap registers visually even though the actual warmup is
+   *  asynchronous. The worker will re-`setError` if the retry fails. */
+  clearError(id: ModelId): void {
+    this.updateModel(id, { error: undefined });
   }
 
   /** Clear all model data from OPFS (for patient reset) */

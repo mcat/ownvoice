@@ -42,7 +42,14 @@ export function PatientVoiceStatus({ patient }: Props): JSX.Element | null {
         <button
           type="button"
           onClick={() => {
-            getModelManager().getWorker("tts")?.postMessage({ type: "warmup" });
+            // Clear the error first so the click registers visually:
+            // the pill flips from red error to the neutral "Using a
+            // temporary voice" state on the same render. Without this,
+            // `postMessage` is async and silent — the patient sees no
+            // change and assumes the tap missed.
+            const mgr = getModelManager();
+            mgr.clearError("tts");
+            mgr.getWorker("tts")?.postMessage({ type: "warmup" });
           }}
           style={recoveryButtonStyle()}
         >

@@ -113,6 +113,33 @@ describe("ModelManager — state transitions", () => {
     mgr.setError("stt", "Crashed");
     expect(mgr.isReady("stt")).toBe(false);
   });
+
+  it("setReady clears any prior error string", () => {
+    const mgr = getModelManager();
+    mgr.setError("tts", "boom");
+    mgr.setReady("tts");
+    const tts = mgr.getProgress().find((p) => p.model === "tts");
+    expect(tts?.status).toBe("ready");
+    expect(tts?.error).toBeUndefined();
+  });
+
+  it("markWarm clears any prior error string", () => {
+    const mgr = getModelManager();
+    mgr.setError("tts", "warmup failed");
+    mgr.markWarm("tts");
+    const tts = mgr.getProgress().find((p) => p.model === "tts");
+    expect(tts?.status).toBe("warm");
+    expect(tts?.error).toBeUndefined();
+  });
+
+  it("clearError removes the error string without changing status", () => {
+    const mgr = getModelManager();
+    mgr.setError("tts", "boom");
+    mgr.clearError("tts");
+    const tts = mgr.getProgress().find((p) => p.model === "tts");
+    expect(tts?.error).toBeUndefined();
+    expect(tts?.status).toBe("error");
+  });
 });
 
 // =============================================================================
