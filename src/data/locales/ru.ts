@@ -1046,6 +1046,9 @@ const ru: LocaleStrings = {
   "ui.voice_quality.tip.loudness": "Старайтесь сохранять одинаковую громкость.",
   "ui.voice_quality.tip.tilt_boomy": "Попробуйте отодвинуться немного дальше от микрофона.",
   "ui.voice_quality.tip.tilt_tinny": "Этот микрофон звучит тонко — попробуйте другой, если есть.",
+  "ui.provider.settings.voice_clone_status.extraction_failed": "Voice clone unavailable — using backup{fallback}",
+  "ui.provider.settings.voice_clone_status.retry_extraction_aria": "Retry extracting voice clone",
+  "ui.provider.settings.voice_clone_status.quality_suffix": "quality: {label}",
 };
 
 export default ru;

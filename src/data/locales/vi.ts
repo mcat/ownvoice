@@ -1078,6 +1078,9 @@ const vi: LocaleStrings = {
   "ui.voice_quality.tip.loudness": "Cố gắng giữ âm lượng đều.",
   "ui.voice_quality.tip.tilt_boomy": "Thử lùi ra xa micro thêm một chút.",
   "ui.voice_quality.tip.tilt_tinny": "Micro này nghe mỏng — thử cái khác nếu có.",
+  "ui.provider.settings.voice_clone_status.extraction_failed": "Voice clone unavailable — using backup{fallback}",
+  "ui.provider.settings.voice_clone_status.retry_extraction_aria": "Retry extracting voice clone",
+  "ui.provider.settings.voice_clone_status.quality_suffix": "quality: {label}",
 };
 
 export default vi;

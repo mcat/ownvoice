@@ -3,10 +3,11 @@ import type { AppSettings, Patient } from "../../../types";
 import type { SpeakerData } from "../../../models/types";
 import type { ThemeTokens, ThemeName } from "../../../theme/tokens";
 import { LANGS } from "../../../data/phrases";
-import { VoiceCapture } from "../../shared/VoiceCapture";
+import { VoiceCapture, type VoiceCloneStatus as ExtractionStatus } from "../../shared/VoiceCapture";
 import { FallbackVoicePicker } from "../../shared/FallbackVoicePicker";
 import { LanguagePicker } from "../../shared/LanguagePicker";
-import { VoiceCacheProgress } from "../VoiceCacheProgress";
+import { VoiceCloneStatus } from "../VoiceCloneStatus";
+import { useState, useRef } from "preact/hooks";
 import { useSettingsStore } from "../../../stores/settingsStore";
 import { t as resolvePhrase } from "../../../data/phraseRegistry";
 import { confirm } from "../../shared/ConfirmDialog";
@@ -30,6 +31,10 @@ export function PatientInfoSection({
 }: Props) {
   const isDark = theme === "dark";
   const caregiverLang = useSettingsStore((s) => s.cfg?.caregiverLang ?? "en");
+  const [extractionStatus, setExtractionStatus] = useState<ExtractionStatus>(
+    patient.speakerData ? "ready" : patient.hasVoice ? "model-loading" : "idle",
+  );
+  const retryRef = useRef<(() => void) | null>(null);
 
   function update(partial: Partial<Omit<Patient, "id">>) {
     useSettingsStore.getState().updatePatient(patient.id, partial);
@@ -130,21 +135,30 @@ export function PatientInfoSection({
             border: isDark ? "rgba(255,255,255,0.12)" : "#E5E7EB",
             cardBg: isDark ? "rgba(255,255,255,0.05)" : "#FFFFFF",
           }}
+          onCloneStatusChange={setExtractionStatus}
+          registerRetry={(fn) => { retryRef.current = fn; }}
         />
-        <VoiceCacheProgress
+        <VoiceCloneStatus
           speakerKey={`patient:${patient.id}`}
           speakerLabel={patient.name || "Patient"}
+          cloneStatus={extractionStatus}
+          speakerData={(patient.speakerData as SpeakerData | null | undefined) ?? null}
+          fallbackVoice={patient.fallbackVoice ?? null}
           cfg={cfg}
-          patientSpeakerData={patient.speakerData ?? null}
+          phraseCorpus="patient-core"
+          onRetryExtraction={() => retryRef.current?.()}
         />
-        {/* Separate row for the ~700-phrase pain matrix: runs only on GPU
-            (hardware gated in audioCacheRunner), so on WASM-only systems
-            this row is simply absent — the store has no entry to render. */}
-        <VoiceCacheProgress
+        {/* Pain matrix runs GPU-only (audioCacheRunner gates it). On WASM-
+            only systems no run is ever queued, so this row stays hidden.
+            The reconciler also short-circuits when speakerData is absent. */}
+        <VoiceCloneStatus
           speakerKey={`patient:${patient.id}:pain`}
-          speakerLabel="Pain descriptions"
+          speakerLabel="the pain matrix"
+          cloneStatus="ready"
+          speakerData={(patient.speakerData as SpeakerData | null | undefined) ?? null}
+          fallbackVoice={patient.fallbackVoice ?? null}
           cfg={cfg}
-          patientSpeakerData={patient.speakerData ?? null}
+          phraseCorpus="patient-pain"
         />
       </div>
 

@@ -1111,6 +1111,9 @@ const tl: LocaleStrings = {
   "ui.voice_quality.tip.loudness": "Subukang panatilihin ang pantay na lakas ng boses.",
   "ui.voice_quality.tip.tilt_boomy": "Subukang lumayo nang kaunti pa sa mikropono.",
   "ui.voice_quality.tip.tilt_tinny": "Mukhang manipis ang tunog ng mikropono — subukan ang iba kung mayroon.",
+  "ui.provider.settings.voice_clone_status.extraction_failed": "Voice clone unavailable — using backup{fallback}",
+  "ui.provider.settings.voice_clone_status.retry_extraction_aria": "Retry extracting voice clone",
+  "ui.provider.settings.voice_clone_status.quality_suffix": "quality: {label}",
 };
 
 export default tl;

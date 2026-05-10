@@ -1061,6 +1061,9 @@ const ko: LocaleStrings = {
   "ui.voice_quality.tip.loudness": "목소리 크기를 일정하게 유지해 보세요.",
   "ui.voice_quality.tip.tilt_boomy": "마이크에서 조금 더 떨어져 보세요.",
   "ui.voice_quality.tip.tilt_tinny": "이 마이크는 소리가 얇게 들립니다 — 다른 마이크가 있으면 사용해 보세요.",
+  "ui.provider.settings.voice_clone_status.extraction_failed": "Voice clone unavailable — using backup{fallback}",
+  "ui.provider.settings.voice_clone_status.retry_extraction_aria": "Retry extracting voice clone",
+  "ui.provider.settings.voice_clone_status.quality_suffix": "quality: {label}",
 };
 
 export default ko;

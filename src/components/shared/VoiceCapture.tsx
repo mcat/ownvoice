@@ -6,7 +6,6 @@ import { getModelManager } from "../../models/modelManager";
 import { getRecordingScript } from "../../data/recordingScripts";
 import { preprocessEnrollment } from "../../models/enrollmentAudio";
 import { useModels } from "../../hooks/useModels";
-import { useThrottledText } from "../../hooks/useThrottledText";
 import { friendlyVoiceError } from "../../data/friendlyError";
 import { scoreVoiceSample } from "../../models/voiceQuality";
 import { QualityBadge } from "./QualityBadge";
@@ -50,6 +49,18 @@ export interface VoiceCaptureProps {
     border?: string;
     cardBg?: string;
   };
+  /**
+   * Subscribed by the parent so it can render the steady-state status row
+   * (`<VoiceCloneStatus>`) below the captured-voice card. Fires on every
+   * extraction-lifecycle transition (idle/extracting/model-loading/ready/failed).
+   */
+  onCloneStatusChange?: (status: VoiceCloneStatus) => void;
+  /**
+   * Registers this VoiceCapture's `retryEmbedding` so the parent's
+   * `<VoiceCloneStatus>` Retry button can invoke it. Called once on mount
+   * and once with `null` on unmount.
+   */
+  registerRetry?: (fn: (() => void) | null) => void;
 }
 
 const RECORD_DURATION = 15;
@@ -234,6 +245,8 @@ export function VoiceCapture({
   locale,
   color,
   savedQuality,
+  onCloneStatusChange,
+  registerRetry,
 }: VoiceCaptureProps) {
   const caregiverLang = useSettingsStore((s) => s.cfg?.caregiverLang ?? "en");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -269,30 +282,17 @@ export function VoiceCapture({
     hasEmbedding ? "ready" : hasVoice ? "model-loading" : "idle",
   );
 
-  // Readiness signals — used by the pre-capture hint and the deferred-save
-  // status copy. `isWarm("tts")` flips true when the speech encoder has run
-  // its warmup pass; until then, captures are saved but cloning is deferred.
-  const { isWarm, humanCountdown, isAlmostReady } = useModels();
-  const ttsWarm = isWarm("tts");
-  const countdown = humanCountdown("tts");
-  const ttsAlmost = isAlmostReady("tts");
+  // Broadcast extraction-lifecycle changes to the parent so it can render
+  // the steady-state status row outside this card.
+  useEffect(() => {
+    onCloneStatusChange?.(cloneStatus);
+  }, [cloneStatus, onCloneStatusChange]);
 
-  // Compute the "saving" status text + a category key for throttling.
-  // The badge re-renders on every progress event (countdown ticks) but
-  // we only want screen-reader announcements at most once every 5s,
-  // unless the category changes (e.g. saving → almost-ready).
-  const savingCategory =
-    ttsWarm || ttsAlmost ? "almost" : countdown ? "saving-cd" : "saving";
-  const savingText =
-    ttsWarm || ttsAlmost
-      ? resolvePhrase("ui.readiness.voice_capture.saving_almost", caregiverLang)
-      : countdown
-        ? resolvePhrase(
-            "ui.readiness.voice_capture.saving_with_countdown",
-            caregiverLang,
-          ).replace("{countdown}", countdown)
-        : resolvePhrase("ui.readiness.voice_capture.saving", caregiverLang);
-  const announcedSavingText = useThrottledText(savingText, savingCategory);
+  // Readiness signal for the pre-capture hint. The deferred-save countdown
+  // copy that used these helpers moved to <VoiceCloneStatus>, which is the
+  // single source of truth for the model-loading line now.
+  const { isWarm } = useModels();
+  const ttsWarm = isWarm("tts");
 
   // When the TTS model becomes warm, retry embedding extraction if we have
   // audio but no embedding.
@@ -428,6 +428,15 @@ export function VoiceCapture({
     borderRadius: 10,
     gap: 12,
   } as const;
+
+  // Register retry with the parent (so the steady-state row's Retry button
+  // can invoke it). Effect re-runs only on identity change of the callback,
+  // since `retryEmbedding` is recreated each render but always closes over
+  // the current state via React refs.
+  useEffect(() => {
+    registerRetry?.(() => { void retryEmbedding(); });
+    return () => registerRetry?.(null);
+  }, [registerRetry]);
 
   // --- Retry embedding extraction (when model loads after initial capture) ---
   async function retryEmbedding() {
@@ -734,75 +743,6 @@ export function VoiceCapture({
     />
   );
 
-  // --- Clone status badge ---
-  // Informational tier: smaller than interactive 44px buttons but still
-  // substantial. Reads as "one notch below a button", not "three notches".
-  function CloneStatusBadge() {
-    const base = {
-      fontSize: 14,
-      fontWeight: 600,
-      borderRadius: 10,
-      padding: "8px 14px",
-      minHeight: 36,
-      display: "inline-flex",
-      alignItems: "center",
-      gap: 8,
-    } as const;
-
-    if (cloneStatus === "extracting") {
-      return (
-        <span style={{ ...base, color: "#1E40AF", background: "#DBEAFE" }}>
-          <span aria-hidden="true">{"\u23F3"}</span> {resolvePhrase("ui.provider.voice_capture.creating", caregiverLang)}
-        </span>
-      );
-    }
-    if (cloneStatus === "model-loading") {
-      // Visible text updates on every render (countdown ticking). The
-      // aria-live announcement is throttled separately via
-      // announcedSavingText so screen readers aren't spammed with
-      // every-second updates \u2014 see useThrottledText.
-      return (
-        <span
-          style={{ ...base, color: "#78350F", background: "#FEF3C7" }}
-        >
-          <span aria-hidden="true">{"\u23F3"}</span> {savingText}
-          <span
-            role="status"
-            aria-live="polite"
-            style={{
-              position: "absolute",
-              width: 1,
-              height: 1,
-              padding: 0,
-              margin: -1,
-              overflow: "hidden",
-              clip: "rect(0,0,0,0)",
-              whiteSpace: "nowrap",
-              border: 0,
-            }}
-          >
-            {announcedSavingText}
-          </span>
-        </span>
-      );
-    }
-    // `cloneStatus === "ready"` only means the speaker embedding was
-    // extracted from the 15 s sample — pre-generated audio still hasn't
-    // been built for any phrases. Until the VoiceCacheProgress run
-    // reaches "done", taps fall through to Web Speech, so a green
-    // "Voice clone active" pill here would lie. The VoiceCacheProgress
-    // row below is the single source of truth: queued / preparing /
-    // "Voice clone active — all N phrases ready".
-    if (cloneStatus === "failed") {
-      return (
-        <span style={{ ...base, color: "#7F1D1D", background: "#FEE2E2" }}>
-          <span aria-hidden="true">{"\u26A0\uFE0F"}</span>{" "}
-          {resolvePhrase("ui.readiness.voice_capture.failed_message", caregiverLang)}
-        </span>
-      );
-    }
-    return null;
-  }
 
   // ===================== RENDER STATES =====================
 
@@ -1366,26 +1306,40 @@ export function VoiceCapture({
             {resolvePhrase("ui.provider.voice_capture.remove", caregiverLang)}
           </Btn>
         </div>
-        {/* Clone status indicator — live region so transitions are announced.
-            When failed, the badge + Retry + friendly subtitle below are the
-            complete UX; we deliberately do NOT also render <ErrorRow> to
-            avoid duplicate red-on-red styling for the same failure. */}
-        <div
-          aria-live="polite"
-          style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: btnFloor.gap, flexWrap: "wrap" }}>
-            <CloneStatusBadge />
-            {savedQuality && (
-              <QualityBadge quality={savedQuality} locale={caregiverLang} compact />
-            )}
-            {cloneStatus === "failed" && (
+        {/* Saved-state quality badge stays here (it's a property of the
+            captured sample). Clone-status / retry / fallback messaging
+            lives in the parent's <VoiceCloneStatus> row, so the caregiver
+            has a single source of truth for "what will be used right now". */}
+        {savedQuality && (
+          <div style={{ marginTop: 10 }}>
+            <QualityBadge quality={savedQuality} locale={caregiverLang} compact />
+          </div>
+        )}
+        {/* Inline failure UI — shown when the parent has NOT taken over
+            clone-status rendering (Setup wizard, provider rows in step 3).
+            Once the parent registers a retry callback (PatientInfoSection),
+            it owns the badge + Retry, so this stays hidden to avoid two
+            competing affordances. */}
+        {cloneStatus === "failed" && !registerRetry && (
+          <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: btnFloor.gap, flexWrap: "wrap" }}>
+              <span
+                role="status"
+                aria-live="polite"
+                style={{
+                  fontSize: 14, fontWeight: 600, color: "#7F1D1D",
+                  background: "#FEE2E2", borderRadius: 10, padding: "8px 14px",
+                  minHeight: 36, display: "inline-flex", alignItems: "center", gap: 8,
+                }}
+              >
+                <span aria-hidden="true">{"⚠️"}</span>{" "}
+                {resolvePhrase("ui.readiness.voice_capture.failed_message", caregiverLang)}
+              </span>
               <Btn
                 onClick={retryEmbedding}
                 aria-label={resolvePhrase("ui.readiness.voice_capture.failed_action", caregiverLang)}
                 style={{
                   background: "none",
-                  // red-600 gives 4.83:1 on white; red-300 was 1.90:1.
                   border: "1px solid #DC2626",
                   minHeight: btnFloor.minHeight, minWidth: btnFloor.minWidth,
                   borderRadius: btnFloor.borderRadius,
@@ -1395,19 +1349,19 @@ export function VoiceCapture({
               >
                 {resolvePhrase("ui.readiness.voice_capture.failed_action", caregiverLang)}
               </Btn>
+            </div>
+            {error && (
+              <p style={{ margin: 0, fontSize: 14, lineHeight: 1.4, color: c.sub }}>
+                {friendlyVoiceError(error, caregiverLang)}
+              </p>
             )}
           </div>
-          {cloneStatus === "failed" && error && (
-            <p style={{
-              margin: 0,
-              fontSize: 14,
-              lineHeight: 1.4,
-              color: c.sub,
-            }}>
-              {friendlyVoiceError(error, caregiverLang)}
-            </p>
-          )}
-        </div>
+        )}
+        {cloneStatus === "failed" && registerRetry && error && (
+          <p style={{ margin: "8px 0 0", fontSize: 14, lineHeight: 1.4, color: c.sub }}>
+            {friendlyVoiceError(error, caregiverLang)}
+          </p>
+        )}
       </div>
     );
   }

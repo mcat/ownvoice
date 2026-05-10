@@ -1042,6 +1042,9 @@ const es: LocaleStrings = {
   "ui.voice_quality.tip.loudness": "Intenta mantener un volumen constante.",
   "ui.voice_quality.tip.tilt_boomy": "Aléjate un poco más del micrófono.",
   "ui.voice_quality.tip.tilt_tinny": "Este micrófono suena delgado — prueba con otro si tienes.",
+  "ui.provider.settings.voice_clone_status.extraction_failed": "Voice clone unavailable — using backup{fallback}",
+  "ui.provider.settings.voice_clone_status.retry_extraction_aria": "Retry extracting voice clone",
+  "ui.provider.settings.voice_clone_status.quality_suffix": "quality: {label}",
 };
 
 export default es;

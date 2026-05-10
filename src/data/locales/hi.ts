@@ -1041,6 +1041,9 @@ const hi: LocaleStrings = {
   "ui.voice_quality.tip.loudness": "अपनी आवाज़ का स्तर एक जैसा रखने की कोशिश करें।",
   "ui.voice_quality.tip.tilt_boomy": "माइक्रोफ़ोन से थोड़ा और दूर हटें।",
   "ui.voice_quality.tip.tilt_tinny": "यह माइक पतली आवाज़ देता है — अगर कोई और हो तो आज़माएँ।",
+  "ui.provider.settings.voice_clone_status.extraction_failed": "Voice clone unavailable — using backup{fallback}",
+  "ui.provider.settings.voice_clone_status.retry_extraction_aria": "Retry extracting voice clone",
+  "ui.provider.settings.voice_clone_status.quality_suffix": "quality: {label}",
 };
 
 export default hi;
