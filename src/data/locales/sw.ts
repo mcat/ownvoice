@@ -61,7 +61,7 @@ const sw: LocaleStrings = {
   "needs.hygiene.feet": "Niosheni miguu",
   "needs.hygiene.hair": "Niosheni nywele",
   "needs.hygiene.hands": "Niosheni mikono",
-  "needs.hygiene.mouth": "Usafi wa kinywa",
+  "needs.hygiene.mouth": "Nisafisheni kinywa",
   "needs.hygiene.nose": "Nifutieni pua",
   "needs.hygiene.teeth": "Nipigeni mswaki",
   "needs.hygiene.wound": "Nibadilishieni kitambaa cha jeraha",

@@ -89,7 +89,7 @@ const pl: LocaleStrings = {
   "needs.hygiene.feet": "Proszę umyć mi stopy",
   "needs.hygiene.hair": "Proszę umyć mi włosy",
   "needs.hygiene.hands": "Proszę umyć mi ręce",
-  "needs.hygiene.mouth": "Pielęgnacja jamy ustnej",
+  "needs.hygiene.mouth": "Proszę zadbać o moją jamę ustną",
   "needs.hygiene.nose": "Proszę wytrzeć mi nos",
   "needs.hygiene.teeth": "Proszę umyć mi zęby",
   "needs.hygiene.wound": "Proszę zmienić mi opatrunek",

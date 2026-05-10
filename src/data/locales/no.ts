@@ -61,7 +61,7 @@ const no: LocaleStrings = {
   "needs.hygiene.feet": "Vask føttene mine",
   "needs.hygiene.hair": "Vask håret mitt",
   "needs.hygiene.hands": "Vask hendene mine",
-  "needs.hygiene.mouth": "Munnstell",
+  "needs.hygiene.mouth": "Stell munnen min",
   "needs.hygiene.nose": "Tørk nesen min",
   "needs.hygiene.teeth": "Puss tennene mine",
   "needs.hygiene.wound": "Bytt bandasjen min",

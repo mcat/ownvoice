@@ -61,7 +61,7 @@ const nl: LocaleStrings = {
   "needs.hygiene.feet": "Was mijn voeten",
   "needs.hygiene.hair": "Was mijn haar",
   "needs.hygiene.hands": "Was mijn handen",
-  "needs.hygiene.mouth": "Mondverzorging",
+  "needs.hygiene.mouth": "Verzorg mijn mond",
   "needs.hygiene.nose": "Veeg mijn neus af",
   "needs.hygiene.teeth": "Poets mijn tanden",
   "needs.hygiene.wound": "Vervang mijn verband",

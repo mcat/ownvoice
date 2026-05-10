@@ -62,7 +62,7 @@ const pt: LocaleStrings = {
   "needs.hygiene.feet": "Lavem meus pés",
   "needs.hygiene.hair": "Lavem meu cabelo",
   "needs.hygiene.hands": "Lavem minhas mãos",
-  "needs.hygiene.mouth": "Higiene bucal",
+  "needs.hygiene.mouth": "Façam minha higiene bucal",
   "needs.hygiene.nose": "Limpem meu nariz",
   "needs.hygiene.teeth": "Escovem meus dentes",
   "needs.hygiene.wound": "Troquem o curativo",

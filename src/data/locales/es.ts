@@ -61,7 +61,7 @@ const es: LocaleStrings = {
   "needs.hygiene.feet": "Lávenme los pies",
   "needs.hygiene.hair": "Lávenme el pelo",
   "needs.hygiene.hands": "Lávenme las manos",
-  "needs.hygiene.mouth": "Aseo bucal",
+  "needs.hygiene.mouth": "Háganme aseo bucal",
   "needs.hygiene.nose": "Límpienme la nariz",
   "needs.hygiene.teeth": "Cepíllenme los dientes",
   "needs.hygiene.wound": "Cambien mi vendaje",

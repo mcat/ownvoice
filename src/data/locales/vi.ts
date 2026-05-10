@@ -61,7 +61,7 @@ const vi: LocaleStrings = {
   "needs.hygiene.feet": "Rửa chân giúp tôi",
   "needs.hygiene.hair": "Gội đầu giúp tôi",
   "needs.hygiene.hands": "Rửa tay giúp tôi",
-  "needs.hygiene.mouth": "Vệ sinh răng miệng",
+  "needs.hygiene.mouth": "Vệ sinh miệng giúp tôi",
   "needs.hygiene.nose": "Lau mũi giúp tôi",
   "needs.hygiene.teeth": "Đánh răng giúp tôi",
   "needs.hygiene.wound": "Thay băng giúp tôi",

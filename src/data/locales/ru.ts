@@ -61,7 +61,7 @@ const ru: LocaleStrings = {
   "needs.hygiene.feet": "Помойте мне ноги",
   "needs.hygiene.hair": "Помойте мне волосы",
   "needs.hygiene.hands": "Помойте мне руки",
-  "needs.hygiene.mouth": "Уход за полостью рта",
+  "needs.hygiene.mouth": "Помогите мне с уходом за ртом",
   "needs.hygiene.nose": "Вытрите мне нос",
   "needs.hygiene.teeth": "Почистите мне зубы",
   "needs.hygiene.wound": "Поменяйте мне повязку",

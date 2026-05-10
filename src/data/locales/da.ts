@@ -61,7 +61,7 @@ const da: LocaleStrings = {
   "needs.hygiene.feet": "Vask mine fødder",
   "needs.hygiene.hair": "Vask mit hår",
   "needs.hygiene.hands": "Vask mine hænder",
-  "needs.hygiene.mouth": "Mundpleje",
+  "needs.hygiene.mouth": "Plej min mund",
   "needs.hygiene.nose": "Tør min næse",
   "needs.hygiene.teeth": "Børst mine tænder",
   "needs.hygiene.wound": "Skift min forbinding",

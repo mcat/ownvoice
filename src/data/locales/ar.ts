@@ -61,7 +61,7 @@ const ar: LocaleStrings = {
   "needs.hygiene.feet": "اغسلوا قدميّ",
   "needs.hygiene.hair": "اغسلوا شعري",
   "needs.hygiene.hands": "اغسلوا يديّ",
-  "needs.hygiene.mouth": "العناية بالفم",
+  "needs.hygiene.mouth": "اعتنوا بفمي",
   "needs.hygiene.nose": "امسحوا أنفي",
   "needs.hygiene.teeth": "نظّفوا أسناني",
   "needs.hygiene.wound": "غيّروا الضمادة",

@@ -61,7 +61,7 @@ const ja: LocaleStrings = {
   "needs.hygiene.feet": "足を洗ってください",
   "needs.hygiene.hair": "髪を洗ってください",
   "needs.hygiene.hands": "手を拭いてください",
-  "needs.hygiene.mouth": "口腔ケア",
+  "needs.hygiene.mouth": "口腔ケアをしてください",
   "needs.hygiene.nose": "鼻を拭いてください",
   "needs.hygiene.teeth": "歯を磨いてください",
   "needs.hygiene.wound": "ガーゼを交換してください",

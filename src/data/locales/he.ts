@@ -68,7 +68,7 @@ const he: LocaleStrings = {
   "needs.hygiene.feet": "תשטפו לי את הרגליים",
   "needs.hygiene.hair": "תשטפו לי את השיער",
   "needs.hygiene.hands": "תשטפו לי את הידיים",
-  "needs.hygiene.mouth": "טיפול פה",
+  "needs.hygiene.mouth": "תטפלו לי בפה",
   "needs.hygiene.nose": "תנגבו לי את האף",
   "needs.hygiene.teeth": "תצחצחו לי שיניים",
   "needs.hygiene.wound": "תחליפו לי את החבישה",
