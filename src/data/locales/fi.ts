@@ -1031,9 +1031,9 @@ const fi: LocaleStrings = {
   "ui.voice_quality.tip.loudness": "Yritä pitää äänenvoimakkuus tasaisena.",
   "ui.voice_quality.tip.tilt_boomy": "Siirry vähän kauemmas mikrofonista.",
   "ui.voice_quality.tip.tilt_tinny": "Tämä mikrofoni kuulostaa ohuelta — kokeile toista, jos sinulla on.",
-  "ui.provider.settings.voice_clone_status.extraction_failed": "Voice clone unavailable — using backup{fallback}",
-  "ui.provider.settings.voice_clone_status.retry_extraction_aria": "Retry extracting voice clone",
-  "ui.provider.settings.voice_clone_status.quality_suffix": "quality: {label}",
+  "ui.provider.settings.voice_clone_status.extraction_failed": "Äänikloonia ei ole saatavilla — käytetään varaääntä{fallback}",
+  "ui.provider.settings.voice_clone_status.retry_extraction_aria": "Yritä äänikloonin purkamista uudelleen",
+  "ui.provider.settings.voice_clone_status.quality_suffix": "laatu: {label}",
 };
 
 export default fi;

@@ -1056,9 +1056,9 @@ const ms: LocaleStrings = {
   "ui.voice_quality.tip.loudness": "Cuba kekalkan kelantangan suara yang sekata.",
   "ui.voice_quality.tip.tilt_boomy": "Cuba jauhkan sedikit lagi dari mikrofon.",
   "ui.voice_quality.tip.tilt_tinny": "Mikrofon ini berbunyi nipis — cuba yang lain jika ada.",
-  "ui.provider.settings.voice_clone_status.extraction_failed": "Voice clone unavailable — using backup{fallback}",
-  "ui.provider.settings.voice_clone_status.retry_extraction_aria": "Retry extracting voice clone",
-  "ui.provider.settings.voice_clone_status.quality_suffix": "quality: {label}",
+  "ui.provider.settings.voice_clone_status.extraction_failed": "Klon suara tidak tersedia — menggunakan suara sandaran{fallback}",
+  "ui.provider.settings.voice_clone_status.retry_extraction_aria": "Cuba semula pengekstrakan klon suara",
+  "ui.provider.settings.voice_clone_status.quality_suffix": "kualiti: {label}",
 };
 
 export default ms;

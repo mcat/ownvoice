@@ -1061,9 +1061,9 @@ const da: LocaleStrings = {
   "ui.voice_quality.tip.loudness": "Prøv at holde lydstyrken jævn.",
   "ui.voice_quality.tip.tilt_boomy": "Prøv at flytte dig lidt længere væk fra mikrofonen.",
   "ui.voice_quality.tip.tilt_tinny": "Mikrofonen lyder tynd — prøv en anden, hvis du har én.",
-  "ui.provider.settings.voice_clone_status.extraction_failed": "Voice clone unavailable — using backup{fallback}",
-  "ui.provider.settings.voice_clone_status.retry_extraction_aria": "Retry extracting voice clone",
-  "ui.provider.settings.voice_clone_status.quality_suffix": "quality: {label}",
+  "ui.provider.settings.voice_clone_status.extraction_failed": "Stemmeklon ikke tilgængelig — bruger backup{fallback}",
+  "ui.provider.settings.voice_clone_status.retry_extraction_aria": "Prøv igen at udtrække stemmeklon",
+  "ui.provider.settings.voice_clone_status.quality_suffix": "kvalitet: {label}",
 };
 
 export default da;
