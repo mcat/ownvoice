@@ -545,7 +545,6 @@ const vi: LocaleStrings = {
   "ui.patient.header.name_fallback": "Bệnh nhân",
   "ui.patient.header.bed_prefix": "Giường ",
   "ui.dual.nav.wishes": "Mong muốn",
-  "ui.dual.nav.listen": "Nghe",
   "ui.provider.nav.staff": "Nhân viên",
   "ui.provider.nav.switch_patient": "Đổi bệnh nhân",
   "ui.provider.nav.settings": "Cài đặt",
@@ -585,10 +584,6 @@ const vi: LocaleStrings = {
   "ui.patient.builder.message_aria": "Tin nhắn của bạn",
   "ui.patient.builder.undo": "Hoàn tác từ cuối",
   "ui.patient.builder.clear": "Xóa tin nhắn",
-  "ui.patient.builder.refresh_ai": "Làm mới gợi ý AI",
-  "ui.patient.builder.ai_thinking": "AI đang suy nghĩ...",
-  "ui.patient.builder.no_ai_suggestions":
-    "Không có gợi ý AI. Chạm làm mới để thử lại.",
   "ui.patient.builder.ready":
     "Tin nhắn đã sẵn sàng. Chạm Nói để gửi.",
   "ui.patient.builder.speak": "Nói",
@@ -612,7 +607,6 @@ const vi: LocaleStrings = {
   "ui.provider.speaking_as_aria": "Speaking as",
   "ui.provider.section_aria": "Phrase category",
   "ui.provider.phrases_aria": "{section} phrases",
-  "ui.provider.listen.capture_aria": "Voice capture",
   "ui.provider.setup.progress_aria": "Setup progress",
   "ui.provider.settings.aria_label": "Settings",
   "ui.provider.settings.reset.aria_label": "Reset actions",
@@ -622,24 +616,6 @@ const vi: LocaleStrings = {
   "ui.provider.fallback_voice.all_aria": "Available voices",
   "ui.provider.pin_gate.keypad_aria": "PIN keypad",
 
-  // ── UI chrome: ListenPanel ─────────────────────────────────────
-  "ui.provider.listen.title": "Nghe",
-  "ui.provider.listen.stop_aria": "Dừng nghe",
-  "ui.provider.listen.start_aria": "Chạm để bắt đầu nghe",
-  "ui.provider.listen.listening": "Đang nghe...",
-  "ui.provider.listen.transcribing": "Đang chép...",
-  "ui.provider.listen.listening_placeholder":
-    "Đang lắng nghe giọng nói...",
-  "ui.provider.listen.transcribing_placeholder":
-    "Đang chép lại giọng nói...",
-  "ui.provider.listen.type_placeholder":
-    "Hoặc gõ những gì đã nói...",
-  "ui.provider.listen.transcript_aria": "Bản ghi",
-  "ui.provider.listen.audio_level_aria": "Mức âm thanh của micrô",
-  "ui.provider.listen.add_as":
-    "Thêm vào cuộc trò chuyện với tư cách {prov}",
-  "ui.provider.listen.privacy_notice":
-    "Trên thiết bị · Whisper · không có âm thanh rời khỏi thiết bị",
 
   // ── UI chrome: Speaking overlay ────────────────────────────────
   "ui.dual.speaking.aria_label": "Đang nói: {text}",
@@ -1049,12 +1025,6 @@ const vi: LocaleStrings = {
   "ui.provider.nav.lock_now_aria": "Lock staff session now",
 
   // ── Model readiness (TODO: translate) ──
-  "ui.readiness.listen.not_ready": "Getting ready to listen…",
-  "ui.readiness.listen.with_countdown": "Getting ready to listen — {countdown}",
-  "ui.readiness.listen.almost": "Almost ready…",
-  "ui.readiness.listen.ready": "Tap to listen",
-  "ui.readiness.listen.failed_message": "Couldn't get ready",
-  "ui.readiness.listen.failed_action": "Try again",
   "ui.readiness.voice_capture.precapture_hint": "Voice will start as soon as it's ready",
   "ui.readiness.voice_capture.saving": "Preparing your voice…",
   "ui.readiness.voice_capture.saving_with_countdown": "Preparing your voice — {countdown} remaining",

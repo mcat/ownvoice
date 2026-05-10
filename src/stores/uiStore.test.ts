@@ -23,7 +23,6 @@ describe("useUIStore", () => {
       const s = useUIStore.getState();
       expect(s.wishesOpen).toBe(false);
       expect(s.providerOpen).toBe(false);
-      expect(s.listenOpen).toBe(false);
       expect(s.settingsOpen).toBe(false);
       expect(s.pinEntryOpen).toBe(false);
       expect(s.switchSheetOpen).toBe(false);
@@ -84,7 +83,6 @@ describe("useUIStore", () => {
     const overlays = [
       ["wishes", "wishesOpen"],
       ["provider", "providerOpen"],
-      ["listen", "listenOpen"],
       ["settings", "settingsOpen"],
       ["pinEntry", "pinEntryOpen"],
       ["switch", "switchSheetOpen"],
@@ -110,7 +108,6 @@ describe("useUIStore", () => {
       const { openOverlay, closeAllOverlays } = useUIStore.getState();
       openOverlay("wishes");
       openOverlay("provider");
-      openOverlay("listen");
       openOverlay("settings");
       openOverlay("pinEntry");
       openOverlay("switch");
@@ -121,7 +118,6 @@ describe("useUIStore", () => {
       const s = useUIStore.getState();
       expect(s.wishesOpen).toBe(false);
       expect(s.providerOpen).toBe(false);
-      expect(s.listenOpen).toBe(false);
       expect(s.settingsOpen).toBe(false);
       expect(s.pinEntryOpen).toBe(false);
       expect(s.switchSheetOpen).toBe(false);
@@ -213,7 +209,6 @@ describe("useUIStore", () => {
       expect(after.builderOpen).toBe(false);
       expect(after.wishesOpen).toBe(false);
       expect(after.providerOpen).toBe(false);
-      expect(after.listenOpen).toBe(false);
       expect(after.settingsOpen).toBe(false);
       expect(after.pinEntryOpen).toBe(false);
       expect(after.switchSheetOpen).toBe(false);

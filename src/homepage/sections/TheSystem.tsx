@@ -65,9 +65,6 @@ export function TheSystem() {
             </CiteLink>
             .
           </Pillar>
-          <Pillar title="Listen">
-            On-device Whisper STT captures provider speech for the patient.
-          </Pillar>
         </div>
       </div>
     </section>

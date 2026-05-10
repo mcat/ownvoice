@@ -16,11 +16,8 @@ const mockGetKeyed = vi.fn(
       { text: "Please", key: "suggest.start.please" },
     ] as SuggestionItem[]),
 );
-const mockGetLLM = vi.fn((..._args: unknown[]) => Promise.resolve([] as string[]));
-
 vi.mock("../../data/suggestion-trees", () => ({
   getKeyedContextualSuggestions: (...args: unknown[]) => mockGetKeyed(...args),
-  getLLMSuggestions: (...args: unknown[]) => mockGetLLM(...args),
 }));
 
 vi.mock("../../stores/settingsStore", () => ({
@@ -50,7 +47,6 @@ describe("SentenceBuilder", () => {
         { text: "Please", key: "suggest.start.please" },
       ] as SuggestionItem[]),
     );
-    mockGetLLM.mockImplementation(() => Promise.resolve([]));
   });
 
   it("shows an editable input with placeholder", async () => {
@@ -191,7 +187,6 @@ describe("SentenceBuilder — token state", () => {
         { text: "I feel", key: "suggest.start.i_feel" },
       ] as SuggestionItem[]),
     );
-    mockGetLLM.mockImplementation(() => Promise.resolve([]));
   });
 
   it("curated chip tap produces a key token (not free)", async () => {
@@ -284,7 +279,6 @@ describe("SentenceBuilder — bilingual speak", () => {
         { text: "I am", key: "suggest.start.i_am" },
       ] as SuggestionItem[]),
     );
-    mockGetLLM.mockImplementation(() => Promise.resolve([]));
   });
 
   it("calls onSend with gloss undefined when patientLang === caregiverLang", async () => {
@@ -317,7 +311,6 @@ describe("SentenceBuilder — expressive emoji", () => {
         { text: "a blanket", key: "suggest.i_need.blanket" },
       ] as SuggestionItem[]),
     );
-    mockGetLLM.mockImplementation(() => Promise.resolve([]));
   });
 
   it("renders trailing emoji on a curated chip whose text has a keyword match", async () => {
@@ -378,117 +371,5 @@ describe("SentenceBuilder — expressive emoji", () => {
 
     const [, opts] = onSend.mock.calls[0];
     expect(opts?.icon).toBe("🛏️");
-  });
-
-  it("renders trailing emoji on LLM chips when keywords match", async () => {
-    mockGetLLM.mockImplementation(() =>
-      Promise.resolve(["please help me", "rest now"]),
-    );
-
-    render(<SentenceBuilder {...baseProps} />);
-    const input = screen.getByRole("textbox", { name: "Your message" });
-    fireEvent.input(input, { target: { value: "I want to" } });
-
-    await waitFor(() => {
-      // "help" → 🆘 (tier 20); "rest" → 😴 (tier 30 — rest is grouped
-      // with tired/sleep as a fatigue-state).
-      expect(screen.getByText("please help me 🆘")).toBeInTheDocument();
-      expect(screen.getByText("rest now 😴")).toBeInTheDocument();
-    });
-  });
-});
-
-// ── LLM row ─────────────────────────────────────────────────────
-
-describe("SentenceBuilder — LLM row", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mockGetKeyed.mockImplementation(() =>
-      Promise.resolve([
-        { text: "I am", key: "suggest.start.i_am" },
-        { text: "I feel", key: "suggest.start.i_feel" },
-      ] as SuggestionItem[]),
-    );
-  });
-
-  it("shows LLM suggestions in a separate row with AI badge", async () => {
-    mockGetLLM.mockImplementation(() =>
-      Promise.resolve(["rest now", "go home", "see the doctor"]),
-    );
-
-    render(<SentenceBuilder {...baseProps} />);
-
-    // Type something to trigger LLM
-    const input = screen.getByRole("textbox", { name: "Your message" });
-    fireEvent.input(input, { target: { value: "I want to" } });
-
-    await waitFor(() => {
-      expect(screen.getByText("AI")).toBeInTheDocument();
-      // LLM chips get trailing emoji from the keyword scan when matches exist:
-      // "rest" → 😴 (tier 30); "home" → 🏠 (tier 20); "doctor" → 🩺 (tier 20).
-      expect(screen.getByText("rest now 😴")).toBeInTheDocument();
-      expect(screen.getByText("go home 🏠")).toBeInTheDocument();
-      expect(screen.getByText("see the doctor 🩺")).toBeInTheDocument();
-    });
-  });
-
-  it("tapping an LLM suggestion adds a free token", async () => {
-    mockGetLLM.mockImplementation(() =>
-      Promise.resolve(["rest now"]),
-    );
-
-    render(<SentenceBuilder {...baseProps} />);
-    const input = screen.getByRole("textbox", { name: "Your message" });
-    fireEvent.input(input, { target: { value: "I want to" } });
-
-    await waitFor(() => {
-      expect(screen.getByText("rest now 😴")).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByText("rest now 😴"));
-
-    // "I want to" was pendingFree, gets flushed; "rest now" added as free token
-    const display = screen.getByTestId("token-display");
-    expect(display.textContent).toContain("I want to");
-    expect(display.textContent).toContain("rest now");
-    expect(input).toHaveValue("");
-  });
-
-  it("does not show LLM row when input is empty", async () => {
-    mockGetLLM.mockImplementation(() =>
-      Promise.resolve(["something"]),
-    );
-
-    render(<SentenceBuilder {...baseProps} />);
-
-    await waitFor(() => {
-      expect(screen.getByText("I am")).toBeInTheDocument();
-    });
-
-    // LLM row should not appear for empty input
-    expect(screen.queryByText("AI")).not.toBeInTheDocument();
-  });
-
-  it("refreshes LLM suggestions when text changes", async () => {
-    mockGetLLM.mockImplementation(() =>
-      Promise.resolve(["first result"]),
-    );
-
-    render(<SentenceBuilder {...baseProps} />);
-    const input = screen.getByRole("textbox", { name: "Your message" });
-
-    fireEvent.input(input, { target: { value: "I am" } });
-    await waitFor(() => {
-      expect(mockGetLLM).toHaveBeenCalledWith("i am", [], expect.any(Number));
-    });
-
-    mockGetLLM.mockImplementation(() =>
-      Promise.resolve(["second result"]),
-    );
-
-    fireEvent.input(input, { target: { value: "I am tired" } });
-    await waitFor(() => {
-      expect(mockGetLLM).toHaveBeenCalledWith("i am tired", [], expect.any(Number));
-    });
   });
 });

@@ -20,7 +20,6 @@ export interface ThreadEntry {
 const THREAD_VISIBLE: ReadonlySet<string> = new Set([
   EVENT.SPEAK_TAP,
   EVENT.THREAD_COMPOSE,
-  EVENT.THREAD_TRANSCRIBED,
 ]);
 
 function recordToEntry(r: AuditRecord, patientName: string): ThreadEntry {

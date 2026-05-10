@@ -526,7 +526,6 @@ const fi: LocaleStrings = {
   "ui.patient.header.name_fallback": "Potilas",
   "ui.patient.header.bed_prefix": "Vuode ",
   "ui.dual.nav.wishes": "Toiveet",
-  "ui.dual.nav.listen": "Kuuntele",
   "ui.provider.nav.staff": "Henkilökunta",
   "ui.provider.nav.switch_patient": "Vaihda potilasta",
   "ui.provider.nav.settings": "Asetukset",
@@ -564,10 +563,6 @@ const fi: LocaleStrings = {
   "ui.patient.builder.message_aria": "Viestisi",
   "ui.patient.builder.undo": "Kumoa viimeisin sana",
   "ui.patient.builder.clear": "Tyhjennä viesti",
-  "ui.patient.builder.refresh_ai": "Päivitä tekoälyn ehdotukset",
-  "ui.patient.builder.ai_thinking": "Tekoäly miettii...",
-  "ui.patient.builder.no_ai_suggestions":
-    "Ei tekoälyn ehdotuksia. Napauta Päivitä yrittääksesi uudelleen.",
   "ui.patient.builder.ready":
     "Viestisi on valmis. Napauta Puhu lähettääksesi.",
   "ui.patient.builder.speak": "Puhu",
@@ -590,7 +585,6 @@ const fi: LocaleStrings = {
   "ui.provider.speaking_as_aria": "Speaking as",
   "ui.provider.section_aria": "Phrase category",
   "ui.provider.phrases_aria": "{section} phrases",
-  "ui.provider.listen.capture_aria": "Voice capture",
   "ui.provider.setup.progress_aria": "Setup progress",
   "ui.provider.settings.aria_label": "Settings",
   "ui.provider.settings.reset.aria_label": "Reset actions",
@@ -600,21 +594,6 @@ const fi: LocaleStrings = {
   "ui.provider.fallback_voice.all_aria": "Available voices",
   "ui.provider.pin_gate.keypad_aria": "PIN keypad",
 
-  // ── UI chrome: ListenPanel ─────────────────────────────────────
-  "ui.provider.listen.title": "Kuuntele",
-  "ui.provider.listen.stop_aria": "Lopeta kuuntelu",
-  "ui.provider.listen.start_aria": "Aloita kuuntelu napauttamalla",
-  "ui.provider.listen.listening": "Kuunnellaan...",
-  "ui.provider.listen.transcribing": "Puretaan tekstiksi...",
-  "ui.provider.listen.listening_placeholder": "Kuunnellaan puhetta...",
-  "ui.provider.listen.transcribing_placeholder":
-    "Puretaan puhetta tekstiksi...",
-  "ui.provider.listen.type_placeholder": "Tai kirjoita mitä sanottiin...",
-  "ui.provider.listen.transcript_aria": "Teksti",
-  "ui.provider.listen.audio_level_aria": "Mikrofonin äänitaso",
-  "ui.provider.listen.add_as": "Lisää keskusteluun hoitajana {prov}",
-  "ui.provider.listen.privacy_notice":
-    "Laitteella · Whisper · ääni ei poistu tästä laitteesta",
 
   // ── UI chrome: Speaking overlay ────────────────────────────────
   "ui.dual.speaking.aria_label": "Puhutaan: {text}",
@@ -1002,12 +981,6 @@ const fi: LocaleStrings = {
   "ui.provider.nav.lock_now_aria": "Lock staff session now",
 
   // ── Model readiness (TODO: translate) ──
-  "ui.readiness.listen.not_ready": "Getting ready to listen…",
-  "ui.readiness.listen.with_countdown": "Getting ready to listen — {countdown}",
-  "ui.readiness.listen.almost": "Almost ready…",
-  "ui.readiness.listen.ready": "Tap to listen",
-  "ui.readiness.listen.failed_message": "Couldn't get ready",
-  "ui.readiness.listen.failed_action": "Try again",
   "ui.readiness.voice_capture.precapture_hint": "Voice will start as soon as it's ready",
   "ui.readiness.voice_capture.saving": "Preparing your voice…",
   "ui.readiness.voice_capture.saving_with_countdown": "Preparing your voice — {countdown} remaining",

@@ -537,7 +537,6 @@ const tr: LocaleStrings = {
   "ui.patient.header.name_fallback": "Hasta",
   "ui.patient.header.bed_prefix": "Yatak ",
   "ui.dual.nav.wishes": "Dilekler",
-  "ui.dual.nav.listen": "Dinle",
   "ui.provider.nav.staff": "Personel",
   "ui.provider.nav.switch_patient": "Hasta Değiştir",
   "ui.provider.nav.settings": "Ayarlar",
@@ -575,10 +574,6 @@ const tr: LocaleStrings = {
   "ui.patient.builder.message_aria": "Mesajınız",
   "ui.patient.builder.undo": "Son kelimeyi geri al",
   "ui.patient.builder.clear": "Mesajı sil",
-  "ui.patient.builder.refresh_ai": "Yapay zeka önerilerini yenile",
-  "ui.patient.builder.ai_thinking": "Yapay zeka düşünüyor...",
-  "ui.patient.builder.no_ai_suggestions":
-    "Yapay zeka önerisi yok. Tekrar denemek için yenile düğmesine dokunun.",
   "ui.patient.builder.ready":
     "Mesajınız hazır. Göndermek için Konuş düğmesine dokunun.",
   "ui.patient.builder.speak": "Konuş",
@@ -601,7 +596,6 @@ const tr: LocaleStrings = {
   "ui.provider.speaking_as_aria": "Speaking as",
   "ui.provider.section_aria": "Phrase category",
   "ui.provider.phrases_aria": "{section} phrases",
-  "ui.provider.listen.capture_aria": "Voice capture",
   "ui.provider.setup.progress_aria": "Setup progress",
   "ui.provider.settings.aria_label": "Settings",
   "ui.provider.settings.reset.aria_label": "Reset actions",
@@ -611,20 +605,6 @@ const tr: LocaleStrings = {
   "ui.provider.fallback_voice.all_aria": "Available voices",
   "ui.provider.pin_gate.keypad_aria": "PIN keypad",
 
-  // ── UI chrome: ListenPanel ─────────────────────────────────────
-  "ui.provider.listen.title": "Dinle",
-  "ui.provider.listen.stop_aria": "Dinlemeyi durdur",
-  "ui.provider.listen.start_aria": "Dinlemeye başlamak için dokunun",
-  "ui.provider.listen.listening": "Dinleniyor...",
-  "ui.provider.listen.transcribing": "Yazıya dökülüyor...",
-  "ui.provider.listen.listening_placeholder": "Konuşma dinleniyor...",
-  "ui.provider.listen.transcribing_placeholder": "Konuşma yazıya dökülüyor...",
-  "ui.provider.listen.type_placeholder": "Veya söyleneni yazın...",
-  "ui.provider.listen.transcript_aria": "Transkript",
-  "ui.provider.listen.audio_level_aria": "Mikrofon ses seviyesi",
-  "ui.provider.listen.add_as": "{prov} olarak görüşmeye ekle",
-  "ui.provider.listen.privacy_notice":
-    "Cihaz üzerinde · Whisper · ses bu cihazdan çıkmaz",
 
   // ── UI chrome: Speaking overlay ────────────────────────────────
   "ui.dual.speaking.aria_label": "Konuşuluyor: {text}",
@@ -1027,12 +1007,6 @@ const tr: LocaleStrings = {
   "ui.provider.nav.lock_now_aria": "Lock staff session now",
 
   // ── Model readiness (TODO: translate) ──
-  "ui.readiness.listen.not_ready": "Getting ready to listen…",
-  "ui.readiness.listen.with_countdown": "Getting ready to listen — {countdown}",
-  "ui.readiness.listen.almost": "Almost ready…",
-  "ui.readiness.listen.ready": "Tap to listen",
-  "ui.readiness.listen.failed_message": "Couldn't get ready",
-  "ui.readiness.listen.failed_action": "Try again",
   "ui.readiness.voice_capture.precapture_hint": "Voice will start as soon as it's ready",
   "ui.readiness.voice_capture.saving": "Preparing your voice…",
   "ui.readiness.voice_capture.saving_with_countdown": "Preparing your voice — {countdown} remaining",

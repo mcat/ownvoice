@@ -58,10 +58,9 @@ describe("HeaderNav", () => {
     expect(screen.queryByRole("button", { name: "End staff session" })).toBeNull();
   });
 
-  it("renders the patient-facing overlay buttons (Wishes, Listen, Care Team)", () => {
+  it("renders the patient-facing overlay buttons (Wishes, Care Team)", () => {
     renderNav();
     expect(screen.getByRole("button", { name: "Wishes" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Listen" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Care Team" })).toBeInTheDocument();
   });
 

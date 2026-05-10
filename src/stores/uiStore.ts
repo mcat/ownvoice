@@ -6,7 +6,6 @@ import type { AbandonedWorkflow } from "../audit/recovery";
 export type OverlayName =
   | "wishes"
   | "provider"
-  | "listen"
   | "settings"
   | "careTeam"
   | "accessibility"
@@ -24,7 +23,6 @@ interface UIState {
   builderOpen: boolean;
   wishesOpen: boolean;
   providerOpen: boolean;
-  listenOpen: boolean;
   settingsOpen: boolean;
   careTeamOpen: boolean;
   accessibilityOpen: boolean;
@@ -79,7 +77,6 @@ interface UIState {
 const OVERLAY_KEYS: Record<OverlayName, keyof UIState> = {
   wishes: "wishesOpen",
   provider: "providerOpen",
-  listen: "listenOpen",
   settings: "settingsOpen",
   careTeam: "careTeamOpen",
   accessibility: "accessibilityOpen",
@@ -105,7 +102,6 @@ const INITIAL: Pick<
   | "builderOpen"
   | "wishesOpen"
   | "providerOpen"
-  | "listenOpen"
   | "settingsOpen"
   | "careTeamOpen"
   | "accessibilityOpen"
@@ -130,7 +126,6 @@ const INITIAL: Pick<
   builderOpen: false,
   wishesOpen: false,
   providerOpen: false,
-  listenOpen: false,
   settingsOpen: false,
   careTeamOpen: false,
   accessibilityOpen: false,
@@ -167,7 +162,6 @@ export const useUIStore = create<UIState>((set) => ({
     set({
       wishesOpen: false,
       providerOpen: false,
-      listenOpen: false,
       settingsOpen: false,
       careTeamOpen: false,
       accessibilityOpen: false,

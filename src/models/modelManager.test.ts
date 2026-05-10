@@ -60,8 +60,6 @@ describe("ModelManager — setWorker / getWorker", () => {
   it("returns null for unset workers", () => {
     const mgr = getModelManager();
     expect(mgr.getWorker("tts")).toBeNull();
-    expect(mgr.getWorker("llm")).toBeNull();
-    expect(mgr.getWorker("stt")).toBeNull();
   });
 
   it("stores and retrieves a worker", () => {
@@ -79,8 +77,6 @@ describe("ModelManager — state transitions", () => {
   it("starts idle (not ready)", () => {
     const mgr = getModelManager();
     expect(mgr.isReady("tts")).toBe(false);
-    expect(mgr.isReady("llm")).toBe(false);
-    expect(mgr.isReady("stt")).toBe(false);
   });
 
   it("setReady makes isReady return true", () => {
@@ -92,26 +88,26 @@ describe("ModelManager — state transitions", () => {
   it("setReady for one model does not affect others", () => {
     const mgr = getModelManager();
     mgr.setReady("tts");
-    expect(mgr.isReady("llm")).toBe(false);
+    expect(mgr.isReady("tts-encoder")).toBe(false);
   });
 
   it("setError sets status to error", () => {
     const mgr = getModelManager();
-    mgr.setError("stt", "Download failed");
+    mgr.setError("tts", "Download failed");
 
     const progress = mgr.getProgress();
-    const stt = progress.find((p) => p.model === "stt");
-    expect(stt?.status).toBe("error");
-    expect(stt?.error).toBe("Download failed");
+    const tts = progress.find((p) => p.model === "tts");
+    expect(tts?.status).toBe("error");
+    expect(tts?.error).toBe("Download failed");
   });
 
   it("setError makes isReady return false", () => {
     const mgr = getModelManager();
-    mgr.setReady("stt");
-    expect(mgr.isReady("stt")).toBe(true);
+    mgr.setReady("tts");
+    expect(mgr.isReady("tts")).toBe(true);
 
-    mgr.setError("stt", "Crashed");
-    expect(mgr.isReady("stt")).toBe(false);
+    mgr.setError("tts", "Crashed");
+    expect(mgr.isReady("tts")).toBe(false);
   });
 
   it("setReady clears any prior error string", () => {
@@ -169,7 +165,7 @@ describe("ModelManager — onProgress", () => {
 
     unsub();
 
-    mgr.setReady("llm");
+    mgr.setReady("tts-encoder");
     // Should still be 1 — no longer subscribed
     expect(cb).toHaveBeenCalledTimes(1);
   });
@@ -192,14 +188,12 @@ describe("ModelManager — onProgress", () => {
 // getProgress
 // =============================================================================
 describe("ModelManager — getProgress", () => {
-  it("returns progress for all four model slots", () => {
+  it("returns progress for the registered model slots", () => {
     const mgr = getModelManager();
     const progress = mgr.getProgress();
     const ids = progress.map((p) => p.model);
     expect(ids).toContain("tts");
     expect(ids).toContain("tts-encoder");
-    expect(ids).toContain("llm");
-    expect(ids).toContain("stt");
   });
 
   it("all models start idle with zero loaded/total", () => {
@@ -235,18 +229,18 @@ describe("ModelManager — clearAll", () => {
     const worker2 = { terminate: vi.fn() } as unknown as Worker;
 
     mgr.setWorker("tts", worker1);
-    mgr.setWorker("llm", worker2);
+    mgr.setWorker("tts-encoder", worker2);
     mgr.setReady("tts");
-    mgr.setReady("llm");
+    mgr.setReady("tts-encoder");
 
     await mgr.clearAll();
 
     expect(worker1.terminate).toHaveBeenCalled();
     expect(worker2.terminate).toHaveBeenCalled();
     expect(mgr.isReady("tts")).toBe(false);
-    expect(mgr.isReady("llm")).toBe(false);
+    expect(mgr.isReady("tts-encoder")).toBe(false);
     expect(mgr.getWorker("tts")).toBeNull();
-    expect(mgr.getWorker("llm")).toBeNull();
+    expect(mgr.getWorker("tts-encoder")).toBeNull();
   });
 
   it("attempts to remove OPFS models directory", async () => {

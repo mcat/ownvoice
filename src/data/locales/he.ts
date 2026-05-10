@@ -548,7 +548,6 @@ const he: LocaleStrings = {
   "ui.patient.header.name_fallback": "מטופל",
   "ui.patient.header.bed_prefix": "מיטה ",
   "ui.dual.nav.wishes": "משאלות",
-  "ui.dual.nav.listen": "האזנה",
   "ui.provider.nav.staff": "צוות",
   "ui.provider.nav.switch_patient": "החלף מטופל",
   "ui.provider.nav.settings": "הגדרות",
@@ -586,10 +585,6 @@ const he: LocaleStrings = {
   "ui.patient.builder.message_aria": "ההודעה שלך",
   "ui.patient.builder.undo": "בטל מילה אחרונה",
   "ui.patient.builder.clear": "נקה הודעה",
-  "ui.patient.builder.refresh_ai": "רענן הצעות AI",
-  "ui.patient.builder.ai_thinking": "AI חושב...",
-  "ui.patient.builder.no_ai_suggestions":
-    "אין הצעות AI. הקש על רענן כדי לנסות שוב.",
   "ui.patient.builder.ready":
     "ההודעה שלך מוכנה. הקש על דבר כדי לשלוח.",
   "ui.patient.builder.speak": "דבר",
@@ -612,7 +607,6 @@ const he: LocaleStrings = {
   "ui.provider.speaking_as_aria": "Speaking as",
   "ui.provider.section_aria": "Phrase category",
   "ui.provider.phrases_aria": "{section} phrases",
-  "ui.provider.listen.capture_aria": "Voice capture",
   "ui.provider.setup.progress_aria": "Setup progress",
   "ui.provider.settings.aria_label": "Settings",
   "ui.provider.settings.reset.aria_label": "Reset actions",
@@ -622,20 +616,6 @@ const he: LocaleStrings = {
   "ui.provider.fallback_voice.all_aria": "Available voices",
   "ui.provider.pin_gate.keypad_aria": "PIN keypad",
 
-  // ── UI chrome: ListenPanel ─────────────────────────────────────
-  "ui.provider.listen.title": "האזנה",
-  "ui.provider.listen.stop_aria": "הפסק להאזין",
-  "ui.provider.listen.start_aria": "הקש כדי להתחיל להאזין",
-  "ui.provider.listen.listening": "מאזין...",
-  "ui.provider.listen.transcribing": "מתמלל...",
-  "ui.provider.listen.listening_placeholder": "מאזין לדיבור...",
-  "ui.provider.listen.transcribing_placeholder": "מתמלל דיבור...",
-  "ui.provider.listen.type_placeholder": "או הקלד מה שנאמר...",
-  "ui.provider.listen.transcript_aria": "תמלול",
-  "ui.provider.listen.audio_level_aria": "רמת השמע של המיקרופון",
-  "ui.provider.listen.add_as": "הוסף לשיחה בתור {prov}",
-  "ui.provider.listen.privacy_notice":
-    "על המכשיר · Whisper · שום אודיו לא עוזב את המכשיר",
 
   // ── UI chrome: Speaking overlay ────────────────────────────────
   "ui.dual.speaking.aria_label": "מדבר: {text}",
@@ -1038,12 +1018,6 @@ const he: LocaleStrings = {
   "ui.provider.nav.lock_now_aria": "Lock staff session now",
 
   // ── Model readiness (TODO: translate) ──
-  "ui.readiness.listen.not_ready": "Getting ready to listen…",
-  "ui.readiness.listen.with_countdown": "Getting ready to listen — {countdown}",
-  "ui.readiness.listen.almost": "Almost ready…",
-  "ui.readiness.listen.ready": "Tap to listen",
-  "ui.readiness.listen.failed_message": "Couldn't get ready",
-  "ui.readiness.listen.failed_action": "Try again",
   "ui.readiness.voice_capture.precapture_hint": "Voice will start as soon as it's ready",
   "ui.readiness.voice_capture.saving": "Preparing your voice…",
   "ui.readiness.voice_capture.saving_with_countdown": "Preparing your voice — {countdown} remaining",

@@ -543,7 +543,6 @@ const ko: LocaleStrings = {
   "ui.patient.header.name_fallback": "환자",
   "ui.patient.header.bed_prefix": "침상 ",
   "ui.dual.nav.wishes": "바람",
-  "ui.dual.nav.listen": "듣기",
   "ui.provider.nav.staff": "직원",
   "ui.provider.nav.switch_patient": "환자 전환",
   "ui.provider.nav.settings": "설정",
@@ -581,10 +580,6 @@ const ko: LocaleStrings = {
   "ui.patient.builder.message_aria": "내 메시지",
   "ui.patient.builder.undo": "마지막 단어 취소",
   "ui.patient.builder.clear": "메시지 지우기",
-  "ui.patient.builder.refresh_ai": "AI 추천 새로고침",
-  "ui.patient.builder.ai_thinking": "AI가 생각 중입니다...",
-  "ui.patient.builder.no_ai_suggestions":
-    "AI 추천이 없습니다. 새로고침을 탭하여 다시 시도하세요.",
   "ui.patient.builder.ready":
     "메시지가 준비되었습니다. 말하기를 탭하여 전송하세요.",
   "ui.patient.builder.speak": "말하기",
@@ -607,7 +602,6 @@ const ko: LocaleStrings = {
   "ui.provider.speaking_as_aria": "Speaking as",
   "ui.provider.section_aria": "Phrase category",
   "ui.provider.phrases_aria": "{section} phrases",
-  "ui.provider.listen.capture_aria": "Voice capture",
   "ui.provider.setup.progress_aria": "Setup progress",
   "ui.provider.settings.aria_label": "Settings",
   "ui.provider.settings.reset.aria_label": "Reset actions",
@@ -617,20 +611,6 @@ const ko: LocaleStrings = {
   "ui.provider.fallback_voice.all_aria": "Available voices",
   "ui.provider.pin_gate.keypad_aria": "PIN keypad",
 
-  // ── UI chrome: ListenPanel ─────────────────────────────────────
-  "ui.provider.listen.title": "듣기",
-  "ui.provider.listen.stop_aria": "듣기 중지",
-  "ui.provider.listen.start_aria": "탭하여 듣기 시작",
-  "ui.provider.listen.listening": "듣는 중...",
-  "ui.provider.listen.transcribing": "변환 중...",
-  "ui.provider.listen.listening_placeholder": "음성을 듣고 있습니다...",
-  "ui.provider.listen.transcribing_placeholder": "음성을 변환하고 있습니다...",
-  "ui.provider.listen.type_placeholder": "또는 들은 내용을 입력하세요...",
-  "ui.provider.listen.transcript_aria": "음성 기록",
-  "ui.provider.listen.audio_level_aria": "마이크 오디오 레벨",
-  "ui.provider.listen.add_as": "{prov}(으)로 대화에 추가",
-  "ui.provider.listen.privacy_notice":
-    "기기 내 처리 · Whisper · 음성이 기기 밖으로 나가지 않습니다",
 
   // ── UI chrome: Speaking overlay ────────────────────────────────
   "ui.dual.speaking.aria_label": "말하는 중: {text}",
@@ -1032,12 +1012,6 @@ const ko: LocaleStrings = {
   "ui.provider.nav.lock_now_aria": "Lock staff session now",
 
   // ── Model readiness (TODO: translate) ──
-  "ui.readiness.listen.not_ready": "Getting ready to listen…",
-  "ui.readiness.listen.with_countdown": "Getting ready to listen — {countdown}",
-  "ui.readiness.listen.almost": "Almost ready…",
-  "ui.readiness.listen.ready": "Tap to listen",
-  "ui.readiness.listen.failed_message": "Couldn't get ready",
-  "ui.readiness.listen.failed_action": "Try again",
   "ui.readiness.voice_capture.precapture_hint": "Voice will start as soon as it's ready",
   "ui.readiness.voice_capture.saving": "Preparing your voice…",
   "ui.readiness.voice_capture.saving_with_countdown": "Preparing your voice — {countdown} remaining",

@@ -528,7 +528,6 @@ const no: LocaleStrings = {
   "ui.patient.header.name_fallback": "Pasient",
   "ui.patient.header.bed_prefix": "Seng ",
   "ui.dual.nav.wishes": "Ønsker",
-  "ui.dual.nav.listen": "Lytt",
   "ui.provider.nav.staff": "Personale",
   "ui.provider.nav.switch_patient": "Bytt pasient",
   "ui.provider.nav.settings": "Innstillinger",
@@ -566,10 +565,6 @@ const no: LocaleStrings = {
   "ui.patient.builder.message_aria": "Meldingen din",
   "ui.patient.builder.undo": "Angre siste ord",
   "ui.patient.builder.clear": "Tøm melding",
-  "ui.patient.builder.refresh_ai": "Oppdater AI-forslag",
-  "ui.patient.builder.ai_thinking": "AI tenker...",
-  "ui.patient.builder.no_ai_suggestions":
-    "Ingen AI-forslag. Trykk oppdater for å prøve igjen.",
   "ui.patient.builder.ready":
     "Meldingen din er klar. Trykk Snakk for å sende.",
   "ui.patient.builder.speak": "Snakk",
@@ -592,7 +587,6 @@ const no: LocaleStrings = {
   "ui.provider.speaking_as_aria": "Speaking as",
   "ui.provider.section_aria": "Phrase category",
   "ui.provider.phrases_aria": "{section} phrases",
-  "ui.provider.listen.capture_aria": "Voice capture",
   "ui.provider.setup.progress_aria": "Setup progress",
   "ui.provider.settings.aria_label": "Settings",
   "ui.provider.settings.reset.aria_label": "Reset actions",
@@ -602,20 +596,6 @@ const no: LocaleStrings = {
   "ui.provider.fallback_voice.all_aria": "Available voices",
   "ui.provider.pin_gate.keypad_aria": "PIN keypad",
 
-  // ── UI chrome: ListenPanel ─────────────────────────────────────
-  "ui.provider.listen.title": "Lytt",
-  "ui.provider.listen.stop_aria": "Slutt å lytte",
-  "ui.provider.listen.start_aria": "Trykk for å begynne å lytte",
-  "ui.provider.listen.listening": "Lytter...",
-  "ui.provider.listen.transcribing": "Transkriberer...",
-  "ui.provider.listen.listening_placeholder": "Lytter etter tale...",
-  "ui.provider.listen.transcribing_placeholder": "Transkriberer tale...",
-  "ui.provider.listen.type_placeholder": "Eller skriv det som ble sagt...",
-  "ui.provider.listen.transcript_aria": "Transkripsjon",
-  "ui.provider.listen.audio_level_aria": "Mikrofonens lydnivå",
-  "ui.provider.listen.add_as": "Legg til i samtalen som {prov}",
-  "ui.provider.listen.privacy_notice":
-    "På enheten · Whisper · ingen lyd forlater denne enheten",
 
   // ── UI chrome: Speaking overlay ────────────────────────────────
   "ui.dual.speaking.aria_label": "Snakker: {text}",
@@ -1014,12 +994,6 @@ const no: LocaleStrings = {
   "ui.provider.nav.lock_now_aria": "Lock staff session now",
 
   // ── Model readiness (TODO: translate) ──
-  "ui.readiness.listen.not_ready": "Getting ready to listen…",
-  "ui.readiness.listen.with_countdown": "Getting ready to listen — {countdown}",
-  "ui.readiness.listen.almost": "Almost ready…",
-  "ui.readiness.listen.ready": "Tap to listen",
-  "ui.readiness.listen.failed_message": "Couldn't get ready",
-  "ui.readiness.listen.failed_action": "Try again",
   "ui.readiness.voice_capture.precapture_hint": "Voice will start as soon as it's ready",
   "ui.readiness.voice_capture.saving": "Preparing your voice…",
   "ui.readiness.voice_capture.saving_with_countdown": "Preparing your voice — {countdown} remaining",

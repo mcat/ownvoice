@@ -19,7 +19,6 @@ import { PainFlow } from "./components/pain/PainFlow";
 import { Thread } from "./components/conversation/Thread";
 import { MyWishes } from "./components/wishes/MyWishes";
 import { ProviderPanel } from "./components/provider/ProviderPanel";
-import { ListenPanel } from "./components/provider/ListenPanel";
 import { SentenceBuilder } from "./components/builder/SentenceBuilder";
 import { SettingsPanel } from "./components/settings/SettingsPanel";
 import { CareTeamSheet } from "./components/settings/CareTeamSheet";
@@ -36,7 +35,7 @@ import { StaffSessionTimer } from "./components/shared/StaffSessionTimer";
 import { ResumePromptBanner } from "./components/diag/ResumePromptBanner";
 import { Setup } from "./components/settings/Setup";
 import { getModelManager } from "./models/modelManager";
-import { bootSTTAndLLM, bootTTSWasm, verifyAllOnBoot } from "./models/bootModels";
+import { bootTTSWasm, verifyAllOnBoot } from "./models/bootModels";
 import { drivePrimer } from "./models/drivePrimer";
 import { resumePendingOnVisible } from "./models/offlineResume";
 import { useOfflineStore } from "./stores/offlineStore";
@@ -61,7 +60,7 @@ export function App() {
   // IndexedDB on mount and subscribes to the live logger feed. No
   // separate conversation store anymore.
   const messages = useThreadView(activePatientId);
-  const { speakAsPatient, speakAsProvider, composeThread, transcribeThread, repeatSpeak, activeProv } =
+  const { speakAsPatient, speakAsProvider, composeThread, repeatSpeak } =
     useSpeakActions();
 
   // UI store — transient navigation and overlay state
@@ -71,7 +70,6 @@ export function App() {
   const builderOpen = useUIStore((s) => s.builderOpen);
   const wishesOpen = useUIStore((s) => s.wishesOpen);
   const providerOpen = useUIStore((s) => s.providerOpen);
-  const listenOpen = useUIStore((s) => s.listenOpen);
   const settingsOpen = useUIStore((s) => s.settingsOpen);
   const careTeamOpen = useUIStore((s) => s.careTeamOpen);
   const accessibilityOpen = useUIStore((s) => s.accessibilityOpen);
@@ -144,16 +142,8 @@ export function App() {
     setPinIntent(null);
   }, [closeOverlay]);
 
-  // Initialize model manager and boot all on-device models (TTS, LLM, STT)
+  // Initialize model manager and boot the TTS workers.
   useEffect(() => {
-    // STT and LLM run in their own DedicatedWorkers and don't share state
-    // with the GPU TTS load path — start them immediately so their downloads
-    // and shader compilations can run in parallel with GPU TTS init. (When
-    // these were chained behind initGPU, STT and LLM couldn't begin
-    // downloading until GPU TTS finished compiling shaders, which is
-    // minutes on first cold load and indefinite if init hung.)
-    bootSTTAndLLM();
-
     // GPU TTS in parallel; defer the WASM TTS fallback until GPU TTS resolves
     // either way, to avoid concurrent ORT-WASM/ORT-WebGPU init contention.
     initGPU(MODEL_URLS.tts).then(ok => {
@@ -503,21 +493,6 @@ export function App() {
           cfg={cfg}
           t={t}
           theme={theme}
-          activeProvIdx={activeProvIdx}
-          onSelectProvider={setActiveProvIdx}
-        />
-      )}
-
-      {listenOpen && (
-        <ListenPanel
-          onAddMessage={(text, providerLabel) => {
-            transcribeThread(text, providerLabel);
-            closeOverlay("listen");
-          }}
-          onClose={() => closeOverlay("listen")}
-          t={t}
-          theme={theme}
-          providers={cfg.providers}
           activeProvIdx={activeProvIdx}
           onSelectProvider={setActiveProvIdx}
         />

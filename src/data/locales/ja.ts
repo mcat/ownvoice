@@ -532,7 +532,6 @@ const ja: LocaleStrings = {
   "ui.patient.header.name_fallback": "患者",
   "ui.patient.header.bed_prefix": "ベッド ",
   "ui.dual.nav.wishes": "わたしの望み",
-  "ui.dual.nav.listen": "聞く",
   "ui.provider.nav.staff": "スタッフ",
   "ui.provider.nav.switch_patient": "患者を切り替える",
   "ui.provider.nav.settings": "設定",
@@ -570,10 +569,6 @@ const ja: LocaleStrings = {
   "ui.patient.builder.message_aria": "あなたのメッセージ",
   "ui.patient.builder.undo": "最後の語を取り消す",
   "ui.patient.builder.clear": "メッセージを消去",
-  "ui.patient.builder.refresh_ai": "AIの提案を更新する",
-  "ui.patient.builder.ai_thinking": "AIが考えています...",
-  "ui.patient.builder.no_ai_suggestions":
-    "AIの提案がありません。更新をタップしてもう一度お試しください。",
   "ui.patient.builder.ready":
     "メッセージの準備ができました。「話す」をタップして送信してください。",
   "ui.patient.builder.speak": "話す",
@@ -596,7 +591,6 @@ const ja: LocaleStrings = {
   "ui.provider.speaking_as_aria": "Speaking as",
   "ui.provider.section_aria": "Phrase category",
   "ui.provider.phrases_aria": "{section} phrases",
-  "ui.provider.listen.capture_aria": "Voice capture",
   "ui.provider.setup.progress_aria": "Setup progress",
   "ui.provider.settings.aria_label": "Settings",
   "ui.provider.settings.reset.aria_label": "Reset actions",
@@ -606,20 +600,6 @@ const ja: LocaleStrings = {
   "ui.provider.fallback_voice.all_aria": "Available voices",
   "ui.provider.pin_gate.keypad_aria": "PIN keypad",
 
-  // ── UI chrome: ListenPanel ─────────────────────────────────────
-  "ui.provider.listen.title": "聞く",
-  "ui.provider.listen.stop_aria": "聞き取りを停止",
-  "ui.provider.listen.start_aria": "タップして聞き取りを開始",
-  "ui.provider.listen.listening": "聞いています...",
-  "ui.provider.listen.transcribing": "文字起こし中...",
-  "ui.provider.listen.listening_placeholder": "音声を聞いています...",
-  "ui.provider.listen.transcribing_placeholder": "音声を文字起こし中...",
-  "ui.provider.listen.type_placeholder": "または話した内容を入力...",
-  "ui.provider.listen.transcript_aria": "文字起こし",
-  "ui.provider.listen.audio_level_aria": "マイクの音量レベル",
-  "ui.provider.listen.add_as": "{prov}として会話に追加",
-  "ui.provider.listen.privacy_notice":
-    "デバイス上で処理 · Whisper · 音声データは外部に送信されません",
 
   // ── UI chrome: Speaking overlay ────────────────────────────────
   "ui.dual.speaking.aria_label": "発話中: {text}",
@@ -1016,12 +996,6 @@ const ja: LocaleStrings = {
   "ui.provider.nav.lock_now_aria": "Lock staff session now",
 
   // ── Model readiness (TODO: translate) ──
-  "ui.readiness.listen.not_ready": "Getting ready to listen…",
-  "ui.readiness.listen.with_countdown": "Getting ready to listen — {countdown}",
-  "ui.readiness.listen.almost": "Almost ready…",
-  "ui.readiness.listen.ready": "Tap to listen",
-  "ui.readiness.listen.failed_message": "Couldn't get ready",
-  "ui.readiness.listen.failed_action": "Try again",
   "ui.readiness.voice_capture.precapture_hint": "Voice will start as soon as it's ready",
   "ui.readiness.voice_capture.saving": "Preparing your voice…",
   "ui.readiness.voice_capture.saving_with_countdown": "Preparing your voice — {countdown} remaining",

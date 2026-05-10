@@ -527,7 +527,6 @@ const ar: LocaleStrings = {
   "ui.patient.header.name_fallback": "المريض",
   "ui.patient.header.bed_prefix": "سرير ",
   "ui.dual.nav.wishes": "رغبات",
-  "ui.dual.nav.listen": "استماع",
   "ui.provider.nav.staff": "الطاقم",
   "ui.provider.nav.switch_patient": "تبديل المريض",
   "ui.provider.nav.settings": "الإعدادات",
@@ -565,10 +564,6 @@ const ar: LocaleStrings = {
   "ui.patient.builder.message_aria": "رسالتك",
   "ui.patient.builder.undo": "تراجع عن آخر كلمة",
   "ui.patient.builder.clear": "مسح الرسالة",
-  "ui.patient.builder.refresh_ai": "تحديث اقتراحات الذكاء الاصطناعي",
-  "ui.patient.builder.ai_thinking": "الذكاء الاصطناعي يفكر...",
-  "ui.patient.builder.no_ai_suggestions":
-    "لا توجد اقتراحات. اضغط تحديث للمحاولة مرة أخرى.",
   "ui.patient.builder.ready":
     "رسالتك جاهزة. اضغط تحدث للإرسال.",
   "ui.patient.builder.speak": "تحدث",
@@ -591,7 +586,6 @@ const ar: LocaleStrings = {
   "ui.provider.speaking_as_aria": "Speaking as",
   "ui.provider.section_aria": "Phrase category",
   "ui.provider.phrases_aria": "{section} phrases",
-  "ui.provider.listen.capture_aria": "Voice capture",
   "ui.provider.setup.progress_aria": "Setup progress",
   "ui.provider.settings.aria_label": "Settings",
   "ui.provider.settings.reset.aria_label": "Reset actions",
@@ -601,20 +595,6 @@ const ar: LocaleStrings = {
   "ui.provider.fallback_voice.all_aria": "Available voices",
   "ui.provider.pin_gate.keypad_aria": "PIN keypad",
 
-  // ── UI chrome: ListenPanel ─────────────────────────────────────
-  "ui.provider.listen.title": "استماع",
-  "ui.provider.listen.stop_aria": "إيقاف الاستماع",
-  "ui.provider.listen.start_aria": "اضغط لبدء الاستماع",
-  "ui.provider.listen.listening": "جارٍ الاستماع...",
-  "ui.provider.listen.transcribing": "جارٍ التفريغ...",
-  "ui.provider.listen.listening_placeholder": "الاستماع للكلام...",
-  "ui.provider.listen.transcribing_placeholder": "تفريغ الكلام...",
-  "ui.provider.listen.type_placeholder": "أو اكتب ما قيل...",
-  "ui.provider.listen.transcript_aria": "النص المفرّغ",
-  "ui.provider.listen.audio_level_aria": "مستوى صوت الميكروفون",
-  "ui.provider.listen.add_as": "إضافة إلى المحادثة بصفتك {prov}",
-  "ui.provider.listen.privacy_notice":
-    "على الجهاز · Whisper · لا يُرسَل أي صوت خارج هذا الجهاز",
 
   // ── UI chrome: Speaking overlay ────────────────────────────────
   "ui.dual.speaking.aria_label": "يتحدث: {text}",
@@ -1013,12 +993,6 @@ const ar: LocaleStrings = {
   "ui.provider.nav.lock_now_aria": "Lock staff session now",
 
   // ── Model readiness (TODO: translate) ──
-  "ui.readiness.listen.not_ready": "Getting ready to listen…",
-  "ui.readiness.listen.with_countdown": "Getting ready to listen — {countdown}",
-  "ui.readiness.listen.almost": "Almost ready…",
-  "ui.readiness.listen.ready": "Tap to listen",
-  "ui.readiness.listen.failed_message": "Couldn't get ready",
-  "ui.readiness.listen.failed_action": "Try again",
   "ui.readiness.voice_capture.precapture_hint": "Voice will start as soon as it's ready",
   "ui.readiness.voice_capture.saving": "Preparing your voice…",
   "ui.readiness.voice_capture.saving_with_countdown": "Preparing your voice — {countdown} remaining",

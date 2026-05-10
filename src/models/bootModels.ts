@@ -6,45 +6,11 @@ import { useOfflineStore } from "../stores/offlineStore";
 /**
  * Boot all on-device models.
  *
- * Creates Web Workers, sends init messages to load ONNX models,
- * and registers them with the model manager.
- *
- * Workers are created as module workers pointing to the worker source files.
- * Vite handles bundling them correctly via `new Worker(url, { type: 'module' })`.
- *
- * For most callers, prefer the split entry points so STT and LLM can begin
- * downloading without waiting for GPU TTS shader compilation:
- *   - {@link bootSTTAndLLM} — start immediately, in parallel with `initGPU()`.
- *   - {@link bootTTSWasm}    — call after `initGPU()` resolves to keep the
- *                              "no concurrent ORT WASM/GPU init" invariant.
- *
- * `bootModels()` is preserved for tests and any caller that wants a single
- * "boot everything" entry point; it composes the two split paths.
+ * Currently TTS only; preserved as a single entry point for tests and
+ * any caller that wants a "boot everything" handle.
  */
 export async function bootModels(): Promise<void> {
-  // Order matters for callers that introspect worker-creation sequence
-  // (notably bootModels.test.ts): TTS first, then LLM + STT inside
-  // bootSTTAndLLM. Both halves still start essentially in parallel —
-  // the order only governs which Worker constructor wins the microtask
-  // race when init() is synchronous (real production: doesn't matter).
-  await Promise.all([bootTTSWasm(), bootSTTAndLLM()]);
-}
-
-/**
- * Boot the STT (WebGPU primary, WASM fallback) and LLM workers.
- *
- * Safe to call before `initGPU()` resolves: STT-GPU and LLM each run in their
- * own DedicatedWorkers on independent ORT instances and don't share resources
- * with the main-thread GPU TTS load path. Earlier code awaited `initGPU()`
- * before calling `bootModels()`, which left STT and LLM unable to even start
- * downloading until GPU TTS finished compiling shaders — minutes on first
- * cold load, indefinite if the GPU TTS init hung.
- */
-export async function bootSTTAndLLM(): Promise<void> {
-  const mgr = getModelManager();
-  await mgr.init();
-  bootLLM(mgr);
-  bootSTT(mgr);
+  await bootTTSWasm();
 }
 
 /**
@@ -103,81 +69,6 @@ export async function bootTTSWasm(): Promise<void> {
   }
 }
 
-/** Internal: boot the LLM worker (LFM2.5-1.2B-Instruct). */
-function bootLLM(mgr: ReturnType<typeof getModelManager>): void {
-  try {
-    const llmWorker = new Worker(
-      new URL("./llmWorker.ts", import.meta.url),
-      { type: "module" },
-    );
-
-    llmWorker.onmessage = (e) => {
-      if (e.data.type === "ready") {
-        mgr.setReady("llm");
-      } else if (e.data.type === "error") {
-        mgr.setError("llm", e.data.message);
-      }
-    };
-
-    mgr.setWorker("llm", llmWorker);
-    llmWorker.postMessage({ type: "init", modelUrl: MODEL_URLS.llm });
-  } catch (err) {
-    console.warn("[OwnVoice] Failed to create LLM worker:", err);
-  }
-}
-
-/**
- * Boot STT with WebGPU → WASM fallback (non-blocking).
- *
- * If WebGPU is available, starts the plain JS GPU worker (public/stt-gpu-worker.js)
- * and lets it download + init in the background. If GPU fails, falls back to the
- * Vite-bundled WASM worker (sttWorker.ts).
- *
- * This is non-blocking: the model won't be ready immediately, but useMicrophone
- * handles that gracefully ("model not loaded yet" until ready).
- */
-function bootSTT(mgr: ReturnType<typeof getModelManager>): void {
-  if ("gpu" in navigator) {
-    try {
-      const gpuWorker = new Worker("/stt-gpu-worker.js", { type: "module" });
-
-      gpuWorker.onmessage = (e) => {
-        if (e.data.type === "ready") {
-          mgr.setWorker("stt", gpuWorker);
-          mgr.setReady("stt");
-          // The GPU STT worker (public/stt-gpu-worker.js) already runs
-          // shader compilation + encoder/decoder warmup as part of its
-          // own init sequence before emitting `ready`. By the time we
-          // see `ready`, it can run inference — so flip warm directly
-          // without posting an extra `warmup` message (which the GPU
-          // worker doesn't handle and would log as "Unknown message type").
-          mgr.markWarm("stt");
-          console.log("[OwnVoice] STT: WebGPU ready");
-        } else if (e.data.type === "error") {
-          if (!mgr.isReady("stt")) {
-            // Init failure on GPU — fall back to WASM, which has its own
-            // setError on init failure.
-            console.warn("[OwnVoice] STT GPU error:", e.data.message);
-            bootSTTWasm(mgr);
-          }
-        }
-      };
-
-      gpuWorker.onerror = (e) => {
-        console.warn("[OwnVoice] STT GPU worker error:", e.message);
-        if (!mgr.isReady("stt")) bootSTTWasm(mgr);
-      };
-
-      gpuWorker.postMessage({ type: "init", modelUrl: MODEL_URLS.stt });
-      return;
-    } catch (err) {
-      console.warn("[OwnVoice] STT GPU failed:", err);
-    }
-  }
-
-  bootSTTWasm(mgr);
-}
-
 /**
  * Boot-time integrity pass over OPFS. Cheap (reads first 2 bytes per ONNX
  * file), runs in parallel, populates offlineStore.verified so Settings can
@@ -208,31 +99,4 @@ export async function verifyAllOnBoot(): Promise<void> {
       }
     }),
   );
-}
-
-/** Start the WASM STT worker (Vite-bundled, onnxruntime-web base package). */
-function bootSTTWasm(mgr: ReturnType<typeof getModelManager>): void {
-  console.log("[OwnVoice] STT: using WASM fallback");
-  try {
-    const sttWorker = new Worker(
-      new URL("./sttWorker.ts", import.meta.url),
-      { type: "module" },
-    );
-
-    sttWorker.onmessage = (e) => {
-      if (e.data.type === "ready") {
-        mgr.setWorker("stt", sttWorker);
-        mgr.setReady("stt");
-        sttWorker.postMessage({ type: "warmup" });
-      } else if (e.data.type === "warm") {
-        mgr.markWarm("stt");
-      } else if (e.data.type === "error") {
-        mgr.setError("stt", e.data.message);
-      }
-    };
-
-    sttWorker.postMessage({ type: "init", modelUrl: MODEL_URLS.stt });
-  } catch (err) {
-    console.warn("[OwnVoice] Failed to create STT WASM worker:", err);
-  }
 }

@@ -14,7 +14,6 @@ import { ORT_VERSION } from "./assetVersions";
 describe("ORT version sync between TS source and public/ JS", () => {
   const FILES = [
     "public/tts-gpu-worker.js",
-    "public/stt-gpu-worker.js",
     "public/_routes.json",
   ];
   const ORT_PATH_RE = /\/ort\/(v\d+\.\d+\.\d+)\//g;

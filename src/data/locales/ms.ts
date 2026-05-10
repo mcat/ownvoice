@@ -541,7 +541,6 @@ const ms: LocaleStrings = {
   "ui.patient.header.name_fallback": "Pesakit",
   "ui.patient.header.bed_prefix": "Katil ",
   "ui.dual.nav.wishes": "Hasrat",
-  "ui.dual.nav.listen": "Dengar",
   "ui.provider.nav.staff": "Kakitangan",
   "ui.provider.nav.switch_patient": "Tukar Pesakit",
   "ui.provider.nav.settings": "Tetapan",
@@ -579,10 +578,6 @@ const ms: LocaleStrings = {
   "ui.patient.builder.message_aria": "Mesej anda",
   "ui.patient.builder.undo": "Buat asal perkataan terakhir",
   "ui.patient.builder.clear": "Padam mesej",
-  "ui.patient.builder.refresh_ai": "Muat semula cadangan AI",
-  "ui.patient.builder.ai_thinking": "AI sedang berfikir...",
-  "ui.patient.builder.no_ai_suggestions":
-    "Tiada cadangan AI. Ketik muat semula untuk cuba lagi.",
   "ui.patient.builder.ready":
     "Mesej anda sedia. Ketik Cakap untuk hantar.",
   "ui.patient.builder.speak": "Cakap",
@@ -605,7 +600,6 @@ const ms: LocaleStrings = {
   "ui.provider.speaking_as_aria": "Speaking as",
   "ui.provider.section_aria": "Phrase category",
   "ui.provider.phrases_aria": "{section} phrases",
-  "ui.provider.listen.capture_aria": "Voice capture",
   "ui.provider.setup.progress_aria": "Setup progress",
   "ui.provider.settings.aria_label": "Settings",
   "ui.provider.settings.reset.aria_label": "Reset actions",
@@ -615,22 +609,6 @@ const ms: LocaleStrings = {
   "ui.provider.fallback_voice.all_aria": "Available voices",
   "ui.provider.pin_gate.keypad_aria": "PIN keypad",
 
-  // ── UI chrome: ListenPanel ─────────────────────────────────────
-  "ui.provider.listen.title": "Dengar",
-  "ui.provider.listen.stop_aria": "Berhenti mendengar",
-  "ui.provider.listen.start_aria": "Ketik untuk mula mendengar",
-  "ui.provider.listen.listening": "Mendengar...",
-  "ui.provider.listen.transcribing": "Menulis semula...",
-  "ui.provider.listen.listening_placeholder": "Mendengar pertuturan...",
-  "ui.provider.listen.transcribing_placeholder":
-    "Menulis semula pertuturan...",
-  "ui.provider.listen.type_placeholder":
-    "Atau taip apa yang dikatakan...",
-  "ui.provider.listen.transcript_aria": "Transkrip",
-  "ui.provider.listen.audio_level_aria": "Tahap audio mikrofon",
-  "ui.provider.listen.add_as": "Tambah ke perbualan sebagai {prov}",
-  "ui.provider.listen.privacy_notice":
-    "Dalam peranti · Whisper · tiada audio keluar dari peranti ini",
 
   // ── UI chrome: Speaking overlay ────────────────────────────────
   "ui.dual.speaking.aria_label": "Bercakap: {text}",
@@ -1027,12 +1005,6 @@ const ms: LocaleStrings = {
   "ui.provider.nav.lock_now_aria": "Lock staff session now",
 
   // ── Model readiness (TODO: translate) ──
-  "ui.readiness.listen.not_ready": "Getting ready to listen…",
-  "ui.readiness.listen.with_countdown": "Getting ready to listen — {countdown}",
-  "ui.readiness.listen.almost": "Almost ready…",
-  "ui.readiness.listen.ready": "Tap to listen",
-  "ui.readiness.listen.failed_message": "Couldn't get ready",
-  "ui.readiness.listen.failed_action": "Try again",
   "ui.readiness.voice_capture.precapture_hint": "Voice will start as soon as it's ready",
   "ui.readiness.voice_capture.saving": "Preparing your voice…",
   "ui.readiness.voice_capture.saving_with_countdown": "Preparing your voice — {countdown} remaining",
