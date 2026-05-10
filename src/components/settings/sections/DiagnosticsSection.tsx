@@ -12,6 +12,7 @@ import { useOfflineStore } from "../../../stores/offlineStore";
 import { useSettingsStore, useActivePatient } from "../../../stores/settingsStore";
 import { useAudioCacheStore } from "../../../stores/audioCacheStore";
 import { useStorageHealth } from "../../../hooks/useStorageHealth";
+import { EngineOutcomesPanel } from "../EngineOutcomesPanel";
 
 interface Props {
   t: ThemeTokens;
@@ -435,6 +436,20 @@ export function DiagnosticsSection({ t }: Props) {
               : resolvePhrase("ui.provider.settings.offline.clear_audio_cache", caregiverLang)}
         </Btn>
       )}
+
+      <div style={{ marginTop: 24, paddingTop: 18, borderTop: `1px solid ${t.border}` }}>
+        <h4
+          style={{
+            fontSize: 14,
+            fontWeight: 600,
+            color: t.text,
+            margin: "0 0 10px",
+          }}
+        >
+          Recent speech engine outcomes
+        </h4>
+        <EngineOutcomesPanel t={t} />
+      </div>
     </Section>
   );
 }
