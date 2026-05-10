@@ -55,56 +55,6 @@
           "magic": "json"
         }
       ]
-    },
-    "llm": {
-      "baseUrl": "/models/2026-04-29/lfm2-1.2b-instruct/",
-      "files": [
-        {
-          "name": "model_q4.onnx",
-          "size": 183173,
-          "magic": "onnx"
-        },
-        {
-          "name": "model_q4.onnx_data",
-          "size": 850059264,
-          "magic": null
-        },
-        {
-          "name": "tokenizer.json",
-          "size": 3297799,
-          "magic": "json"
-        },
-        {
-          "name": "config.json",
-          "size": 1599,
-          "magic": "json"
-        },
-        {
-          "name": "chat_template.jinja",
-          "size": 1783,
-          "magic": null
-        }
-      ]
-    },
-    "stt": {
-      "baseUrl": "/models/2026-04-29/whisper-small/",
-      "files": [
-        {
-          "name": "encoder_model_q4.onnx",
-          "size": 66182104,
-          "magic": "onnx"
-        },
-        {
-          "name": "decoder_model_merged_q4.onnx",
-          "size": 233146255,
-          "magic": "onnx"
-        },
-        {
-          "name": "tokenizer.json",
-          "size": 2405679,
-          "magic": "json"
-        }
-      ]
     }
   }
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "preact/hooks";
 import { Btn } from "../shared/Btn";
-import { getKeyedContextualSuggestions, getLLMSuggestions } from "../../data/suggestion-trees";
+import { getKeyedContextualSuggestions } from "../../data/suggestion-trees";
 import { t as resolvePhrase } from "../../data/phraseRegistry";
 import type { PhraseKey, SuggestionItem } from "../../data/phraseRegistry";
 import { resolveEmoji, scanKeywordEmoji, pickBubbleIcon, type EmojiEntry } from "../../data/expressiveEmoji";
@@ -44,12 +44,8 @@ export function SentenceBuilder({ onSend, t, theme, messages }: SentenceBuilderP
   const [tokens, setTokens] = useState<Token[]>([]);
   const [pendingFree, setPendingFree] = useState("");
   const [suggestions, setSuggestions] = useState<SuggestionItem[]>([]);
-  const [llmSuggestions, setLlmSuggestions] = useState<string[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
-  const [loadingLlm, setLoadingLlm] = useState(false);
-  const [llmRefreshNonce, setLlmRefreshNonce] = useState(0);
   const requestIdRef = useRef(0);
-  const llmRequestIdRef = useRef(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const displaySentence = useMemo(
@@ -70,11 +66,6 @@ export function SentenceBuilder({ onSend, t, theme, messages }: SentenceBuilderP
   const hasText = displaySentence.length > 0;
   const shownSuggestions = suggestions.slice(0, 8);
 
-  const curatedLower = new Set(shownSuggestions.map((s) => s.text.toLowerCase()));
-  const shownLlm = llmSuggestions
-    .filter((s) => !curatedLower.has(s.toLowerCase()))
-    .slice(0, 8);
-
   // Fetch curated/keyword suggestions
   useEffect(() => {
     const id = ++requestIdRef.current;
@@ -87,23 +78,6 @@ export function SentenceBuilder({ onSend, t, theme, messages }: SentenceBuilderP
     });
     return () => { cancelled = true; };
   }, [key, messages, hour]);
-
-  // Fetch LLM suggestions (debounced)
-  useEffect(() => {
-    const id = ++llmRequestIdRef.current;
-    let cancelled = false;
-    if (!key) { setLlmSuggestions([]); setLoadingLlm(false); return; }
-    setLoadingLlm(true);
-    const debounce = setTimeout(() => {
-      if (cancelled) return;
-      getLLMSuggestions(key, messages, hour).then((results) => {
-        if (cancelled || llmRequestIdRef.current !== id) return;
-        setLlmSuggestions(results);
-        setLoadingLlm(false);
-      });
-    }, 300);
-    return () => { cancelled = true; clearTimeout(debounce); };
-  }, [key, messages, hour, llmRefreshNonce]);
 
   /** Flush pendingFree into a token and return the new tokens array. */
   function flushPending(): Token[] {
@@ -123,12 +97,6 @@ export function SentenceBuilder({ onSend, t, theme, messages }: SentenceBuilderP
       ? { kind: "key", key: item.key, emoji }
       : { kind: "free", text: item.text, emoji };
     setTokens([...base, tok]);
-  }
-
-  function addLlmChip(text: string) {
-    const base = flushPending();
-    const emoji = scanKeywordEmoji(text);
-    setTokens([...base, { kind: "free", text, emoji }]);
   }
 
   function undoLast() {
@@ -179,8 +147,7 @@ export function SentenceBuilder({ onSend, t, theme, messages }: SentenceBuilderP
 
   // --- Colors ---
   const blue = theme === "dark" ? "#60A5FA" : "#2563EB";
-  const llmAccent = theme === "dark" ? "#A78BFA" : "#7C3AED";
-  const noSuggestions = shownSuggestions.length === 0 && shownLlm.length === 0 && hasText;
+  const noSuggestions = shownSuggestions.length === 0 && hasText;
 
   const smallBtnStyle = {
     width: 40, height: 40, borderRadius: 8, border: `1px solid ${t.border}`,
@@ -262,63 +229,8 @@ export function SentenceBuilder({ onSend, t, theme, messages }: SentenceBuilderP
         </div>
       )}
 
-      {/* LLM suggestion row */}
-      {hasText && (
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-            <span style={{
-              fontSize: 12, fontWeight: 600, color: llmAccent,
-              background: theme === "dark" ? "rgba(167,139,250,0.12)" : "rgba(124,58,237,0.08)",
-              padding: "2px 8px", borderRadius: 6,
-            }}>AI</span>
-            <Btn
-              onClick={() => setLlmRefreshNonce((n) => n + 1)} disabled={loadingLlm}
-              aria-label={resolvePhrase("ui.patient.builder.refresh_ai", patientLang)}
-              style={{
-                display: "inline-flex", alignItems: "center", justifyContent: "center",
-                width: 28, height: 28, padding: 0, color: llmAccent,
-                background: "transparent",
-                border: `1px solid ${theme === "dark" ? "rgba(167,139,250,0.25)" : "rgba(124,58,237,0.2)"}`,
-                borderRadius: 8, cursor: loadingLlm ? "not-allowed" : "pointer",
-                opacity: loadingLlm ? 0.5 : 1,
-              }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-                stroke-linejoin="round"
-                style={{ animation: loadingLlm ? "spin 0.9s linear infinite" : "none" }}>
-                <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
-                <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
-                <path d="M21 3v5h-5" /><path d="M3 21v-5h5" />
-              </svg>
-            </Btn>
-          </div>
-          {shownLlm.length > 0 ? (
-            <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 8 }}>
-              {shownLlm.map((word) => {
-                const emoji = scanKeywordEmoji(word);
-                return (
-                  <Btn key={`llm-${word}`} onClick={() => addLlmChip(word)} style={{
-                    ...pillStyle,
-                    border: `1px solid ${theme === "dark" ? "rgba(167,139,250,0.25)" : "rgba(124,58,237,0.2)"}`,
-                  }}>{emoji ? `${word} ${emoji.icon}` : word}</Btn>
-                );
-              })}
-            </div>
-          ) : loadingLlm ? (
-            <div role="status" aria-live="polite" style={{ color: llmAccent, fontSize: 14 }}>
-              {resolvePhrase("ui.patient.builder.ai_thinking", patientLang)}
-            </div>
-          ) : (
-            <div role="status" aria-live="polite" style={{ color: t.muted, fontSize: 14 }}>
-              {resolvePhrase("ui.patient.builder.no_ai_suggestions", patientLang)}
-            </div>
-          )}
-        </div>
-      )}
-
       {/* No suggestions hint */}
-      {noSuggestions && !loadingSuggestions && !loadingLlm && (
+      {noSuggestions && !loadingSuggestions && (
         <div style={{ padding: 16, color: t.muted, fontSize: 16, textAlign: "center" as const, marginBottom: 16 }}>
           {resolvePhrase("ui.patient.builder.ready", patientLang)}
         </div>

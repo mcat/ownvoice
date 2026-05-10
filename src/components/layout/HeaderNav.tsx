@@ -12,7 +12,6 @@ const ICONS = {
   light: "🌙",
   dark: "☀️",
   wishes: "❤️",
-  listen: "👂",
   provider: "👩‍⚕️",
 } as const;
 
@@ -20,7 +19,6 @@ const ICONS = {
 // across renders, so React/Preact reuses the same array reference.
 const OVERLAY_BUTTONS: readonly { overlay: OverlayName; icon: string; labelKey: PhraseKey; usePatientLang?: boolean }[] = [
   { overlay: "wishes", icon: ICONS.wishes, labelKey: "ui.dual.nav.wishes", usePatientLang: true },
-  { overlay: "listen", icon: ICONS.listen, labelKey: "ui.dual.nav.listen", usePatientLang: true },
   { overlay: "provider", icon: ICONS.provider, labelKey: "ui.provider.nav.staff" },
 ];
 
@@ -57,7 +55,7 @@ interface HeaderNavProps {
    * Single PIN-gated entry point for staff workflows. Opens the flat
    * Settings panel (Patients, Care Team, Accessibility, Diagnostics,
    * About, Reset) — keeps the patient-facing nav focused on Wishes /
-   * Listen / Care Team / Theme.
+   * Care Team / Theme.
    */
   onOpenSettings: () => void;
 }

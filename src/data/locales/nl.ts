@@ -541,7 +541,6 @@ const nl: LocaleStrings = {
   "ui.patient.header.name_fallback": "Patiënt",
   "ui.patient.header.bed_prefix": "Bed ",
   "ui.dual.nav.wishes": "Wensen",
-  "ui.dual.nav.listen": "Luisteren",
   "ui.provider.nav.staff": "Personeel",
   "ui.provider.nav.switch_patient": "Andere patiënt",
   "ui.provider.nav.settings": "Instellingen",
@@ -579,10 +578,6 @@ const nl: LocaleStrings = {
   "ui.patient.builder.message_aria": "Uw bericht",
   "ui.patient.builder.undo": "Laatste woord ongedaan maken",
   "ui.patient.builder.clear": "Bericht wissen",
-  "ui.patient.builder.refresh_ai": "AI-suggesties vernieuwen",
-  "ui.patient.builder.ai_thinking": "AI denkt na...",
-  "ui.patient.builder.no_ai_suggestions":
-    "Geen AI-suggesties. Tik op vernieuwen om het opnieuw te proberen.",
   "ui.patient.builder.ready":
     "Uw bericht is klaar. Tik op Spreken om te versturen.",
   "ui.patient.builder.speak": "Spreken",
@@ -605,7 +600,6 @@ const nl: LocaleStrings = {
   "ui.provider.speaking_as_aria": "Speaking as",
   "ui.provider.section_aria": "Phrase category",
   "ui.provider.phrases_aria": "{section} phrases",
-  "ui.provider.listen.capture_aria": "Voice capture",
   "ui.provider.setup.progress_aria": "Setup progress",
   "ui.provider.settings.aria_label": "Settings",
   "ui.provider.settings.reset.aria_label": "Reset actions",
@@ -615,21 +609,6 @@ const nl: LocaleStrings = {
   "ui.provider.fallback_voice.all_aria": "Available voices",
   "ui.provider.pin_gate.keypad_aria": "PIN keypad",
 
-  // ── UI chrome: ListenPanel ─────────────────────────────────────
-  "ui.provider.listen.title": "Luisteren",
-  "ui.provider.listen.stop_aria": "Stop met luisteren",
-  "ui.provider.listen.start_aria": "Tik om te beginnen met luisteren",
-  "ui.provider.listen.listening": "Luistert...",
-  "ui.provider.listen.transcribing": "Transcribeert...",
-  "ui.provider.listen.listening_placeholder": "Luistert naar spraak...",
-  "ui.provider.listen.transcribing_placeholder":
-    "Spraak wordt getranscribeerd...",
-  "ui.provider.listen.type_placeholder": "Of typ wat er gezegd is...",
-  "ui.provider.listen.transcript_aria": "Transcriptie",
-  "ui.provider.listen.audio_level_aria": "Microfoonaudioniveau",
-  "ui.provider.listen.add_as": "Toevoegen aan gesprek als {prov}",
-  "ui.provider.listen.privacy_notice":
-    "Op het apparaat · Whisper · geen audio verlaat dit apparaat",
 
   // ── UI chrome: Speaking overlay ────────────────────────────────
   "ui.dual.speaking.aria_label": "Spreekt: {text}",
@@ -1029,12 +1008,6 @@ const nl: LocaleStrings = {
   "ui.provider.nav.lock_now_aria": "Lock staff session now",
 
   // ── Model readiness (TODO: translate) ──
-  "ui.readiness.listen.not_ready": "Getting ready to listen…",
-  "ui.readiness.listen.with_countdown": "Getting ready to listen — {countdown}",
-  "ui.readiness.listen.almost": "Almost ready…",
-  "ui.readiness.listen.ready": "Tap to listen",
-  "ui.readiness.listen.failed_message": "Couldn't get ready",
-  "ui.readiness.listen.failed_action": "Try again",
   "ui.readiness.voice_capture.precapture_hint": "Voice will start as soon as it's ready",
   "ui.readiness.voice_capture.saving": "Preparing your voice…",
   "ui.readiness.voice_capture.saving_with_countdown": "Preparing your voice — {countdown} remaining",

@@ -103,12 +103,6 @@ describe("Header", () => {
     expect(useUIStore.getState().wishesOpen).toBe(true);
   });
 
-  it("listen overlay button calls openOverlay on UI store", () => {
-    renderHeader();
-    fireEvent.click(screen.getByText("👂"));
-    expect(useUIStore.getState().listenOpen).toBe(true);
-  });
-
   it("provider overlay button calls openOverlay on UI store", () => {
     renderHeader();
     fireEvent.click(screen.getByText("👩‍⚕️"));

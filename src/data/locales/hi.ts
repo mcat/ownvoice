@@ -527,7 +527,6 @@ const hi: LocaleStrings = {
   "ui.patient.header.name_fallback": "मरीज़",
   "ui.patient.header.bed_prefix": "बेड ",
   "ui.dual.nav.wishes": "इच्छाएँ",
-  "ui.dual.nav.listen": "सुनें",
   "ui.provider.nav.staff": "स्टाफ़",
   "ui.provider.nav.switch_patient": "मरीज़ बदलें",
   "ui.provider.nav.settings": "सेटिंग्स",
@@ -565,10 +564,6 @@ const hi: LocaleStrings = {
   "ui.patient.builder.message_aria": "आपका संदेश",
   "ui.patient.builder.undo": "अंतिम शब्द हटाएँ",
   "ui.patient.builder.clear": "संदेश मिटाएँ",
-  "ui.patient.builder.refresh_ai": "AI सुझाव ताज़ा करें",
-  "ui.patient.builder.ai_thinking": "AI सोच रहा है...",
-  "ui.patient.builder.no_ai_suggestions":
-    "कोई AI सुझाव नहीं। दोबारा कोशिश के लिए ताज़ा करें।",
   "ui.patient.builder.ready":
     "आपका संदेश तैयार है। बोलने के लिए 'बोलें' दबाएँ।",
   "ui.patient.builder.speak": "बोलें",
@@ -591,7 +586,6 @@ const hi: LocaleStrings = {
   "ui.provider.speaking_as_aria": "Speaking as",
   "ui.provider.section_aria": "Phrase category",
   "ui.provider.phrases_aria": "{section} phrases",
-  "ui.provider.listen.capture_aria": "Voice capture",
   "ui.provider.setup.progress_aria": "Setup progress",
   "ui.provider.settings.aria_label": "Settings",
   "ui.provider.settings.reset.aria_label": "Reset actions",
@@ -601,20 +595,6 @@ const hi: LocaleStrings = {
   "ui.provider.fallback_voice.all_aria": "Available voices",
   "ui.provider.pin_gate.keypad_aria": "PIN keypad",
 
-  // ── UI chrome: ListenPanel ─────────────────────────────────────
-  "ui.provider.listen.title": "सुनें",
-  "ui.provider.listen.stop_aria": "सुनना बंद करें",
-  "ui.provider.listen.start_aria": "सुनना शुरू करने के लिए टैप करें",
-  "ui.provider.listen.listening": "सुन रहे हैं...",
-  "ui.provider.listen.transcribing": "लिख रहे हैं...",
-  "ui.provider.listen.listening_placeholder": "बोली सुन रहे हैं...",
-  "ui.provider.listen.transcribing_placeholder": "बोली लिख रहे हैं...",
-  "ui.provider.listen.type_placeholder": "या जो कहा गया वो टाइप करें...",
-  "ui.provider.listen.transcript_aria": "प्रतिलेख",
-  "ui.provider.listen.audio_level_aria": "माइक्रोफ़ोन ऑडियो स्तर",
-  "ui.provider.listen.add_as": "{prov} के रूप में बातचीत में जोड़ें",
-  "ui.provider.listen.privacy_notice":
-    "डिवाइस पर · Whisper · कोई ऑडियो इस डिवाइस से बाहर नहीं जाता",
 
   // ── UI chrome: Speaking overlay ────────────────────────────────
   "ui.dual.speaking.aria_label": "बोल रहे हैं: {text}",
@@ -1012,12 +992,6 @@ const hi: LocaleStrings = {
   "ui.provider.nav.lock_now_aria": "Lock staff session now",
 
   // ── Model readiness (TODO: translate) ──
-  "ui.readiness.listen.not_ready": "Getting ready to listen…",
-  "ui.readiness.listen.with_countdown": "Getting ready to listen — {countdown}",
-  "ui.readiness.listen.almost": "Almost ready…",
-  "ui.readiness.listen.ready": "Tap to listen",
-  "ui.readiness.listen.failed_message": "Couldn't get ready",
-  "ui.readiness.listen.failed_action": "Try again",
   "ui.readiness.voice_capture.precapture_hint": "Voice will start as soon as it's ready",
   "ui.readiness.voice_capture.saving": "Preparing your voice…",
   "ui.readiness.voice_capture.saving_with_countdown": "Preparing your voice — {countdown} remaining",

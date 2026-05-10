@@ -39,7 +39,6 @@ vi.mock("./hooks/useSpeakActions", () => ({
     speakAsPatient: vi.fn(),
     speakAsProvider: vi.fn(),
     composeThread: vi.fn(),
-    transcribeThread: vi.fn(),
     repeatSpeak: vi.fn(),
     activeProv: { name: "Care Team", hasVoice: false },
   }),
@@ -115,7 +114,6 @@ describe("App", () => {
       builderOpen: false,
       wishesOpen: false,
       providerOpen: false,
-      listenOpen: false,
       settingsOpen: false,
       careTeamOpen: false,
       accessibilityOpen: false,
@@ -291,16 +289,6 @@ describe("App", () => {
     expect(screen.getByRole("heading", { name: "Care Team" })).toBeInTheDocument();
   });
 
-  it("listenOpen overlay renders ListenPanel", () => {
-    useSettingsStore.setState({
-      _hasHydrated: true,
-      cfg: makeCfg({ providers: [{ name: "Dr. B", hasVoice: false, emoji: "👨‍⚕️" }] }),
-    });
-    useUIStore.setState({ listenOpen: true });
-    render(<App />);
-    expect(screen.getByRole("heading", { name: "Listen" })).toBeInTheDocument();
-  });
-
   it("settingsOpen overlay renders SettingsPanel", () => {
     useSettingsStore.setState({ _hasHydrated: true, cfg: makeCfg() });
     useUIStore.setState({ settingsOpen: true });
@@ -381,20 +369,6 @@ describe("App", () => {
     (evt as unknown as { propertyName: string }).propertyName = "transform";
     screen.getByRole("dialog").dispatchEvent(evt);
     expect(useUIStore.getState().wishesOpen).toBe(false);
-  });
-
-  it("closing listen overlay updates store (after exit transition)", () => {
-    useSettingsStore.setState({
-      _hasHydrated: true,
-      cfg: makeCfg({ providers: [{ name: "Dr. B", hasVoice: false, emoji: "👨‍⚕️" }] }),
-    });
-    useUIStore.setState({ listenOpen: true });
-    render(<App />);
-    fireEvent.click(screen.getByRole("button", { name: "Close panel" }));
-    const evt = new Event("transitionend", { bubbles: true });
-    (evt as unknown as { propertyName: string }).propertyName = "transform";
-    screen.getByRole("dialog").dispatchEvent(evt);
-    expect(useUIStore.getState().listenOpen).toBe(false);
   });
 
   it("pinEntryOpen Cancel button closes overlay", () => {

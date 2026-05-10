@@ -540,7 +540,6 @@ const sw: LocaleStrings = {
   "ui.patient.header.name_fallback": "Mgonjwa",
   "ui.patient.header.bed_prefix": "Kitanda ",
   "ui.dual.nav.wishes": "Matakwa",
-  "ui.dual.nav.listen": "Sikiliza",
   "ui.provider.nav.staff": "Wafanyakazi",
   "ui.provider.nav.switch_patient": "Badili Mgonjwa",
   "ui.provider.nav.settings": "Mipangilio",
@@ -578,10 +577,6 @@ const sw: LocaleStrings = {
   "ui.patient.builder.message_aria": "Ujumbe wako",
   "ui.patient.builder.undo": "Ondoa neno la mwisho",
   "ui.patient.builder.clear": "Futa ujumbe",
-  "ui.patient.builder.refresh_ai": "Onyesha upya mapendekezo ya AI",
-  "ui.patient.builder.ai_thinking": "AI inafikiria...",
-  "ui.patient.builder.no_ai_suggestions":
-    "Hakuna mapendekezo ya AI. Gusa onyesha upya kujaribu tena.",
   "ui.patient.builder.ready":
     "Ujumbe wako uko tayari. Gusa Sema kutuma.",
   "ui.patient.builder.speak": "Sema",
@@ -604,7 +599,6 @@ const sw: LocaleStrings = {
   "ui.provider.speaking_as_aria": "Speaking as",
   "ui.provider.section_aria": "Phrase category",
   "ui.provider.phrases_aria": "{section} phrases",
-  "ui.provider.listen.capture_aria": "Voice capture",
   "ui.provider.setup.progress_aria": "Setup progress",
   "ui.provider.settings.aria_label": "Settings",
   "ui.provider.settings.reset.aria_label": "Reset actions",
@@ -614,20 +608,6 @@ const sw: LocaleStrings = {
   "ui.provider.fallback_voice.all_aria": "Available voices",
   "ui.provider.pin_gate.keypad_aria": "PIN keypad",
 
-  // ── UI chrome: ListenPanel ─────────────────────────────────────
-  "ui.provider.listen.title": "Sikiliza",
-  "ui.provider.listen.stop_aria": "Acha kusikiliza",
-  "ui.provider.listen.start_aria": "Gusa kuanza kusikiliza",
-  "ui.provider.listen.listening": "Inasikiliza...",
-  "ui.provider.listen.transcribing": "Inandika...",
-  "ui.provider.listen.listening_placeholder": "Inasikiliza usemi...",
-  "ui.provider.listen.transcribing_placeholder": "Inandika usemi...",
-  "ui.provider.listen.type_placeholder": "Au andika kilichosemwa...",
-  "ui.provider.listen.transcript_aria": "Maandishi",
-  "ui.provider.listen.audio_level_aria": "Kiwango cha sauti cha kipaza sauti",
-  "ui.provider.listen.add_as": "Ongeza kwenye mazungumzo kama {prov}",
-  "ui.provider.listen.privacy_notice":
-    "Kwenye kifaa · Whisper · hakuna sauti inayotoka kwenye kifaa hiki",
 
   // ── UI chrome: Speaking overlay ────────────────────────────────
   "ui.dual.speaking.aria_label": "Inasema: {text}",
@@ -1033,12 +1013,6 @@ const sw: LocaleStrings = {
   "ui.provider.nav.lock_now_aria": "Lock staff session now",
 
   // ── Model readiness (TODO: translate) ──
-  "ui.readiness.listen.not_ready": "Getting ready to listen…",
-  "ui.readiness.listen.with_countdown": "Getting ready to listen — {countdown}",
-  "ui.readiness.listen.almost": "Almost ready…",
-  "ui.readiness.listen.ready": "Tap to listen",
-  "ui.readiness.listen.failed_message": "Couldn't get ready",
-  "ui.readiness.listen.failed_action": "Try again",
   "ui.readiness.voice_capture.precapture_hint": "Voice will start as soon as it's ready",
   "ui.readiness.voice_capture.saving": "Preparing your voice…",
   "ui.readiness.voice_capture.saving_with_countdown": "Preparing your voice — {countdown} remaining",

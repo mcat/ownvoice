@@ -6,8 +6,8 @@ describe("primeModels runner", () => {
     const events = [
       { kind: "download", file: "tts/encoder.onnx" } as const,
       { kind: "verified", file: "tts/encoder.onnx" } as const,
-      { kind: "download", file: "stt/decoder.onnx" } as const,
-      { kind: "verified", file: "stt/decoder.onnx" } as const,
+      { kind: "download", file: "tts/decoder.onnx" } as const,
+      { kind: "verified", file: "tts/decoder.onnx" } as const,
     ];
     const stepNames: string[] = [];
     const ctx = {
@@ -23,16 +23,16 @@ describe("primeModels runner", () => {
     expect(stepNames).toEqual([
       "download_tts/encoder.onnx",
       "verify_tts/encoder.onnx",
-      "download_stt/decoder.onnx",
-      "verify_stt/decoder.onnx",
+      "download_tts/decoder.onnx",
+      "verify_tts/decoder.onnx",
     ]);
   });
 
   it("ignores skipped/failed events for step boundaries", async () => {
     const events = [
       { kind: "skipped", file: "tts/encoder.onnx" } as const,
-      { kind: "download", file: "stt/decoder.onnx" } as const,
-      { kind: "failed", file: "stt/decoder.onnx" } as const,
+      { kind: "download", file: "tts/decoder.onnx" } as const,
+      { kind: "failed", file: "tts/decoder.onnx" } as const,
     ];
     const stepNames: string[] = [];
     const ctx = {
@@ -46,6 +46,6 @@ describe("primeModels runner", () => {
       runPrimer: async function* () { for (const e of events) yield e; },
     });
     // Only the download event registers as a step here — skipped/failed are observability events.
-    expect(stepNames).toEqual(["download_stt/decoder.onnx"]);
+    expect(stepNames).toEqual(["download_tts/decoder.onnx"]);
   });
 });

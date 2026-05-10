@@ -135,26 +135,6 @@ export function useSpeakActions() {
     [cfg, active],
   );
 
-  /** Add a provider-direction entry to the thread without speaking it.
-   *
-   *  Used by ListenPanel after a transcription completes — the spoken text
-   *  came from a provider in the room, so the system records it as a
-   *  thread.transcribed event. */
-  const transcribeThread = useCallback(
-    (text: string, providerLabel: string) => {
-      if (!cfg || !active) return;
-      log({
-        name: EVENT.THREAD_TRANSCRIBED,
-        attributes: {
-          [ATTR.SPEECH_TEXT]: text,
-          [ATTR.ACTOR]: "provider",
-          [ATTR.PROVIDER_NAME]: providerLabel,
-        },
-      });
-    },
-    [cfg, active],
-  );
-
   const repeatSpeak = useCallback(
     (text: string, from: "patient" | "provider") => {
       if (!cfg || !active) return;
@@ -185,7 +165,6 @@ export function useSpeakActions() {
     speakAsPatient,
     speakAsProvider,
     composeThread,
-    transcribeThread,
     repeatSpeak,
     activeProv,
   };

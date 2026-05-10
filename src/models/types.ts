@@ -32,7 +32,7 @@
 
 import { MODELS_ASSET_PREFIX } from "./assetVersions";
 
-export type ModelId = "tts" | "tts-encoder" | "llm" | "stt";
+export type ModelId = "tts" | "tts-encoder";
 
 export type ModelStatus =
   | "idle"
@@ -48,12 +48,6 @@ export interface LoadProgress {
   loaded: number; // bytes downloaded
   total: number; // total bytes
   error?: string;
-}
-
-/** A single user/assistant exchange used as few-shot in the LLM prompt. */
-export interface FewShotExample {
-  user: string;
-  assistant: string;
 }
 
 /**
@@ -113,17 +107,7 @@ export type WorkerRequest =
   | { type: "init"; modelUrl: string; bench?: boolean }
   | { type: "warmup" }
   | { type: "embed"; audio: Float32Array; sampleRate: number; requestId: number }
-  | { type: "synthesize"; text: string; embedding: Float32Array }
-  | {
-      type: "complete";
-      partial?: string;
-      prompt?: string;
-      context?: string;
-      maxTokens: number;
-      fewShot?: FewShotExample[];
-      requestId?: number;
-    }
-  | { type: "transcribe"; audio: Float32Array; sampleRate: number };
+  | { type: "synthesize"; text: string; embedding: Float32Array };
 
 /** Messages sent FROM a model worker */
 export type WorkerResponse =
@@ -142,8 +126,6 @@ export type WorkerResponse =
       requestId: number;
     }
   | { type: "audio"; data: Float32Array; sampleRate: number }
-  | { type: "completions"; data: string[] }
-  | { type: "transcript"; text: string }
   | {
       type: "error";
       message: string;
@@ -195,24 +177,4 @@ export const CHATTERBOX_TOKENS = {
  */
 export const MODEL_URLS = {
   tts: `/${MODELS_ASSET_PREFIX}/chatterbox-multilingual/`,
-  llm: `/${MODELS_ASSET_PREFIX}/lfm2-1.2b-instruct/`,
-  stt: `/${MODELS_ASSET_PREFIX}/whisper-small/`,
-} as const;
-
-/**
- * Sampling defaults recommended by the LFM2 model card.
- * https://huggingface.co/LiquidAI/LFM2-1.2B
- */
-export const LFM2_SAMPLING = {
-  temperature: 0.3,
-  minP: 0.15,
-  repetitionPenalty: 1.05,
-  topK: 40,
-} as const;
-
-/** Chat-template marker strings in the LFM2 tokenizer. */
-export const LFM2_CHAT_TOKENS = {
-  bos: "<|startoftext|>",
-  turnStart: "<|im_start|>",
-  turnEnd: "<|im_end|>",
 } as const;

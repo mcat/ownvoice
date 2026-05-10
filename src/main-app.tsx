@@ -54,12 +54,11 @@ if (new URLSearchParams(globalThis.location?.search ?? "").get("bench") === "tru
 // after settings hydrate (so onboarding gates still apply), then stripped
 // from the URL so a reload doesn't re-fire them.
 {
-  type OverlayName = "wishes" | "provider" | "listen";
+  type OverlayName = "wishes" | "provider";
   const ALLOWED_TABS = new Set(["quick", "needs", "feelings", "questions", "pain"]);
   const ALLOWED_OVERLAYS: ReadonlySet<OverlayName> = new Set([
     "wishes",
     "provider",
-    "listen",
   ]);
 
   const applyDeepLink = (): void => {

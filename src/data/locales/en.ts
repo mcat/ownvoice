@@ -518,7 +518,6 @@ const en = {
   "ui.patient.header.name_fallback": "Patient",
   "ui.patient.header.bed_prefix": "Bed ",
   "ui.dual.nav.wishes": "Wishes",
-  "ui.dual.nav.listen": "Listen",
   "ui.provider.nav.staff": "Care Team",
   "ui.provider.nav.switch_patient": "Patients",
   "ui.provider.nav.settings": "Settings",
@@ -556,9 +555,6 @@ const en = {
   "ui.patient.builder.message_aria": "Your message",
   "ui.patient.builder.undo": "Undo last word",
   "ui.patient.builder.clear": "Clear message",
-  "ui.patient.builder.refresh_ai": "Refresh AI suggestions",
-  "ui.patient.builder.ai_thinking": "AI is thinking...",
-  "ui.patient.builder.no_ai_suggestions": "No AI suggestions. Tap refresh to try again.",
   "ui.patient.builder.ready": "Your message is ready. Tap Speak to send.",
   "ui.patient.builder.speak": "Speak",
 
@@ -580,7 +576,6 @@ const en = {
   "ui.provider.speaking_as_aria": "Speaking as",
   "ui.provider.section_aria": "Phrase category",
   "ui.provider.phrases_aria": "{section} phrases",
-  "ui.provider.listen.capture_aria": "Voice capture",
   "ui.provider.setup.progress_aria": "Setup progress",
   "ui.provider.settings.aria_label": "Settings",
   "ui.provider.settings.reset.aria_label": "Reset actions",
@@ -590,19 +585,6 @@ const en = {
   "ui.provider.fallback_voice.all_aria": "Available voices",
   "ui.provider.pin_gate.keypad_aria": "PIN keypad",
 
-  // ── UI chrome: ListenPanel ─────────────────────────────────────
-  "ui.provider.listen.title": "Listen",
-  "ui.provider.listen.stop_aria": "Stop listening",
-  "ui.provider.listen.start_aria": "Tap to start listening",
-  "ui.provider.listen.listening": "Listening...",
-  "ui.provider.listen.transcribing": "Transcribing...",
-  "ui.provider.listen.listening_placeholder": "Listening for speech...",
-  "ui.provider.listen.transcribing_placeholder": "Transcribing speech...",
-  "ui.provider.listen.type_placeholder": "Or type what was said...",
-  "ui.provider.listen.transcript_aria": "Transcript",
-  "ui.provider.listen.audio_level_aria": "Microphone audio level",
-  "ui.provider.listen.add_as": "Add to conversation as {prov}",
-  "ui.provider.listen.privacy_notice": "On-device · Whisper · no audio leaves this device",
 
   // ── UI chrome: Speaking overlay ────────────────────────────────
   "ui.dual.speaking.aria_label": "Speaking: {text}",
@@ -920,12 +902,6 @@ const en = {
   // ── Model readiness ───────────────────────────────────────────
   // Verb-led, plain language. Never use "model", "encoder", "AI",
   // "STT", "TTS", "weights", "download".
-  "ui.readiness.listen.not_ready": "Getting ready to listen…",
-  "ui.readiness.listen.with_countdown": "Getting ready to listen — {countdown}",
-  "ui.readiness.listen.almost": "Almost ready…",
-  "ui.readiness.listen.ready": "Tap to listen",
-  "ui.readiness.listen.failed_message": "Couldn't get ready",
-  "ui.readiness.listen.failed_action": "Try again",
 
   "ui.readiness.voice_capture.precapture_hint": "Voice will start as soon as it's ready",
   "ui.readiness.voice_capture.saving": "Preparing your voice…",

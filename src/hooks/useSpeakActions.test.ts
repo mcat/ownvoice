@@ -82,16 +82,6 @@ describe("useSpeakActions", () => {
       expect(logSpy).not.toHaveBeenCalled();
     });
 
-    it("transcribeThread does nothing", () => {
-      const { result } = renderHook(() => useSpeakActions());
-
-      act(() => {
-        result.current.transcribeThread("Hello", "Dr. Jones");
-      });
-
-      expect(logSpy).not.toHaveBeenCalled();
-    });
-
     it("repeatSpeak does nothing", () => {
       const { result } = renderHook(() => useSpeakActions());
 
@@ -356,28 +346,6 @@ describe("useSpeakActions", () => {
       expect(event.attributes).toMatchObject({
         [ATTR.ACTOR]: "provider",
         [ATTR.PROVIDER_NAME]: "Care Team",
-      });
-    });
-  });
-
-  describe("transcribeThread", () => {
-    it("emits THREAD_TRANSCRIBED with provider actor + label and no speak call", () => {
-      useSettingsStore.setState({ cfg: DEFAULT_CFG });
-
-      const { result } = renderHook(() => useSpeakActions());
-
-      act(() => {
-        result.current.transcribeThread("Note from nurse", "Nurse Lee");
-      });
-
-      expect(speak).not.toHaveBeenCalled();
-      expect(logSpy).toHaveBeenCalledTimes(1);
-      const [event] = logSpy.mock.calls[0] as [logger.AuditEvent];
-      expect(event.name).toBe(EVENT.THREAD_TRANSCRIBED);
-      expect(event.attributes).toMatchObject({
-        [ATTR.SPEECH_TEXT]: "Note from nurse",
-        [ATTR.ACTOR]: "provider",
-        [ATTR.PROVIDER_NAME]: "Nurse Lee",
       });
     });
   });

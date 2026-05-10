@@ -250,10 +250,7 @@ describe("all ORT workers — multi-threaded WASM gating", () => {
   // path. Assert on all of them in one place.
   const sources = [
     { path: "public/tts-gpu-worker.js", label: "tts-gpu-worker" },
-    { path: "public/stt-gpu-worker.js", label: "stt-gpu-worker" },
     { path: "src/models/ttsWorker.ts", label: "ttsWorker" },
-    { path: "src/models/llmWorker.ts", label: "llmWorker" },
-    { path: "src/models/sttWorker.ts", label: "sttWorker" },
   ];
 
   for (const { path: relPath, label } of sources) {

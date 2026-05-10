@@ -531,7 +531,6 @@ const ru: LocaleStrings = {
   "ui.patient.header.name_fallback": "Пациент",
   "ui.patient.header.bed_prefix": "Кровать ",
   "ui.dual.nav.wishes": "Пожелания",
-  "ui.dual.nav.listen": "Слушать",
   "ui.provider.nav.staff": "Персонал",
   "ui.provider.nav.switch_patient": "Сменить пациента",
   "ui.provider.nav.settings": "Настройки",
@@ -569,10 +568,6 @@ const ru: LocaleStrings = {
   "ui.patient.builder.message_aria": "Ваше сообщение",
   "ui.patient.builder.undo": "Отменить последнее слово",
   "ui.patient.builder.clear": "Очистить сообщение",
-  "ui.patient.builder.refresh_ai": "Обновить предложения ИИ",
-  "ui.patient.builder.ai_thinking": "ИИ думает...",
-  "ui.patient.builder.no_ai_suggestions":
-    "Нет предложений ИИ. Нажмите обновить, чтобы попробовать снова.",
   "ui.patient.builder.ready":
     "Сообщение готово. Нажмите «Произнести», чтобы отправить.",
   "ui.patient.builder.speak": "Произнести",
@@ -595,7 +590,6 @@ const ru: LocaleStrings = {
   "ui.provider.speaking_as_aria": "Speaking as",
   "ui.provider.section_aria": "Phrase category",
   "ui.provider.phrases_aria": "{section} phrases",
-  "ui.provider.listen.capture_aria": "Voice capture",
   "ui.provider.setup.progress_aria": "Setup progress",
   "ui.provider.settings.aria_label": "Settings",
   "ui.provider.settings.reset.aria_label": "Reset actions",
@@ -605,20 +599,6 @@ const ru: LocaleStrings = {
   "ui.provider.fallback_voice.all_aria": "Available voices",
   "ui.provider.pin_gate.keypad_aria": "PIN keypad",
 
-  // ── UI chrome: ListenPanel ─────────────────────────────────────
-  "ui.provider.listen.title": "Слушать",
-  "ui.provider.listen.stop_aria": "Прекратить прослушивание",
-  "ui.provider.listen.start_aria": "Нажмите, чтобы начать слушать",
-  "ui.provider.listen.listening": "Слушаю...",
-  "ui.provider.listen.transcribing": "Транскрибирую...",
-  "ui.provider.listen.listening_placeholder": "Слушаю речь...",
-  "ui.provider.listen.transcribing_placeholder": "Транскрибирую речь...",
-  "ui.provider.listen.type_placeholder": "Или введите сказанное...",
-  "ui.provider.listen.transcript_aria": "Транскрипция",
-  "ui.provider.listen.audio_level_aria": "Уровень звука микрофона",
-  "ui.provider.listen.add_as": "Добавить в разговор от лица {prov}",
-  "ui.provider.listen.privacy_notice":
-    "На устройстве · Whisper · звук не покидает это устройство",
 
   // ── UI chrome: Speaking overlay ────────────────────────────────
   "ui.dual.speaking.aria_label": "Говорит: {text}",
@@ -1017,12 +997,6 @@ const ru: LocaleStrings = {
   "ui.provider.nav.lock_now_aria": "Lock staff session now",
 
   // ── Model readiness (TODO: translate) ──
-  "ui.readiness.listen.not_ready": "Getting ready to listen…",
-  "ui.readiness.listen.with_countdown": "Getting ready to listen — {countdown}",
-  "ui.readiness.listen.almost": "Almost ready…",
-  "ui.readiness.listen.ready": "Tap to listen",
-  "ui.readiness.listen.failed_message": "Couldn't get ready",
-  "ui.readiness.listen.failed_action": "Try again",
   "ui.readiness.voice_capture.precapture_hint": "Voice will start as soon as it's ready",
   "ui.readiness.voice_capture.saving": "Preparing your voice…",
   "ui.readiness.voice_capture.saving_with_countdown": "Preparing your voice — {countdown} remaining",

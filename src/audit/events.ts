@@ -6,7 +6,6 @@ export const EVENT = {
   SPEAK_FALLBACK_TONE:     "speak.fallback.tone",
   SPEAK_ERROR:             "speak.error",
   THREAD_COMPOSE:          "thread.compose",
-  THREAD_TRANSCRIBED:      "thread.transcribed",
 
   MODEL_BOOT_START:        "model.boot.start",
   MODEL_BOOT_COMPLETE:     "model.boot.complete",

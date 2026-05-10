@@ -1,6 +1,6 @@
 /**
  * Z-index scale for overlays. Ordering rationale:
- *   - sheet:        default bottom-sheet layer (MyWishes, ProviderPanel, ListenPanel).
+ *   - sheet:        default bottom-sheet layer (MyWishes, ProviderPanel).
  *   - sheetStacked: for a sheet layered on top of another (SettingsPanel opened
  *                   after a PIN unlock that temporarily overlaps).
  *   - pin:          the centered PinGate dialog — sits above sheets so the PIN

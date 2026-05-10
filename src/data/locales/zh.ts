@@ -513,7 +513,6 @@ const zh: LocaleStrings = {
   "ui.patient.header.name_fallback": "患者",
   "ui.patient.header.bed_prefix": "床位 ",
   "ui.dual.nav.wishes": "心愿",
-  "ui.dual.nav.listen": "聆听",
   "ui.provider.nav.staff": "工作人员",
   "ui.provider.nav.switch_patient": "切换患者",
   "ui.provider.nav.settings": "设置",
@@ -551,10 +550,6 @@ const zh: LocaleStrings = {
   "ui.patient.builder.message_aria": "您的消息",
   "ui.patient.builder.undo": "撤销上一个词",
   "ui.patient.builder.clear": "清除消息",
-  "ui.patient.builder.refresh_ai": "刷新AI建议",
-  "ui.patient.builder.ai_thinking": "AI正在思考...",
-  "ui.patient.builder.no_ai_suggestions":
-    "没有AI建议。点击刷新重试。",
   "ui.patient.builder.ready": "消息已准备好。点击说话发送。",
   "ui.patient.builder.speak": "说话",
 
@@ -576,7 +571,6 @@ const zh: LocaleStrings = {
   "ui.provider.speaking_as_aria": "Speaking as",
   "ui.provider.section_aria": "Phrase category",
   "ui.provider.phrases_aria": "{section} phrases",
-  "ui.provider.listen.capture_aria": "Voice capture",
   "ui.provider.setup.progress_aria": "Setup progress",
   "ui.provider.settings.aria_label": "Settings",
   "ui.provider.settings.reset.aria_label": "Reset actions",
@@ -586,20 +580,6 @@ const zh: LocaleStrings = {
   "ui.provider.fallback_voice.all_aria": "Available voices",
   "ui.provider.pin_gate.keypad_aria": "PIN keypad",
 
-  // ── UI chrome: ListenPanel ─────────────────────────────────────
-  "ui.provider.listen.title": "聆听",
-  "ui.provider.listen.stop_aria": "停止聆听",
-  "ui.provider.listen.start_aria": "点击开始聆听",
-  "ui.provider.listen.listening": "聆听中...",
-  "ui.provider.listen.transcribing": "转录中...",
-  "ui.provider.listen.listening_placeholder": "正在收听语音...",
-  "ui.provider.listen.transcribing_placeholder": "正在转录语音...",
-  "ui.provider.listen.type_placeholder": "或输入对方说的话...",
-  "ui.provider.listen.transcript_aria": "转录文本",
-  "ui.provider.listen.audio_level_aria": "麦克风音量",
-  "ui.provider.listen.add_as": "以{prov}身份添加到对话",
-  "ui.provider.listen.privacy_notice":
-    "设备端处理 · Whisper · 音频不会离开本设备",
 
   // ── UI chrome: Speaking overlay ────────────────────────────────
   "ui.dual.speaking.aria_label": "正在说：{text}",
@@ -967,12 +947,6 @@ const zh: LocaleStrings = {
   "ui.provider.nav.lock_now_aria": "Lock staff session now",
 
   // ── Model readiness (TODO: translate) ──
-  "ui.readiness.listen.not_ready": "Getting ready to listen…",
-  "ui.readiness.listen.with_countdown": "Getting ready to listen — {countdown}",
-  "ui.readiness.listen.almost": "Almost ready…",
-  "ui.readiness.listen.ready": "Tap to listen",
-  "ui.readiness.listen.failed_message": "Couldn't get ready",
-  "ui.readiness.listen.failed_action": "Try again",
   "ui.readiness.voice_capture.precapture_hint": "Voice will start as soon as it's ready",
   "ui.readiness.voice_capture.saving": "Preparing your voice…",
   "ui.readiness.voice_capture.saving_with_countdown": "Preparing your voice — {countdown} remaining",
