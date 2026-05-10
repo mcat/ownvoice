@@ -577,3 +577,64 @@ describe("VoiceCapture quality integration", () => {
     expect(matches.length).toBeGreaterThanOrEqual(1);
   });
 });
+
+describe("VoiceCapture — registerRetry remains stable across parent re-renders (#223)", () => {
+  it("does not flash through null when the parent re-renders with a new arrow", () => {
+    // Mirrors how PatientInfoSection / CareTeamSection wire the prop:
+    // an inline arrow that forwards to a parent-owned ref. A naive
+    // implementation would unregister + re-register on every parent
+    // render, briefly leaving retryRef.current null between commits.
+    const retryRef: { current: (() => void) | null } = { current: null };
+    const events: ("set" | "null")[] = [];
+    const Parent = ({ tick }: { tick: number }) => {
+      void tick; // re-render trigger
+      return (
+        <VoiceCapture
+          label="t"
+          hasVoice
+          onCapture={() => {}}
+          onRemove={() => {}}
+          audioBlob={new Blob([new Uint8Array(16)])}
+          registerRetry={(fn) => {
+            retryRef.current = fn;
+            events.push(fn ? "set" : "null");
+          }}
+        />
+      );
+    };
+    const { rerender } = render(<Parent tick={0} />);
+    expect(retryRef.current).not.toBeNull();
+    expect(events).toEqual(["set"]);
+
+    // Force several parent re-renders. Each one supplies a fresh inline
+    // arrow as `registerRetry` — but VoiceCapture must NOT unregister and
+    // re-register, since that flashes retryRef.current through null.
+    for (let i = 1; i <= 5; i++) {
+      rerender(<Parent tick={i} />);
+      expect(retryRef.current).not.toBeNull();
+    }
+    // Exactly one "set" event after all the re-renders, no "null"s.
+    expect(events).toEqual(["set"]);
+  });
+
+  it("clears the ref to null on unmount (parent's retryRef shouldn't hold a stale callback)", () => {
+    const retryRef: { current: (() => void) | null } = { current: null };
+    const Parent = ({ mounted }: { mounted: boolean }) =>
+      mounted ? (
+        <VoiceCapture
+          label="t"
+          hasVoice
+          onCapture={() => {}}
+          onRemove={() => {}}
+          audioBlob={new Blob([new Uint8Array(16)])}
+          registerRetry={(fn) => { retryRef.current = fn; }}
+        />
+      ) : (
+        <div />
+      );
+    const { rerender } = render(<Parent mounted={true} />);
+    expect(retryRef.current).not.toBeNull();
+    rerender(<Parent mounted={false} />);
+    expect(retryRef.current).toBeNull();
+  });
+});
