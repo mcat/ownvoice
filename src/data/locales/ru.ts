@@ -37,11 +37,13 @@ const ru: LocaleStrings = {
   "needs.comfort.turn": "Поверните меня, пожалуйста",
   "needs.comfort.sit_up": "Помогите мне сесть",
   "needs.comfort.quiet": "Соблюдайте тишину, пожалуйста",
+  "needs.comfort.lights_on": "Включите свет",
+  "needs.comfort.lights_off": "Выключите свет",
+  "needs.comfort.lights_dimmed": "Приглушите свет",
 
   // ── Patient needs: Medical ─────────────────────────────────────
   "needs.medical.medication": "Мне нужно лекарство",
   "needs.medical.suction": "Мне нужна аспирация",
-  "needs.medical.nauseous": "Меня тошнит",
   "needs.medical.breathe": "Мне трудно дышать",
   "needs.medical.nurse": "Мне нужна медсестра",
   "needs.medical.doctor": "Мне нужен врач",

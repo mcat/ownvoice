@@ -45,11 +45,13 @@ const el: LocaleStrings = {
   "needs.comfort.turn": "Παρακαλώ γυρίστε με",
   "needs.comfort.sit_up": "Βοηθήστε με να ανακαθίσω",
   "needs.comfort.quiet": "Παρακαλώ κάντε ησυχία",
+  "needs.comfort.lights_on": "Ανοίξτε τα φώτα",
+  "needs.comfort.lights_off": "Σβήστε τα φώτα",
+  "needs.comfort.lights_dimmed": "Χαμηλώστε τα φώτα",
 
   // ── Patient needs: Medical ─────────────────────────────────────
   "needs.medical.medication": "Χρειάζομαι το φάρμακό μου",
   "needs.medical.suction": "Χρειάζομαι αναρρόφηση",
-  "needs.medical.nauseous": "Έχω ναυτία",
   "needs.medical.breathe": "Δεν μπορώ να αναπνεύσω καλά",
   "needs.medical.nurse": "Χρειάζομαι τη νοσοκόμα",
   "needs.medical.doctor": "Χρειάζομαι τον γιατρό",

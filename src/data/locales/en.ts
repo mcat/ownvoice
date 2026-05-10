@@ -33,11 +33,13 @@ const en = {
   "needs.comfort.turn": "Please turn me",
   "needs.comfort.sit_up": "Help me sit up",
   "needs.comfort.quiet": "Please be quiet",
+  "needs.comfort.lights_on": "Turn the lights on",
+  "needs.comfort.lights_off": "Turn the lights off",
+  "needs.comfort.lights_dimmed": "Dim the lights",
 
   // ── Patient needs: Medical ─────────────────────────────────────
   "needs.medical.medication": "I need my medication",
   "needs.medical.suction": "I need to be suctioned",
-  "needs.medical.nauseous": "I feel nauseous",
   "needs.medical.breathe": "I can't breathe well",
   "needs.medical.nurse": "I need the nurse",
   "needs.medical.doctor": "I need the doctor",

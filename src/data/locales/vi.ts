@@ -37,11 +37,13 @@ const vi: LocaleStrings = {
   "needs.comfort.turn": "Xin trở mình giúp tôi",
   "needs.comfort.sit_up": "Đỡ tôi ngồi dậy",
   "needs.comfort.quiet": "Xin giữ yên lặng",
+  "needs.comfort.lights_on": "Bật đèn",
+  "needs.comfort.lights_off": "Tắt đèn",
+  "needs.comfort.lights_dimmed": "Giảm đèn",
 
   // ── Patient needs: Medical ─────────────────────────────────────
   "needs.medical.medication": "Tôi cần uống thuốc",
   "needs.medical.suction": "Tôi cần hút đờm",
-  "needs.medical.nauseous": "Tôi buồn nôn",
   "needs.medical.breathe": "Tôi khó thở",
   "needs.medical.nurse": "Tôi cần y tá",
   "needs.medical.doctor": "Tôi cần bác sĩ",

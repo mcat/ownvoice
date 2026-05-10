@@ -37,11 +37,13 @@ const ar: LocaleStrings = {
   "needs.comfort.turn": "أديروني من فضلكم",
   "needs.comfort.sit_up": "ساعدوني على الجلوس",
   "needs.comfort.quiet": "من فضلكم اخفضوا الصوت",
+  "needs.comfort.lights_on": "أشعل الأنوار",
+  "needs.comfort.lights_off": "أطفئ الأنوار",
+  "needs.comfort.lights_dimmed": "خفّف الأنوار",
 
   // ── Patient needs: Medical ─────────────────────────────────────
   "needs.medical.medication": "أحتاج دوائي",
   "needs.medical.suction": "أحتاج شفطاً",
-  "needs.medical.nauseous": "أشعر بالغثيان",
   "needs.medical.breathe": "لا أستطيع التنفس جيداً",
   "needs.medical.nurse": "أحتاج الممرض",
   "needs.medical.doctor": "أحتاج الطبيب",

@@ -37,11 +37,13 @@ const ms: LocaleStrings = {
   "needs.comfort.turn": "Tolong pusingkan saya",
   "needs.comfort.sit_up": "Tolong bantu saya duduk",
   "needs.comfort.quiet": "Tolong senyap sedikit",
+  "needs.comfort.lights_on": "Hidupkan lampu",
+  "needs.comfort.lights_off": "Matikan lampu",
+  "needs.comfort.lights_dimmed": "Malapkan lampu",
 
   // ── Patient needs: Medical ─────────────────────────────────────
   "needs.medical.medication": "Saya perlukan ubat saya",
   "needs.medical.suction": "Saya perlukan sedutan",
-  "needs.medical.nauseous": "Saya rasa loya",
   "needs.medical.breathe": "Saya sukar bernafas",
   "needs.medical.nurse": "Saya perlukan jururawat",
   "needs.medical.doctor": "Saya perlukan doktor",

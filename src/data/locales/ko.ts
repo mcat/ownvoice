@@ -37,11 +37,13 @@ const ko: LocaleStrings = {
   "needs.comfort.turn": "몸을 돌려 주십시오",
   "needs.comfort.sit_up": "일어나 앉는 것을 도와주십시오",
   "needs.comfort.quiet": "조용히 해 주십시오",
+  "needs.comfort.lights_on": "불을 켜 주세요",
+  "needs.comfort.lights_off": "불을 꺼 주세요",
+  "needs.comfort.lights_dimmed": "불을 어둡게 해 주세요",
 
   // ── Patient needs: Medical ─────────────────────────────────────
   "needs.medical.medication": "약이 필요합니다",
   "needs.medical.suction": "흡인이 필요합니다",
-  "needs.medical.nauseous": "속이 메스꺼습니다",
   "needs.medical.breathe": "숨쉬기가 힘듭니다",
   "needs.medical.nurse": "간호사가 필요합니다",
   "needs.medical.doctor": "의사 선생님이 필요합니다",

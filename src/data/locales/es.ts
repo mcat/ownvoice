@@ -37,11 +37,13 @@ const es: LocaleStrings = {
   "needs.comfort.turn": "Por favor cámbienme de posición",
   "needs.comfort.sit_up": "Ayúdenme a sentarme",
   "needs.comfort.quiet": "Por favor hagan silencio",
+  "needs.comfort.lights_on": "Enciende las luces",
+  "needs.comfort.lights_off": "Apaga las luces",
+  "needs.comfort.lights_dimmed": "Atenúa las luces",
 
   // ── Patient needs: Medical ─────────────────────────────────────
   "needs.medical.medication": "Necesito mi medicamento",
   "needs.medical.suction": "Necesito que me hagan succión",
-  "needs.medical.nauseous": "Tengo náuseas",
   "needs.medical.breathe": "No puedo respirar bien",
   "needs.medical.nurse": "Necesito a la enfermera",
   "needs.medical.doctor": "Necesito al doctor",

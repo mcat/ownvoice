@@ -37,11 +37,13 @@ const da: LocaleStrings = {
   "needs.comfort.turn": "Vend mig venligst",
   "needs.comfort.sit_up": "Hjælp mig med at sætte mig op",
   "needs.comfort.quiet": "Vær stille, tak",
+  "needs.comfort.lights_on": "Tænd lyset",
+  "needs.comfort.lights_off": "Sluk lyset",
+  "needs.comfort.lights_dimmed": "Dæmp lyset",
 
   // ── Patient needs: Medical ─────────────────────────────────────
   "needs.medical.medication": "Jeg har brug for min medicin",
   "needs.medical.suction": "Jeg har brug for sugning",
-  "needs.medical.nauseous": "Jeg har kvalme",
   "needs.medical.breathe": "Jeg kan ikke trække vejret ordentligt",
   "needs.medical.nurse": "Jeg har brug for sygeplejersken",
   "needs.medical.doctor": "Jeg har brug for lægen",

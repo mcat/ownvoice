@@ -37,11 +37,13 @@ const hi: LocaleStrings = {
   "needs.comfort.turn": "कृपया मुझे करवट दिलाइए",
   "needs.comfort.sit_up": "मुझे बैठने में मदद कीजिए",
   "needs.comfort.quiet": "कृपया शांत रहिए",
+  "needs.comfort.lights_on": "लाइट जलाएँ",
+  "needs.comfort.lights_off": "लाइट बंद करें",
+  "needs.comfort.lights_dimmed": "लाइट कम करें",
 
   // ── Patient needs: Medical ─────────────────────────────────────
   "needs.medical.medication": "मुझे अपनी दवाई चाहिए",
   "needs.medical.suction": "मुझे सक्शन चाहिए",
-  "needs.medical.nauseous": "मुझे मिचली आ रही है",
   "needs.medical.breathe": "मुझे साँस लेने में तकलीफ़ हो रही है",
   "needs.medical.nurse": "मुझे नर्स चाहिए",
   "needs.medical.doctor": "मुझे डॉक्टर चाहिए",

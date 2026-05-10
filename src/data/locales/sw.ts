@@ -37,11 +37,13 @@ const sw: LocaleStrings = {
   "needs.comfort.turn": "Tafadhali nigeuze",
   "needs.comfort.sit_up": "Nisaidie kukaa wima",
   "needs.comfort.quiet": "Tafadhali nyamaza",
+  "needs.comfort.lights_on": "Washa taa",
+  "needs.comfort.lights_off": "Zima taa",
+  "needs.comfort.lights_dimmed": "Punguza taa",
 
   // ── Patient needs: Medical ─────────────────────────────────────
   "needs.medical.medication": "Ninahitaji dawa yangu",
   "needs.medical.suction": "Ninahitaji kufanyiwa suction",
-  "needs.medical.nauseous": "Ninahisi kichefuchefu",
   "needs.medical.breathe": "Sipumui vizuri",
   "needs.medical.nurse": "Ninahitaji muuguzi",
   "needs.medical.doctor": "Ninahitaji daktari",

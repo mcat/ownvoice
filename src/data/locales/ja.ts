@@ -37,11 +37,13 @@ const ja: LocaleStrings = {
   "needs.comfort.turn": "体の向きを変えてください",
   "needs.comfort.sit_up": "起き上がるのを手伝ってください",
   "needs.comfort.quiet": "静かにしてください",
+  "needs.comfort.lights_on": "電気をつけてください",
+  "needs.comfort.lights_off": "電気を消してください",
+  "needs.comfort.lights_dimmed": "電気を暗くしてください",
 
   // ── Patient needs: Medical ─────────────────────────────────────
   "needs.medical.medication": "お薬がほしいです",
   "needs.medical.suction": "吸引をしてほしいです",
-  "needs.medical.nauseous": "吐き気がします",
   "needs.medical.breathe": "うまく息ができません",
   "needs.medical.nurse": "看護師さんを呼んでください",
   "needs.medical.doctor": "医師を呼んでください",

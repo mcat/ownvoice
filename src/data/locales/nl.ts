@@ -37,11 +37,13 @@ const nl: LocaleStrings = {
   "needs.comfort.turn": "Kunt u mij omdraaien?",
   "needs.comfort.sit_up": "Helpt u mij rechtop te zitten",
   "needs.comfort.quiet": "Wees stil alstublieft",
+  "needs.comfort.lights_on": "Doe het licht aan",
+  "needs.comfort.lights_off": "Doe het licht uit",
+  "needs.comfort.lights_dimmed": "Dim het licht",
 
   // ── Patient needs: Medical ─────────────────────────────────────
   "needs.medical.medication": "Ik heb mijn medicatie nodig",
   "needs.medical.suction": "Ik moet worden uitgezogen",
-  "needs.medical.nauseous": "Ik ben misselijk",
   "needs.medical.breathe": "Ik kan niet goed ademhalen",
   "needs.medical.nurse": "Ik heb de verpleegkundige nodig",
   "needs.medical.doctor": "Ik heb de dokter nodig",
