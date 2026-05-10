@@ -538,7 +538,7 @@ describe("VoiceCapture — pre-capture readiness hint", () => {
   });
 });
 
-// "Saving your voice…" model-loading copy moved out of VoiceCapture and into
+// The model-loading badge ("Preparing your voice…") moved out of VoiceCapture and into
 // the parent's <VoiceCloneStatus> row (see VoiceCloneStatus.test.tsx). The
 // matching test for that path lives there now; VoiceCapture only owns the
 // recording/extraction flow, not the steady-state badge.

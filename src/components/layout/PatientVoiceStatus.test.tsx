@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, cleanup } from "@testing-library/preact";
+import { fireEvent, render, screen, cleanup } from "@testing-library/preact";
 import { PatientVoiceStatus } from "./PatientVoiceStatus";
 
 const mockMgr = {
@@ -8,6 +8,7 @@ const mockMgr = {
   onProgress: vi.fn().mockReturnValue(() => {}),
   init: vi.fn().mockResolvedValue(undefined),
   getWorker: vi.fn().mockReturnValue(null),
+  clearError: vi.fn(),
 };
 
 vi.mock("../../models/modelManager", () => ({
@@ -81,6 +82,32 @@ describe("PatientVoiceStatus", () => {
     expect(
       screen.getByRole("button", { name: /Try again/i }),
     ).toBeInTheDocument();
+  });
+
+  it("Try again click clears the error and posts warmup to the worker", async () => {
+    const postMessage = vi.fn();
+    vi.doMock("../../hooks/useModels", () => ({
+      useModels: () => ({
+        isWarm: () => false,
+        isReady: () => false,
+        isLoading: () => false,
+        getError: () => "boom",
+        humanCountdown: () => null,
+        isAlmostReady: () => false,
+        secondsLeft: () => undefined,
+        progress: [],
+        initialized: true,
+        totalProgress: () => ({ loaded: 0, total: 0 }),
+      }),
+    }));
+    mockMgr.clearError.mockClear();
+    mockMgr.getWorker.mockReturnValue({ postMessage } as any);
+    vi.resetModules();
+    const { PatientVoiceStatus: Fresh } = await import("./PatientVoiceStatus");
+    render(<Fresh patient={patient as any} />);
+    fireEvent.click(screen.getByRole("button", { name: /Try again/i }));
+    expect(mockMgr.clearError).toHaveBeenCalledWith("tts");
+    expect(postMessage).toHaveBeenCalledWith({ type: "warmup" });
   });
 
   it("status pill is not a button", () => {
