@@ -126,7 +126,15 @@ function buildPlan(cfg: AppSettings): SpeakerPlan[] {
  * sequence finishes or is aborted.
  */
 export async function runPreGeneration(cfg: AppSettings): Promise<void> {
-  abort();
+  // Cancel any in-flight controller without calling the public `abort()`,
+  // which also calls store.abortAll() and would wipe steady-state entries
+  // that VoiceCloneStatus's reconciler-on-mount seeded with `done`. We
+  // want to *cancel work*, not *wipe state* — the per-speaker isAlreadyDone
+  // check below decides what to keep.
+  if (currentController) {
+    currentController.abort();
+    currentController = null;
+  }
 
   const plan = buildPlan(cfg);
   if (plan.length === 0) return;
@@ -142,23 +150,40 @@ export async function runPreGeneration(cfg: AppSettings): Promise<void> {
 
   const store = useAudioCacheStore.getState();
 
+  // A speaker is "already at the desired terminal state" when the store
+  // already holds `done` for the same fingerprint AND locale AND total —
+  // i.e. nothing has changed that would invalidate the prior pre-gen run.
+  // VoiceCloneStatus's reconciler-on-mount writes exactly this shape after
+  // verifying OPFS, so without this gate every reload would briefly flash
+  // through "Preparing 0/N" → "all N ready" while generateAllPhrases
+  // re-iterated the cached entries. Match on locale + total because
+  // fingerprint alone doesn't encode the corpus the run was scoped to.
+  function isAlreadyDone(speaker: SpeakerPlan, fingerprint: string): boolean {
+    const existing = useAudioCacheStore.getState().runs[speaker.key];
+    return (
+      !!existing &&
+      existing.status === "done" &&
+      existing.fingerprint === fingerprint &&
+      existing.locale === locale &&
+      existing.total === speaker.phrases.length
+    );
+  }
+
   // Seed every planned speaker as "queued" up front so VoiceCloneStatus
   // has a row to render for providers while the patient run is still in
   // progress. Without this, provider rows stay blank for the full patient
   // pass (~150 phrases) before their own run even starts.
   for (const speaker of plan) {
-    store.queue(
-      speaker.key,
-      speaker.phrases.length,
-      locale,
-      embeddingFingerprint(speaker.speakerData),
-    );
+    const fingerprint = embeddingFingerprint(speaker.speakerData);
+    if (isAlreadyDone(speaker, fingerprint)) continue;
+    store.queue(speaker.key, speaker.phrases.length, locale, fingerprint);
   }
 
   for (const speaker of plan) {
     if (controller.signal.aborted || runId !== currentRunId) return;
 
     const fingerprint = embeddingFingerprint(speaker.speakerData);
+    if (isAlreadyDone(speaker, fingerprint)) continue;
     store.start(
       speaker.key,
       speaker.phrases.length,

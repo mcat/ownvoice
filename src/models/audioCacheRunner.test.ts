@@ -171,6 +171,161 @@ describe("audioCacheRunner.runPreGeneration", () => {
     expect(s.runs["provider:0"]?.current).toBe(1);
   });
 
+  it("skips speakers already in 'done' state with the same fingerprint, locale, and total", async () => {
+    // VoiceCloneStatus's reconciler-on-mount can write `done` for a speaker
+    // before runPreGeneration runs. Without the skip, the runner would
+    // overwrite that with `queued` → `running 0/N`, briefly flashing through
+    // progress before `generateAllPhrases` walks the cached entries.
+    let generatorCalled = false;
+    vi.mocked(generateAllPhrases).mockImplementation((phrases) => {
+      generatorCalled = true;
+      return makeGenerator([
+        { phrase: phrases[0], current: 1, total: phrases.length },
+      ]);
+    });
+
+    // Need to know what phrases.length and fingerprint would resolve to
+    // for the patient. Run once to capture them.
+    await runPreGeneration(BASE_CFG);
+    const seeded = useAudioCacheStore.getState().runs[PATIENT_KEY]!;
+    const targetTotal = seeded.total;
+    const targetFingerprint = seeded.fingerprint!;
+    const targetLocale = seeded.locale!;
+
+    // Reset store to a steady-state "done" entry — what the reconciler
+    // produces — and re-arm the generator mock. Use the prev callback
+    // form so we patch on the live state rather than racing with any
+    // tail mutations from the prior runPreGeneration's microtask queue.
+    useAudioCacheStore.setState((s) => ({
+      ...s,
+      runs: {
+        [PATIENT_KEY]: {
+          status: "done",
+          current: targetTotal,
+          total: targetTotal,
+          currentPhrase: null,
+          failedPhrases: [],
+          locale: targetLocale,
+          fingerprint: targetFingerprint,
+        },
+      },
+      activeKey: null,
+    }));
+    generatorCalled = false;
+
+    await runPreGeneration(BASE_CFG);
+
+    // Runner must NOT have called generateAllPhrases for the already-done
+    // speaker, and the store must still read `done` with the same total
+    // (no flash through "running 0/N").
+    expect(generatorCalled).toBe(false);
+    const after = useAudioCacheStore.getState().runs[PATIENT_KEY];
+    expect(after?.status).toBe("done");
+    expect(after?.current).toBe(targetTotal);
+  });
+
+  it("does NOT skip a 'done' speaker when the fingerprint changed (re-enrolled voice)", async () => {
+    let generatorCalled = false;
+    vi.mocked(generateAllPhrases).mockImplementation((phrases) => {
+      generatorCalled = true;
+      return makeGenerator([
+        { phrase: phrases[0], current: 1, total: phrases.length },
+      ]);
+    });
+
+    // Pre-seed `done` with a stale fingerprint (mimicking a fingerprint
+    // change after re-enrollment). Locale/total intentionally match.
+    useAudioCacheStore.setState({
+      runs: {
+        [PATIENT_KEY]: {
+          status: "done",
+          current: 158,
+          total: 158,
+          currentPhrase: null,
+          failedPhrases: [],
+          locale: "en",
+          fingerprint: "stale-fingerprint",
+        },
+      },
+      activeKey: null,
+    });
+
+    await runPreGeneration(BASE_CFG);
+
+    // The runner must run again because fingerprint mismatch invalidates
+    // any prior cache entries.
+    expect(generatorCalled).toBe(true);
+  });
+
+  it("does NOT skip a 'done' speaker when locale changed", async () => {
+    let generatorCalled = false;
+    vi.mocked(generateAllPhrases).mockImplementation((phrases) => {
+      generatorCalled = true;
+      return makeGenerator([
+        { phrase: phrases[0], current: 1, total: phrases.length },
+      ]);
+    });
+
+    // Run once to capture fingerprint.
+    await runPreGeneration(BASE_CFG);
+    const seeded = useAudioCacheStore.getState().runs[PATIENT_KEY]!;
+    const targetFingerprint = seeded.fingerprint!;
+
+    // Re-seed `done` with a different locale than BASE_CFG would produce.
+    useAudioCacheStore.setState({
+      runs: {
+        [PATIENT_KEY]: {
+          status: "done",
+          current: seeded.total,
+          total: seeded.total,
+          currentPhrase: null,
+          failedPhrases: [],
+          locale: "de", // different from BASE_CFG's locale
+          fingerprint: targetFingerprint,
+        },
+      },
+      activeKey: null,
+    });
+    generatorCalled = false;
+
+    await runPreGeneration(BASE_CFG);
+
+    expect(generatorCalled).toBe(true);
+  });
+
+  it("does NOT skip a 'failed' speaker (only `done` is honored)", async () => {
+    let generatorCalled = false;
+    vi.mocked(generateAllPhrases).mockImplementation((phrases) => {
+      generatorCalled = true;
+      return makeGenerator([
+        { phrase: phrases[0], current: 1, total: phrases.length },
+      ]);
+    });
+
+    await runPreGeneration(BASE_CFG);
+    const seeded = useAudioCacheStore.getState().runs[PATIENT_KEY]!;
+
+    useAudioCacheStore.setState({
+      runs: {
+        [PATIENT_KEY]: {
+          ...seeded,
+          status: "failed",
+          failedPhrases: ["x"],
+        },
+      },
+      activeKey: null,
+    });
+    generatorCalled = false;
+
+    await runPreGeneration(BASE_CFG);
+
+    // A re-trigger of runPreGeneration should reset and re-run failed
+    // speakers — the skip gate is `done` only, not `failed`. (The user
+    // can still keep the failed state by NOT calling runPreGeneration;
+    // App.tsx only fires it on cfg change.)
+    expect(generatorCalled).toBe(true);
+  });
+
   it("patient entry uses activePatient's speakerData and cfg.caregiverLang", async () => {
     let capturedEmbedding: unknown;
     vi.mocked(generateAllPhrases).mockImplementation((phrases, embedding) => {
