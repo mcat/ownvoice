@@ -146,10 +146,40 @@ Both workers from the original Listen feature return, unchanged in
 architecture but called via a leaner contract:
 
 - `public/stt-gpu-worker.js` — WebGPU-primary, used when `"gpu" in
-  navigator`.
-- `src/models/sttWorker.ts` — WASM fallback. Custom STFT/mel pipeline
-  (FFT-512, Slaney mel norm, log10 rescale) — keep as-is per the
-  re-implementation hints in #233.
+  navigator`. Owns its own download + shader-compile + warmup; emits
+  `ready` when it's already warm. Main thread does *not* send it a
+  separate `warmup` message (it would reject one).
+- `src/models/sttWorker.ts` — WASM fallback. Boots cold and accepts an
+  explicit `warmup` message. Custom STFT/mel pipeline (FFT-512 radix-2
+  Cooley-Tukey with precomputed twiddles and bit-reversal indices,
+  Slaney mel norm, **log10** rescale with `(x + 4) / 4`) — keep as-is.
+
+#### Load-bearing details preserved from v1
+
+These are fixed points that #233's re-implementation hints (and the PRs
+that wrote them) earned the hard way:
+
+- **Slaney mel normalization** (`enorm = 2 / (hz[m+2] - hz[m])`).
+  Without it, higher mel bins over-weight the input and the encoder
+  receives a spectrum the model wasn't trained on.
+- **log10, not natural log**, for the mel-spectrogram. The rescale
+  constants `max(log_spec, max - 8.0)` and `(x + 4) / 4` are calibrated
+  for log10. Mixing in `Math.log` produces transcriptions that look
+  superficially OK but degrade silently. PR #155 fixed this in v1; do
+  not regress.
+- **`<|nospeech|>` softmax threshold 0.6** at the SOT position per
+  chunk. Above threshold → emit empty text. Without it, silent chunks
+  transcribe as the Whisper training-set artifact "Thanks for watching!"
+  This matters more in v2 than v1: a 4-minute capture with a 30-second
+  silent stretch in the middle will produce one fully-silent chunk,
+  which must be detected and dropped, not appended as "Thanks for
+  watching!" to the draft.
+- **AudioWorklet over ScriptProcessorNode.** Worklet runs on the audio
+  thread and is the supported API; ScriptProcessor is deprecated and
+  blocks the main thread for buffer callbacks.
+- **Whisper language tokens resolved from `tokenizer.json` at worker
+  init**, not hardcoded. The token IDs differ across tokenizer
+  versions; resolving at init survives model updates.
 
 The worker protocol drops `partial` streaming messages. The new
 contract is a single `transcribe` request with a chunked-audio payload
@@ -197,7 +227,13 @@ After stop:
 1. Slice audio into 30s chunks. Final chunk may be < 30s (pad to 30s
    with zeros; Whisper handles trailing silence).
 2. Dispatch chunks to the worker in `chunkIndex` order. Receive
-   `transcribed` per chunk.
+   `transcribed` per chunk. **Each chunk is decoded exactly once.**
+   Never re-decode a chunk to refresh its text — greedy decoding is
+   non-deterministic on near-identical inputs (an earlier v1 design
+   that re-transcribed a growing window every 5s produced visible
+   flicker in the textarea, which is why v1 finalized on
+   single-call-on-stop). The multi-chunk shape here is the same
+   principle applied N times, not a return to streaming re-decode.
 3. For each completed chunk text, run sentence segmentation
    (`src/utils/sentenceSegment.ts`, new):
    - Regex split on `[.!?。！？]+(\s+|$)` for Latin + CJK punctuation.
@@ -228,7 +264,22 @@ Accessibility: each draft row gets `role="textbox"`, `aria-label`
 sentence {n}". Touch targets: row is full-width 64px tall minimum; ✕
 is 44×44px (smaller than the 64px patient-facing standard — see
 `DESIGN_GUIDELINES.md` — but acceptable since this is a clinician
-surface, not a patient surface).
+surface, not a patient surface). The Listen pill itself is sized for
+clinician use (~44–48px tall), deliberately *not* meeting the patient
+64px minimum: making it patient-sized would invite the patient to tap
+it, which would inject empty-or-noise captures into the thread.
+
+### Privacy notice
+
+Recording in a clinical setting deserves explicit on-screen
+reassurance about what happens to the audio. A small, persistent
+single-line footnote sits below the Listen pill in idle state:
+**"On-device · Whisper · no audio leaves this device"** (locale key
+`ui.thread.listen.privacy_notice`). Dimmed muted text, small font,
+non-interactive. It is visually present but not attention-grabbing.
+During recording and draft phases, the footnote is hidden to keep the
+focused state uncluttered — the user has already seen the assurance
+before they started.
 
 ### Commit / split-on-add
 
@@ -245,6 +296,17 @@ event type as typed messages, with a new `VIA` attribute set to `mic`
 or `typed`. This preserves the per-message audit trail without
 expanding the event taxonomy.
 
+**Audit backward compatibility.** PR #234 removed the
+`THREAD_TRANSCRIBED` event type from the renderer; pre-existing
+transcribed entries in old IndexedDB audit logs already silently fail
+to render on replay. v2 does *not* restore `THREAD_TRANSCRIBED` and
+does *not* migrate the old log entries. Sessions captured under v1
+remain partially un-replayable; new v2 captures will replay
+correctly. If an audit migration is later wanted, it can read the old
+`THREAD_TRANSCRIBED` records, synthesize equivalent `THREAD_COMPOSE`
+records with `via: "mic"`, and write them back — but that's out of
+scope here.
+
 ### State machine boundaries
 
 The Listen state lives in `ListenPill`'s local component state, not in
@@ -257,9 +319,21 @@ The Listen state lives in `ListenPill`'s local component state, not in
 
 Force-cleanup on unmount: the hook returns a cleanup function that
 releases the `MediaStream` and terminates the worker `transcribe`
-in-flight, if any. No "pending flush" bookkeeping from v1 is needed —
-because there's no auto-submit on stop, an in-progress transcription
-that loses its component lifecycle has nothing to commit to.
+in-flight, if any. Releasing the stream is *not optional* — if the
+component unmounts mid-capture without explicitly stopping every
+track, the browser's mic indicator stays on indefinitely because
+there's no handle left to stop it. v1's force-release effect skipped
+the final flush (the session was being abandoned, not finalized);
+v2 inherits the same shape but doesn't need v1's pending-flush
+bookkeeping because there's no auto-submit on stop — an in-progress
+transcription that loses its component lifecycle has nothing to
+commit to.
+
+Cleanup runs on: component unmount, route change away from the thread
+view, and explicit `closeAllOverlays()` / equivalent. The hook also
+listens for `visibilitychange` and ends the capture if the tab is
+backgrounded for >10s while recording, again to prevent runaway mic
+indicators.
 
 ## Boot wiring
 
@@ -269,15 +343,29 @@ failure). Restore the `"stt"` entry in `models-manifest.json` for the
 Whisper small q4 files. Restore the `MODEL_URLS.stt` and `"stt"`
 member of `ModelId` union.
 
-`bootBackgroundModels()` becomes the parallel boot path for STT (LLM
-was removed in #234 and is not coming back; STT no longer needs to
-parallelize with it, but the function name stays for future flexibility).
+**Parallel boot is load-bearing.** v1 created `bootSTTAndLLM()`
+specifically so STT and LLM could begin downloading immediately, in
+parallel with WebGPU TTS shader compilation. An earlier shape that
+chained STT behind `initGPU()` meant STT could not even start
+downloading until TTS finished compiling — minutes on first cold load,
+indefinite if init hung. v2 keeps the parallel pattern: STT boot
+dispatches from `bootBackgroundModels()` at the same time as TTS
+shader compile, not after it. (LLM was removed in #234 and is not
+coming back; the function name stays for future flexibility.)
 
 The `_headers` block for `/stt-gpu-worker.js` returns
 (`Cross-Origin-Embedder-Policy: credentialless`,
-`Cross-Origin-Resource-Policy: same-origin`).
+`Cross-Origin-Resource-Policy: same-origin`), required for the GPU
+worker to instantiate from the cross-origin-isolated `/app/*` context.
+Same constraint as the TTS GPU worker.
 
 `scripts/download-assets.sh` restores its Whisper section.
+
+**No HeaderNav entry.** v1 had a "Listen" button in HeaderNav for
+opening the overlay. v2's activation is inside the thread, so there
+is no HeaderNav button, no menu item, and no PWA shortcut. Removing
+this also removes the `ui.dual.nav.listen` locale string from all 24
+locales (already gone post-#234; do not re-add).
 
 ## What's smaller than v1
 
@@ -305,9 +393,10 @@ deliberate:
   reset in `closeAllOverlays`.
 - Locale strings: roughly half of v1's, since the readiness countdown
   prose and editable-transcript copy are both gone. Estimated namespace:
-  `ui.thread.listen.{idle_label, recording_label, stop_label,
-   silence_warning, transcribing_label, draft_label, sentence_edit_aria,
-   sentence_discard_aria, add_as, discard, error_message, try_again}`.
+  `ui.thread.listen.{idle_label, privacy_notice, recording_label,
+   stop_label, silence_warning, transcribing_label, draft_label,
+   sentence_edit_aria, sentence_discard_aria, add_as, discard,
+   error_message, try_again}`.
 - The worker protocol drops `partial`/`requestId` keying.
 
 The custom WASM Whisper preprocessor (Slaney mel norm, log10 rescale,
