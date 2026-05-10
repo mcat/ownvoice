@@ -1067,9 +1067,9 @@ const he: LocaleStrings = {
   "ui.voice_quality.tip.loudness": "נסה לשמור על עוצמת קול אחידה.",
   "ui.voice_quality.tip.tilt_boomy": "נסה להתרחק מעט מהמיקרופון.",
   "ui.voice_quality.tip.tilt_tinny": "המיקרופון נשמע דק — נסה אחר אם יש לך.",
-  "ui.provider.settings.voice_clone_status.extraction_failed": "Voice clone unavailable — using backup{fallback}",
-  "ui.provider.settings.voice_clone_status.retry_extraction_aria": "Retry extracting voice clone",
-  "ui.provider.settings.voice_clone_status.quality_suffix": "quality: {label}",
+  "ui.provider.settings.voice_clone_status.extraction_failed": "שיבוט הקול אינו זמין — משתמש בקול גיבוי{fallback}",
+  "ui.provider.settings.voice_clone_status.retry_extraction_aria": "ניסיון נוסף לחילוץ שיבוט הקול",
+  "ui.provider.settings.voice_clone_status.quality_suffix": "איכות: {label}",
 };
 
 export default he;

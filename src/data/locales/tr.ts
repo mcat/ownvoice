@@ -1056,9 +1056,9 @@ const tr: LocaleStrings = {
   "ui.voice_quality.tip.loudness": "Ses seviyenizi sabit tutmaya çalışın.",
   "ui.voice_quality.tip.tilt_boomy": "Mikrofondan biraz daha uzaklaşmayı deneyin.",
   "ui.voice_quality.tip.tilt_tinny": "Bu mikrofonun sesi ince geliyor — varsa başka bir tane deneyin.",
-  "ui.provider.settings.voice_clone_status.extraction_failed": "Voice clone unavailable — using backup{fallback}",
-  "ui.provider.settings.voice_clone_status.retry_extraction_aria": "Retry extracting voice clone",
-  "ui.provider.settings.voice_clone_status.quality_suffix": "quality: {label}",
+  "ui.provider.settings.voice_clone_status.extraction_failed": "Ses klonu kullanılamıyor — yedek ses kullanılıyor{fallback}",
+  "ui.provider.settings.voice_clone_status.retry_extraction_aria": "Ses klonu çıkarmayı yeniden dene",
+  "ui.provider.settings.voice_clone_status.quality_suffix": "kalite: {label}",
 };
 
 export default tr;

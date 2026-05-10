@@ -996,9 +996,9 @@ const zh: LocaleStrings = {
   "ui.voice_quality.tip.loudness": "请保持音量稳定。",
   "ui.voice_quality.tip.tilt_boomy": "请离麦克风再远一些。",
   "ui.voice_quality.tip.tilt_tinny": "这个麦克风听起来声音单薄 — 如果有其他麦克风可以试试。",
-  "ui.provider.settings.voice_clone_status.extraction_failed": "Voice clone unavailable — using backup{fallback}",
-  "ui.provider.settings.voice_clone_status.retry_extraction_aria": "Retry extracting voice clone",
-  "ui.provider.settings.voice_clone_status.quality_suffix": "quality: {label}",
+  "ui.provider.settings.voice_clone_status.extraction_failed": "语音克隆不可用 — 正在使用备用语音{fallback}",
+  "ui.provider.settings.voice_clone_status.retry_extraction_aria": "重试提取语音克隆",
+  "ui.provider.settings.voice_clone_status.quality_suffix": "质量：{label}",
 };
 
 export default zh;

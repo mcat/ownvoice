@@ -1060,9 +1060,9 @@ const el: LocaleStrings = {
   "ui.voice_quality.tip.loudness": "Διατηρήστε σταθερή την ένταση της φωνής σας.",
   "ui.voice_quality.tip.tilt_boomy": "Δοκιμάστε να απομακρυνθείτε λίγο από το μικρόφωνο.",
   "ui.voice_quality.tip.tilt_tinny": "Το μικρόφωνο ακούγεται λεπτό — δοκιμάστε άλλο, αν έχετε.",
-  "ui.provider.settings.voice_clone_status.extraction_failed": "Voice clone unavailable — using backup{fallback}",
-  "ui.provider.settings.voice_clone_status.retry_extraction_aria": "Retry extracting voice clone",
-  "ui.provider.settings.voice_clone_status.quality_suffix": "quality: {label}",
+  "ui.provider.settings.voice_clone_status.extraction_failed": "Ο κλώνος φωνής δεν είναι διαθέσιμος — γίνεται χρήση εφεδρικής φωνής{fallback}",
+  "ui.provider.settings.voice_clone_status.retry_extraction_aria": "Επανάληψη εξαγωγής κλώνου φωνής",
+  "ui.provider.settings.voice_clone_status.quality_suffix": "ποιότητα: {label}",
 };
 
 export default el;
