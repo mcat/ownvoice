@@ -3,6 +3,7 @@ import { getCachedAudio, embeddingFingerprint } from "./models/audioCache";
 import { log } from "./audit/logger";
 import { EVENT } from "./audit/events";
 import { ATTR } from "./audit/attrs";
+import { recordOutcome, type EngineKind } from "./models/engineOutcomes";
 
 /**
  * In-memory hot cache of recently-played cloned-voice audio. The first
@@ -661,6 +662,7 @@ export async function speak(
           [ATTR.SPEECH_LANG]: speaker.lang ?? null,
         },
       });
+      emitOutcome("memory", text, speaker);
       await playAudioBuffer(hot.audio, hot.sampleRate);
       return;
     }
@@ -680,6 +682,7 @@ export async function speak(
             [ATTR.SPEECH_LANG]: speaker.lang ?? null,
           },
         });
+        emitOutcome("cache", text, speaker);
         await playAudioBuffer(hit.audio, hit.sampleRate);
         return;
       }
@@ -719,6 +722,7 @@ export async function speak(
         [ATTR.SPEECH_LANG]: speaker.lang ?? null,
       },
     });
+    emitOutcome("webspeech", text, speaker);
     return;
   }
 
@@ -732,5 +736,21 @@ export async function speak(
       [ATTR.SPEECH_LANG]: speaker.lang ?? null,
     },
   });
+  emitOutcome("tone", text, speaker);
   await playConfirmationTone();
+}
+
+/**
+ * Mirror engine outcomes into the live ring buffer so the Diagnostics
+ * panel can subscribe. Kept separate from the audit logger so the panel
+ * doesn't have to round-trip through the audit query path.
+ */
+function emitOutcome(engine: EngineKind, text: string, speaker: Speaker): void {
+  recordOutcome({
+    ts: Date.now(),
+    engine,
+    text,
+    lang: speaker.lang ?? null,
+    actor: speaker.type,
+  });
 }
