@@ -283,18 +283,38 @@ before they started.
 
 ### Commit / split-on-add
 
-✓ Add iterates the remaining draft sentences and posts each as a
-`PROVIDER_MESSAGE` via `conversationStore.addMessage()`, with:
-- `text: sentence.text`
-- `actor: "provider"`
-- `providerName: uiStore.activeProvider`
-- `time: captureStopTime` (same for all sentences from one capture)
-- `via: "mic"`
+The thread is derived from the audit log via `useThreadView`, which
+listens for `EVENT.THREAD_COMPOSE` records. There is no
+`conversationStore`. ✓ Add therefore iterates the remaining draft
+sentences and emits one `THREAD_COMPOSE` audit event per sentence via
+the existing `composeThread()` helper in `useSpeakActions.ts`,
+extended to accept a `via` option.
+
+Each emitted event carries:
+- `ATTR.SPEECH_TEXT: sentence.text`
+- `ATTR.ACTOR: "provider"`
+- `ATTR.PROVIDER_NAME: activeProvider.name`
+- `ATTR.VIA: "mic"` (new attribute)
+- `time`: the audit record's own `time` field; all events from one
+  capture share the same `time` (the capture's stop time), produced
+  by passing the stop time through the logger's optional `time` field.
 
 A single `THREAD_COMPOSE` audit event is logged per sentence — same
-event type as typed messages, with a new `VIA` attribute set to `mic`
-or `typed`. This preserves the per-message audit trail without
-expanding the event taxonomy.
+event type as typed messages, with the new `VIA` attribute set to
+`mic` or `typed`. This preserves the per-message audit trail without
+expanding the event taxonomy. Existing emitters of `THREAD_COMPOSE`
+(currently the typed-message path) gain `ATTR.VIA: "typed"`.
+
+**Audit backward compatibility.** PR #234 removed the
+`THREAD_TRANSCRIBED` event type from the renderer; pre-existing
+transcribed entries in old IndexedDB audit logs already silently fail
+to render on replay. v2 does *not* restore `THREAD_TRANSCRIBED` and
+does *not* migrate the old log entries. Sessions captured under v1
+remain partially un-replayable; new v2 captures will replay
+correctly. If an audit migration is later wanted, it can read the old
+`THREAD_TRANSCRIBED` records, synthesize equivalent `THREAD_COMPOSE`
+records with `via: "mic"`, and write them back — but that's out of
+scope here.
 
 **Audit backward compatibility.** PR #234 removed the
 `THREAD_TRANSCRIBED` event type from the renderer; pre-existing
@@ -422,10 +442,12 @@ New:
 Modified:
 - `src/components/conversation/Thread.tsx` — mount `ListenPill` at
   bottom-left
-- `src/stores/conversationStore.ts` — accept `via?: "mic" | "typed"`
-  on `addMessage()`
-- `src/audit/events.ts` — `THREAD_COMPOSE` event gains a `VIA`
-  attribute (string)
+- `src/hooks/useSpeakActions.ts` — `composeThread()` accepts a `via`
+  option (defaults `"typed"`) and stamps it on the emitted event
+- `src/audit/attrs.ts` — new `ATTR.VIA` attribute key
+- `src/audit/useThreadView.ts` — optional: surface `via` on
+  `ThreadEntry` for future styling (no-op in v1; renderer doesn't
+  branch on it)
 - `src/models/bootModels.ts` — restore `bootSTT()` / `bootSTTWasm()`,
   re-add `stt` to background boot
 - `src/models/modelsManifest.ts` — restore `"stt"` in `ModelId`
