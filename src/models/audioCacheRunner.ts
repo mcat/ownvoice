@@ -142,7 +142,7 @@ export async function runPreGeneration(cfg: AppSettings): Promise<void> {
 
   const store = useAudioCacheStore.getState();
 
-  // Seed every planned speaker as "queued" up front so VoiceCacheProgress
+  // Seed every planned speaker as "queued" up front so VoiceCloneStatus
   // has a row to render for providers while the patient run is still in
   // progress. Without this, provider rows stay blank for the full patient
   // pass (~150 phrases) before their own run even starts.
