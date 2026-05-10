@@ -37,11 +37,13 @@ const tr: LocaleStrings = {
   "needs.comfort.turn": "Lütfen beni çevirin",
   "needs.comfort.sit_up": "Doğrulmama yardım edin",
   "needs.comfort.quiet": "Lütfen sessiz olun",
+  "needs.comfort.lights_on": "Işıkları aç",
+  "needs.comfort.lights_off": "Işıkları kapat",
+  "needs.comfort.lights_dimmed": "Işıkları kıs",
 
   // ── Patient needs: Medical ─────────────────────────────────────
   "needs.medical.medication": "İlacıma ihtiyacım var",
   "needs.medical.suction": "Aspirasyon yapılmasına ihtiyacım var",
-  "needs.medical.nauseous": "Midem bulanıyor",
   "needs.medical.breathe": "İyi nefes alamıyorum",
   "needs.medical.nurse": "Hemşireye ihtiyacım var",
   "needs.medical.doctor": "Doktora ihtiyacım var",

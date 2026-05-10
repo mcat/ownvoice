@@ -37,11 +37,13 @@ const tl: LocaleStrings = {
   "needs.comfort.turn": "Pakibaling ako",
   "needs.comfort.sit_up": "Tulungan akong umupo",
   "needs.comfort.quiet": "Pakitahimik",
+  "needs.comfort.lights_on": "Buksan ang ilaw",
+  "needs.comfort.lights_off": "Patayin ang ilaw",
+  "needs.comfort.lights_dimmed": "Hinaan ang ilaw",
 
   // ── Patient needs: Medical ─────────────────────────────────────
   "needs.medical.medication": "Kailangan ko ang gamot ko",
   "needs.medical.suction": "Kailangan ko ng suction",
-  "needs.medical.nauseous": "Naduduwal ako",
   "needs.medical.breathe": "Hirap akong huminga",
   "needs.medical.nurse": "Kailangan ko ang nars",
   "needs.medical.doctor": "Kailangan ko ang doktor",

@@ -44,11 +44,13 @@ const he: LocaleStrings = {
   "needs.comfort.turn": "בבקשה תהפכו אותי",
   "needs.comfort.sit_up": "תעזרו לי להתיישב",
   "needs.comfort.quiet": "בבקשה שקט",
+  "needs.comfort.lights_on": "הדליקו את האור",
+  "needs.comfort.lights_off": "כבו את האור",
+  "needs.comfort.lights_dimmed": "עממו את האור",
 
   // ── Patient needs: Medical ─────────────────────────────────────
   "needs.medical.medication": "אני צריך את התרופה שלי",
   "needs.medical.suction": "אני צריך שאיבה",
-  "needs.medical.nauseous": "יש לי בחילה",
   "needs.medical.breathe": "קשה לי לנשום",
   "needs.medical.nurse": "אני צריך את האחות",
   "needs.medical.doctor": "אני צריך את הרופא",

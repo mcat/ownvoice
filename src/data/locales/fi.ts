@@ -37,11 +37,13 @@ const fi: LocaleStrings = {
   "needs.comfort.turn": "Käännä minut",
   "needs.comfort.sit_up": "Auta minut istumaan",
   "needs.comfort.quiet": "Olkaa hiljaa",
+  "needs.comfort.lights_on": "Sytytä valot",
+  "needs.comfort.lights_off": "Sammuta valot",
+  "needs.comfort.lights_dimmed": "Himmennä valot",
 
   // ── Patient needs: Medical ─────────────────────────────────────
   "needs.medical.medication": "Tarvitsen lääkkeeni",
   "needs.medical.suction": "Tarvitsen imua",
-  "needs.medical.nauseous": "Minua oksettaa",
   "needs.medical.breathe": "En saa hyvin henkeä",
   "needs.medical.nurse": "Tarvitsen hoitajan",
   "needs.medical.doctor": "Tarvitsen lääkärin",

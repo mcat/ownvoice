@@ -37,11 +37,13 @@ const zh: LocaleStrings = {
   "needs.comfort.turn": "请帮我翻身",
   "needs.comfort.sit_up": "扶我坐起来",
   "needs.comfort.quiet": "请保持安静",
+  "needs.comfort.lights_on": "请开灯",
+  "needs.comfort.lights_off": "请关灯",
+  "needs.comfort.lights_dimmed": "请调暗灯光",
 
   // ── Patient needs: Medical ─────────────────────────────────────
   "needs.medical.medication": "我需要吃药",
   "needs.medical.suction": "我需要吸痰",
-  "needs.medical.nauseous": "我觉得恶心",
   "needs.medical.breathe": "我呼吸困难",
   "needs.medical.nurse": "我需要护士",
   "needs.medical.doctor": "我需要医生",
