@@ -772,6 +772,11 @@ const en = {
   "ui.provider.settings.voice_cache.retry": "Retry",
   "ui.provider.settings.voice_cache.retry_aria": "Retry failed voice cache phrases",
 
+  // ── UI chrome: Settings — Voice clone status (combined readiness line) ──
+  "ui.provider.settings.voice_clone_status.extraction_failed": "Voice clone unavailable — using backup{fallback}",
+  "ui.provider.settings.voice_clone_status.retry_extraction_aria": "Retry extracting voice clone",
+  "ui.provider.settings.voice_clone_status.quality_suffix": "quality: {label}",
+
   // ── UI chrome: Settings — About section ───────────────────────
   "ui.provider.settings.about.heading": "About",
   "ui.provider.settings.about.subtitle": "In-patient AAC communication aid.",

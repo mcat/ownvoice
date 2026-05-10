@@ -1062,6 +1062,9 @@ const sw: LocaleStrings = {
   "ui.voice_quality.tip.loudness": "Jaribu kudumisha sauti ya kiwango sawa.",
   "ui.voice_quality.tip.tilt_boomy": "Jaribu kujiondoa zaidi kutoka kwa kipaza sauti.",
   "ui.voice_quality.tip.tilt_tinny": "Kipaza sauti hiki kinasikika nyembamba — jaribu kingine ikiwa unacho.",
+  "ui.provider.settings.voice_clone_status.extraction_failed": "Voice clone unavailable — using backup{fallback}",
+  "ui.provider.settings.voice_clone_status.retry_extraction_aria": "Retry extracting voice clone",
+  "ui.provider.settings.voice_clone_status.quality_suffix": "quality: {label}",
 };
 
 export default sw;

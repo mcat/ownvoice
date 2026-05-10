@@ -1042,6 +1042,9 @@ const ar: LocaleStrings = {
   "ui.voice_quality.tip.loudness": "حاول الحفاظ على ثبات مستوى الصوت.",
   "ui.voice_quality.tip.tilt_boomy": "حاول الابتعاد قليلاً عن الميكروفون.",
   "ui.voice_quality.tip.tilt_tinny": "يبدو الميكروفون رفيع الصوت — جرّب آخر إن أمكن.",
+  "ui.provider.settings.voice_clone_status.extraction_failed": "Voice clone unavailable — using backup{fallback}",
+  "ui.provider.settings.voice_clone_status.retry_extraction_aria": "Retry extracting voice clone",
+  "ui.provider.settings.voice_clone_status.quality_suffix": "quality: {label}",
 };
 
 export default ar;

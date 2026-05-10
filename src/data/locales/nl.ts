@@ -1058,6 +1058,9 @@ const nl: LocaleStrings = {
   "ui.voice_quality.tip.loudness": "Probeer het volume gelijkmatig te houden.",
   "ui.voice_quality.tip.tilt_boomy": "Ga iets verder van de microfoon af.",
   "ui.voice_quality.tip.tilt_tinny": "Deze microfoon klinkt dun — probeer een andere als je die hebt.",
+  "ui.provider.settings.voice_clone_status.extraction_failed": "Voice clone unavailable — using backup{fallback}",
+  "ui.provider.settings.voice_clone_status.retry_extraction_aria": "Retry extracting voice clone",
+  "ui.provider.settings.voice_clone_status.quality_suffix": "quality: {label}",
 };
 
 export default nl;

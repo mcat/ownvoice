@@ -538,31 +538,10 @@ describe("VoiceCapture — pre-capture readiness hint", () => {
   });
 });
 
-describe("VoiceCapture — plain-language status copy", () => {
-  beforeEach(() => {
-    vi.useRealTimers();
-  });
-
-  it("shows 'Saving your voice — about ...' during deferred processing", async () => {
-    const ctl = installMockMgrStatus({ tts: "ready" });
-    render(
-      <VoiceCapture
-        label="t"
-        hasVoice={true}
-        onCapture={() => {}}
-        onRemove={() => {}}
-        audioBlob={new Blob([new Uint8Array(1024)])}
-      />,
-    );
-    ctl.notify();
-    await new Promise((r) => setTimeout(r, 20));
-    // Both the visible badge and the throttled visually-hidden
-    // aria-live region contain the same saving text — assert that
-    // both are present (visible + accessible) and that they match.
-    const matches = screen.getAllByText(/Saving your voice/i);
-    expect(matches.length).toBeGreaterThanOrEqual(1);
-  });
-});
+// "Saving your voice…" model-loading copy moved out of VoiceCapture and into
+// the parent's <VoiceCloneStatus> row (see VoiceCloneStatus.test.tsx). The
+// matching test for that path lives there now; VoiceCapture only owns the
+// recording/extraction flow, not the steady-state badge.
 
 describe("VoiceCapture quality integration", () => {
   const validQuality: VoiceQualityResult = {
