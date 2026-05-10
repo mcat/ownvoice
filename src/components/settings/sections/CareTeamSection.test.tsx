@@ -39,8 +39,8 @@ vi.mock("../../shared/VoiceCapture", () => ({
   ),
 }));
 
-vi.mock("../VoiceCacheProgress", () => ({
-  VoiceCacheProgress: () => null,
+vi.mock("../VoiceCloneStatus", () => ({
+  VoiceCloneStatus: () => null,
 }));
 
 import { CareTeamSection } from "./CareTeamSection";

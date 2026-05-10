@@ -1,12 +1,12 @@
-import { useState } from "preact/hooks";
+import { useRef, useState } from "preact/hooks";
 import type { JSX, ComponentChildren } from "preact";
 import type { AppSettings, Provider } from "../../../types";
 import type { SpeakerData } from "../../../models/types";
 import type { ThemeTokens, ThemeName } from "../../../theme/tokens";
 import { Btn } from "../../shared/Btn";
-import { VoiceCapture } from "../../shared/VoiceCapture";
+import { VoiceCapture, type VoiceCloneStatus as ExtractionStatus } from "../../shared/VoiceCapture";
 import { LanguagePicker } from "../../shared/LanguagePicker";
-import { VoiceCacheProgress } from "../VoiceCacheProgress";
+import { VoiceCloneStatus } from "../VoiceCloneStatus";
 import { useSettingsStore, useActivePatient } from "../../../stores/settingsStore";
 import { t as resolvePhrase } from "../../../data/phraseRegistry";
 import { LANGS } from "../../../data/phrases";
@@ -54,6 +54,12 @@ export function CareTeamSection({
   const [newProvName, setNewProvName] = useState("");
   const [newProvEmoji, setNewProvEmoji] = useState(EMOJIS[0]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  // Per-provider extraction state and retry callback. Keyed by provider
+  // index — Provider objects don't have stable IDs, but indices are
+  // stable for the lifetime of the list (additions only push to the end;
+  // removals re-render and the dropped index loses its entry).
+  const [extractionStatus, setExtractionStatus] = useState<Record<number, ExtractionStatus>>({});
+  const retryRefs = useRef<Record<number, (() => void) | null>>({});
 
   async function handleCaregiverLangChange(destLocale: string) {
     if (destLocale === cfg.caregiverLang) return;
@@ -199,12 +205,20 @@ export function CareTeamSection({
                 border: isDark ? "rgba(255,255,255,0.12)" : "#E5E7EB",
                 cardBg: isDark ? "rgba(255,255,255,0.05)" : "#FFFFFF",
               }}
+              onCloneStatusChange={(s) =>
+                setExtractionStatus((prev) => ({ ...prev, [i]: s }))
+              }
+              registerRetry={(fn) => { retryRefs.current[i] = fn; }}
             />
-            <VoiceCacheProgress
+            <VoiceCloneStatus
               speakerKey={`provider:${i}`}
               speakerLabel={p.name}
+              cloneStatus={extractionStatus[i] ?? (p.embedding ? "ready" : p.hasVoice ? "model-loading" : "idle")}
+              speakerData={(p.embedding as SpeakerData | undefined) ?? null}
+              fallbackVoice={null}
               cfg={cfg}
-              patientSpeakerData={active?.speakerData ?? null}
+              phraseCorpus="provider"
+              onRetryExtraction={() => retryRefs.current[i]?.()}
             />
           </div>
         </div>
