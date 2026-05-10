@@ -69,7 +69,7 @@ const el: LocaleStrings = {
   "needs.hygiene.feet": "Πλύνετε τα πόδια μου",
   "needs.hygiene.hair": "Πλύνετε τα μαλλιά μου",
   "needs.hygiene.hands": "Πλύνετε τα χέρια μου",
-  "needs.hygiene.mouth": "Στοματική φροντίδα",
+  "needs.hygiene.mouth": "Φροντίστε το στόμα μου",
   "needs.hygiene.nose": "Σκουπίστε τη μύτη μου",
   "needs.hygiene.teeth": "Βουρτσίστε τα δόντια μου",
   "needs.hygiene.wound": "Αλλάξτε τον επίδεσμό μου",

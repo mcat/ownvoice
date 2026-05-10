@@ -61,7 +61,7 @@ const fi: LocaleStrings = {
   "needs.hygiene.feet": "Pese jalkani",
   "needs.hygiene.hair": "Pese hiukseni",
   "needs.hygiene.hands": "Pese käteni",
-  "needs.hygiene.mouth": "Suunhoito",
+  "needs.hygiene.mouth": "Hoida suuni",
   "needs.hygiene.nose": "Pyyhi nenäni",
   "needs.hygiene.teeth": "Harjaa hampaani",
   "needs.hygiene.wound": "Vaihda sidos",

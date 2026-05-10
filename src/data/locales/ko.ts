@@ -61,7 +61,7 @@ const ko: LocaleStrings = {
   "needs.hygiene.feet": "발을 씻겨 주십시오",
   "needs.hygiene.hair": "머리를 감겨 주십시오",
   "needs.hygiene.hands": "손을 닦아 주십시오",
-  "needs.hygiene.mouth": "구강 관리",
+  "needs.hygiene.mouth": "구강 관리를 해 주십시오",
   "needs.hygiene.nose": "코를 닦아 주십시오",
   "needs.hygiene.teeth": "양치질을 해 주십시오",
   "needs.hygiene.wound": "드레싱을 교체해 주십시오",

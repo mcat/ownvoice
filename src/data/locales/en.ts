@@ -57,7 +57,7 @@ const en = {
   "needs.hygiene.feet": "Wash my feet",
   "needs.hygiene.hair": "Wash my hair",
   "needs.hygiene.hands": "Wash my hands",
-  "needs.hygiene.mouth": "Mouth care",
+  "needs.hygiene.mouth": "I need mouth care",
   "needs.hygiene.nose": "Wipe my nose",
   "needs.hygiene.teeth": "Brush my teeth",
   "needs.hygiene.wound": "Change my dressing",

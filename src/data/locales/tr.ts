@@ -61,7 +61,7 @@ const tr: LocaleStrings = {
   "needs.hygiene.feet": "Ayaklarımı yıkayın",
   "needs.hygiene.hair": "Saçımı yıkayın",
   "needs.hygiene.hands": "Ellerimi yıkayın",
-  "needs.hygiene.mouth": "Ağız bakımı",
+  "needs.hygiene.mouth": "Ağız bakımımı yapın",
   "needs.hygiene.nose": "Burnumu silin",
   "needs.hygiene.teeth": "Dişlerimi fırçalayın",
   "needs.hygiene.wound": "Pansumanımı değiştirin",

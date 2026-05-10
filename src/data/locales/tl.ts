@@ -61,7 +61,7 @@ const tl: LocaleStrings = {
   "needs.hygiene.feet": "Hugasan ang paa ko",
   "needs.hygiene.hair": "Hugasan ang buhok ko",
   "needs.hygiene.hands": "Hugasan ang kamay ko",
-  "needs.hygiene.mouth": "Linis ng bibig",
+  "needs.hygiene.mouth": "Linisan ang bibig ko",
   "needs.hygiene.nose": "Punasan ang ilong ko",
   "needs.hygiene.teeth": "Sipilyuhin ang ngipin ko",
   "needs.hygiene.wound": "Palitan ang benda ko",

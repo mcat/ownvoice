@@ -61,7 +61,7 @@ const zh: LocaleStrings = {
   "needs.hygiene.feet": "帮我洗脚",
   "needs.hygiene.hair": "帮我洗头",
   "needs.hygiene.hands": "帮我洗手",
-  "needs.hygiene.mouth": "口腔护理",
+  "needs.hygiene.mouth": "帮我做口腔护理",
   "needs.hygiene.nose": "帮我擦鼻子",
   "needs.hygiene.teeth": "帮我刷牙",
   "needs.hygiene.wound": "换药包扎",

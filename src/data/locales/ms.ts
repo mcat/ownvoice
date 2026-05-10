@@ -61,7 +61,7 @@ const ms: LocaleStrings = {
   "needs.hygiene.feet": "Tolong basuh kaki saya",
   "needs.hygiene.hair": "Tolong basuh rambut saya",
   "needs.hygiene.hands": "Tolong basuh tangan saya",
-  "needs.hygiene.mouth": "Penjagaan mulut",
+  "needs.hygiene.mouth": "Tolong jaga mulut saya",
   "needs.hygiene.nose": "Tolong lap hidung saya",
   "needs.hygiene.teeth": "Tolong gosok gigi saya",
   "needs.hygiene.wound": "Tolong tukar pembalut luka saya",

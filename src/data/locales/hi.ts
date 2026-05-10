@@ -61,7 +61,7 @@ const hi: LocaleStrings = {
   "needs.hygiene.feet": "मेरे पैर धोइए",
   "needs.hygiene.hair": "मेरे बाल धोइए",
   "needs.hygiene.hands": "मेरे हाथ धोइए",
-  "needs.hygiene.mouth": "मुँह की सफ़ाई",
+  "needs.hygiene.mouth": "मेरे मुँह की सफ़ाई कीजिए",
   "needs.hygiene.nose": "मेरी नाक पोंछिए",
   "needs.hygiene.teeth": "मेरे दाँत साफ़ कीजिए",
   "needs.hygiene.wound": "मेरी पट्टी बदलिए",

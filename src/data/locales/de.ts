@@ -61,7 +61,7 @@ const de: LocaleStrings = {
   "needs.hygiene.feet": "Bitte waschen Sie meine Füße",
   "needs.hygiene.hair": "Bitte waschen Sie meine Haare",
   "needs.hygiene.hands": "Bitte waschen Sie meine Hände",
-  "needs.hygiene.mouth": "Mundpflege",
+  "needs.hygiene.mouth": "Bitte pflegen Sie meinen Mund",
   "needs.hygiene.nose": "Bitte putzen Sie mir die Nase",
   "needs.hygiene.teeth": "Bitte putzen Sie mir die Zähne",
   "needs.hygiene.wound": "Bitte wechseln Sie meinen Verband",
