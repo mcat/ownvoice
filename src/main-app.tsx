@@ -12,7 +12,7 @@ import { ATTR } from "./audit/attrs";
 import { initAudit } from "./audit/init";
 import { setActivePatientHash } from "./audit/session";
 import { patientIdHash } from "./audit/hash";
-import { resumeWorkflow } from "./audit/recovery";
+import { resumeWorkflow, reconcileAbandonedWithSettings } from "./audit/recovery";
 
 window.addEventListener("error", (ev) => {
   log({
@@ -125,8 +125,16 @@ useUIStore.subscribe((state, prev) => {
     const cfg = useSettingsStore.getState().cfg;
     void initAudit({
       activePatientId: cfg?.activePatientId ?? null,
-      onAbandoned: (list) => {
-        for (const w of list) {
+      onAbandoned: async (list) => {
+        // Reconcile against current settings before surfacing — a
+        // workflow whose intended outcome already materialised (e.g.
+        // voice_enrollment for a patient who now has speakerData) must
+        // not light up the recovery banner. See #226.
+        const settings = useSettingsStore.getState().cfg;
+        const filtered = settings
+          ? await reconcileAbandonedWithSettings(list, settings)
+          : list;
+        for (const w of filtered) {
           if (w.recoveryMode === "auto") {
             void resumeWorkflow(w.workflow_id);
           } else if (w.recoveryMode === "prompt") {

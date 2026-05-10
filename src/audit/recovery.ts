@@ -2,6 +2,8 @@ import { openAuditDb } from "./db";
 import { getWorkflowRunner } from "./registry";
 import { ov } from "./workflow";
 import type { WorkflowState } from "./types";
+import { patientIdHash } from "./hash";
+import type { AppSettings } from "../types";
 
 export interface AbandonedWorkflow {
   workflow_id: string;
@@ -40,6 +42,49 @@ export async function sweepAbandonedWorkflows(): Promise<AbandonedWorkflow[]> {
   });
   db.close();
   return out;
+}
+
+/**
+ * Filter abandoned workflows whose intended outcome has already
+ * materialised in the current settings, so they don't keep surfacing
+ * the recovery banner forever. See #226.
+ *
+ * Currently reconciles `voice_enrollment` only: a row whose
+ * `patient_id_hash` matches an existing patient that already has
+ * `speakerData` is treated as effectively done. The DB row itself
+ * isn't touched (retention will sweep it out); we just keep it from
+ * lighting up the UI.
+ *
+ * `audio_cache_pregen` and `model_priming` aren't filtered here because
+ * their app-level reconciliation already happens elsewhere — pre-gen
+ * skips cached phrases, primer skips files that pass `verifyAllOnBoot`.
+ * The recovery hooks for those names are auto-resume no-ops, so a stale
+ * row resumes silently rather than prompting.
+ */
+export async function reconcileAbandonedWithSettings(
+  abandoned: readonly AbandonedWorkflow[],
+  cfg: AppSettings,
+): Promise<AbandonedWorkflow[]> {
+  if (abandoned.length === 0) return [];
+  // Compute hashes only for patients who could possibly satisfy the
+  // outcome — saves us from hashing every patient on the device.
+  const enrolledHashes = new Set<string>();
+  for (const p of cfg.patients) {
+    if (p.speakerData) {
+      enrolledHashes.add(await patientIdHash(p.id));
+    }
+  }
+  return abandoned.filter((w) => {
+    if (
+      w.name === "voice_enrollment" &&
+      w.patient_id_hash != null &&
+      enrolledHashes.has(w.patient_id_hash)
+    ) {
+      // Patient is already enrolled. Suppress the prompt.
+      return false;
+    }
+    return true;
+  });
 }
 
 /** Resume an abandoned workflow by re-invoking its registered runner.
