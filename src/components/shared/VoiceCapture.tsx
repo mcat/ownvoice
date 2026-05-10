@@ -430,13 +430,30 @@ export function VoiceCapture({
   } as const;
 
   // Register retry with the parent (so the steady-state row's Retry button
-  // can invoke it). Effect re-runs only on identity change of the callback,
-  // since `retryEmbedding` is recreated each render but always closes over
-  // the current state via React refs.
+  // can invoke it).
+  //
+  // Both refs below stabilise the cleanup/re-register cycle. Without them,
+  // every parent render — which typically passes a fresh `(fn) => { retryRef
+  // .current = fn }` arrow as `registerRetry` — would re-fire this effect,
+  // flashing the parent's retryRef through null between cleanup and the
+  // re-register call. A user clicking Retry exactly during the gap would
+  // get a no-op. See #223.
+  //
+  // - retryEmbeddingRef keeps the registered callback closure stable while
+  //   still routing each invocation to the current render's `retryEmbedding`
+  //   (which closes over fresh state every render).
+  // - registerRetryRef lets the effect run once on mount: we always reach
+  //   into the latest registerRetry through the ref, so it's safe to leave
+  //   the prop out of the dep array.
+  const retryEmbeddingRef = useRef<() => void>();
+  retryEmbeddingRef.current = () => { void retryEmbedding(); };
+  const registerRetryRef = useRef(registerRetry);
+  registerRetryRef.current = registerRetry;
   useEffect(() => {
-    registerRetry?.(() => { void retryEmbedding(); });
-    return () => registerRetry?.(null);
-  }, [registerRetry]);
+    registerRetryRef.current?.(() => retryEmbeddingRef.current?.());
+    return () => registerRetryRef.current?.(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // --- Retry embedding extraction (when model loads after initial capture) ---
   async function retryEmbedding() {
