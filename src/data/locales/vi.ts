@@ -594,6 +594,21 @@ const vi: LocaleStrings = {
   "ui.dual.thread.scroll_up_aria": "Cuộn cuộc trò chuyện lên",
   "ui.dual.thread.scroll_down_aria": "Cuộn cuộc trò chuyện xuống",
 
+  // ── UI chrome: Thread → Listen (provider mic input) ────────────
+  "ui.thread.listen.idle_label": "Add what you said",
+  "ui.thread.listen.privacy_notice": "On-device · Whisper · no audio leaves this device",
+  "ui.thread.listen.recording_label": "Tap to stop",
+  "ui.thread.listen.silence_warning": "No speech detected · auto-stopping in {countdown}s",
+  "ui.thread.listen.transcribing_label": "Transcribing {done}/{total}…",
+  "ui.thread.listen.draft_label": "Draft · {count} sentences",
+  "ui.thread.listen.draft_label_one": "Draft · 1 sentence",
+  "ui.thread.listen.sentence_edit_aria": "Edit sentence {n} of {total}",
+  "ui.thread.listen.sentence_discard_aria": "Discard sentence {n}",
+  "ui.thread.listen.add_as": "Add as {provider}",
+  "ui.thread.listen.discard": "Discard",
+  "ui.thread.listen.error_message": "Couldn't transcribe — try again.",
+  "ui.thread.listen.try_again": "Try again",
+
   // ── UI chrome: ProviderPanel ───────────────────────────────────
   "ui.provider.care_team.title": "Đội ngũ y tế",
   "ui.provider.fallback_name": "Nhân viên y tế",
