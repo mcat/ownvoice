@@ -8,6 +8,7 @@ export const ATTR = {
 
   ACTOR:               "ownvoice.actor",
   PROVIDER_NAME:       "ownvoice.provider.name",
+  VIA:                 "ownvoice.via",
 
   SPEECH_TEXT:         "ownvoice.speech.text",
   SPEECH_GLOSS:        "ownvoice.speech.gloss",
