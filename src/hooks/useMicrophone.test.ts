@@ -24,7 +24,7 @@ function createMockStream(): MediaStream {
 // Helper: set up AudioContext + AudioWorkletNode mocks. The hook uses
 // an AudioWorklet; the mock exposes `simulateSamples(arr)` so tests can
 // drive the same path the worklet's `port.postMessage` would.
-function setupAudioContextMock() {
+function setupAudioContextMock(sampleRate = 44100) {
   const mockProcessor: {
     connect: ReturnType<typeof vi.fn>;
     disconnect: ReturnType<typeof vi.fn>;
@@ -53,7 +53,7 @@ function setupAudioContextMock() {
     createMediaStreamSource: vi.fn(() => mockSource),
     audioWorklet: { addModule: vi.fn(() => Promise.resolve()) },
     destination: {},
-    sampleRate: 44100,
+    sampleRate,
     state: "running" as AudioContextState,
     close: vi.fn(() => Promise.resolve()),
     resume: vi.fn(),
@@ -190,8 +190,8 @@ describe("useMicrophone", () => {
       expect(mockCtx.close).toHaveBeenCalled();
     });
 
-    it("returns accumulated mono PCM", async () => {
-      const { mockProcessor } = setupAudioContextMock();
+    it("returns accumulated mono PCM (no resample when ctx is already 16 kHz)", async () => {
+      const { mockProcessor } = setupAudioContextMock(16000);
 
       const mockStream = createMockStream();
       vi.mocked(navigator.mediaDevices.getUserMedia).mockResolvedValueOnce(mockStream);
@@ -218,6 +218,63 @@ describe("useMicrophone", () => {
       expect(combined!.length).toBe(chunkA.length + chunkB.length);
       expect(combined![0]).toBeCloseTo(0.1);
       expect(combined![chunkA.length]).toBeCloseTo(0.2);
+    });
+
+    it("resamples 48 kHz capture down to 16 kHz before returning", async () => {
+      const { mockProcessor } = setupAudioContextMock(48000);
+
+      const mockStream = createMockStream();
+      vi.mocked(navigator.mediaDevices.getUserMedia).mockResolvedValueOnce(mockStream);
+
+      const { result } = renderHook(() => useMicrophone());
+
+      await act(async () => {
+        await result.current.start();
+      });
+
+      // 3000 samples @ 48k = 62.5ms → should produce ~1000 samples @ 16k
+      const samples = new Float32Array(3000).fill(0.25);
+      act(() => {
+        mockProcessor.simulateSamples(samples);
+      });
+
+      let combined: Float32Array | undefined;
+      await act(async () => {
+        combined = await result.current.stop();
+      });
+
+      expect(combined).toBeInstanceOf(Float32Array);
+      // Linear interpolation: output_len = floor(input_len / ratio) where ratio=3
+      expect(combined!.length).toBe(1000);
+      // Amplitude preserved (constant input → constant output)
+      expect(combined![0]).toBeCloseTo(0.25, 5);
+      expect(combined![500]).toBeCloseTo(0.25, 5);
+    });
+
+    it("resamples 44.1 kHz capture down to 16 kHz", async () => {
+      const { mockProcessor } = setupAudioContextMock(44100);
+
+      const mockStream = createMockStream();
+      vi.mocked(navigator.mediaDevices.getUserMedia).mockResolvedValueOnce(mockStream);
+
+      const { result } = renderHook(() => useMicrophone());
+
+      await act(async () => {
+        await result.current.start();
+      });
+
+      const samples = new Float32Array(44100).fill(0.5);
+      act(() => {
+        mockProcessor.simulateSamples(samples);
+      });
+
+      let combined: Float32Array | undefined;
+      await act(async () => {
+        combined = await result.current.stop();
+      });
+
+      // 44100 samples @ 44.1k = 1s → 16000 samples @ 16k
+      expect(combined!.length).toBe(16000);
     });
 
     it("returns an empty Float32Array when no audio was captured", async () => {
