@@ -57,6 +57,12 @@ vi.mock("../models/modelManager", () => ({
     init: vi.fn().mockResolvedValue(undefined),
     getWorker: vi.fn(() => null),
     clearAll: vi.fn(),
+    // useModels (now consumed by ListenPill for readiness gating)
+    // subscribes via onProgress and reads getProgress on mount.
+    onProgress: vi.fn(() => () => undefined),
+    getProgress: vi.fn(() => []),
+    isWarm: vi.fn(() => true),
+    isReady: vi.fn(() => true),
   }),
 }));
 

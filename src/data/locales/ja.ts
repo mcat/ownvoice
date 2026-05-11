@@ -593,6 +593,7 @@ const ja: LocaleStrings = {
   "ui.thread.listen.discard": "Discard",
   "ui.thread.listen.error_message": "Couldn't transcribe — try again.",
   "ui.thread.listen.try_again": "Try again",
+  "ui.thread.listen.engine_not_ready": "Listen — engine not yet ready",
 
   // ── UI chrome: ProviderPanel ───────────────────────────────────
   "ui.provider.care_team.title": "ケアチーム",

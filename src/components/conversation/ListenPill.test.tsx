@@ -10,6 +10,7 @@ const session = {
   stop: vi.fn().mockResolvedValue(undefined),
   editSentence: vi.fn(),
   discardSentence: vi.fn(),
+  tryAgain: vi.fn(),
   reset: vi.fn(),
 };
 vi.mock("../../hooks/useListenSession", () => ({
@@ -22,12 +23,32 @@ vi.mock("../../hooks/useSpeakActions", () => ({
   useSpeakActions: () => ({ composeThread }),
 }));
 
+// Reactive readiness gate. Each test that needs to flip STT to "not
+// warm" overrides this before render.
+let sttWarm = true;
+vi.mock("../../hooks/useModels", () => ({
+  useModels: () => ({
+    isWarm: (id: string) => (id === "stt" ? sttWarm : false),
+    isReady: () => true,
+    isLoading: () => false,
+    getError: () => undefined,
+    progress: [],
+    initialized: true,
+    secondsLeft: () => undefined,
+    humanCountdown: () => null,
+    isAlmostReady: () => false,
+    totalProgress: () => ({ loaded: 0, total: 0 }),
+  }),
+}));
+
 beforeEach(() => {
   session.start.mockClear();
   session.stop.mockClear();
   session.reset.mockClear();
+  session.tryAgain.mockClear();
   composeThread.mockClear();
   (session.state as any) = { phase: "idle" };
+  sttWarm = true;
 });
 
 describe("ListenPill", () => {
@@ -78,6 +99,8 @@ describe("ListenPill", () => {
   it("on Add, emits one composeThread per remaining draft sentence", () => {
     (session.state as any) = {
       phase: "draft",
+      sessionId: 1,
+      error: null,
       transcribing: null,
       sentences: [
         { id: "a", text: "First sentence.", chunkIndex: 0 },
@@ -103,6 +126,8 @@ describe("ListenPill", () => {
   it("on Discard, resets without emitting any composeThread", () => {
     (session.state as any) = {
       phase: "draft",
+      sessionId: 1,
+      error: null,
       transcribing: null,
       sentences: [{ id: "a", text: "X.", chunkIndex: 0 }],
     };
@@ -115,11 +140,63 @@ describe("ListenPill", () => {
   it("disables Add while transcribing", () => {
     (session.state as any) = {
       phase: "draft",
+      sessionId: 1,
+      error: null,
       transcribing: { done: 1, total: 3 },
       sentences: [{ id: "a", text: "X.", chunkIndex: 0 }],
     };
     render(<ListenPill providerName="Dr. Patel" language="en" t={light} />);
     const btn = screen.getByRole("button", { name: /add as/i }) as HTMLButtonElement;
     expect(btn.disabled).toBe(true);
+  });
+
+  it("disables the idle pill and swaps the hint when STT is not warm", () => {
+    sttWarm = false;
+    render(<ListenPill providerName="Dr. Patel" language="en" t={light} />);
+    const btn = screen.getByRole("button", { name: /engine not yet ready/i }) as HTMLButtonElement;
+    expect(btn.disabled).toBe(true);
+    expect(btn.getAttribute("aria-disabled")).toBe("true");
+    // Privacy notice is replaced with the not-ready hint.
+    expect(screen.queryByText(/no audio leaves this device/i)).toBeNull();
+    expect(screen.getByText(/engine not yet ready/i)).toBeTruthy();
+  });
+
+  it("does not call start() when tapped while STT is not warm", async () => {
+    sttWarm = false;
+    render(<ListenPill providerName="Dr. Patel" language="en" t={light} />);
+    const btn = screen.getByRole("button", { name: /engine not yet ready/i });
+    await act(async () => {
+      fireEvent.click(btn);
+    });
+    expect(session.start).not.toHaveBeenCalled();
+  });
+
+  it("renders the error banner with a Try again button when draft.error is set", () => {
+    (session.state as any) = {
+      phase: "draft",
+      sessionId: 1,
+      error: "decoder crashed",
+      transcribing: null,
+      sentences: [{ id: "a", text: "First.", chunkIndex: 0 }],
+    };
+    render(<ListenPill providerName="Dr. Patel" language="en" t={light} />);
+    expect(screen.getByRole("alert")).toBeTruthy();
+    expect(screen.getByText(/couldn't transcribe/i)).toBeTruthy();
+    const tryBtn = screen.getByRole("button", { name: /try again/i });
+    fireEvent.click(tryBtn);
+    expect(session.tryAgain).toHaveBeenCalledOnce();
+  });
+
+  it("with error + some sentences, ✓ Add stays enabled (doesn't strand the user)", () => {
+    (session.state as any) = {
+      phase: "draft",
+      sessionId: 1,
+      error: "partial failure",
+      transcribing: null,
+      sentences: [{ id: "a", text: "Got this one.", chunkIndex: 0 }],
+    };
+    render(<ListenPill providerName="Dr. Patel" language="en" t={light} />);
+    const btn = screen.getByRole("button", { name: /add as/i }) as HTMLButtonElement;
+    expect(btn.disabled).toBe(false);
   });
 });

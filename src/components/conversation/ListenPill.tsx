@@ -1,6 +1,7 @@
 import { useListenSession } from "../../hooks/useListenSession";
 import { useSpeakActions } from "../../hooks/useSpeakActions";
 import { useSettingsStore } from "../../stores/settingsStore";
+import { useModels } from "../../hooks/useModels";
 import { t as resolvePhrase } from "../../data/phraseRegistry";
 import { DraftBubble } from "./DraftBubble";
 import { DraftActions } from "./DraftActions";
@@ -24,12 +25,25 @@ export function ListenPill({ providerName, language, t }: ListenPillProps) {
   const session = useListenSession({ language });
   const { composeThread } = useSpeakActions();
   const locale = useSettingsStore((s) => s.cfg?.caregiverLang ?? "en");
+  // Reactive readiness: `useModels` subscribes to the model manager's
+  // progress events, so the pill flips enabled the moment STT warms up
+  // without needing another unrelated re-render to flush the gate.
+  const models = useModels();
+  const sttReady = models.isWarm("stt");
 
   const idleLabel = resolvePhrase("ui.thread.listen.idle_label", locale);
   const privacyNotice = resolvePhrase("ui.thread.listen.privacy_notice", locale);
   const recordingLabel = resolvePhrase("ui.thread.listen.recording_label", locale);
+  const engineNotReadyHint = resolvePhrase(
+    "ui.thread.listen.engine_not_ready",
+    locale,
+  );
+  const tryAgainLabel = resolvePhrase("ui.thread.listen.try_again", locale);
 
-  const onIdleTap = () => void session.start();
+  const onIdleTap = () => {
+    if (!sttReady) return;
+    void session.start();
+  };
   const onRecordingTap = () => void session.stop();
 
   const onAdd = () => {
@@ -70,6 +84,45 @@ export function ListenPill({ providerName, language, t }: ListenPillProps) {
             locale={locale}
             t={t}
           />
+          {session.state.error != null && (
+            <div
+              role="alert"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "6px 10px",
+                borderRadius: 8,
+                background: t.card,
+                border: `1px solid ${colors.urgent}`,
+                color: colors.urgent,
+                fontSize: 12,
+                fontWeight: 600,
+                marginTop: 6,
+              }}
+            >
+              <span style={{ flex: 1 }}>
+                {resolvePhrase("ui.thread.listen.error_message", locale)}
+              </span>
+              <button
+                type="button"
+                onClick={() => session.tryAgain()}
+                aria-label={tryAgainLabel}
+                style={{
+                  padding: "4px 10px",
+                  borderRadius: 999,
+                  border: `1px solid ${colors.urgent}`,
+                  background: "transparent",
+                  color: colors.urgent,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                {tryAgainLabel}
+              </button>
+            </div>
+          )}
           <DraftActions
             providerName={providerName}
             addDisabled={session.state.transcribing != null || session.state.sentences.length === 0}
@@ -86,7 +139,10 @@ export function ListenPill({ providerName, language, t }: ListenPillProps) {
           <button
             type="button"
             onClick={onIdleTap}
-            aria-label={idleLabel}
+            disabled={!sttReady}
+            aria-disabled={!sttReady}
+            aria-label={sttReady ? idleLabel : `${idleLabel} — ${engineNotReadyHint}`}
+            title={sttReady ? undefined : engineNotReadyHint}
             style={{
               display: "inline-flex",
               alignItems: "center",
@@ -94,16 +150,19 @@ export function ListenPill({ providerName, language, t }: ListenPillProps) {
               padding: "10px 16px",
               borderRadius: 999,
               background: t.card,
-              border: `2px solid ${colors.provider.light}`,
-              color: colors.provider.light,
+              border: `2px solid ${sttReady ? colors.provider.light : t.muted}`,
+              color: sttReady ? colors.provider.light : t.muted,
               fontSize: 14,
               fontWeight: 600,
-              cursor: "pointer",
+              cursor: sttReady ? "pointer" : "not-allowed",
+              opacity: sttReady ? 1 : 0.5,
             }}
           >
             🎤 {idleLabel}
           </button>
-          <span style={{ fontSize: 11, color: t.muted }}>{privacyNotice}</span>
+          <span style={{ fontSize: 11, color: t.muted }}>
+            {sttReady ? privacyNotice : engineNotReadyHint}
+          </span>
         </>
       )}
 
