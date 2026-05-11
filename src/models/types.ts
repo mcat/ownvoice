@@ -32,7 +32,7 @@
 
 import { MODELS_ASSET_PREFIX } from "./assetVersions";
 
-export type ModelId = "tts" | "tts-encoder";
+export type ModelId = "tts" | "tts-encoder" | "stt";
 
 export type ModelStatus =
   | "idle"
@@ -107,7 +107,8 @@ export type WorkerRequest =
   | { type: "init"; modelUrl: string; bench?: boolean }
   | { type: "warmup" }
   | { type: "embed"; audio: Float32Array; sampleRate: number; requestId: number }
-  | { type: "synthesize"; text: string; embedding: Float32Array };
+  | { type: "synthesize"; text: string; embedding: Float32Array }
+  | { type: "transcribe"; audio: Float32Array; sampleRate: number };
 
 /** Messages sent FROM a model worker */
 export type WorkerResponse =
@@ -126,6 +127,7 @@ export type WorkerResponse =
       requestId: number;
     }
   | { type: "audio"; data: Float32Array; sampleRate: number }
+  | { type: "transcript"; text: string }
   | {
       type: "error";
       message: string;
@@ -177,4 +179,5 @@ export const CHATTERBOX_TOKENS = {
  */
 export const MODEL_URLS = {
   tts: `/${MODELS_ASSET_PREFIX}/chatterbox-multilingual/`,
+  stt: `/${MODELS_ASSET_PREFIX}/whisper-small/`,
 } as const;

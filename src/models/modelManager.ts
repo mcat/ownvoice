@@ -23,6 +23,7 @@ class ModelManager {
   private models: Record<ModelId, ModelEntry> = {
     tts: { status: "idle", loaded: 0, total: 0, worker: null },
     "tts-encoder": { status: "idle", loaded: 0, total: 0, worker: null },
+    stt: { status: "idle", loaded: 0, total: 0, worker: null },
   };
   private listeners: Set<ProgressCallback> = new Set();
   private initialized = false;

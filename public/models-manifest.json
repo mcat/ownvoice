@@ -55,6 +55,26 @@
           "magic": "json"
         }
       ]
+    },
+    "stt": {
+      "baseUrl": "/models/2026-04-29/whisper-small/",
+      "files": [
+        {
+          "name": "encoder_model_q4.onnx",
+          "size": 66182104,
+          "magic": "onnx"
+        },
+        {
+          "name": "decoder_model_merged_q4.onnx",
+          "size": 233146255,
+          "magic": "onnx"
+        },
+        {
+          "name": "tokenizer.json",
+          "size": 2405679,
+          "magic": "json"
+        }
+      ]
     }
   }
 }
