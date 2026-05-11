@@ -12,6 +12,7 @@ describe("DraftSentence", () => {
         total={1}
         onEdit={() => {}}
         onDiscard={() => {}}
+        locale="en"
         t={light}
       />,
     );
@@ -27,6 +28,7 @@ describe("DraftSentence", () => {
         total={1}
         onEdit={() => {}}
         onDiscard={onDiscard}
+        locale="en"
         t={light}
       />,
     );
@@ -43,6 +45,7 @@ describe("DraftSentence", () => {
         total={2}
         onEdit={onEdit}
         onDiscard={() => {}}
+        locale="en"
         t={light}
       />,
     );
@@ -60,6 +63,7 @@ describe("DraftSentence", () => {
         total={5}
         onEdit={() => {}}
         onDiscard={() => {}}
+        locale="en"
         t={light}
       />,
     );

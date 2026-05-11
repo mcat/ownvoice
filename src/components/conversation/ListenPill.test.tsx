@@ -107,7 +107,7 @@ describe("ListenPill", () => {
       sentences: [{ id: "a", text: "X.", chunkIndex: 0 }],
     };
     render(<ListenPill providerName="Dr. Patel" language="en" t={light} />);
-    fireEvent.click(screen.getByRole("button", { name: /discard draft/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^discard$/i }));
     expect(composeThread).not.toHaveBeenCalled();
     expect(session.reset).toHaveBeenCalledOnce();
   });

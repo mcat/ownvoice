@@ -2,12 +2,14 @@ import type { ThemeTokens } from "../../theme/tokens";
 import { colors } from "../../theme/tokens";
 import type { Sentence } from "../../hooks/useListenSession";
 import { DraftSentence } from "./DraftSentence";
+import { t as resolvePhrase } from "../../data/phraseRegistry";
 
 interface DraftBubbleProps {
   sentences: Sentence[];
   transcribing: { done: number; total: number } | null;
   onEditSentence: (id: string, text: string) => void;
   onDiscardSentence: (id: string) => void;
+  locale: string;
   t: ThemeTokens;
 }
 
@@ -16,8 +18,23 @@ export function DraftBubble({
   transcribing,
   onEditSentence,
   onDiscardSentence,
+  locale,
   t,
 }: DraftBubbleProps) {
+  const count = sentences.length;
+  const draftLabel =
+    count === 1
+      ? resolvePhrase("ui.thread.listen.draft_label_one", locale)
+      : resolvePhrase("ui.thread.listen.draft_label", locale).replace(
+          "{count}",
+          String(count),
+        );
+  const transcribingLabel = transcribing
+    ? resolvePhrase("ui.thread.listen.transcribing_label", locale)
+        .replace("{done}", String(transcribing.done))
+        .replace("{total}", String(transcribing.total))
+    : "";
+
   return (
     <div
       style={{
@@ -41,7 +58,7 @@ export function DraftBubble({
           marginBottom: 4,
         }}
       >
-        Draft · {sentences.length} sentence{sentences.length === 1 ? "" : "s"}
+        {draftLabel}
       </div>
       {sentences.map((s, i) => (
         <DraftSentence
@@ -51,6 +68,7 @@ export function DraftBubble({
           total={sentences.length}
           onEdit={(text) => onEditSentence(s.id, text)}
           onDiscard={() => onDiscardSentence(s.id)}
+          locale={locale}
           t={t}
         />
       ))}
@@ -64,7 +82,7 @@ export function DraftBubble({
           }}
           aria-live="polite"
         >
-          Transcribing {transcribing.done}/{transcribing.total}…
+          {transcribingLabel}
         </div>
       )}
     </div>

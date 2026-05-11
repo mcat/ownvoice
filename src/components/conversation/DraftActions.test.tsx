@@ -11,6 +11,7 @@ describe("DraftActions", () => {
         addDisabled={false}
         onAdd={() => {}}
         onDiscard={() => {}}
+        locale="en"
         t={light}
       />,
     );
@@ -25,6 +26,7 @@ describe("DraftActions", () => {
         addDisabled={true}
         onAdd={() => {}}
         onDiscard={() => {}}
+        locale="en"
         t={light}
       />,
     );
@@ -39,6 +41,7 @@ describe("DraftActions", () => {
         addDisabled={false}
         onAdd={onAdd}
         onDiscard={() => {}}
+        locale="en"
         t={light}
       />,
     );
@@ -54,6 +57,7 @@ describe("DraftActions", () => {
         addDisabled={true}
         onAdd={() => {}}
         onDiscard={onDiscard}
+        locale="en"
         t={light}
       />,
     );

@@ -1,6 +1,7 @@
 import { useRef, useCallback } from "preact/hooks";
 import type { ThemeTokens } from "../../theme/tokens";
 import { colors } from "../../theme/tokens";
+import { t as resolvePhrase } from "../../data/phraseRegistry";
 
 interface DraftSentenceProps {
   text: string;
@@ -8,6 +9,7 @@ interface DraftSentenceProps {
   total: number;
   onEdit: (newText: string) => void;
   onDiscard: () => void;
+  locale: string;
   t: ThemeTokens;
 }
 
@@ -17,10 +19,19 @@ export function DraftSentence({
   total,
   onEdit,
   onDiscard,
+  locale,
   t,
 }: DraftSentenceProps) {
   const ref = useRef<HTMLDivElement>(null);
   const number = index + 1;
+
+  const editAria = resolvePhrase("ui.thread.listen.sentence_edit_aria", locale)
+    .replace("{n}", String(number))
+    .replace("{total}", String(total));
+  const discardAria = resolvePhrase("ui.thread.listen.sentence_discard_aria", locale).replace(
+    "{n}",
+    String(number),
+  );
 
   const commit = useCallback(() => {
     const next = ref.current?.textContent ?? "";
@@ -41,7 +52,7 @@ export function DraftSentence({
       <div
         ref={ref}
         role="textbox"
-        aria-label={`Edit sentence ${number} of ${total}`}
+        aria-label={editAria}
         contentEditable
         onBlur={commit}
         onKeyDown={(e) => {
@@ -66,7 +77,7 @@ export function DraftSentence({
       <button
         type="button"
         onClick={onDiscard}
-        aria-label={`Discard sentence ${number}`}
+        aria-label={discardAria}
         style={{
           width: 44,
           height: 44,

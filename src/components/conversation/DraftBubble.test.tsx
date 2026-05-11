@@ -16,6 +16,7 @@ describe("DraftBubble", () => {
         transcribing={null}
         onEditSentence={() => {}}
         onDiscardSentence={() => {}}
+        locale="en"
         t={light}
       />,
     );
@@ -30,6 +31,7 @@ describe("DraftBubble", () => {
         transcribing={{ done: 1, total: 3 }}
         onEditSentence={() => {}}
         onDiscardSentence={() => {}}
+        locale="en"
         t={light}
       />,
     );
@@ -43,6 +45,7 @@ describe("DraftBubble", () => {
         transcribing={null}
         onEditSentence={() => {}}
         onDiscardSentence={() => {}}
+        locale="en"
         t={light}
       />,
     );

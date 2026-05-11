@@ -1,5 +1,7 @@
 import { useListenSession } from "../../hooks/useListenSession";
 import { useSpeakActions } from "../../hooks/useSpeakActions";
+import { useSettingsStore } from "../../stores/settingsStore";
+import { t as resolvePhrase } from "../../data/phraseRegistry";
 import { DraftBubble } from "./DraftBubble";
 import { DraftActions } from "./DraftActions";
 import type { ThemeTokens } from "../../theme/tokens";
@@ -21,6 +23,11 @@ function formatTime(ms: number): string {
 export function ListenPill({ providerName, language, t }: ListenPillProps) {
   const session = useListenSession({ language });
   const { composeThread } = useSpeakActions();
+  const locale = useSettingsStore((s) => s.cfg?.caregiverLang ?? "en");
+
+  const idleLabel = resolvePhrase("ui.thread.listen.idle_label", locale);
+  const privacyNotice = resolvePhrase("ui.thread.listen.privacy_notice", locale);
+  const recordingLabel = resolvePhrase("ui.thread.listen.recording_label", locale);
 
   const onIdleTap = () => void session.start();
   const onRecordingTap = () => void session.stop();
@@ -60,6 +67,7 @@ export function ListenPill({ providerName, language, t }: ListenPillProps) {
             transcribing={session.state.transcribing}
             onEditSentence={session.editSentence}
             onDiscardSentence={session.discardSentence}
+            locale={locale}
             t={t}
           />
           <DraftActions
@@ -67,6 +75,7 @@ export function ListenPill({ providerName, language, t }: ListenPillProps) {
             addDisabled={session.state.transcribing != null || session.state.sentences.length === 0}
             onAdd={onAdd}
             onDiscard={onDiscardDraft}
+            locale={locale}
             t={t}
           />
         </>
@@ -77,7 +86,7 @@ export function ListenPill({ providerName, language, t }: ListenPillProps) {
           <button
             type="button"
             onClick={onIdleTap}
-            aria-label="Add what you said"
+            aria-label={idleLabel}
             style={{
               display: "inline-flex",
               alignItems: "center",
@@ -92,11 +101,9 @@ export function ListenPill({ providerName, language, t }: ListenPillProps) {
               cursor: "pointer",
             }}
           >
-            🎤 Add what you said
+            🎤 {idleLabel}
           </button>
-          <span style={{ fontSize: 11, color: t.muted }}>
-            On-device · Whisper · no audio leaves this device
-          </span>
+          <span style={{ fontSize: 11, color: t.muted }}>{privacyNotice}</span>
         </>
       )}
 
@@ -104,7 +111,7 @@ export function ListenPill({ providerName, language, t }: ListenPillProps) {
         <button
           type="button"
           onClick={onRecordingTap}
-          aria-label="Tap to stop"
+          aria-label={recordingLabel}
           style={{
             display: "inline-flex",
             alignItems: "center",
@@ -151,7 +158,7 @@ export function ListenPill({ providerName, language, t }: ListenPillProps) {
               }}
             />
           </span>
-          <span>Tap to stop</span>
+          <span>{recordingLabel}</span>
         </button>
       )}
 
@@ -169,8 +176,10 @@ export function ListenPill({ providerName, language, t }: ListenPillProps) {
               fontWeight: 600,
             }}
           >
-            No speech detected · auto-stopping in{" "}
-            {Math.ceil(session.state.silenceCountdownMs / 1000)}s
+            {resolvePhrase("ui.thread.listen.silence_warning", locale).replace(
+              "{countdown}",
+              String(Math.ceil(session.state.silenceCountdownMs / 1000)),
+            )}
           </div>
         )}
     </div>
