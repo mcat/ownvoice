@@ -5,9 +5,11 @@ import type { ThemeTokens } from "../../theme/tokens";
 import { t as resolvePhrase } from "../../data/phraseRegistry";
 import { useActivePatient } from "../../stores/settingsStore";
 import { useSettingsStore } from "../../stores/settingsStore";
+import { useUIStore } from "../../stores/uiStore";
 import { DualLocaleText } from "../shared/DualLocaleText";
 import { Btn } from "../shared/Btn";
 import { useReducedMotion } from "../../hooks/useReducedMotion";
+import { ListenPill } from "./ListenPill";
 
 /** Thread reads `from`, `text`, `gloss`, `icon`, and `label` — never `id`
  *  or `time`. Loose alias keeps test fixtures terse without forcing every
@@ -42,6 +44,17 @@ export function Thread({ messages, t, onRepeat }: ThreadProps) {
   const active = useActivePatient();
   const patientLang = active?.patientLang ?? "en";
   const caregiverLang = useSettingsStore((s) => s.cfg?.caregiverLang ?? "en");
+  // Active provider for ListenPill labelling. uiStore exposes only the index;
+  // the provider list itself lives on settingsStore.cfg.providers (same lookup
+  // pattern as useSpeakActions). Fall back to "Care Team" when no provider is
+  // configured — matches the default label used elsewhere in the app.
+  const activeProvIdx = useUIStore((s) => s.activeProvIdx);
+  const providerName = useSettingsStore(
+    (s) =>
+      s.cfg?.providers?.[activeProvIdx]?.name ??
+      s.cfg?.providers?.[0]?.name ??
+      "Care Team",
+  );
   const scrollRef = useRef<HTMLDivElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const [repeatingIdx, setRepeatingIdx] = useState<number | null>(null);
@@ -139,12 +152,25 @@ export function Thread({ messages, t, onRepeat }: ThreadProps) {
     el.scrollBy({ top: delta, behavior: reducedMotion ? "auto" : "smooth" });
   };
 
-  if (!messages || messages.length === 0) return null;
+  const hasMessages = messages && messages.length > 0;
 
   const handleTap = (msg: ThreadMessage, idx: number) => {
     onRepeat(msg.text, msg.from);
     setRepeatingIdx(idx);
     setTimeout(() => setRepeatingIdx(null), 600);
+  };
+
+  // Outer container is a flex column: the row of (arrows + scrolling log)
+  // sits on top; the ListenPill is a fixed-height sibling pinned below the
+  // scrolling region. Anchoring the pill outside `scrollRef` means it stays
+  // visible even as the message list scrolls, so providers can always reach
+  // the "Add what you said" affordance.
+  const outerStyle: JSX.CSSProperties = {
+    marginBottom: 16,
+    display: "flex",
+    flexDirection: "column",
+    gap: 8,
+    flexShrink: 0,
   };
 
   // row-reverse keeps the visual layout (log left, arrows right) while
@@ -153,7 +179,6 @@ export function Thread({ messages, t, onRepeat }: ThreadProps) {
   // of having to step through every message to reach the scroll affordance.
   // Mouse/touch users see no change.
   const wrapperStyle: JSX.CSSProperties = {
-    marginBottom: 16,
     flexShrink: 0,
     display: "flex",
     flexDirection: "row-reverse",
@@ -208,6 +233,8 @@ export function Thread({ messages, t, onRepeat }: ThreadProps) {
   });
 
   return (
+    <div style={outerStyle}>
+    {hasMessages && (
     <div style={wrapperStyle}>
       {/* Arrow column first in DOM (visually right via row-reverse) so the
           tab/scan order is Up → Down → bubble[0] → bubble[N]. Without this,
@@ -322,6 +349,16 @@ export function Thread({ messages, t, onRepeat }: ThreadProps) {
 
       <div ref={endRef} />
       </div>
+    </div>
+    )}
+      {/* ListenPill is a sibling of the scrolling message list — it stays
+          anchored at the bottom of the thread surface and remains visible
+          as the message list scrolls or before any messages exist. */}
+      <ListenPill
+        providerName={providerName}
+        language={caregiverLang}
+        t={t}
+      />
     </div>
   );
 }
