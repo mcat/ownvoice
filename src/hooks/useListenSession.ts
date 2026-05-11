@@ -75,12 +75,16 @@ export function useListenSession(opts: { language: string }): UseListenSession {
     transcriptIndexRef.current = 0;
     startTimeRef.current = Date.now();
     lastSpeechRef.current = Date.now();
-    await mic.start();
+    await micRef.current.start();
     setState({ phase: "recording", elapsedMs: 0, level: 0 });
-  }, [mic]);
+    // micRef.current is updated every render (line above the start defn);
+    // closing over the ref keeps this callback identity stable across the
+    // 15fps re-renders that useMicrophone induces while recording, which is
+    // what allows the 250ms poll effect to install once and survive.
+  }, []);
 
   const stop = useCallback(async () => {
-    const pcm = await mic.stop();
+    const pcm = await micRef.current.stop();
     const mgr = getModelManager();
     const worker = mgr.getWorker("stt");
     if (!worker) {
@@ -123,7 +127,9 @@ export function useListenSession(opts: { language: string }): UseListenSession {
         language: opts.language,
       });
     }
-  }, [mic, opts.language]);
+    // See note on `start` — closing over micRef keeps `stop` stable so the
+    // poll effect (which depends on `stop`) is not re-installed every render.
+  }, [opts.language]);
 
   // While recording, drive elapsedMs / level / silenceCountdownMs from
   // mic state on a 250ms interval. Auto-stop when continuous silence

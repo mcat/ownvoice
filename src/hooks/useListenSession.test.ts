@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/preact";
+import { useState } from "preact/hooks";
 import { useListenSession, type ListenState } from "./useListenSession";
 
 // Mock the microphone hook to avoid touching Web Audio in unit tests.
@@ -150,6 +151,61 @@ describe("useListenSession", () => {
     expect(result.current.state.phase).toBe("recording");
     act(() => result.current.reset());
     expect(result.current.state.phase).toBe("idle");
+  });
+
+  it("poll interval survives mic-driven re-renders during recording", async () => {
+    vi.useFakeTimers();
+    const { useMicrophone } = await import("./useMicrophone");
+
+    // Override useMicrophone with an impl that mirrors the real one: it owns
+    // its own setLevel that drives a re-render in the consumer. Each render
+    // returns a *fresh* object literal (the bug condition), so the only thing
+    // protecting the 250ms poll interval is `useListenSession` closing over
+    // `micRef.current` and keeping `start` / `stop` stable.
+    let levelSetter: (v: number) => void = () => {};
+    const micStart = vi.fn().mockResolvedValue(undefined);
+    const micStop = vi.fn().mockResolvedValue(new Float32Array(16000));
+    vi.mocked(useMicrophone).mockImplementation(() => {
+      const [level, setLevel] = useState(0);
+      levelSetter = setLevel;
+      return {
+        start: micStart,
+        stop: micStop,
+        level,
+        elapsedMs: 0,
+        recording: false,
+      };
+    });
+
+    const { result } = renderHook(() => useListenSession({ language: "en" }));
+    await act(async () => {
+      await result.current.start();
+    });
+    expect(result.current.state.phase).toBe("recording");
+
+    // Force a series of mic-driven re-renders. Each setLevel rerenders the
+    // consumer and yields a new mic object literal. Before the fix, `stop`'s
+    // useCallback identity changed on every one of these renders, so the
+    // poll effect's cleanup tore down the setInterval before it could fire.
+    for (let i = 0; i < 5; i++) {
+      act(() => levelSetter(0.3 + i * 0.01));
+    }
+
+    // Advance well past 250ms so the interval body must run at least once.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+
+    // If the interval had thrashed we'd still be in `recording` but with
+    // elapsedMs == 0 (initial value). With the fix, the interval body runs
+    // and writes a non-zero elapsedMs into state.
+    const state = result.current.state;
+    expect(state.phase).toBe("recording");
+    if (state.phase === "recording") {
+      expect(state.elapsedMs).toBeGreaterThan(0);
+    }
+
+    vi.useRealTimers();
   });
 
   it("dispatches transcribe with audio (Float32Array) and sampleRate 16000", async () => {
