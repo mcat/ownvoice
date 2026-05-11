@@ -27,8 +27,20 @@ export type ListenState =
     }
   | {
       phase: "draft";
+      /**
+       * Monotonic identifier for this session's draft. Incremented every
+       * time `stop()` dispatches chunks. The worker is a singleton, so if
+       * the user discards mid-decode and immediately starts a new session,
+       * stale `transcript` / `error` messages from the previous run can
+       * still arrive at the listener. The listener captures `sessionId` at
+       * subscribe time and drops messages whose draft no longer matches.
+       */
+      sessionId: number;
       sentences: Sentence[];
       transcribing: { done: number; total: number } | null;
+      /** One-line message rendered above the action row when a chunk
+       *  failed. Null while transcription is healthy. */
+      error: string | null;
     };
 
 export interface UseListenSession {
@@ -37,6 +49,10 @@ export interface UseListenSession {
   stop(): Promise<void>;
   editSentence(id: string, text: string): void;
   discardSentence(id: string): void;
+  /** Re-dispatch the last session's PCM to the STT worker. Used by the
+   *  "Try again" affordance after a worker error. No-op when there's no
+   *  cached PCM (e.g. before the first stop()). */
+  tryAgain(): void;
   reset(): void;
 }
 
@@ -60,6 +76,14 @@ export function useListenSession(opts: { language: string }): UseListenSession {
   const workerRef = useRef<Worker | null>(null);
   const cancelledRef = useRef(false);
   const transcriptIndexRef = useRef(0);
+  /** Monotonic counter, incremented on each `stop()`. Becomes the
+   *  draft's `sessionId` and guards the worker-message handler against
+   *  stale messages from prior, discarded sessions. */
+  const sessionCounterRef = useRef(0);
+  /** PCM from the most recent `stop()`. Held so `tryAgain()` can
+   *  re-dispatch after a worker error without forcing the user to
+   *  re-record. Cleared on `reset()`. */
+  const lastPcmRef = useRef<Float32Array | null>(null);
 
   const startTimeRef = useRef<number>(0);
   const lastSpeechRef = useRef<number>(0);
@@ -83,53 +107,74 @@ export function useListenSession(opts: { language: string }): UseListenSession {
     // what allows the 250ms poll effect to install once and survive.
   }, []);
 
-  const stop = useCallback(async () => {
-    const pcm = await micRef.current.stop();
-    const mgr = getModelManager();
-    const worker = mgr.getWorker("stt");
-    if (!worker) {
-      // Engine missing — surface as empty draft. The DraftBubble UI is
-      // responsible for showing the "STT not available" affordance.
+  /**
+   * Dispatch a PCM buffer to the STT worker as 30s chunks. Bumps the
+   * session counter so any stale messages from a prior dispatch are
+   * dropped by the message handler's sessionId gate. Used by both
+   * `stop()` (fresh recording) and `tryAgain()` (re-post after error).
+   */
+  const dispatchPcm = useCallback(
+    (pcm: Float32Array) => {
+      const sessionId = ++sessionCounterRef.current;
+      const mgr = getModelManager();
+      const worker = mgr.getWorker("stt");
+      if (!worker) {
+        // Engine missing — surface as empty draft. The DraftBubble UI is
+        // responsible for showing the "STT not available" affordance.
+        setState({
+          phase: "draft",
+          sessionId,
+          sentences: [],
+          transcribing: null,
+          error: null,
+        });
+        return;
+      }
+      workerRef.current = worker;
+      transcriptIndexRef.current = 0;
+
+      const totalChunks = Math.max(1, Math.ceil(pcm.length / CHUNK_SAMPLES));
       setState({
         phase: "draft",
+        sessionId,
         sentences: [],
-        transcribing: null,
+        transcribing: { done: 0, total: totalChunks },
+        error: null,
       });
-      return;
-    }
-    workerRef.current = worker;
-    transcriptIndexRef.current = 0;
 
-    // Slice into 30s chunks, pad final chunk with zeros so each request
-    // is exactly CHUNK_SAMPLES long. The mel-spectrogram pipeline in the
-    // worker expects a deterministic frame count.
-    const totalChunks = Math.max(1, Math.ceil(pcm.length / CHUNK_SAMPLES));
-    setState({
-      phase: "draft",
-      sentences: [],
-      transcribing: { done: 0, total: totalChunks },
-    });
+      // Slice into 30s chunks, pad final chunk with zeros so each request
+      // is exactly CHUNK_SAMPLES long. The mel-spectrogram pipeline in the
+      // worker expects a deterministic frame count.
+      for (let i = 0; i < totalChunks; i++) {
+        const startIdx = i * CHUNK_SAMPLES;
+        const endIdx = Math.min(startIdx + CHUNK_SAMPLES, pcm.length);
+        const chunk = new Float32Array(CHUNK_SAMPLES);
+        chunk.set(pcm.subarray(startIdx, endIdx));
+        worker.postMessage({
+          type: "transcribe",
+          chunkId: i,
+          audio: chunk,
+          sampleRate: SAMPLE_RATE,
+          language: opts.language,
+        });
+      }
+    },
+    [opts.language],
+  );
 
-    for (let i = 0; i < totalChunks; i++) {
-      const startIdx = i * CHUNK_SAMPLES;
-      const endIdx = Math.min(startIdx + CHUNK_SAMPLES, pcm.length);
-      const chunk = new Float32Array(CHUNK_SAMPLES);
-      chunk.set(pcm.subarray(startIdx, endIdx));
-      // chunkId is informational — the worker ignores it (workers were
-      // restored verbatim and emit only {type:"transcript", text}). We
-      // track completion via in-order response counting in the message
-      // listener below.
-      worker.postMessage({
-        type: "transcribe",
-        chunkId: i,
-        audio: chunk,
-        sampleRate: SAMPLE_RATE,
-        language: opts.language,
-      });
-    }
+  const stop = useCallback(async () => {
+    const pcm = await micRef.current.stop();
+    lastPcmRef.current = pcm;
+    dispatchPcm(pcm);
     // See note on `start` — closing over micRef keeps `stop` stable so the
     // poll effect (which depends on `stop`) is not re-installed every render.
-  }, [opts.language]);
+  }, [dispatchPcm]);
+
+  const tryAgain = useCallback(() => {
+    const pcm = lastPcmRef.current;
+    if (pcm == null) return;
+    dispatchPcm(pcm);
+  }, [dispatchPcm]);
 
   // While recording, drive elapsedMs / level / silenceCountdownMs from
   // mic state on a 250ms interval. Auto-stop when continuous silence
@@ -168,40 +213,63 @@ export function useListenSession(opts: { language: string }): UseListenSession {
   // exactly one {type:"transcript"} per transcribe request. Transcripts
   // arrive in dispatch order because the worker's onmessage handler is
   // serial.
+  //
+  // The STT worker is a singleton (`mgr.getWorker("stt")`), so if the user
+  // discards mid-decode and immediately starts another session, stale
+  // messages from the prior run can still arrive here. We capture the
+  // active `sessionId` at subscribe time and drop any message whose draft
+  // no longer matches via the `setState` callback's `prev.sessionId` check.
+  const draftSessionId = state.phase === "draft" ? state.sessionId : null;
   useEffect(() => {
     const worker = workerRef.current;
-    if (!worker) return;
-    if (state.phase !== "draft" || state.transcribing == null) return;
+    if (worker == null || draftSessionId == null) return;
+    const mySessionId = draftSessionId;
 
     const onMessage = (e: MessageEvent) => {
       if (cancelledRef.current) return;
       const msg = e.data;
-      if (!msg || msg.type !== "transcript") return;
-      const chunkIndex = transcriptIndexRef.current++;
-      setState((prev) => {
-        if (prev.phase !== "draft" || prev.transcribing == null) return prev;
-        const newSentences = segmentSentences(msg.text ?? "").map((text) => ({
-          id: `s-${++idCounter.current}`,
-          text,
-          chunkIndex,
-        }));
-        const done = prev.transcribing.done + 1;
-        const total = prev.transcribing.total;
-        return {
-          ...prev,
-          sentences: [...prev.sentences, ...newSentences],
-          transcribing: done >= total ? null : { done, total },
-        };
-      });
+      if (!msg) return;
+
+      if (msg.type === "transcript") {
+        const chunkIndex = transcriptIndexRef.current++;
+        setState((prev) => {
+          if (prev.phase !== "draft" || prev.sessionId !== mySessionId) return prev;
+          if (prev.transcribing == null) return prev;
+          const newSentences = segmentSentences(msg.text ?? "").map((text) => ({
+            id: `s-${++idCounter.current}`,
+            text,
+            chunkIndex,
+          }));
+          const done = prev.transcribing.done + 1;
+          const total = prev.transcribing.total;
+          return {
+            ...prev,
+            sentences: [...prev.sentences, ...newSentences],
+            transcribing: done >= total ? null : { done, total },
+          };
+        });
+        return;
+      }
+
+      if (msg.type === "error") {
+        setState((prev) => {
+          if (prev.phase !== "draft" || prev.sessionId !== mySessionId) return prev;
+          // Abort in-flight chunks: clear `transcribing` so ✓ Add is no
+          // longer gated by completion. If any chunks already succeeded,
+          // those sentences remain editable — don't strand the user.
+          return {
+            ...prev,
+            transcribing: null,
+            error: typeof msg.message === "string" ? msg.message : "error",
+          };
+        });
+        return;
+      }
     };
 
     worker.addEventListener("message", onMessage);
     return () => worker.removeEventListener("message", onMessage);
-    // Re-subscribe only when entering/leaving draft. We intentionally do
-    // not depend on transcribing.done — the same listener handles every
-    // chunk's response.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.phase]);
+  }, [draftSessionId]);
 
   const editSentence = useCallback((id: string, text: string) => {
     setState((prev) => {
@@ -227,6 +295,7 @@ export function useListenSession(opts: { language: string }): UseListenSession {
 
   const reset = useCallback(() => {
     cancelledRef.current = true;
+    lastPcmRef.current = null;
     setState({ phase: "idle" });
   }, []);
 
@@ -269,5 +338,5 @@ export function useListenSession(opts: { language: string }): UseListenSession {
     };
   }, [state.phase]);
 
-  return { state, start, stop, editSentence, discardSentence, reset };
+  return { state, start, stop, editSentence, discardSentence, tryAgain, reset };
 }

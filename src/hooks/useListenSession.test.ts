@@ -30,10 +30,21 @@ vi.mock("../models/modelManager", () => ({
   }),
 }));
 
-beforeEach(() => {
+beforeEach(async () => {
   fakeWorker.postMessage.mockReset();
   fakeWorker.addEventListener.mockReset();
   fakeWorker.removeEventListener.mockReset();
+  // Restore the default mic-mock implementation. Tests that override
+  // useMicrophone via mockReturnValue/mockImplementation can leak state
+  // across `it`s if we don't reset here.
+  const { useMicrophone } = await import("./useMicrophone");
+  vi.mocked(useMicrophone).mockImplementation(() => ({
+    start: vi.fn().mockResolvedValue(undefined),
+    stop: vi.fn().mockResolvedValue(new Float32Array(16000 * 5)),
+    level: 0.3,
+    elapsedMs: 0,
+    recording: false,
+  }));
 });
 
 describe("useListenSession", () => {
@@ -218,5 +229,123 @@ describe("useListenSession", () => {
     expect(call.audio).toBeInstanceOf(Float32Array);
     expect(call.sampleRate).toBe(16000);
     expect(call.language).toBe("es");
+  });
+
+  it("ignores stale worker messages from a prior session", async () => {
+    const { useMicrophone } = await import("./useMicrophone");
+    // Two distinct stops in one render cycle.
+    const stopSpy = vi
+      .fn()
+      .mockResolvedValueOnce(new Float32Array(16000 * 5))
+      .mockResolvedValueOnce(new Float32Array(16000 * 5));
+    vi.mocked(useMicrophone).mockReturnValue({
+      start: vi.fn().mockResolvedValue(undefined),
+      stop: stopSpy,
+      level: 0,
+      elapsedMs: 0,
+      recording: false,
+    });
+
+    const { result } = renderHook(() => useListenSession({ language: "en" }));
+
+    // Session A: start → stop. Capture the listener registered for A.
+    await act(async () => {
+      await result.current.start();
+      await result.current.stop();
+    });
+    const handlerA = fakeWorker.addEventListener.mock.calls.find(
+      (c) => c[0] === "message",
+    )?.[1] as (e: MessageEvent) => void;
+    expect(handlerA).toBeTruthy();
+
+    // Discard A → idle, then session B: start → stop.
+    act(() => result.current.reset());
+    await act(async () => {
+      await result.current.start();
+      await result.current.stop();
+    });
+
+    const before = result.current.state as Extract<
+      ListenState,
+      { phase: "draft" }
+    >;
+    expect(before.sentences).toHaveLength(0);
+
+    // Fire a stale `transcript` message through session A's listener while
+    // session B is the active draft. The handler must NOT mutate B.
+    await act(async () => {
+      handlerA(
+        new MessageEvent("message", {
+          data: { type: "transcript", text: "Stale from A." },
+        }),
+      );
+    });
+
+    const after = result.current.state as Extract<
+      ListenState,
+      { phase: "draft" }
+    >;
+    expect(after.sentences).toHaveLength(0);
+    // B's own listener also fires this same message via the broadcast in
+    // some test setups; here we only fired through handlerA, so B's
+    // transcribing counter must NOT have advanced.
+    expect(after.transcribing).toEqual({ done: 0, total: 1 });
+  });
+
+  it("surfaces worker error messages and clears the transcribing gate", async () => {
+    const { result } = renderHook(() => useListenSession({ language: "en" }));
+    await act(async () => {
+      await result.current.start();
+      await result.current.stop();
+    });
+    await act(async () => {
+      const onMessage = fakeWorker.addEventListener.mock.calls.find(
+        (c) => c[0] === "message",
+      )?.[1] as (e: MessageEvent) => void;
+      onMessage(
+        new MessageEvent("message", {
+          data: { type: "error", message: "decoder failed" },
+        }),
+      );
+    });
+    const s = result.current.state as Extract<ListenState, { phase: "draft" }>;
+    expect(s.error).toBe("decoder failed");
+    // Add no longer gated by completion — user can commit any sentences
+    // that already came through (zero in this test, but the gate is open).
+    expect(s.transcribing).toBeNull();
+  });
+
+  it("tryAgain re-dispatches the same PCM with a fresh session id", async () => {
+    const { result } = renderHook(() => useListenSession({ language: "en" }));
+    await act(async () => {
+      await result.current.start();
+      await result.current.stop();
+    });
+    expect(fakeWorker.postMessage).toHaveBeenCalledTimes(1);
+
+    // Simulate worker error so the draft has error set.
+    await act(async () => {
+      const onMessage = fakeWorker.addEventListener.mock.calls.find(
+        (c) => c[0] === "message",
+      )?.[1] as (e: MessageEvent) => void;
+      onMessage(
+        new MessageEvent("message", {
+          data: { type: "error", message: "boom" },
+        }),
+      );
+    });
+
+    act(() => result.current.tryAgain());
+
+    // Same chunk re-posted.
+    expect(fakeWorker.postMessage).toHaveBeenCalledTimes(2);
+    const second = fakeWorker.postMessage.mock.calls[1][0];
+    expect(second.type).toBe("transcribe");
+    expect(second.audio).toBeInstanceOf(Float32Array);
+
+    // Draft state has a fresh sessionId and cleared error.
+    const s = result.current.state as Extract<ListenState, { phase: "draft" }>;
+    expect(s.error).toBeNull();
+    expect(s.transcribing).toEqual({ done: 0, total: 1 });
   });
 });
