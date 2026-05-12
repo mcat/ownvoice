@@ -1,14 +1,18 @@
 import { useState, useRef, useCallback, useEffect } from "preact/hooks";
 
-// Audio worklet processor (public/audio-capture-worklet.js) emits a
-// 128-frame chunk per render quantum — the AudioWorklet spec mandates
-// that block size; the worklet copies and posts each one to the main
-// thread for accumulation.
+// Audio worklet processor (public/audio-capture-worklet.js) accumulates
+// 50 render quanta (~134ms of audio at 48 kHz) per post — see the worklet
+// file for why. The consumer side here drives two visible meters; both
+// only need to update fast enough to feel live, not match audio precision.
 
-/** Audio level update rate (~15 fps) */
-const LEVEL_INTERVAL_MS = 66;
-/** Elapsed-time update rate (~15 fps) */
-const ELAPSED_INTERVAL_MS = 66;
+/** Audio level update rate. 5 fps is fast enough for a smooth meter
+ *  visually; pushing it to 15 fps caused enough setState pressure during
+ *  multi-minute sessions that React re-render scheduling backed up and
+ *  the tab froze. */
+const LEVEL_INTERVAL_MS = 200;
+/** Elapsed-time update rate. Display is `m:ss` (1-second precision), so
+ *  5 fps is plenty for sub-second feel without spamming setState. */
+const ELAPSED_INTERVAL_MS = 200;
 
 /** Target sample rate for downstream STT (Whisper expects 16 kHz). */
 const TARGET_SAMPLE_RATE = 16_000;

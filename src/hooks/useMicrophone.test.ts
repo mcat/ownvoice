@@ -322,7 +322,7 @@ describe("useMicrophone", () => {
 
       // Advance past the ~66ms throttle to flush a level update
       await act(async () => {
-        await vi.advanceTimersByTimeAsync(100);
+        await vi.advanceTimersByTimeAsync(250);
       });
 
       expect(result.current.level).toBeGreaterThan(0);
@@ -349,7 +349,7 @@ describe("useMicrophone", () => {
         mockProcessor.simulateSamples(loud);
       });
       await act(async () => {
-        await vi.advanceTimersByTimeAsync(100);
+        await vi.advanceTimersByTimeAsync(250);
       });
       expect(result.current.level).toBeGreaterThan(0);
 
