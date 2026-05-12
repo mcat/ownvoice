@@ -114,6 +114,12 @@ Object.defineProperty(globalThis, "caches", {
   configurable: true,
 });
 
+// scrollIntoView — jsdom doesn't implement Element.prototype.scrollIntoView.
+// Several components (Thread auto-scroll on new messages) call it; in jsdom
+// it throws "is not a function" if the element is mounted. Mock globally so
+// any component that calls it during a render is a no-op in tests.
+Element.prototype.scrollIntoView = vi.fn();
+
 // navigator.mediaDevices.getUserMedia
 if (!navigator.mediaDevices) {
   Object.defineProperty(navigator, "mediaDevices", {

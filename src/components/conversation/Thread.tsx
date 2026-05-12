@@ -164,7 +164,7 @@ export function Thread({ messages, t, onRepeat }: ThreadProps) {
   // sits on top; the ListenPill is a fixed-height sibling pinned below the
   // scrolling region. Anchoring the pill outside `scrollRef` means it stays
   // visible even as the message list scrolls, so providers can always reach
-  // the "Add what you said" affordance.
+  // the "Listen" affordance.
   const outerStyle: JSX.CSSProperties = {
     marginBottom: 16,
     display: "flex",
@@ -186,28 +186,40 @@ export function Thread({ messages, t, onRepeat }: ThreadProps) {
     alignItems: "stretch",
   };
 
-  // position: relative so the absolutely-positioned ListenPill anchors
-  // inside this container's bottom-left corner (not to the scrolling
-  // content). paddingBottom reserves vertical space for the pill so that
-  // when the user scrolls to the end, the last message isn't obscured.
-  const scrollStyle: JSX.CSSProperties = {
+  // The bordered "thread surface" is a position:relative box that holds
+  // (a) the scrolling message list and (b) the absolutely-positioned
+  // ListenPill anchor. The pill anchors to this OUTER box's viewport,
+  // NOT to the scrolling content — so it stays put regardless of scroll
+  // position. Putting position:relative on the scrolling div itself
+  // would anchor the pill to the scroll content (it would move with
+  // messages), which is the bug we're avoiding.
+  const surfaceStyle: JSX.CSSProperties = {
     background: t.activeBg,
     borderRadius: 18,
-    padding: "14px 16px",
-    paddingBottom: 64,
-    height: 200,
-    overflowY: "auto",
     border: `1px solid ${t.border}`,
     flex: 1,
     minWidth: 0,
+    height: 200,
     position: "relative",
+    overflow: "hidden",
   };
 
-  // The pill wrapper sits at the bottom-left of scrollStyle and does not
-  // scroll with the content. pointerEvents: "none" on the outer wrapper
-  // means empty area to the right of the pill remains click/scroll-through
-  // to the messages behind it; the inner div re-enables pointer events
-  // for the pill itself.
+  // Inner scrolling region fills the surface. paddingBottom reserves
+  // vertical space so the last message isn't obscured by the pill at
+  // the resting bottom-scroll position.
+  const scrollStyle: JSX.CSSProperties = {
+    width: "100%",
+    height: "100%",
+    overflowY: "auto",
+    padding: "14px 16px",
+    paddingBottom: 72,
+    boxSizing: "border-box",
+  };
+
+  // Pill anchor sits OUTSIDE the scrolling div but inside the bordered
+  // surface — it's a sibling of the scroll region. pointerEvents:"none"
+  // on the wrapper + "auto" on the inner div let the empty area to the
+  // right of the pill stay click/scroll-through to messages behind.
   const pillAnchorStyle: JSX.CSSProperties = {
     position: "absolute",
     left: 12,
@@ -282,6 +294,7 @@ export function Thread({ messages, t, onRepeat }: ThreadProps) {
           </Btn>
         </div>
       )}
+      <div style={surfaceStyle}>
       <div
         ref={scrollRef}
         id="ov-thread-log"
@@ -370,11 +383,10 @@ export function Thread({ messages, t, onRepeat }: ThreadProps) {
       })}
 
       <div ref={endRef} />
-      {/* ListenPill is anchored at the bottom-left of the scrolling
-          container via position: absolute, so it stays visible regardless
-          of scroll position. pointerEvents on the wrapper let empty area
-          to the right of the pill remain click/scroll-through to messages
-          behind it. */}
+      </div>
+      {/* ListenPill anchors to the bordered SURFACE (not the scroll
+          content) so it stays put regardless of scroll position. The
+          scroll region is a sibling above this div, not an ancestor. */}
       <div style={pillAnchorStyle}>
         <div style={{ pointerEvents: "auto" }}>
           <ListenPill

@@ -52,9 +52,9 @@ beforeEach(() => {
 });
 
 describe("ListenPill", () => {
-  it("renders the idle pill with the 'Add what you said' label", () => {
+  it("renders the idle pill with the 'Listen' label", () => {
     render(<ListenPill providerName="Dr. Patel" language="en" t={light} />);
-    expect(screen.getByRole("button", { name: /add what you said/i })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /^listen$/i })).toBeTruthy();
   });
 
   it("shows the privacy notice in idle state", () => {
@@ -71,7 +71,7 @@ describe("ListenPill", () => {
   it("calls start() when idle pill is tapped", async () => {
     render(<ListenPill providerName="Dr. Patel" language="en" t={light} />);
     await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: /add what you said/i }));
+      fireEvent.click(screen.getByRole("button", { name: /^listen$/i }));
     });
     expect(session.start).toHaveBeenCalledOnce();
   });

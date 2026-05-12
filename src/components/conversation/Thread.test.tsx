@@ -23,6 +23,22 @@ vi.mock("../../hooks/useListenSession", () => ({
 vi.mock("../../hooks/useSpeakActions", () => ({
   useSpeakActions: () => ({ composeThread: vi.fn() }),
 }));
+// Mock useModels so the ListenPill readiness gate doesn't gate this test.
+// Tests here verify Thread's layout, not the readiness state machine.
+vi.mock("../../hooks/useModels", () => ({
+  useModels: () => ({
+    isWarm: () => true,
+    isReady: () => true,
+    isLoading: () => false,
+    getError: () => undefined,
+    progress: [],
+    initialized: true,
+    secondsLeft: () => undefined,
+    humanCountdown: () => null,
+    isAlmostReady: () => false,
+    totalProgress: () => ({ loaded: 0, total: 0 }),
+  }),
+}));
 
 /** Minimal ThreadEntry factory — every field aside from `id` is what the
  *  Thread component actually reads. `time` is epoch ms in the audit-derived
@@ -83,14 +99,14 @@ describe("Thread", () => {
     // have been exchanged.
     render(<Thread messages={[]} t={light} onRepeat={vi.fn()} />);
     expect(
-      screen.getByRole("button", { name: /add what you said/i }),
+      screen.getByRole("button", { name: /^listen$/i }),
     ).toBeTruthy();
   });
 
   it("renders the ListenPill alongside the message list", () => {
     render(<Thread messages={messages} t={light} onRepeat={vi.fn()} />);
     expect(
-      screen.getByRole("button", { name: /add what you said/i }),
+      screen.getByRole("button", { name: /^listen$/i }),
     ).toBeTruthy();
   });
 

@@ -585,7 +585,7 @@ const tr: LocaleStrings = {
   "ui.dual.thread.scroll_down_aria": "Konuşmayı aşağı kaydır",
 
   // ── UI chrome: Thread → Listen (provider mic input) ────────────
-  "ui.thread.listen.idle_label": "Add what you said",
+  "ui.thread.listen.idle_label": "Listen",
   "ui.thread.listen.privacy_notice": "On-device · Whisper · no audio leaves this device",
   "ui.thread.listen.recording_label": "Tap to stop",
   "ui.thread.listen.silence_warning": "No speech detected · auto-stopping in {countdown}s",
