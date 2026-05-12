@@ -164,7 +164,15 @@ export function ListenPill({ providerName, language, t, draftTarget }: ListenPil
       {draftBlock != null && (draftTarget ? createPortal(draftBlock, draftTarget) : draftBlock)}
 
       {session.state.phase === "idle" && (
-        <>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 12,
+            flexWrap: "wrap",
+          }}
+        >
           <button
             type="button"
             onClick={onIdleTap}
@@ -192,7 +200,7 @@ export function ListenPill({ providerName, language, t, draftTarget }: ListenPil
           <span style={{ fontSize: 11, color: t.muted }}>
             {sttReady ? privacyNotice : engineNotReadyHint}
           </span>
-        </>
+        </div>
       )}
 
       {session.state.phase === "recording" && (
