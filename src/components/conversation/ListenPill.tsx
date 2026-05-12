@@ -1,3 +1,4 @@
+import { createPortal } from "preact/compat";
 import { useListenSession } from "../../hooks/useListenSession";
 import { useSpeakActions } from "../../hooks/useSpeakActions";
 import { useSettingsStore } from "../../stores/settingsStore";
@@ -12,6 +13,12 @@ interface ListenPillProps {
   providerName: string;
   language: string;
   t: ThemeTokens;
+  /** When provided, the draft block (DraftBubble + error + DraftActions)
+   *  is rendered via portal into this target instead of inline below the
+   *  pill. Thread.tsx passes a node inside the scrolling message list so
+   *  the draft flows with messages instead of clipping at the bordered
+   *  surface edge. */
+  draftTarget?: Element | null;
 }
 
 function formatTime(ms: number): string {
@@ -21,7 +28,7 @@ function formatTime(ms: number): string {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
-export function ListenPill({ providerName, language, t }: ListenPillProps) {
+export function ListenPill({ providerName, language, t, draftTarget }: ListenPillProps) {
   const session = useListenSession({ language });
   const { composeThread } = useSpeakActions();
   const locale = useSettingsStore((s) => s.cfg?.caregiverLang ?? "en");
@@ -62,6 +69,74 @@ export function ListenPill({ providerName, language, t }: ListenPillProps) {
 
   const onDiscardDraft = () => session.reset();
 
+  const draftBlock = session.state.phase === "draft" ? (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "flex-start",
+        gap: 6,
+        marginTop: 8,
+      }}
+    >
+      <DraftBubble
+        sentences={session.state.sentences}
+        transcribing={session.state.transcribing}
+        onEditSentence={session.editSentence}
+        onDiscardSentence={session.discardSentence}
+        locale={locale}
+        t={t}
+      />
+      {session.state.error != null && (
+        <div
+          role="alert"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "6px 10px",
+            borderRadius: 8,
+            background: t.card,
+            border: `1px solid ${colors.urgent}`,
+            color: colors.urgent,
+            fontSize: 12,
+            fontWeight: 600,
+            marginTop: 6,
+          }}
+        >
+          <span style={{ flex: 1 }}>
+            {resolvePhrase("ui.thread.listen.error_message", locale)}
+          </span>
+          <button
+            type="button"
+            onClick={() => session.tryAgain()}
+            aria-label={tryAgainLabel}
+            style={{
+              padding: "4px 10px",
+              borderRadius: 999,
+              border: `1px solid ${colors.urgent}`,
+              background: "transparent",
+              color: colors.urgent,
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: "pointer",
+            }}
+          >
+            {tryAgainLabel}
+          </button>
+        </div>
+      )}
+      <DraftActions
+        providerName={providerName}
+        addDisabled={session.state.transcribing != null || session.state.sentences.length === 0}
+        onAdd={onAdd}
+        onDiscard={onDiscardDraft}
+        locale={locale}
+        t={t}
+      />
+    </div>
+  ) : null;
+
   return (
     <div
       style={{
@@ -71,65 +146,11 @@ export function ListenPill({ providerName, language, t }: ListenPillProps) {
         gap: 6,
       }}
     >
-      {session.state.phase === "draft" && (
-        <>
-          <DraftBubble
-            sentences={session.state.sentences}
-            transcribing={session.state.transcribing}
-            onEditSentence={session.editSentence}
-            onDiscardSentence={session.discardSentence}
-            locale={locale}
-            t={t}
-          />
-          {session.state.error != null && (
-            <div
-              role="alert"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "6px 10px",
-                borderRadius: 8,
-                background: t.card,
-                border: `1px solid ${colors.urgent}`,
-                color: colors.urgent,
-                fontSize: 12,
-                fontWeight: 600,
-                marginTop: 6,
-              }}
-            >
-              <span style={{ flex: 1 }}>
-                {resolvePhrase("ui.thread.listen.error_message", locale)}
-              </span>
-              <button
-                type="button"
-                onClick={() => session.tryAgain()}
-                aria-label={tryAgainLabel}
-                style={{
-                  padding: "4px 10px",
-                  borderRadius: 999,
-                  border: `1px solid ${colors.urgent}`,
-                  background: "transparent",
-                  color: colors.urgent,
-                  fontSize: 12,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                }}
-              >
-                {tryAgainLabel}
-              </button>
-            </div>
-          )}
-          <DraftActions
-            providerName={providerName}
-            addDisabled={session.state.transcribing != null || session.state.sentences.length === 0}
-            onAdd={onAdd}
-            onDiscard={onDiscardDraft}
-            locale={locale}
-            t={t}
-          />
-        </>
-      )}
+      {/* Draft renders either via portal into a target inside the scroll
+          content (so it flows with messages and stays inside the bordered
+          surface), or inline below the pill as a fallback when no target
+          is supplied (e.g., standalone usage in unit tests). */}
+      {draftBlock != null && (draftTarget ? createPortal(draftBlock, draftTarget) : draftBlock)}
 
       {session.state.phase === "idle" && (
         <>

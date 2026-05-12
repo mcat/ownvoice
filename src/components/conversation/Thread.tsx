@@ -57,6 +57,11 @@ export function Thread({ messages, t, onRepeat }: ThreadProps) {
   );
   const scrollRef = useRef<HTMLDivElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
+  // Target node for the ListenPill's draft portal. State (not ref) so
+  // the ListenPill re-renders once the host div mounts and the portal
+  // can attach. Without state, the first render passes `null` and the
+  // draft never appears in the scroll content.
+  const [draftHost, setDraftHost] = useState<HTMLDivElement | null>(null);
   const [repeatingIdx, setRepeatingIdx] = useState<number | null>(null);
   const reducedMotion = useReducedMotion();
   const [atTop, setAtTop] = useState(true);
@@ -382,17 +387,25 @@ export function Thread({ messages, t, onRepeat }: ThreadProps) {
         );
       })}
 
+      {/* Portal target for the ListenPill's draft block. Lives inside
+          the scrolling content so the draft flows with messages and is
+          clipped by the surface's overflow:hidden — solving the case
+          where a multi-sentence draft would otherwise spill outside the
+          bordered area. */}
+      <div ref={setDraftHost} />
       <div ref={endRef} />
       </div>
       {/* ListenPill anchors to the bordered SURFACE (not the scroll
           content) so it stays put regardless of scroll position. The
-          scroll region is a sibling above this div, not an ancestor. */}
+          scroll region is a sibling above this div, not an ancestor.
+          Draft block, when present, portals into the draftHost above. */}
       <div style={pillAnchorStyle}>
         <div style={{ pointerEvents: "auto" }}>
           <ListenPill
             providerName={providerName}
             language={caregiverLang}
             t={t}
+            draftTarget={draftHost}
           />
         </div>
       </div>
