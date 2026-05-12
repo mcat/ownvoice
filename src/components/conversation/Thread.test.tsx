@@ -132,6 +132,41 @@ describe("Thread", () => {
     expect(onRepeat).toHaveBeenCalledWith("I will get that for you.", "provider");
   });
 
+  it("applies pill-clearance margin only when the last bubble is a provider", () => {
+    // Last is provider → row gets 72px bottom margin so the Listen pill
+    // (anchored bottom-left) doesn't obscure it.
+    const { rerender, container } = render(
+      <Thread
+        messages={[
+          entry("patient", "Hello.", "J. Doe"),
+          entry("provider", "How are you feeling?", "Dr. Patel"),
+        ]}
+        t={light}
+        onRepeat={vi.fn()}
+      />,
+    );
+    const log = container.querySelector("#ov-thread-log") as HTMLElement;
+    const rowsProviderLast = log.querySelectorAll(":scope > div");
+    const lastRowProvider = rowsProviderLast[rowsProviderLast.length - 3]; // -3 skips draftHost + endRef
+    expect((lastRowProvider as HTMLElement).style.marginBottom).toBe("72px");
+
+    // Swap: last is patient → no clearance margin (patient bubbles are
+    // right-aligned, opposite side from the pill).
+    rerender(
+      <Thread
+        messages={[
+          entry("provider", "How are you feeling?", "Dr. Patel"),
+          entry("patient", "Tired.", "J. Doe"),
+        ]}
+        t={light}
+        onRepeat={vi.fn()}
+      />,
+    );
+    const rowsPatientLast = log.querySelectorAll(":scope > div");
+    const lastRowPatient = rowsPatientLast[rowsPatientLast.length - 3];
+    expect((lastRowPatient as HTMLElement).style.marginBottom).toBe("0px");
+  });
+
   it("single message renders correctly", () => {
     render(
       <Thread
