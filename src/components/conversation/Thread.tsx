@@ -209,15 +209,16 @@ export function Thread({ messages, t, onRepeat }: ThreadProps) {
     overflow: "hidden",
   };
 
-  // Inner scrolling region fills the surface. paddingBottom reserves
-  // vertical space so the last message isn't obscured by the pill at
-  // the resting bottom-scroll position.
+  // Inner scrolling region fills the surface. No uniform paddingBottom —
+  // it would lift right-side (patient) bubbles away from the bottom even
+  // though the pill anchors on the left and doesn't obscure them. The
+  // last-provider-bubble loop below applies a localized bottom margin
+  // only when it's needed.
   const scrollStyle: JSX.CSSProperties = {
     width: "100%",
     height: "100%",
     overflowY: "auto",
     padding: "14px 16px",
-    paddingBottom: 72,
     boxSizing: "border-box",
   };
 
@@ -313,11 +314,18 @@ export function Thread({ messages, t, onRepeat }: ThreadProps) {
         const isPatient = msg.from === "patient";
         const isRepeating = repeatingIdx === idx;
         const showGloss = !!msg.gloss && msg.gloss !== msg.text;
+        const isLast = idx === messages.length - 1;
+
+        // Only the LAST left-side (provider) bubble needs space below it
+        // to clear the absolute-positioned Listen pill at bottom-left.
+        // Right-side (patient) bubbles flow to the bottom without
+        // obstruction since the pill is in the opposite lane.
+        const pillClearanceMargin = isLast && !isPatient ? 72 : 0;
 
         const bubbleStyle: JSX.CSSProperties = {
           display: "flex",
           justifyContent: isPatient ? "flex-end" : "flex-start",
-          marginBottom: idx < messages.length - 1 ? 8 : 0,
+          marginBottom: isLast ? pillClearanceMargin : 8,
         };
 
         const btnStyle: JSX.CSSProperties = {
