@@ -10,9 +10,6 @@ import { useState, useRef, useCallback, useEffect } from "preact/hooks";
  *  multi-minute sessions that React re-render scheduling backed up and
  *  the tab froze. */
 const LEVEL_INTERVAL_MS = 200;
-/** Elapsed-time update rate. Display is `m:ss` (1-second precision), so
- *  5 fps is plenty for sub-second feel without spamming setState. */
-const ELAPSED_INTERVAL_MS = 200;
 
 /** Target sample rate for downstream STT (Whisper expects 16 kHz). */
 const TARGET_SAMPLE_RATE = 16_000;
@@ -52,10 +49,8 @@ export interface MicrophoneHandle {
   start(): Promise<void>;
   /** Returns the accumulated mono PCM resampled to 16 kHz. */
   stop(): Promise<Float32Array>;
-  /** 0..1 RMS, updated ~15 fps. */
+  /** 0..1 RMS, updated ~5 fps. */
   level: number;
-  /** Time since start in ms. */
-  elapsedMs: number;
   recording: boolean;
 }
 
@@ -74,18 +69,15 @@ export interface MicrophoneHandle {
 export function useMicrophone(): MicrophoneHandle {
   const [recording, setRecording] = useState(false);
   const [level, setLevel] = useState(0);
-  const [elapsedMs, setElapsedMs] = useState(0);
 
   const streamRef = useRef<MediaStream | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const processorRef = useRef<AudioWorkletNode | null>(null);
   const chunksRef = useRef<Float32Array[]>([]);
-  const startedAtRef = useRef<number>(0);
 
   // Raw RMS value updated by audio processor, synced to state at throttled rate
   const rawLevelRef = useRef(0);
   const levelIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const elapsedIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   /**
    * Release all audio resources. Idempotent — safe to call multiple times
@@ -95,10 +87,6 @@ export function useMicrophone(): MicrophoneHandle {
     if (levelIntervalRef.current) {
       clearInterval(levelIntervalRef.current);
       levelIntervalRef.current = null;
-    }
-    if (elapsedIntervalRef.current) {
-      clearInterval(elapsedIntervalRef.current);
-      elapsedIntervalRef.current = null;
     }
     if (processorRef.current) {
       try {
@@ -183,15 +171,9 @@ export function useMicrophone(): MicrophoneHandle {
     // to connect to destination (unlike ScriptProcessorNode).
     source.connect(processor);
 
-    startedAtRef.current = Date.now();
-    setElapsedMs(0);
-
     levelIntervalRef.current = setInterval(() => {
       setLevel(rawLevelRef.current);
     }, LEVEL_INTERVAL_MS);
-    elapsedIntervalRef.current = setInterval(() => {
-      setElapsedMs(Date.now() - startedAtRef.current);
-    }, ELAPSED_INTERVAL_MS);
 
     setRecording(true);
   }, []);
@@ -221,5 +203,5 @@ export function useMicrophone(): MicrophoneHandle {
     return resampled;
   }, [release]);
 
-  return { start, stop, level, elapsedMs, recording };
+  return { start, stop, level, recording };
 }

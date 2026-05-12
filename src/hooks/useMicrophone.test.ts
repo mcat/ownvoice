@@ -87,12 +87,11 @@ beforeEach(() => {
 
 describe("useMicrophone", () => {
   describe("initial state", () => {
-    it("starts with recording=false, level=0, elapsedMs=0", () => {
+    it("starts with recording=false, level=0", () => {
       const { result } = renderHook(() => useMicrophone());
 
       expect(result.current.recording).toBe(false);
       expect(result.current.level).toBe(0);
-      expect(result.current.elapsedMs).toBe(0);
     });
   });
 
@@ -358,30 +357,6 @@ describe("useMicrophone", () => {
       });
 
       expect(result.current.level).toBe(0);
-
-      vi.useRealTimers();
-    });
-  });
-
-  describe("elapsedMs", () => {
-    it("ticks elapsedMs while recording", async () => {
-      vi.useFakeTimers();
-
-      setupAudioContextMock();
-      const mockStream = createMockStream();
-      vi.mocked(navigator.mediaDevices.getUserMedia).mockResolvedValueOnce(mockStream);
-
-      const { result } = renderHook(() => useMicrophone());
-
-      await act(async () => {
-        await result.current.start();
-      });
-
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(500);
-      });
-
-      expect(result.current.elapsedMs).toBeGreaterThanOrEqual(400);
 
       vi.useRealTimers();
     });

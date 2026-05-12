@@ -49,4 +49,19 @@ describe("segmentSentences", () => {
   it("collapses runs of boundary punctuation (e.g. '...') into one boundary", () => {
     expect(segmentSentences("Wait... what?")).toEqual(["Wait...", "what?"]);
   });
+
+  it("preserves a trailing fragment without terminal punctuation", () => {
+    expect(segmentSentences("One. Two")).toEqual(["One.", "Two"]);
+  });
+
+  it("does not misattribute trailing position when a sentence repeats", () => {
+    // Earlier lastIndexOf-based logic could pick the wrong occurrence
+    // when the final sentence fragment also appeared earlier in the input.
+    expect(segmentSentences("Yes. OK. Yes. tail")).toEqual([
+      "Yes.",
+      "OK.",
+      "Yes.",
+      "tail",
+    ]);
+  });
 });

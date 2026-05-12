@@ -27,19 +27,12 @@ export type ListenState =
     }
   | {
       phase: "draft";
-      /**
-       * Monotonic identifier for this session's draft. Incremented every
-       * time `stop()` dispatches chunks. The worker is a singleton, so if
-       * the user discards mid-decode and immediately starts a new session,
-       * stale `transcript` / `error` messages from the previous run can
-       * still arrive at the listener. The listener captures `sessionId` at
-       * subscribe time and drops messages whose draft no longer matches.
-       */
+      // Monotonic id so the worker-message handler can drop stale
+      // messages from a discarded prior session (the worker is a singleton).
       sessionId: number;
       sentences: Sentence[];
       transcribing: { done: number; total: number } | null;
-      /** One-line message rendered above the action row when a chunk
-       *  failed. Null while transcription is healthy. */
+      /** Null while healthy; message string when a chunk failed. */
       error: string | null;
     };
 
@@ -74,37 +67,25 @@ export function useListenSession(opts: { language: string }): UseListenSession {
   const [state, setState] = useState<ListenState>({ phase: "idle" });
   const idCounter = useRef(0);
   const workerRef = useRef<Worker | null>(null);
-  const cancelledRef = useRef(false);
   const transcriptIndexRef = useRef(0);
-  /** Monotonic counter, incremented on each `stop()`. Becomes the
-   *  draft's `sessionId` and guards the worker-message handler against
-   *  stale messages from prior, discarded sessions. */
   const sessionCounterRef = useRef(0);
-  /** PCM from the most recent `stop()`. Held so `tryAgain()` can
-   *  re-dispatch after a worker error without forcing the user to
-   *  re-record. Cleared on `reset()`. */
+  // PCM from the last stop(), retained for tryAgain() after a worker error.
   const lastPcmRef = useRef<Float32Array | null>(null);
-
   const startTimeRef = useRef<number>(0);
   const lastSpeechRef = useRef<number>(0);
 
-  // Latest mic-handle exposed in a ref so effects that close over mic don't
-  // need to be re-bound on every level update (the recording-poll effect in
-  // particular reads mic.level via React's render closure, which is fine).
+  // micRef so start/stop don't have to depend on `mic` — useMicrophone
+  // re-renders ~5fps while recording, which would otherwise re-create
+  // the callbacks and thrash the 250ms poll effect.
   const micRef = useRef(mic);
   micRef.current = mic;
 
   const start = useCallback(async () => {
-    cancelledRef.current = false;
     transcriptIndexRef.current = 0;
     startTimeRef.current = Date.now();
     lastSpeechRef.current = Date.now();
     await micRef.current.start();
     setState({ phase: "recording", elapsedMs: 0, level: 0 });
-    // micRef.current is updated every render (line above the start defn);
-    // closing over the ref keeps this callback identity stable across the
-    // 15fps re-renders that useMicrophone induces while recording, which is
-    // what allows the 250ms poll effect to install once and survive.
   }, []);
 
   /**
@@ -198,11 +179,22 @@ export function useListenSession(opts: { language: string }): UseListenSession {
           ? SILENCE_TIMEOUT_MS - silentFor
           : undefined;
 
-      setState({
-        phase: "recording",
-        elapsedMs: elapsed,
-        level: currentLevel,
-        silenceCountdownMs,
+      // Short-circuit no-op renders. The pill only re-renders for
+      // human-visible changes: a new whole-second elapsed value, a
+      // perceptible level change (>2%), or a countdown step.
+      setState((prev) => {
+        if (prev.phase !== "recording") return prev;
+        const sameSecond =
+          Math.floor(prev.elapsedMs / 1000) === Math.floor(elapsed / 1000);
+        const sameLevel = Math.abs(prev.level - currentLevel) < 0.02;
+        const sameCountdown = prev.silenceCountdownMs === silenceCountdownMs;
+        if (sameSecond && sameLevel && sameCountdown) return prev;
+        return {
+          phase: "recording",
+          elapsedMs: elapsed,
+          level: currentLevel,
+          silenceCountdownMs,
+        };
       });
     }, 250);
     return () => window.clearInterval(id);
@@ -226,7 +218,6 @@ export function useListenSession(opts: { language: string }): UseListenSession {
     const mySessionId = draftSessionId;
 
     const onMessage = (e: MessageEvent) => {
-      if (cancelledRef.current) return;
       const msg = e.data;
       if (!msg) return;
 
@@ -242,10 +233,16 @@ export function useListenSession(opts: { language: string }): UseListenSession {
           }));
           const done = prev.transcribing.done + 1;
           const total = prev.transcribing.total;
+          const allDone = done >= total;
+          // Release the held PCM once all chunks succeed — tryAgain only
+          // fires on error, and at that point a fresh dispatch already
+          // recaptures lastPcmRef. Keeping it pinned for the full draft
+          // lifetime held up to ~57 MB unnecessarily.
+          if (allDone && prev.error == null) lastPcmRef.current = null;
           return {
             ...prev,
             sentences: [...prev.sentences, ...newSentences],
-            transcribing: done >= total ? null : { done, total },
+            transcribing: allDone ? null : { done, total },
           };
         });
         return;
@@ -294,37 +291,35 @@ export function useListenSession(opts: { language: string }): UseListenSession {
   }, []);
 
   const reset = useCallback(() => {
-    cancelledRef.current = true;
     lastPcmRef.current = null;
     setState({ phase: "idle" });
   }, []);
 
-  // Force-cleanup on unmount: end mic stream + mark in-flight transcripts
-  // as cancelled. Without this, an unmount mid-capture leaves the browser's
-  // mic indicator on indefinitely (no handle to stop the MediaStream).
-  // v1 inherited this same constraint from the same cause.
+  // Force-stop the mic on unmount — without it the browser indicator
+  // stays on indefinitely with no handle to release the MediaStream.
   useEffect(() => {
     return () => {
-      cancelledRef.current = true;
       if (micRef.current.recording) {
         void micRef.current.stop().catch(() => undefined);
       }
     };
   }, []);
 
-  // visibilitychange: if the tab is backgrounded > 10s while recording,
-  // force-stop. iPad clinicians switching apps would otherwise leave the
-  // mic indicator running.
+  // If the tab stays hidden > VISIBILITY_GRACE_MS while recording, end
+  // the capture. Same indicator-leak reason as unmount cleanup.
   useEffect(() => {
     let timeout: number | null = null;
     const onVisibility = () => {
-      if (document.hidden && state.phase === "recording") {
+      if (document.hidden) {
         timeout = window.setTimeout(() => {
-          if (state.phase === "recording") {
-            cancelledRef.current = true;
+          // Re-check inside setState so a phase change during the grace
+          // window (e.g. transcription finished and we're now in draft)
+          // doesn't get clobbered.
+          setState((prev) => {
+            if (prev.phase !== "recording") return prev;
             void micRef.current.stop().catch(() => undefined);
-            setState({ phase: "idle" });
-          }
+            return { phase: "idle" };
+          });
         }, VISIBILITY_GRACE_MS);
       } else if (timeout != null) {
         clearTimeout(timeout);
@@ -336,7 +331,7 @@ export function useListenSession(opts: { language: string }): UseListenSession {
       document.removeEventListener("visibilitychange", onVisibility);
       if (timeout != null) clearTimeout(timeout);
     };
-  }, [state.phase]);
+  }, []);
 
   return { state, start, stop, editSentence, discardSentence, tryAgain, reset };
 }
