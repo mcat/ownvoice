@@ -1,3 +1,4 @@
+import { useEffect } from "preact/hooks";
 import { createPortal } from "preact/compat";
 import { useListenSession } from "../../hooks/useListenSession";
 import { useSpeakActions } from "../../hooks/useSpeakActions";
@@ -68,6 +69,16 @@ export function ListenPill({ providerName, language, t, draftTarget }: ListenPil
   };
 
   const onDiscardDraft = () => session.reset();
+
+  // Auto-scroll the draft into view when the user stops recording.
+  // Without this, a draft can land below the visible scroll area
+  // (especially with multi-sentence captures) and the user has to
+  // manually scroll to find it.
+  useEffect(() => {
+    if (session.state.phase === "draft" && draftTarget != null) {
+      draftTarget.scrollIntoView?.({ block: "start", behavior: "smooth" });
+    }
+  }, [session.state.phase, draftTarget]);
 
   const draftBlock = session.state.phase === "draft" ? (
     <div
