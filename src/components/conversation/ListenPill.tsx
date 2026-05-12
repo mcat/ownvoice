@@ -40,7 +40,6 @@ export function ListenPill({ providerName, language, t, draftTarget }: ListenPil
   const sttReady = models.isWarm("stt");
 
   const idleLabel = resolvePhrase("ui.thread.listen.idle_label", locale);
-  const privacyNotice = resolvePhrase("ui.thread.listen.privacy_notice", locale);
   const recordingLabel = resolvePhrase("ui.thread.listen.recording_label", locale);
   const engineNotReadyHint = resolvePhrase(
     "ui.thread.listen.engine_not_ready",
@@ -197,9 +196,14 @@ export function ListenPill({ providerName, language, t, draftTarget }: ListenPil
           >
             🎤 {idleLabel}
           </button>
-          <span style={{ fontSize: 11, color: t.muted }}>
-            {sttReady ? privacyNotice : engineNotReadyHint}
-          </span>
+          {/* Only surface the not-ready hint when the pill is disabled
+              — vertical space is at a premium and the privacy notice
+              once shown alongside the ready pill added no signal. */}
+          {!sttReady && (
+            <span style={{ fontSize: 11, color: t.muted }}>
+              {engineNotReadyHint}
+            </span>
+          )}
         </div>
       )}
 

@@ -576,7 +576,6 @@ const ar: LocaleStrings = {
 
   // ── UI chrome: Thread → Listen (provider mic input) ────────────
   "ui.thread.listen.idle_label": "Listen",
-  "ui.thread.listen.privacy_notice": "On-device · no audio leaves this device",
   "ui.thread.listen.recording_label": "Tap to stop",
   "ui.thread.listen.silence_warning": "No speech detected · auto-stopping in {countdown}s",
   "ui.thread.listen.transcribing_label": "Transcribing {done}/{total}…",

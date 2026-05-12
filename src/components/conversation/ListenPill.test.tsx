@@ -57,12 +57,12 @@ describe("ListenPill", () => {
     expect(screen.getByRole("button", { name: /^listen$/i })).toBeTruthy();
   });
 
-  it("shows the privacy notice in idle state", () => {
+  it("does not render the privacy notice in idle state (vertical space)", () => {
     render(<ListenPill providerName="Dr. Patel" language="en" t={light} />);
-    expect(screen.getByText(/no audio leaves this device/i)).toBeTruthy();
+    expect(screen.queryByText(/no audio leaves this device/i)).toBeNull();
   });
 
-  it("hides the privacy notice while recording", () => {
+  it("does not render the privacy notice while recording", () => {
     (session.state as any) = { phase: "recording", elapsedMs: 1000, level: 0.3 };
     render(<ListenPill providerName="Dr. Patel" language="en" t={light} />);
     expect(screen.queryByText(/no audio leaves this device/i)).toBeNull();
