@@ -16,6 +16,9 @@
  * Usage:
  *   node scripts/prune-r2.mjs              # prune
  *   node scripts/prune-r2.mjs --dry-run    # report what would be deleted
+ *   node scripts/prune-r2.mjs --no-grace   # bypass the 24h grace window
+ *                                          # (use when manually cleaning
+ *                                          # up known-stale uploads)
  */
 import {
   S3Client,
@@ -25,7 +28,8 @@ import {
 import { execFileSync } from "node:child_process";
 
 const DRY_RUN = process.argv.includes("--dry-run");
-const GRACE_MS = 24 * 60 * 60 * 1000;
+const NO_GRACE = process.argv.includes("--no-grace");
+const GRACE_MS = NO_GRACE ? 0 : 24 * 60 * 60 * 1000;
 
 const accountId = required("CLOUDFLARE_ACCOUNT_ID");
 const accessKeyId = required("R2_ACCESS_KEY_ID");
