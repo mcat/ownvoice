@@ -118,7 +118,12 @@ export function useSpeakActions() {
   const composeThread = useCallback(
     (
       text: string,
-      opts?: { gloss?: string; from?: "patient" | "provider"; providerLabel?: string },
+      opts?: {
+        gloss?: string;
+        from?: "patient" | "provider";
+        providerLabel?: string;
+        via?: "mic" | "typed";
+      },
     ) => {
       if (!cfg || !active) return;
       const from = opts?.from ?? "patient";
@@ -126,6 +131,7 @@ export function useSpeakActions() {
         [ATTR.SPEECH_TEXT]: text,
         [ATTR.SPEECH_GLOSS]: opts?.gloss ?? "",
         [ATTR.ACTOR]: from,
+        [ATTR.VIA]: opts?.via ?? "typed",
       };
       if (from === "provider") {
         attributes[ATTR.PROVIDER_NAME] = opts?.providerLabel ?? "Care Team";

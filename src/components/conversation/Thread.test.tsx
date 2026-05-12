@@ -5,6 +5,41 @@ import { useSettingsStore } from "../../stores/settingsStore";
 import { makeTestCfg } from "../../test/makeCfg";
 import type { ThreadEntry } from "../../audit/useThreadView";
 
+// Thread renders <ListenPill> as a sibling of the scrolling message list.
+// ListenPill internally calls useListenSession and useSpeakActions; mock both
+// at module scope (same pattern as ListenPill.test.tsx) so Thread tests don't
+// need to spin up the full mic/STT state machine.
+const listenSession = {
+  state: { phase: "idle" } as const,
+  start: vi.fn().mockResolvedValue(undefined),
+  stop: vi.fn().mockResolvedValue(undefined),
+  editSentence: vi.fn(),
+  discardSentence: vi.fn(),
+  reset: vi.fn(),
+};
+vi.mock("../../hooks/useListenSession", () => ({
+  useListenSession: () => listenSession,
+}));
+vi.mock("../../hooks/useSpeakActions", () => ({
+  useSpeakActions: () => ({ composeThread: vi.fn() }),
+}));
+// Mock useModels so the ListenPill readiness gate doesn't gate this test.
+// Tests here verify Thread's layout, not the readiness state machine.
+vi.mock("../../hooks/useModels", () => ({
+  useModels: () => ({
+    isWarm: () => true,
+    isReady: () => true,
+    isLoading: () => false,
+    getError: () => undefined,
+    progress: [],
+    initialized: true,
+    secondsLeft: () => undefined,
+    humanCountdown: () => null,
+    isAlmostReady: () => false,
+    totalProgress: () => ({ loaded: 0, total: 0 }),
+  }),
+}));
+
 /** Minimal ThreadEntry factory — every field aside from `id` is what the
  *  Thread component actually reads. `time` is epoch ms in the audit-derived
  *  shape; the Thread doesn't render it, so a fixed timestamp is fine. */
@@ -58,11 +93,21 @@ beforeEach(() => {
 });
 
 describe("Thread", () => {
-  it("returns null when messages array is empty", () => {
-    const { container } = render(
-      <Thread messages={[]} t={light} onRepeat={vi.fn()} />,
-    );
-    expect(container.innerHTML).toBe("");
+  it("renders the ListenPill at the bottom of the thread surface even when empty", () => {
+    // ListenPill is mounted as a sibling of the scrolling message list so it
+    // stays anchored at the bottom and is reachable even before any messages
+    // have been exchanged.
+    render(<Thread messages={[]} t={light} onRepeat={vi.fn()} />);
+    expect(
+      screen.getByRole("button", { name: /^listen$/i }),
+    ).toBeTruthy();
+  });
+
+  it("renders the ListenPill alongside the message list", () => {
+    render(<Thread messages={messages} t={light} onRepeat={vi.fn()} />);
+    expect(
+      screen.getByRole("button", { name: /^listen$/i }),
+    ).toBeTruthy();
   });
 
   it("renders message text for each message", () => {
@@ -95,12 +140,12 @@ describe("Thread", () => {
         onRepeat={vi.fn()}
       />,
     );
-    // 1 bubble button + 2 scroll arrows. Filter out the chrome buttons
-    // (identified by aria-controls pointing at the log) so the assertion
-    // remains "one message bubble" regardless of locale or chrome count.
+    // 1 bubble button + 2 scroll arrows + 1 ListenPill idle button. Filter
+    // to message bubbles by aria-label prefix; the chrome buttons (scroll
+    // arrows + ListenPill) all have their own distinct labels.
     const bubbles = screen
       .getAllByRole("button")
-      .filter((b) => b.getAttribute("aria-controls") !== "ov-thread-log");
+      .filter((b) => /^Repeat:/.test(b.getAttribute("aria-label") ?? ""));
     expect(bubbles).toHaveLength(1);
     expect(screen.getByText("I need water")).toBeInTheDocument();
   });
@@ -176,9 +221,12 @@ describe("Thread", () => {
         },
       ];
       render(<Thread messages={msgs} t={light} onRepeat={vi.fn()} />);
+      // Bubble buttons carry the message text in their aria-label (locale-
+      // prefixed "Repeat:" / "Repetir:" / etc). Filter on that to exclude
+      // both the scroll-arrow chrome and the ListenPill idle button.
       const bubbles = screen
         .getAllByRole("button")
-        .filter((b) => b.getAttribute("aria-controls") !== "ov-thread-log");
+        .filter((b) => (b.getAttribute("aria-label") ?? "").includes("I need water"));
       expect(bubbles).toHaveLength(1);
       // No DualLocaleText rendered (no data-dual-primary attribute)
       expect(bubbles[0].querySelector("[data-dual-primary]")).toBeNull();

@@ -348,6 +348,36 @@ describe("useSpeakActions", () => {
         [ATTR.PROVIDER_NAME]: "Care Team",
       });
     });
+
+    it("stamps ATTR.VIA='mic' when via:'mic' option is passed", () => {
+      useSettingsStore.setState({ cfg: DEFAULT_CFG });
+
+      const { result } = renderHook(() => useSpeakActions());
+
+      act(() => {
+        result.current.composeThread("Hello", {
+          from: "provider",
+          providerLabel: "Dr. Patel",
+          via: "mic",
+        });
+      });
+
+      const [event] = logSpy.mock.calls[0] as [logger.AuditEvent];
+      expect(event.attributes?.[ATTR.VIA]).toBe("mic");
+    });
+
+    it("defaults ATTR.VIA to 'typed' when no via option is passed", () => {
+      useSettingsStore.setState({ cfg: DEFAULT_CFG });
+
+      const { result } = renderHook(() => useSpeakActions());
+
+      act(() => {
+        result.current.composeThread("Hello");
+      });
+
+      const [event] = logSpy.mock.calls[0] as [logger.AuditEvent];
+      expect(event.attributes?.[ATTR.VIA]).toBe("typed");
+    });
   });
 
   describe("repeatSpeak", () => {

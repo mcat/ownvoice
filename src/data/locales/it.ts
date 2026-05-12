@@ -575,6 +575,21 @@ const it: LocaleStrings = {
   "ui.dual.thread.scroll_up_aria": "Scorri conversazione verso l'alto",
   "ui.dual.thread.scroll_down_aria": "Scorri conversazione verso il basso",
 
+  // ── UI chrome: Thread → Listen (provider mic input) ────────────
+  "ui.thread.listen.idle_label": "Listen",
+  "ui.thread.listen.recording_label": "Tap to stop",
+  "ui.thread.listen.silence_warning": "No speech detected · auto-stopping in {countdown}s",
+  "ui.thread.listen.transcribing_label": "Transcribing {done}/{total}…",
+  "ui.thread.listen.draft_label": "Draft · {count} sentences",
+  "ui.thread.listen.draft_label_one": "Draft · 1 sentence",
+  "ui.thread.listen.sentence_edit_aria": "Edit sentence {n} of {total}",
+  "ui.thread.listen.sentence_discard_aria": "Discard sentence {n}",
+  "ui.thread.listen.add_as": "Add as {provider}",
+  "ui.thread.listen.discard": "Discard",
+  "ui.thread.listen.error_message": "Couldn't transcribe — try again.",
+  "ui.thread.listen.try_again": "Try again",
+  "ui.thread.listen.engine_not_ready": "Listen — engine not yet ready",
+
   // ── UI chrome: ProviderPanel ───────────────────────────────────
   "ui.provider.care_team.title": "Team di cura",
   "ui.provider.fallback_name": "Operatore",

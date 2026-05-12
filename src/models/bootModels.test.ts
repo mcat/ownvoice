@@ -66,18 +66,38 @@ describe("bootModels", () => {
     expect(mockInit).toHaveBeenCalled();
   });
 
-  it("creates 1 worker (TTS WASM)", async () => {
+  it("creates 2 workers (TTS WASM + STT WASM in jsdom — no navigator.gpu)", async () => {
     const { bootModels } = await import("./bootModels");
     await bootModels();
-    expect(createdWorkers).toHaveLength(1);
+    expect(createdWorkers).toHaveLength(2);
   });
 
   it("registers the TTS worker with setWorker immediately", async () => {
     const { bootModels } = await import("./bootModels");
     await bootModels();
 
-    expect(mockSetWorker).toHaveBeenCalledTimes(1);
-    expect(mockSetWorker.mock.calls[0][0]).toBe("tts");
+    // TTS registers immediately; STT registers later (on ready). So at
+    // boot return, only the TTS setWorker call has fired.
+    expect(mockSetWorker).toHaveBeenCalledWith("tts", expect.anything());
+    const ttsCalls = mockSetWorker.mock.calls.filter((c) => c[0] === "tts");
+    expect(ttsCalls).toHaveLength(1);
+  });
+
+  it("dispatches STT boot in parallel with TTS — both workers are constructed", async () => {
+    const { bootModels } = await import("./bootModels");
+    await bootModels();
+
+    // Two workers constructed: TTS WASM and STT WASM (jsdom has no
+    // navigator.gpu, so the GPU branch is skipped and we land directly
+    // on bootSTTWasm). Confirms STT boot is dispatched alongside TTS
+    // rather than chained behind it.
+    expect(createdWorkers).toHaveLength(2);
+
+    // STT worker, on ready, must register itself with setWorker("stt", ...).
+    const sttWorker = createdWorkers[1];
+    sttWorker.onmessage?.({ data: { type: "ready" } });
+    expect(mockSetWorker).toHaveBeenCalledWith("stt", expect.anything());
+    expect(mockSetReady).toHaveBeenCalledWith("stt");
   });
 
   it("posts init message with the TTS model URL and bench flag", async () => {

@@ -6,11 +6,99 @@ import { useOfflineStore } from "../stores/offlineStore";
 /**
  * Boot all on-device models.
  *
- * Currently TTS only; preserved as a single entry point for tests and
- * any caller that wants a "boot everything" handle.
+ * Preserved as a single entry point for tests and any caller that wants a
+ * "boot everything" handle.
  */
 export async function bootModels(): Promise<void> {
-  await bootTTSWasm();
+  // Parallel boot: STT begins downloading immediately, in parallel with
+  // TTS shader compile. An earlier shape that chained STT behind
+  // initGPU() meant STT could not even start downloading until TTS
+  // shader compile finished (minutes on cold load). v2 preserves the
+  // parallel pattern (see #233 re-implementation hints).
+  await Promise.all([bootTTSWasm(), bootSTT()]);
+}
+
+/**
+ * Boot STT with WebGPU → WASM fallback (non-blocking).
+ *
+ * If WebGPU is available, starts the plain JS GPU worker (public/stt-gpu-worker.js)
+ * and lets it download + init in the background. If GPU fails, falls back to the
+ * Vite-bundled WASM worker (sttWorker.ts).
+ *
+ * This is non-blocking: the model won't be ready immediately, but useMicrophone
+ * handles that gracefully ("model not loaded yet" until ready).
+ */
+export async function bootSTT(): Promise<void> {
+  const mgr = getModelManager();
+  await mgr.init();
+
+  if ("gpu" in navigator) {
+    try {
+      const gpuWorker = new Worker("/stt-gpu-worker.js", { type: "module" });
+
+      gpuWorker.onmessage = (e) => {
+        if (e.data.type === "ready") {
+          mgr.setWorker("stt", gpuWorker);
+          mgr.setReady("stt");
+          // The GPU STT worker (public/stt-gpu-worker.js) already runs
+          // shader compilation + encoder/decoder warmup as part of its
+          // own init sequence before emitting `ready`. By the time we
+          // see `ready`, it can run inference — so flip warm directly
+          // without posting an extra `warmup` message (which the GPU
+          // worker doesn't handle and would log as "Unknown message type").
+          mgr.markWarm("stt");
+          console.log("[OwnVoice] STT: WebGPU ready");
+        } else if (e.data.type === "error") {
+          if (!mgr.isReady("stt")) {
+            // Init failure on GPU — fall back to WASM, which has its own
+            // setError on init failure.
+            console.warn("[OwnVoice] STT GPU error:", e.data.message);
+            bootSTTWasm();
+          }
+        }
+      };
+
+      gpuWorker.onerror = (e) => {
+        console.warn("[OwnVoice] STT GPU worker error:", e.message);
+        if (!mgr.isReady("stt")) bootSTTWasm();
+      };
+
+      gpuWorker.postMessage({ type: "init", modelUrl: MODEL_URLS.stt });
+      return;
+    } catch (err) {
+      console.warn("[OwnVoice] STT GPU failed:", err);
+    }
+  }
+
+  bootSTTWasm();
+}
+
+/** Start the WASM STT worker (Vite-bundled, onnxruntime-web base package). */
+function bootSTTWasm(): void {
+  const mgr = getModelManager();
+  console.log("[OwnVoice] STT: using WASM fallback");
+  try {
+    const sttWorker = new Worker(
+      new URL("./sttWorker.ts", import.meta.url),
+      { type: "module" },
+    );
+
+    sttWorker.onmessage = (e) => {
+      if (e.data.type === "ready") {
+        mgr.setWorker("stt", sttWorker);
+        mgr.setReady("stt");
+        sttWorker.postMessage({ type: "warmup" });
+      } else if (e.data.type === "warm") {
+        mgr.markWarm("stt");
+      } else if (e.data.type === "error") {
+        mgr.setError("stt", e.data.message);
+      }
+    };
+
+    sttWorker.postMessage({ type: "init", modelUrl: MODEL_URLS.stt });
+  } catch (err) {
+    console.warn("[OwnVoice] Failed to create STT WASM worker:", err);
+  }
 }
 
 /**

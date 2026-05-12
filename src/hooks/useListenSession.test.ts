@@ -1,0 +1,351 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { renderHook, act } from "@testing-library/preact";
+import { useState } from "preact/hooks";
+import { useListenSession, type ListenState } from "./useListenSession";
+
+// Mock the microphone hook to avoid touching Web Audio in unit tests.
+vi.mock("./useMicrophone", () => ({
+  useMicrophone: vi.fn(() => ({
+    start: vi.fn().mockResolvedValue(undefined),
+    stop: vi.fn().mockResolvedValue(new Float32Array(16000 * 5)), // 5s
+    level: 0.3,
+    elapsedMs: 0,
+    recording: false,
+  })),
+}));
+
+// Mock the model manager so getWorker("stt") returns a fake.
+const fakeWorker = {
+  postMessage: vi.fn(),
+  addEventListener: vi.fn(),
+  removeEventListener: vi.fn(),
+  terminate: vi.fn(),
+};
+
+vi.mock("../models/modelManager", () => ({
+  getModelManager: () => ({
+    getWorker: () => fakeWorker,
+    isReady: () => true,
+    isWarm: () => true,
+  }),
+}));
+
+beforeEach(async () => {
+  fakeWorker.postMessage.mockReset();
+  fakeWorker.addEventListener.mockReset();
+  fakeWorker.removeEventListener.mockReset();
+  // Restore the default mic-mock implementation. Tests that override
+  // useMicrophone via mockReturnValue/mockImplementation can leak state
+  // across `it`s if we don't reset here.
+  const { useMicrophone } = await import("./useMicrophone");
+  vi.mocked(useMicrophone).mockImplementation(() => ({
+    start: vi.fn().mockResolvedValue(undefined),
+    stop: vi.fn().mockResolvedValue(new Float32Array(16000 * 5)),
+    level: 0.3,
+    elapsedMs: 0,
+    recording: false,
+  }));
+});
+
+describe("useListenSession", () => {
+  it("starts in 'idle' phase", () => {
+    const { result } = renderHook(() => useListenSession({ language: "en" }));
+    expect(result.current.state.phase).toBe("idle");
+  });
+
+  it("transitions to 'recording' on start()", async () => {
+    const { result } = renderHook(() => useListenSession({ language: "en" }));
+    await act(async () => {
+      await result.current.start();
+    });
+    expect(result.current.state.phase).toBe("recording");
+  });
+
+  it("on stop(), enters 'draft' and dispatches one chunk for ≤30s audio", async () => {
+    const { result } = renderHook(() => useListenSession({ language: "en" }));
+    await act(async () => {
+      await result.current.start();
+      await result.current.stop();
+    });
+    expect(result.current.state.phase).toBe("draft");
+    expect(fakeWorker.postMessage).toHaveBeenCalledTimes(1);
+    const call = fakeWorker.postMessage.mock.calls[0][0];
+    expect(call.type).toBe("transcribe");
+    expect(call.chunkId).toBe(0);
+    expect(call.language).toBe("en");
+  });
+
+  it("on stop() with 75s audio, dispatches three 30s chunks", async () => {
+    const { useMicrophone } = await import("./useMicrophone");
+    vi.mocked(useMicrophone).mockReturnValueOnce({
+      start: vi.fn().mockResolvedValue(undefined),
+      stop: vi.fn().mockResolvedValue(new Float32Array(16000 * 75)),
+      level: 0,
+      elapsedMs: 0,
+      recording: false,
+    });
+
+    const { result } = renderHook(() => useListenSession({ language: "en" }));
+    await act(async () => {
+      await result.current.start();
+      await result.current.stop();
+    });
+    expect(fakeWorker.postMessage).toHaveBeenCalledTimes(3);
+    expect(fakeWorker.postMessage.mock.calls[0][0].chunkId).toBe(0);
+    expect(fakeWorker.postMessage.mock.calls[1][0].chunkId).toBe(1);
+    expect(fakeWorker.postMessage.mock.calls[2][0].chunkId).toBe(2);
+  });
+
+  it("editSentence updates text in place", async () => {
+    const { result } = renderHook(() => useListenSession({ language: "en" }));
+    await act(async () => {
+      await result.current.start();
+      await result.current.stop();
+    });
+    await act(async () => {
+      const onMessage = fakeWorker.addEventListener.mock.calls.find(
+        (c) => c[0] === "message",
+      )?.[1] as (e: MessageEvent) => void;
+      onMessage(
+        new MessageEvent("message", {
+          data: { type: "transcript", text: "Hello." },
+        }),
+      );
+    });
+    expect(result.current.state.phase).toBe("draft");
+    const s = (
+      result.current.state as Extract<ListenState, { phase: "draft" }>
+    ).sentences[0];
+    act(() => result.current.editSentence(s.id, "Hello, world."));
+    const after = result.current.state as Extract<
+      ListenState,
+      { phase: "draft" }
+    >;
+    expect(after.sentences[0].text).toBe("Hello, world.");
+  });
+
+  it("discardSentence removes the sentence", async () => {
+    const { result } = renderHook(() => useListenSession({ language: "en" }));
+    await act(async () => {
+      await result.current.start();
+      await result.current.stop();
+    });
+    await act(async () => {
+      const onMessage = fakeWorker.addEventListener.mock.calls.find(
+        (c) => c[0] === "message",
+      )?.[1] as (e: MessageEvent) => void;
+      onMessage(
+        new MessageEvent("message", {
+          data: { type: "transcript", text: "First. Second." },
+        }),
+      );
+    });
+    const before = result.current.state as Extract<
+      ListenState,
+      { phase: "draft" }
+    >;
+    expect(before.sentences).toHaveLength(2);
+    act(() => result.current.discardSentence(before.sentences[0].id));
+    const after = result.current.state as Extract<
+      ListenState,
+      { phase: "draft" }
+    >;
+    expect(after.sentences).toHaveLength(1);
+    expect(after.sentences[0].text).toBe("Second.");
+  });
+
+  it("reset() returns state to idle", async () => {
+    const { result } = renderHook(() => useListenSession({ language: "en" }));
+    await act(async () => {
+      await result.current.start();
+    });
+    expect(result.current.state.phase).toBe("recording");
+    act(() => result.current.reset());
+    expect(result.current.state.phase).toBe("idle");
+  });
+
+  it("poll interval survives mic-driven re-renders during recording", async () => {
+    vi.useFakeTimers();
+    const { useMicrophone } = await import("./useMicrophone");
+
+    // Override useMicrophone with an impl that mirrors the real one: it owns
+    // its own setLevel that drives a re-render in the consumer. Each render
+    // returns a *fresh* object literal (the bug condition), so the only thing
+    // protecting the 250ms poll interval is `useListenSession` closing over
+    // `micRef.current` and keeping `start` / `stop` stable.
+    let levelSetter: (v: number) => void = () => {};
+    const micStart = vi.fn().mockResolvedValue(undefined);
+    const micStop = vi.fn().mockResolvedValue(new Float32Array(16000));
+    vi.mocked(useMicrophone).mockImplementation(() => {
+      const [level, setLevel] = useState(0);
+      levelSetter = setLevel;
+      return {
+        start: micStart,
+        stop: micStop,
+        level,
+        elapsedMs: 0,
+        recording: false,
+      };
+    });
+
+    const { result } = renderHook(() => useListenSession({ language: "en" }));
+    await act(async () => {
+      await result.current.start();
+    });
+    expect(result.current.state.phase).toBe("recording");
+
+    // Force a series of mic-driven re-renders. Each setLevel rerenders the
+    // consumer and yields a new mic object literal. Before the fix, `stop`'s
+    // useCallback identity changed on every one of these renders, so the
+    // poll effect's cleanup tore down the setInterval before it could fire.
+    for (let i = 0; i < 5; i++) {
+      act(() => levelSetter(0.3 + i * 0.01));
+    }
+
+    // Advance well past 250ms so the interval body must run at least once.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+
+    // If the interval had thrashed we'd still be in `recording` but with
+    // elapsedMs == 0 (initial value). With the fix, the interval body runs
+    // and writes a non-zero elapsedMs into state.
+    const state = result.current.state;
+    expect(state.phase).toBe("recording");
+    if (state.phase === "recording") {
+      expect(state.elapsedMs).toBeGreaterThan(0);
+    }
+
+    vi.useRealTimers();
+  });
+
+  it("dispatches transcribe with audio (Float32Array) and sampleRate 16000", async () => {
+    const { result } = renderHook(() => useListenSession({ language: "es" }));
+    await act(async () => {
+      await result.current.start();
+      await result.current.stop();
+    });
+    const call = fakeWorker.postMessage.mock.calls[0][0];
+    expect(call.audio).toBeInstanceOf(Float32Array);
+    expect(call.sampleRate).toBe(16000);
+    expect(call.language).toBe("es");
+  });
+
+  it("ignores stale worker messages from a prior session", async () => {
+    const { useMicrophone } = await import("./useMicrophone");
+    // Two distinct stops in one render cycle.
+    const stopSpy = vi
+      .fn()
+      .mockResolvedValueOnce(new Float32Array(16000 * 5))
+      .mockResolvedValueOnce(new Float32Array(16000 * 5));
+    vi.mocked(useMicrophone).mockReturnValue({
+      start: vi.fn().mockResolvedValue(undefined),
+      stop: stopSpy,
+      level: 0,
+      elapsedMs: 0,
+      recording: false,
+    });
+
+    const { result } = renderHook(() => useListenSession({ language: "en" }));
+
+    // Session A: start → stop. Capture the listener registered for A.
+    await act(async () => {
+      await result.current.start();
+      await result.current.stop();
+    });
+    const handlerA = fakeWorker.addEventListener.mock.calls.find(
+      (c) => c[0] === "message",
+    )?.[1] as (e: MessageEvent) => void;
+    expect(handlerA).toBeTruthy();
+
+    // Discard A → idle, then session B: start → stop.
+    act(() => result.current.reset());
+    await act(async () => {
+      await result.current.start();
+      await result.current.stop();
+    });
+
+    const before = result.current.state as Extract<
+      ListenState,
+      { phase: "draft" }
+    >;
+    expect(before.sentences).toHaveLength(0);
+
+    // Fire a stale `transcript` message through session A's listener while
+    // session B is the active draft. The handler must NOT mutate B.
+    await act(async () => {
+      handlerA(
+        new MessageEvent("message", {
+          data: { type: "transcript", text: "Stale from A." },
+        }),
+      );
+    });
+
+    const after = result.current.state as Extract<
+      ListenState,
+      { phase: "draft" }
+    >;
+    expect(after.sentences).toHaveLength(0);
+    // B's own listener also fires this same message via the broadcast in
+    // some test setups; here we only fired through handlerA, so B's
+    // transcribing counter must NOT have advanced.
+    expect(after.transcribing).toEqual({ done: 0, total: 1 });
+  });
+
+  it("surfaces worker error messages and clears the transcribing gate", async () => {
+    const { result } = renderHook(() => useListenSession({ language: "en" }));
+    await act(async () => {
+      await result.current.start();
+      await result.current.stop();
+    });
+    await act(async () => {
+      const onMessage = fakeWorker.addEventListener.mock.calls.find(
+        (c) => c[0] === "message",
+      )?.[1] as (e: MessageEvent) => void;
+      onMessage(
+        new MessageEvent("message", {
+          data: { type: "error", message: "decoder failed" },
+        }),
+      );
+    });
+    const s = result.current.state as Extract<ListenState, { phase: "draft" }>;
+    expect(s.error).toBe("decoder failed");
+    // Add no longer gated by completion — user can commit any sentences
+    // that already came through (zero in this test, but the gate is open).
+    expect(s.transcribing).toBeNull();
+  });
+
+  it("tryAgain re-dispatches the same PCM with a fresh session id", async () => {
+    const { result } = renderHook(() => useListenSession({ language: "en" }));
+    await act(async () => {
+      await result.current.start();
+      await result.current.stop();
+    });
+    expect(fakeWorker.postMessage).toHaveBeenCalledTimes(1);
+
+    // Simulate worker error so the draft has error set.
+    await act(async () => {
+      const onMessage = fakeWorker.addEventListener.mock.calls.find(
+        (c) => c[0] === "message",
+      )?.[1] as (e: MessageEvent) => void;
+      onMessage(
+        new MessageEvent("message", {
+          data: { type: "error", message: "boom" },
+        }),
+      );
+    });
+
+    act(() => result.current.tryAgain());
+
+    // Same chunk re-posted.
+    expect(fakeWorker.postMessage).toHaveBeenCalledTimes(2);
+    const second = fakeWorker.postMessage.mock.calls[1][0];
+    expect(second.type).toBe("transcribe");
+    expect(second.audio).toBeInstanceOf(Float32Array);
+
+    // Draft state has a fresh sessionId and cleared error.
+    const s = result.current.state as Extract<ListenState, { phase: "draft" }>;
+    expect(s.error).toBeNull();
+    expect(s.transcribing).toEqual({ done: 0, total: 1 });
+  });
+});

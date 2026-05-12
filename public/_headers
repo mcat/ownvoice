@@ -28,8 +28,12 @@
   Cross-Origin-Embedder-Policy: credentialless
   Cross-Origin-Resource-Policy: same-origin
 
-# Vite emits the bundled WASM TTS worker under /assets/. Same COEP requirement
-# as the GPU worker when loaded from /app/.
+/stt-gpu-worker.js
+  Cross-Origin-Embedder-Policy: credentialless
+  Cross-Origin-Resource-Policy: same-origin
+
+# Vite emits the bundled WASM workers (ttsWorker, sttWorker) under
+# /assets/. Same COEP requirement as the GPU workers when loaded from /app/.
 /assets/*
   Cross-Origin-Embedder-Policy: credentialless
   Cross-Origin-Resource-Policy: same-origin

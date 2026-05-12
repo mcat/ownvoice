@@ -1,6 +1,6 @@
 #!/bin/bash
 # Download all OwnVoice asset files for development.
-# Total download: ~1.4 GB (50 MB ORT WASM + ~1.35 GB models)
+# Total download: ~1.7 GB (50 MB ORT WASM + ~1.65 GB models)
 #
 # Usage: ./scripts/download-assets.sh
 #
@@ -30,7 +30,7 @@ fi
 echo "Downloading OwnVoice asset files"
 echo "  ORT version:    $ORT_VERSION_FULL (npm: $ORT_VERSION_BARE)"
 echo "  Models release: $MODELS_RELEASE"
-echo "  Total: ~1.4 GB — this may take a few minutes."
+echo "  Total: ~1.7 GB — this may take a few minutes."
 echo ""
 
 # ── ONNX Runtime WASM (~50 MB) ──
@@ -115,6 +115,21 @@ else
   rmdir "$TMP"
   trap - EXIT
 fi
+echo "  Done: $(du -sh "$DIR" | cut -f1)"
+echo ""
+
+# ── Whisper small (STT, ~302 MB) ──
+REPO="$HF/onnx-community/whisper-small.en/resolve/main"
+DIR="$BASE_DIR/whisper-small"
+mkdir -p "$DIR"
+
+echo "==> Whisper small (STT)"
+for f in tokenizer.json tokenizer_config.json preprocessor_config.json; do
+  [ -f "$DIR/$f" ] && echo "  $f (cached)" || { echo "  $f"; curl -sL -o "$DIR/$f" "$REPO/$f"; }
+done
+for f in encoder_model_q4.onnx decoder_model_merged_q4.onnx; do
+  [ -f "$DIR/$f" ] && echo "  $f (cached)" || { echo "  $f ..."; curl -L -o "$DIR/$f" "$REPO/onnx/$f" 2>/dev/null; }
+done
 echo "  Done: $(du -sh "$DIR" | cut -f1)"
 echo ""
 

@@ -35,7 +35,7 @@ import { StaffSessionTimer } from "./components/shared/StaffSessionTimer";
 import { ResumePromptBanner } from "./components/diag/ResumePromptBanner";
 import { Setup } from "./components/settings/Setup";
 import { getModelManager } from "./models/modelManager";
-import { bootTTSWasm, verifyAllOnBoot } from "./models/bootModels";
+import { bootTTSWasm, bootSTT, verifyAllOnBoot } from "./models/bootModels";
 import { drivePrimer } from "./models/drivePrimer";
 import { resumePendingOnVisible } from "./models/offlineResume";
 import { useOfflineStore } from "./stores/offlineStore";
@@ -142,8 +142,16 @@ export function App() {
     setPinIntent(null);
   }, [closeOverlay]);
 
-  // Initialize model manager and boot the TTS workers.
+  // Initialize model manager and boot the TTS + STT workers.
   useEffect(() => {
+    // STT begins booting immediately, in parallel with GPU TTS shader
+    // compile. An earlier shape (pre-#234) that chained STT behind
+    // initGPU() meant STT could not start downloading until TTS shader
+    // compile finished — minutes on cold load. The parallel pattern
+    // restored by Listen v2 (see #233 hints) is what makes the pill
+    // available within seconds of boot rather than minutes.
+    bootSTT();
+
     // GPU TTS in parallel; defer the WASM TTS fallback until GPU TTS resolves
     // either way, to avoid concurrent ORT-WASM/ORT-WebGPU init contention.
     initGPU(MODEL_URLS.tts).then(ok => {

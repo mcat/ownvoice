@@ -5,9 +5,11 @@ import type { ThemeTokens } from "../../theme/tokens";
 import { t as resolvePhrase } from "../../data/phraseRegistry";
 import { useActivePatient } from "../../stores/settingsStore";
 import { useSettingsStore } from "../../stores/settingsStore";
+import { useUIStore } from "../../stores/uiStore";
 import { DualLocaleText } from "../shared/DualLocaleText";
 import { Btn } from "../shared/Btn";
 import { useReducedMotion } from "../../hooks/useReducedMotion";
+import { ListenPill } from "./ListenPill";
 
 /** Thread reads `from`, `text`, `gloss`, `icon`, and `label` — never `id`
  *  or `time`. Loose alias keeps test fixtures terse without forcing every
@@ -42,8 +44,24 @@ export function Thread({ messages, t, onRepeat }: ThreadProps) {
   const active = useActivePatient();
   const patientLang = active?.patientLang ?? "en";
   const caregiverLang = useSettingsStore((s) => s.cfg?.caregiverLang ?? "en");
+  // Active provider for ListenPill labelling. uiStore exposes only the index;
+  // the provider list itself lives on settingsStore.cfg.providers (same lookup
+  // pattern as useSpeakActions). Fall back to "Care Team" when no provider is
+  // configured — matches the default label used elsewhere in the app.
+  const activeProvIdx = useUIStore((s) => s.activeProvIdx);
+  const providerName = useSettingsStore(
+    (s) =>
+      s.cfg?.providers?.[activeProvIdx]?.name ??
+      s.cfg?.providers?.[0]?.name ??
+      "Care Team",
+  );
   const scrollRef = useRef<HTMLDivElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
+  // Target node for the ListenPill's draft portal. State (not ref) so
+  // the ListenPill re-renders once the host div mounts and the portal
+  // can attach. Without state, the first render passes `null` and the
+  // draft never appears in the scroll content.
+  const [draftHost, setDraftHost] = useState<HTMLDivElement | null>(null);
   const [repeatingIdx, setRepeatingIdx] = useState<number | null>(null);
   const reducedMotion = useReducedMotion();
   const [atTop, setAtTop] = useState(true);
@@ -139,12 +157,25 @@ export function Thread({ messages, t, onRepeat }: ThreadProps) {
     el.scrollBy({ top: delta, behavior: reducedMotion ? "auto" : "smooth" });
   };
 
-  if (!messages || messages.length === 0) return null;
+  const hasMessages = messages && messages.length > 0;
 
   const handleTap = (msg: ThreadMessage, idx: number) => {
     onRepeat(msg.text, msg.from);
     setRepeatingIdx(idx);
     setTimeout(() => setRepeatingIdx(null), 600);
+  };
+
+  // Outer container is a flex column: the row of (arrows + scrolling log)
+  // sits on top; the ListenPill is a fixed-height sibling pinned below the
+  // scrolling region. Anchoring the pill outside `scrollRef` means it stays
+  // visible even as the message list scrolls, so providers can always reach
+  // the "Listen" affordance.
+  const outerStyle: JSX.CSSProperties = {
+    marginBottom: 16,
+    display: "flex",
+    flexDirection: "column",
+    gap: 8,
+    flexShrink: 0,
   };
 
   // row-reverse keeps the visual layout (log left, arrows right) while
@@ -153,7 +184,6 @@ export function Thread({ messages, t, onRepeat }: ThreadProps) {
   // of having to step through every message to reach the scroll affordance.
   // Mouse/touch users see no change.
   const wrapperStyle: JSX.CSSProperties = {
-    marginBottom: 16,
     flexShrink: 0,
     display: "flex",
     flexDirection: "row-reverse",
@@ -161,15 +191,47 @@ export function Thread({ messages, t, onRepeat }: ThreadProps) {
     alignItems: "stretch",
   };
 
-  const scrollStyle: JSX.CSSProperties = {
+  // The bordered "thread surface" is a position:relative box that holds
+  // (a) the scrolling message list and (b) the absolutely-positioned
+  // ListenPill anchor. The pill anchors to this OUTER box's viewport,
+  // NOT to the scrolling content — so it stays put regardless of scroll
+  // position. Putting position:relative on the scrolling div itself
+  // would anchor the pill to the scroll content (it would move with
+  // messages), which is the bug we're avoiding.
+  const surfaceStyle: JSX.CSSProperties = {
     background: t.activeBg,
     borderRadius: 18,
-    padding: "14px 16px",
-    height: 200,
-    overflowY: "auto",
     border: `1px solid ${t.border}`,
     flex: 1,
     minWidth: 0,
+    height: 200,
+    position: "relative",
+    overflow: "hidden",
+  };
+
+  // Inner scrolling region fills the surface. paddingBottom reserves
+  // vertical space so the last message isn't obscured by the pill at
+  // the resting bottom-scroll position.
+  const scrollStyle: JSX.CSSProperties = {
+    width: "100%",
+    height: "100%",
+    overflowY: "auto",
+    padding: "14px 16px",
+    paddingBottom: 72,
+    boxSizing: "border-box",
+  };
+
+  // Pill anchor sits OUTSIDE the scrolling div but inside the bordered
+  // surface — it's a sibling of the scroll region. pointerEvents:"none"
+  // on the wrapper + "auto" on the inner div let the empty area to the
+  // right of the pill stay click/scroll-through to messages behind.
+  const pillAnchorStyle: JSX.CSSProperties = {
+    position: "absolute",
+    left: 12,
+    bottom: 12,
+    right: 12,
+    pointerEvents: "none",
+    zIndex: 1,
   };
 
   // Project standard: 64×64 minimum patient touch target (CLAUDE.md).
@@ -208,31 +270,36 @@ export function Thread({ messages, t, onRepeat }: ThreadProps) {
   });
 
   return (
+    <div style={outerStyle}>
     <div style={wrapperStyle}>
       {/* Arrow column first in DOM (visually right via row-reverse) so the
           tab/scan order is Up → Down → bubble[0] → bubble[N]. Without this,
           a switch user with 30 messages would have to step through every
-          bubble to reach scroll. */}
-      <div style={arrowColumnStyle}>
-        <Btn
-          onClick={() => scrollByStep(-1)}
-          aria-label={resolvePhrase("ui.dual.thread.scroll_up_aria", patientLang)}
-          aria-disabled={atTop}
-          aria-controls="ov-thread-log"
-          style={arrowBtnStyle(atTop)}
-        >
-          <span aria-hidden="true">▲</span>
-        </Btn>
-        <Btn
-          onClick={() => scrollByStep(1)}
-          aria-label={resolvePhrase("ui.dual.thread.scroll_down_aria", patientLang)}
-          aria-disabled={atBottom}
-          aria-controls="ov-thread-log"
-          style={arrowBtnStyle(atBottom)}
-        >
-          <span aria-hidden="true">▼</span>
-        </Btn>
-      </div>
+          bubble to reach scroll. Arrows are only shown when there are
+          messages to scroll through. */}
+      {hasMessages && (
+        <div style={arrowColumnStyle}>
+          <Btn
+            onClick={() => scrollByStep(-1)}
+            aria-label={resolvePhrase("ui.dual.thread.scroll_up_aria", patientLang)}
+            aria-disabled={atTop}
+            aria-controls="ov-thread-log"
+            style={arrowBtnStyle(atTop)}
+          >
+            <span aria-hidden="true">▲</span>
+          </Btn>
+          <Btn
+            onClick={() => scrollByStep(1)}
+            aria-label={resolvePhrase("ui.dual.thread.scroll_down_aria", patientLang)}
+            aria-disabled={atBottom}
+            aria-controls="ov-thread-log"
+            style={arrowBtnStyle(atBottom)}
+          >
+            <span aria-hidden="true">▼</span>
+          </Btn>
+        </div>
+      )}
+      <div style={surfaceStyle}>
       <div
         ref={scrollRef}
         id="ov-thread-log"
@@ -320,8 +387,30 @@ export function Thread({ messages, t, onRepeat }: ThreadProps) {
         );
       })}
 
+      {/* Portal target for the ListenPill's draft block. Lives inside
+          the scrolling content so the draft flows with messages and is
+          clipped by the surface's overflow:hidden — solving the case
+          where a multi-sentence draft would otherwise spill outside the
+          bordered area. */}
+      <div ref={setDraftHost} />
       <div ref={endRef} />
       </div>
+      {/* ListenPill anchors to the bordered SURFACE (not the scroll
+          content) so it stays put regardless of scroll position. The
+          scroll region is a sibling above this div, not an ancestor.
+          Draft block, when present, portals into the draftHost above. */}
+      <div style={pillAnchorStyle}>
+        <div style={{ pointerEvents: "auto" }}>
+          <ListenPill
+            providerName={providerName}
+            language={caregiverLang}
+            t={t}
+            draftTarget={draftHost}
+          />
+        </div>
+      </div>
+      </div>
+    </div>
     </div>
   );
 }
