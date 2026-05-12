@@ -186,15 +186,35 @@ export function Thread({ messages, t, onRepeat }: ThreadProps) {
     alignItems: "stretch",
   };
 
+  // position: relative so the absolutely-positioned ListenPill anchors
+  // inside this container's bottom-left corner (not to the scrolling
+  // content). paddingBottom reserves vertical space for the pill so that
+  // when the user scrolls to the end, the last message isn't obscured.
   const scrollStyle: JSX.CSSProperties = {
     background: t.activeBg,
     borderRadius: 18,
     padding: "14px 16px",
+    paddingBottom: 64,
     height: 200,
     overflowY: "auto",
     border: `1px solid ${t.border}`,
     flex: 1,
     minWidth: 0,
+    position: "relative",
+  };
+
+  // The pill wrapper sits at the bottom-left of scrollStyle and does not
+  // scroll with the content. pointerEvents: "none" on the outer wrapper
+  // means empty area to the right of the pill remains click/scroll-through
+  // to the messages behind it; the inner div re-enables pointer events
+  // for the pill itself.
+  const pillAnchorStyle: JSX.CSSProperties = {
+    position: "absolute",
+    left: 12,
+    bottom: 12,
+    right: 12,
+    pointerEvents: "none",
+    zIndex: 1,
   };
 
   // Project standard: 64×64 minimum patient touch target (CLAUDE.md).
@@ -234,32 +254,34 @@ export function Thread({ messages, t, onRepeat }: ThreadProps) {
 
   return (
     <div style={outerStyle}>
-    {hasMessages && (
     <div style={wrapperStyle}>
       {/* Arrow column first in DOM (visually right via row-reverse) so the
           tab/scan order is Up → Down → bubble[0] → bubble[N]. Without this,
           a switch user with 30 messages would have to step through every
-          bubble to reach scroll. */}
-      <div style={arrowColumnStyle}>
-        <Btn
-          onClick={() => scrollByStep(-1)}
-          aria-label={resolvePhrase("ui.dual.thread.scroll_up_aria", patientLang)}
-          aria-disabled={atTop}
-          aria-controls="ov-thread-log"
-          style={arrowBtnStyle(atTop)}
-        >
-          <span aria-hidden="true">▲</span>
-        </Btn>
-        <Btn
-          onClick={() => scrollByStep(1)}
-          aria-label={resolvePhrase("ui.dual.thread.scroll_down_aria", patientLang)}
-          aria-disabled={atBottom}
-          aria-controls="ov-thread-log"
-          style={arrowBtnStyle(atBottom)}
-        >
-          <span aria-hidden="true">▼</span>
-        </Btn>
-      </div>
+          bubble to reach scroll. Arrows are only shown when there are
+          messages to scroll through. */}
+      {hasMessages && (
+        <div style={arrowColumnStyle}>
+          <Btn
+            onClick={() => scrollByStep(-1)}
+            aria-label={resolvePhrase("ui.dual.thread.scroll_up_aria", patientLang)}
+            aria-disabled={atTop}
+            aria-controls="ov-thread-log"
+            style={arrowBtnStyle(atTop)}
+          >
+            <span aria-hidden="true">▲</span>
+          </Btn>
+          <Btn
+            onClick={() => scrollByStep(1)}
+            aria-label={resolvePhrase("ui.dual.thread.scroll_down_aria", patientLang)}
+            aria-disabled={atBottom}
+            aria-controls="ov-thread-log"
+            style={arrowBtnStyle(atBottom)}
+          >
+            <span aria-hidden="true">▼</span>
+          </Btn>
+        </div>
+      )}
       <div
         ref={scrollRef}
         id="ov-thread-log"
@@ -348,17 +370,22 @@ export function Thread({ messages, t, onRepeat }: ThreadProps) {
       })}
 
       <div ref={endRef} />
+      {/* ListenPill is anchored at the bottom-left of the scrolling
+          container via position: absolute, so it stays visible regardless
+          of scroll position. pointerEvents on the wrapper let empty area
+          to the right of the pill remain click/scroll-through to messages
+          behind it. */}
+      <div style={pillAnchorStyle}>
+        <div style={{ pointerEvents: "auto" }}>
+          <ListenPill
+            providerName={providerName}
+            language={caregiverLang}
+            t={t}
+          />
+        </div>
+      </div>
       </div>
     </div>
-    )}
-      {/* ListenPill is a sibling of the scrolling message list — it stays
-          anchored at the bottom of the thread surface and remains visible
-          as the message list scrolls or before any messages exist. */}
-      <ListenPill
-        providerName={providerName}
-        language={caregiverLang}
-        t={t}
-      />
     </div>
   );
 }

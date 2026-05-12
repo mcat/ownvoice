@@ -69,9 +69,6 @@ export function ListenPill({ providerName, language, t }: ListenPillProps) {
         flexDirection: "column",
         alignItems: "flex-start",
         gap: 6,
-        padding: "8px 12px",
-        borderTop: `1px solid ${t.border}`,
-        background: t.card,
       }}
     >
       {session.state.phase === "draft" && (
