@@ -1052,4 +1052,23 @@ self.addEventListener("message", (e) => {
       }),
     );
   }
+
+  if (msg.type === "shutdown") {
+    // Page is unloading. Release pinned GPU buffers (KV cache locations +
+    // model weight buffers) so the next page's ORT init doesn't fail
+    // partway through deserialization with leftover device state.
+    // Best-effort: the browser may terminate us before this completes.
+    void (async () => {
+      try {
+        await Promise.race([synthChain, new Promise((r) => setTimeout(r, 500))]);
+      } catch { /* swallow — we're tearing down anyway */ }
+      for (const s of [embedTokensSession, languageModelSession, conditionalDecoderSession]) {
+        try { await s?.release?.(); } catch { /* swallow */ }
+      }
+      embedTokensSession = null;
+      languageModelSession = null;
+      conditionalDecoderSession = null;
+      self.close();
+    })();
+  }
 });

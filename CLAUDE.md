@@ -51,7 +51,7 @@ The app is decomposed into focused modules. Colocated `*.test.ts(x)` files live 
 
 ### State management
 
-- **`settingsStore`** — Persisted to IndexedDB (`ov-settings`). Holds `cfg: AppSettings` and the extracted `speakerData` (Chatterbox Multilingual speech-encoder outputs: condEmb, promptToken, speakerEmbeddings, speakerFeatures). `_hasHydrated` gates the render until rehydration completes.
+- **`settingsStore`** — Persisted via Zustand to IndexedDB database `ownvoice`, object store `kv`, row key `ov-settings` (see `src/stores/idbStorage.ts`). Holds `cfg: AppSettings` and the extracted `speakerData` (Chatterbox Multilingual speech-encoder outputs: condEmb, promptToken, speakerEmbeddings, speakerFeatures). `_hasHydrated` gates the render until rehydration completes.
 - **`conversationStore`** — In-memory thread of `Message`s (patient/provider, text, time, label).
 - **`uiStore`** — Transient navigation: current tab, subcategory index, open overlays, active provider, `speaking` state.
 - **`resetAll()`** — Wipes IndexedDB, OPFS audio-cache, OPFS model weights, service-worker caches, `localStorage`, and in-memory stores. Called from SettingsPanel.

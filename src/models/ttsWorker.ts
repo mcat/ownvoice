@@ -845,7 +845,7 @@ self.addEventListener("message", async (e: MessageEvent) => {
   const msg = e.data;
 
   // Ignore ONNX Runtime internal messages (they don't have our type field)
-  if (!msg || !msg.type || !["init", "embed", "warmup", "synthesize"].includes(msg.type)) return;
+  if (!msg || !msg.type || !["init", "embed", "warmup", "synthesize", "shutdown"].includes(msg.type)) return;
 
   try {
     switch (msg.type) {
@@ -863,6 +863,19 @@ self.addEventListener("message", async (e: MessageEvent) => {
 
       case "synthesize":
         await handleSynthesize(msg.text, msg.speakerData, msg.languageId, msg.exaggeration);
+        break;
+
+      case "shutdown":
+        // Page is unloading. Release ORT sessions so the next page's
+        // ORT init doesn't fail with leftover device/runtime state.
+        // Best-effort: the browser may terminate us before completion.
+        for (const s of [embedTokensSession, languageModelSession, conditionalDecoderSession]) {
+          try { await s?.release(); } catch { /* swallow — tearing down */ }
+        }
+        embedTokensSession = null;
+        languageModelSession = null;
+        conditionalDecoderSession = null;
+        self.close();
         break;
     }
   } catch (err) {

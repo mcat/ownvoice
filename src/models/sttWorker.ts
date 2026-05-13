@@ -904,6 +904,17 @@ self.onmessage = async (e: MessageEvent) => {
         await handleWarmup();
         break;
 
+      case "shutdown":
+        // Page is unloading. Release ORT sessions so the next page's
+        // ORT init doesn't fail with leftover device/runtime state.
+        for (const s of [encoderSession, decoderSession]) {
+          try { await s?.release(); } catch { /* swallow — tearing down */ }
+        }
+        encoderSession = null;
+        decoderSession = null;
+        self.close();
+        break;
+
       default:
         console.warn(`${LOG_PREFIX} Unknown message type: ${msg.type}`);
     }

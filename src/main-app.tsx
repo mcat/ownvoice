@@ -6,6 +6,7 @@ import { useSettingsStore } from "./stores/settingsStore";
 import { themes, type ThemeName } from "./theme/tokens";
 import { startVoiceProcessor } from "./models/voiceProcessor";
 import { startWakeLock } from "./models/wakeLock";
+import { installModelLifecycleCleanup } from "./models/lifecycleCleanup";
 import { log } from "./audit/logger";
 import { EVENT } from "./audit/events";
 import { ATTR } from "./audit/attrs";
@@ -196,5 +197,9 @@ startVoiceProcessor();
 // Wake-lock subscribes to settingsStore, so it can be started before
 // hydration — it'll request the lock once `cfg.keepScreenAwake` settles.
 startWakeLock();
+
+// Release ORT sessions on `pagehide` so the next page doesn't inherit
+// leftover WebGPU device state. See ./models/lifecycleCleanup.ts.
+installModelLifecycleCleanup();
 
 render(<App />, document.getElementById("root")!);
