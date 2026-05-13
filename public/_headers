@@ -26,7 +26,8 @@
 # comment is enough) — see PR #126 for the pattern.
 /tts-gpu-worker.js
   Cross-Origin-Embedder-Policy: credentialless
-  Cross-Origin-Resource-Policy: same-origin
+  # Discriminator: removed `Cross-Origin-Resource-Policy: same-origin` to test
+  # whether CF Pages silently drops the entire rule when that header is set.
 
 /stt-gpu-worker.js
   Cross-Origin-Embedder-Policy: credentialless
