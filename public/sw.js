@@ -12,8 +12,18 @@
 //
 // Cache name bumps on every shipped SW change. Old caches are cleaned on activate.
 
-const CACHE_NAME = "ownvoice-v17";
+const CACHE_NAME = "ownvoice-v18";
 const SHELL_ASSETS = ["/app/", "/app/index.html"];
+
+// Vite-bundled WASM-fallback workers + the unbundled GPU workers. Both
+// classes of worker need to bypass SW interception on iPad Safari (see
+// fetch-handler note). Pattern matches:
+//   /tts-gpu-worker.js
+//   /stt-gpu-worker.js
+//   /assets/sttWorker-<hash>.js
+//   /assets/ttsWorker-<hash>.js
+const WORKER_SCRIPT_PATTERN =
+  /^\/(?:(?:stt|tts)-gpu-worker\.js|assets\/(?:stt|tts)Worker-[A-Za-z0-9_-]+\.js)$/;
 
 /**
  * Headers required to make `crossOriginIsolated === true`, which is the
@@ -155,7 +165,17 @@ self.addEventListener("fetch", (event) => {
   // mediation quirk as navigations (handled in staleWhileRevalidate). CF
   // returns the correct headers natively, so we step out of the fetch path
   // and let the browser handle the worker script request directly.
+  //
+  // The destination check catches `/tts-gpu-worker.js` and `/stt-gpu-worker.js`
+  // (constructed with `new Worker("/...js", {type:"module"})`, destination
+  // "worker"). The URL-pattern check catches the Vite-bundled workers at
+  // `/assets/{stt,tts}Worker-*.js` (constructed with
+  // `new Worker(new URL("./sttWorker.ts", import.meta.url), {type:"module"})`),
+  // which WebKit appears to classify with destination "script" rather than
+  // "worker" — diverging from the spec. The URL pattern is stable across
+  // builds because Vite hashes the filename but the prefix/suffix don't move.
   if (event.request.destination === "worker") return;
+  if (WORKER_SCRIPT_PATTERN.test(url.pathname)) return;
 
   if (url.pathname.startsWith("/models/")) {
     event.respondWith(
