@@ -1,4 +1,10 @@
-// build: 2026-05-12-coep-cachebust (bump bundle hash so CF edge re-fetches and _headers rules apply)
+// String-literal build marker for CF edge cache invalidation. Bump when the
+// edge needs to re-fetch this bundle to pick up new _headers rules. The line
+// below survives minification (string literal is preserved in output bytes),
+// so changing it forces Vite to emit a new content-hashed filename. A plain
+// `// comment` won't — minification strips comments.
+const __BUILD = "2026-05-12-coep-cachebust";
+self.addEventListener("error", () => void __BUILD);
 /**
  * STT Web Worker — Whisper small (onnx-community/whisper-small, q4 variant)
  *

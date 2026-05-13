@@ -26,6 +26,7 @@
 # comment is enough) — see PR #126 for the pattern.
 /tts-gpu-worker.js
   Cross-Origin-Embedder-Policy: credentialless
+  Cross-Origin-Resource-Policy: same-origin
 
 /stt-gpu-worker.js
   Cross-Origin-Embedder-Policy: credentialless
