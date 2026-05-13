@@ -40,12 +40,20 @@ mkdir -p "$ORT_DIR"
 echo "==> ONNX Runtime WASM ($ORT_VERSION_FULL)"
 # Both .wasm binaries and .mjs glue files are needed at runtime — ORT
 # dynamically imports the .mjs from `wasmPaths` (see vite.config.ts).
+#
+# `ort.webgpu.min.mjs.map` is hosted too. The .mjs ships with a
+# `//# sourceMappingURL=ort.webgpu.min.mjs.map` trailer baked in by
+# upstream; without the map, Safari's Web Inspector logs noisy
+# "Source Map loading errors" on every stack trace. Only this one .mjs
+# carries a sourceMappingURL — the wasm glue .mjs files don't, so no
+# corresponding maps are downloaded.
 for f in \
   ort-wasm-simd-threaded.jsep.wasm \
   ort-wasm-simd-threaded.jsep.mjs \
   ort-wasm-simd-threaded.asyncify.wasm \
   ort-wasm-simd-threaded.asyncify.mjs \
-  ort.webgpu.min.mjs; do
+  ort.webgpu.min.mjs \
+  ort.webgpu.min.mjs.map; do
   if [ -f "$ORT_DIR/$f" ]; then
     echo "  $f (cached)"
   else

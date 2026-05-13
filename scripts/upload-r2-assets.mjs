@@ -129,9 +129,11 @@ async function main() {
   // files are needed at runtime — ORT dynamically imports the .mjs from
   // wasmPaths (see vite.config.ts). Filtering to .wasm only would leave
   // R2 missing the glue and break ORT instantiation in production.
+  // `.map` files are hosted for the .mjs that carry sourceMappingURL
+  // trailers, so Safari's Web Inspector doesn't 404 on every stack trace.
   const ortDir = join(ROOT, "public/ort");
   const ortFiles = (await walk(ortDir)).filter(
-    (p) => p.endsWith(".wasm") || p.endsWith(".mjs"),
+    (p) => p.endsWith(".wasm") || p.endsWith(".mjs") || p.endsWith(".mjs.map"),
   );
   console.log(`ORT WASM files (${ortFiles.length}):`);
   for (const local of ortFiles) {
