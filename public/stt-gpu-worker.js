@@ -642,6 +642,20 @@ self.onmessage = async (e) => {
       case "transcribe":
         await handleTranscribe(msg.audio, msg.sampleRate, msg.language);
         break;
+      case "shutdown":
+        // Page is unloading. Release GPU resources so the next page's
+        // ORT init doesn't fail with leftover device state. Best-effort:
+        // the browser may terminate us before this completes.
+        for (let i = 0; i < 5 && transcribing; i++) {
+          await new Promise((r) => setTimeout(r, 100));
+        }
+        for (const s of [encoderSession, decoderSession]) {
+          try { await s?.release?.(); } catch { /* swallow */ }
+        }
+        encoderSession = null;
+        decoderSession = null;
+        self.close();
+        break;
       default:
         console.warn(`${LOG} Unknown message type: ${msg.type}`);
     }
