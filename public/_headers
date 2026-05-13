@@ -1,9 +1,16 @@
 /sw.js
   Service-Worker-Allowed: /app/
 
+# /app/* uses COEP `require-corp` rather than `credentialless`: iPadOS 26
+# Safari does not enable crossOriginIsolated for documents served with
+# credentialless, even when all subresources have appropriate CORP. WebKit's
+# require-corp path is more reliable. Subresources already comply:
+# /assets/*, /tts-gpu-worker.js, /stt-gpu-worker.js → CORP same-origin;
+# /ort/*, /models/* → CORP cross-origin. The meta-tag fallback in
+# /app/index.html still says credentialless; the HTTP header (this one) wins.
 /app/*
   Cross-Origin-Opener-Policy: same-origin
-  Cross-Origin-Embedder-Policy: credentialless
+  Cross-Origin-Embedder-Policy: require-corp
 
 # Workers loaded into the crossOriginIsolated /app/* context need their own
 # COEP header on the script response — without it the browser refuses to
