@@ -12,7 +12,7 @@
 //
 // Cache name bumps on every shipped SW change. Old caches are cleaned on activate.
 
-const CACHE_NAME = "ownvoice-v18";
+const CACHE_NAME = "ownvoice-v19";
 const SHELL_ASSETS = ["/app/", "/app/index.html"];
 
 // Vite-bundled WASM-fallback workers + the unbundled GPU workers. Both
@@ -25,40 +25,18 @@ const SHELL_ASSETS = ["/app/", "/app/index.html"];
 const WORKER_SCRIPT_PATTERN =
   /^\/(?:(?:stt|tts)-gpu-worker\.js|assets\/(?:stt|tts)Worker-[A-Za-z0-9_-]+\.js)$/;
 
-/**
- * Headers required to make `crossOriginIsolated === true`, which is the
- * prerequisite for SharedArrayBuffer and therefore for multi-threaded
- * WASM in ORT. Static hosts (e.g. GitHub Pages) can't set these, so the
- * SW injects them on every cached response. COEP credentialless is the
- * lighter variant — doesn't require CORP on every same-origin subresource.
- */
-const CROSS_ORIGIN_ISOLATION_HEADERS = {
-  "Cross-Origin-Opener-Policy": "same-origin",
-  // require-corp (not credentialless) because iPadOS 26 Safari only enables
-  // crossOriginIsolated for require-corp documents. The page now serves
-  // require-corp via `_headers`; the SW must echo the same value on cached
-  // subresources so worker-script responses match the parent's COEP — under
-  // require-corp, a worker whose response declares credentialless is refused
-  // ("Refused to load … worker because of Cross-Origin-Embedder-Policy").
-  "Cross-Origin-Embedder-Policy": "require-corp",
-};
-
-/**
- * Return a new Response with the given body/init but with COOP+COEP
- * appended to the headers. Preserves status, statusText, and any
- * existing headers the origin set.
- */
-function withIsolationHeaders(response) {
-  const headers = new Headers(response.headers);
-  for (const [k, v] of Object.entries(CROSS_ORIGIN_ISOLATION_HEADERS)) {
-    headers.set(k, v);
-  }
-  return new Response(response.body, {
-    status: response.status,
-    statusText: response.statusText,
-    headers,
-  });
-}
+// Historical note: this SW used to wrap every cached response with
+// COOP+COEP via `new Response(body, …)` to make `crossOriginIsolated`
+// work on hosts that don't set the headers themselves (e.g. GitHub
+// Pages). On iPadOS 26 Safari, that re-wrapping is exactly what breaks
+// boot — WebKit treats SW-constructed Response objects as low-trust
+// for COEP-gated loads, so `new Worker()`, `fetch({cache:"no-store"})`,
+// and OPFS-Blob reads from inside the bundle module fail with the
+// generic "due to access control checks" error during initial page
+// load. Discriminator-C (unregister SW, reload) made the errors vanish;
+// the second reload with the SW back as controller made them return.
+// CF Pages now serves COOP+COEP+CORP natively on every relevant path,
+// so we no longer need the SW to inject them.
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -113,39 +91,20 @@ async function staleWhileRevalidate(request) {
       return response;
     })
     .catch(() => null);
-  // Safari iPadOS 26 does NOT enable `crossOriginIsolated` for navigation
-  // responses that pass through `event.respondWith(new Response(...))` —
-  // even when the wrapped response carries COOP=same-origin + COEP=credentialless.
-  // The browser treats SW-constructed Response objects as "SW-mediated" for
-  // isolation purposes and refuses to isolate, breaking every COEP-gated
-  // fetch (workers, blob URLs, /models/*) afterward. CF returns the correct
-  // headers natively, so we hand the raw network Response to the browser
-  // untouched — its identity is the network's, isolation is enabled, and
-  // subresource fetches that come later all pass their access-control checks.
-  //
-  // Trade-off: when the network is unreachable, we fall back to the cached
-  // /app/ HTML wrapped with isolation headers. Safari still won't isolate
-  // that response, so offline mode is degraded — but the page does load.
-  // Online (the overwhelming majority of sessions) gets proper isolation.
   if (request.mode === "navigate") {
     const fresh = await networkPromise;
-    if (fresh) return fresh;
-    return cached
-      ? withIsolationHeaders(cached)
-      : new Response("offline", { status: 503 });
+    return fresh ?? cached ?? new Response("offline", { status: 503 });
   }
-  const served =
-    cached || (await networkPromise) || new Response("offline", { status: 503 });
-  return withIsolationHeaders(served);
+  return cached ?? (await networkPromise) ?? new Response("offline", { status: 503 });
 }
 
 async function cacheFirstImmutable(request) {
   const cache = await caches.open(CACHE_NAME);
   const cached = await cache.match(request);
-  if (cached) return withIsolationHeaders(cached);
+  if (cached) return cached;
   const response = await fetch(request);
   if (response.ok) cache.put(request, response.clone());
-  return withIsolationHeaders(response);
+  return response;
 }
 
 self.addEventListener("fetch", (event) => {
@@ -182,20 +141,24 @@ self.addEventListener("fetch", (event) => {
       (async () => {
         const file = await opfsLookup(url.pathname);
         if (file) {
+          // OPFS-served response must be synthesized from a File handle;
+          // there's no network response to pass through. CORP cross-origin
+          // matches the `_headers` rule for `/models/*` and is the only
+          // policy header subresources need under a require-corp document
+          // (COOP/COEP apply to the document, not subresources).
           return new Response(file, {
             status: 200,
             headers: {
               "content-type": "application/octet-stream",
               "content-length": String(file.size),
               "cache-control": "no-store",
-              ...CROSS_ORIGIN_ISOLATION_HEADERS,
+              "Cross-Origin-Resource-Policy": "cross-origin",
             },
           });
         }
-        // Not primed yet — fall through to network. SW does NOT cache this,
-        // but we still attach isolation headers so the model fetch doesn't
-        // break crossOriginIsolated for sibling responses.
-        return withIsolationHeaders(await fetch(event.request));
+        // Not primed yet — fall through to network. CF returns CORP
+        // cross-origin natively for `/models/*` via the Pages Function.
+        return await fetch(event.request);
       })(),
     );
     return;
