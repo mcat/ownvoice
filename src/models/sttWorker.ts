@@ -1,10 +1,10 @@
-// String-literal build marker for CF edge cache invalidation. Bump when the
-// edge needs to re-fetch this bundle to pick up new _headers rules. The line
-// below survives minification (string literal is preserved in output bytes),
-// so changing it forces Vite to emit a new content-hashed filename. A plain
-// `// comment` won't — minification strips comments.
-const __BUILD = "2026-05-12-coep-cachebust";
-self.addEventListener("error", () => void __BUILD);
+// Build marker for CF edge cache invalidation. Bump when _headers rules
+// change so the edge re-fetches the bundle to pick up new response headers.
+// The string literal MUST survive minification — esbuild evaluates `void <const>`
+// to `void 0` and strips the string, so we assign to a global property which
+// forces a real runtime side effect that retains the literal in the output bytes.
+// Verified by `grep '2026-05-12' dist/assets/*Worker-*.js` after build.
+(self as unknown as { __OV_BUILD__: string }).__OV_BUILD__ = "2026-05-12-require-corp";
 /**
  * STT Web Worker — Whisper small (onnx-community/whisper-small, q4 variant)
  *

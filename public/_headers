@@ -32,17 +32,17 @@
 # bump the worker file body in the same commit (a one-line marker
 # comment is enough) — see PR #126 for the pattern.
 /tts-gpu-worker.js
-  Cross-Origin-Embedder-Policy: credentialless
+  Cross-Origin-Embedder-Policy: require-corp
   Cross-Origin-Resource-Policy: same-origin
 
 /stt-gpu-worker.js
-  Cross-Origin-Embedder-Policy: credentialless
+  Cross-Origin-Embedder-Policy: require-corp
   Cross-Origin-Resource-Policy: same-origin
 
 # Vite emits the bundled WASM workers (ttsWorker, sttWorker) under
 # /assets/. Same COEP requirement as the GPU workers when loaded from /app/.
 /assets/*
-  Cross-Origin-Embedder-Policy: credentialless
+  Cross-Origin-Embedder-Policy: require-corp
   Cross-Origin-Resource-Policy: same-origin
 
 # ORT's `simd-threaded` build spawns sub-workers that re-import the .mjs
@@ -61,7 +61,7 @@
 # Function doesn't.
 /ort/*
   Cache-Control: public, max-age=31536000, immutable
-  Cross-Origin-Embedder-Policy: credentialless
+  Cross-Origin-Embedder-Policy: require-corp
   Cross-Origin-Resource-Policy: cross-origin
 
 /models/*

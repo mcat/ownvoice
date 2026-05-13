@@ -12,7 +12,7 @@
 //
 // Cache name bumps on every shipped SW change. Old caches are cleaned on activate.
 
-const CACHE_NAME = "ownvoice-v15";
+const CACHE_NAME = "ownvoice-v16";
 const SHELL_ASSETS = ["/app/", "/app/index.html"];
 
 /**
@@ -24,7 +24,13 @@ const SHELL_ASSETS = ["/app/", "/app/index.html"];
  */
 const CROSS_ORIGIN_ISOLATION_HEADERS = {
   "Cross-Origin-Opener-Policy": "same-origin",
-  "Cross-Origin-Embedder-Policy": "credentialless",
+  // require-corp (not credentialless) because iPadOS 26 Safari only enables
+  // crossOriginIsolated for require-corp documents. The page now serves
+  // require-corp via `_headers`; the SW must echo the same value on cached
+  // subresources so worker-script responses match the parent's COEP — under
+  // require-corp, a worker whose response declares credentialless is refused
+  // ("Refused to load … worker because of Cross-Origin-Embedder-Policy").
+  "Cross-Origin-Embedder-Policy": "require-corp",
 };
 
 /**
