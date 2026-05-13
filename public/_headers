@@ -67,8 +67,23 @@
 /models/*
   Cache-Control: public, max-age=31536000, immutable
 
-# /icons/* and /splash/* are intentionally NOT listed here. They're
-# served as direct static assets, and per the Cache-Control note above
-# (lines 14–20), CF Pages strips any Cache-Control we set on static
-# routes. CF's default `public, max-age=14400, must-revalidate` is
-# acceptable for home-screen icons + splash PNGs.
+# Same-origin subresources fetched by the bundle from under /app/*
+# (require-corp document) need explicit CORP — without it, WebKit
+# refuses the response. CF Pages was masking this for us via the SW's
+# `withIsolationHeaders` wrap, but now that the SW no longer intercepts
+# these paths, missing CORP would surface as silent fetch failures
+# (loadManifest() in particular hits /models-manifest.json).
+/models-manifest.json
+  Cross-Origin-Resource-Policy: same-origin
+
+# /icons/* and /splash/* and /manifest.webmanifest are loaded by the OS
+# / browser for PWA install + home-screen icons, not by app code. Add
+# same-origin CORP defensively in case any are also fetched from the
+# page context under require-corp (e.g. some `<link rel="manifest">`
+# implementations fetch via the regular fetch path).
+/manifest.webmanifest
+  Cross-Origin-Resource-Policy: same-origin
+/icons/*
+  Cross-Origin-Resource-Policy: same-origin
+/splash/*
+  Cross-Origin-Resource-Policy: same-origin
