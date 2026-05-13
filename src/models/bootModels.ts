@@ -4,26 +4,31 @@ import { loadManifest, type ModelId } from "./modelsManifest";
 import { useOfflineStore } from "../stores/offlineStore";
 
 /**
- * Boot all on-device models.
- *
- * Preserved as a single entry point for tests and any caller that wants a
- * "boot everything" handle.
- *
  * On a manual nav-bar refresh on Safari, the browser briefly rejects
  * subresource fetches (worker scripts, model files, ORT WASM binaries)
  * with "access control checks" even though CORP/COEP and content-type
  * headers all serve correctly. The window is short — fetches succeed
- * a few hundred ms later. Deferring worker boot on reload moves past
- * the window. Fresh cold navigations skip the delay (the bug doesn't
- * fire there).
+ * a few hundred ms later. Callers awaiting this before kicking off
+ * model/worker boot move past the window. Fresh cold navigations
+ * resolve immediately (the bug doesn't fire there).
  */
-export async function bootModels(): Promise<void> {
+export async function deferIfReload(): Promise<void> {
   const nav = performance.getEntriesByType("navigation")[0] as
     | PerformanceNavigationTiming
     | undefined;
   if (nav?.type === "reload") {
     await new Promise((r) => setTimeout(r, 300));
   }
+}
+
+/**
+ * Boot all on-device models.
+ *
+ * Preserved as a single entry point for tests and any caller that wants a
+ * "boot everything" handle.
+ */
+export async function bootModels(): Promise<void> {
+  await deferIfReload();
   // Parallel boot: STT begins downloading immediately, in parallel with
   // TTS shader compile. An earlier shape that chained STT behind
   // initGPU() meant STT could not even start downloading until TTS
