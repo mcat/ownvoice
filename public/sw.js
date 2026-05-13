@@ -12,7 +12,7 @@
 //
 // Cache name bumps on every shipped SW change. Old caches are cleaned on activate.
 
-const CACHE_NAME = "ownvoice-v16";
+const CACHE_NAME = "ownvoice-v17";
 const SHELL_ASSETS = ["/app/", "/app/index.html"];
 
 /**
@@ -146,6 +146,16 @@ self.addEventListener("fetch", (event) => {
   // Bypass: resumableDownload sets cache: "no-store" so partial 2xx responses
   // can't poison the Cache API on spotty wifi. Let those hit the network directly.
   if (event.request.cache === "no-store") return;
+
+  // Bypass worker script fetches. WebKit (iPad Safari iPadOS 26) does not
+  // honor SW-set COEP/CORP on responses delivered via
+  // `event.respondWith(new Response(...))` for `new Worker()` script loads —
+  // workers fail to instantiate with the generic "due to access control checks"
+  // error even when the wrapper has set every required header. Same WebKit
+  // mediation quirk as navigations (handled in staleWhileRevalidate). CF
+  // returns the correct headers natively, so we step out of the fetch path
+  // and let the browser handle the worker script request directly.
+  if (event.request.destination === "worker") return;
 
   if (url.pathname.startsWith("/models/")) {
     event.respondWith(
