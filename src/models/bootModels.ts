@@ -2,6 +2,17 @@ import { getModelManager } from "./modelManager";
 import { MODEL_URLS } from "./types";
 import { loadManifest, type ModelId } from "./modelsManifest";
 import { useOfflineStore } from "../stores/offlineStore";
+// `?worker&url` makes Vite emit a static URL string for the bundled worker,
+// so we construct it as `new Worker(stringUrl, {type:"module"})` — the same
+// shape as the GPU workers in /public, which load successfully on iPad Safari.
+// The `new Worker(new URL("./x.ts", import.meta.url), …)` form (Vite's default
+// `?worker` lowering) fails with "access control checks" on iPadOS 26 even
+// when the resolved URL, the document COEP, and the worker response headers
+// all match — a WebKit loader-context quirk specific to the URL-constructor
+// shape under an active SW. The GPU/Vite asymmetry is the discriminator
+// (same headers, same bypass, only construction differs).
+import sttWorkerUrl from "./sttWorker.ts?worker&url";
+import ttsWorkerUrl from "./ttsWorker.ts?worker&url";
 
 /**
  * Boot all on-device models.
@@ -78,10 +89,7 @@ function bootSTTWasm(): void {
   const mgr = getModelManager();
   console.log("[OwnVoice] STT: using WASM fallback");
   try {
-    const sttWorker = new Worker(
-      new URL("./sttWorker.ts", import.meta.url),
-      { type: "module" },
-    );
+    const sttWorker = new Worker(sttWorkerUrl, { type: "module" });
 
     sttWorker.onmessage = (e) => {
       if (e.data.type === "ready") {
@@ -114,10 +122,7 @@ export async function bootTTSWasm(): Promise<void> {
   await mgr.init();
 
   try {
-    const ttsWorker = new Worker(
-      new URL("./ttsWorker.ts", import.meta.url),
-      { type: "module" },
-    );
+    const ttsWorker = new Worker(ttsWorkerUrl, { type: "module" });
 
     let ttsInitDone = false;
     ttsWorker.onmessage = (e) => {
