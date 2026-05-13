@@ -1,4 +1,4 @@
-// build: 2026-05-12-coep-cachebust
+// build: 2026-05-12-require-corp
 /**
  * WebGPU STT Worker — Whisper small via ONNX Runtime WebGPU EP.
  *
