@@ -12,7 +12,7 @@
 //
 // Cache name bumps on every shipped SW change. Old caches are cleaned on activate.
 
-const CACHE_NAME = "ownvoice-v14";
+const CACHE_NAME = "ownvoice-v15";
 const SHELL_ASSETS = ["/app/", "/app/index.html"];
 
 /**
@@ -97,6 +97,27 @@ async function staleWhileRevalidate(request) {
       return response;
     })
     .catch(() => null);
+  // Safari iPadOS 26 does NOT enable `crossOriginIsolated` for navigation
+  // responses that pass through `event.respondWith(new Response(...))` —
+  // even when the wrapped response carries COOP=same-origin + COEP=credentialless.
+  // The browser treats SW-constructed Response objects as "SW-mediated" for
+  // isolation purposes and refuses to isolate, breaking every COEP-gated
+  // fetch (workers, blob URLs, /models/*) afterward. CF returns the correct
+  // headers natively, so we hand the raw network Response to the browser
+  // untouched — its identity is the network's, isolation is enabled, and
+  // subresource fetches that come later all pass their access-control checks.
+  //
+  // Trade-off: when the network is unreachable, we fall back to the cached
+  // /app/ HTML wrapped with isolation headers. Safari still won't isolate
+  // that response, so offline mode is degraded — but the page does load.
+  // Online (the overwhelming majority of sessions) gets proper isolation.
+  if (request.mode === "navigate") {
+    const fresh = await networkPromise;
+    if (fresh) return fresh;
+    return cached
+      ? withIsolationHeaders(cached)
+      : new Response("offline", { status: 503 });
+  }
   const served =
     cached || (await networkPromise) || new Response("offline", { status: 503 });
   return withIsolationHeaders(served);
