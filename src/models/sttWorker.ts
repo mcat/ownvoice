@@ -1,3 +1,4 @@
+// build: 2026-05-12-coep-cachebust (bump bundle hash so CF edge re-fetches and _headers rules apply)
 /**
  * STT Web Worker — Whisper small (onnx-community/whisper-small, q4 variant)
  *

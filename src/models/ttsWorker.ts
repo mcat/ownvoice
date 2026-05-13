@@ -1,3 +1,4 @@
+// build: 2026-05-12-coep-cachebust (bump bundle hash so CF edge re-fetches and _headers rules apply)
 /**
  * TTS Web Worker — Chatterbox Multilingual (23 languages, Resemble AI, MIT).
  *
