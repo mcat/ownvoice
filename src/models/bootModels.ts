@@ -8,8 +8,22 @@ import { useOfflineStore } from "../stores/offlineStore";
  *
  * Preserved as a single entry point for tests and any caller that wants a
  * "boot everything" handle.
+ *
+ * On a manual nav-bar refresh on Safari, the browser briefly rejects
+ * subresource fetches (worker scripts, model files, ORT WASM binaries)
+ * with "access control checks" even though CORP/COEP and content-type
+ * headers all serve correctly. The window is short — fetches succeed
+ * a few hundred ms later. Deferring worker boot on reload moves past
+ * the window. Fresh cold navigations skip the delay (the bug doesn't
+ * fire there).
  */
 export async function bootModels(): Promise<void> {
+  const nav = performance.getEntriesByType("navigation")[0] as
+    | PerformanceNavigationTiming
+    | undefined;
+  if (nav?.type === "reload") {
+    await new Promise((r) => setTimeout(r, 300));
+  }
   // Parallel boot: STT begins downloading immediately, in parallel with
   // TTS shader compile. An earlier shape that chained STT behind
   // initGPU() meant STT could not even start downloading until TTS
@@ -73,32 +87,72 @@ export async function bootSTT(): Promise<void> {
   bootSTTWasm();
 }
 
-/** Start the WASM STT worker (Vite-bundled, onnxruntime-web base package). */
-function bootSTTWasm(): void {
+/**
+ * Start the WASM STT worker (Vite-bundled, onnxruntime-web base package).
+ *
+ * Retries on Safari's transient "access control checks" rejection during
+ * manual-refresh transitions (see {@link bootModels} for context).
+ */
+const MAX_WORKER_RETRY = 3;
+function bootSTTWasm(attempt = 0): void {
   const mgr = getModelManager();
-  console.log("[OwnVoice] STT: using WASM fallback");
+  if (attempt === 0) {
+    console.log("[OwnVoice] STT: using WASM fallback");
+  }
+  let sttWorker: Worker;
   try {
-    const sttWorker = new Worker(
+    sttWorker = new Worker(
       new URL("./sttWorker.ts", import.meta.url),
       { type: "module" },
     );
-
-    sttWorker.onmessage = (e) => {
-      if (e.data.type === "ready") {
-        mgr.setWorker("stt", sttWorker);
-        mgr.setReady("stt");
-        sttWorker.postMessage({ type: "warmup" });
-      } else if (e.data.type === "warm") {
-        mgr.markWarm("stt");
-      } else if (e.data.type === "error") {
-        mgr.setError("stt", e.data.message);
-      }
-    };
-
-    sttWorker.postMessage({ type: "init", modelUrl: MODEL_URLS.stt });
   } catch (err) {
+    if (attempt < MAX_WORKER_RETRY - 1) {
+      const delay = 300 * (attempt + 1);
+      console.warn(
+        `[OwnVoice] STT WASM worker creation failed (attempt ${attempt + 1}), retrying in ${delay}ms:`,
+        err,
+      );
+      setTimeout(() => bootSTTWasm(attempt + 1), delay);
+      return;
+    }
     console.warn("[OwnVoice] Failed to create STT WASM worker:", err);
+    return;
   }
+
+  let retried = false;
+  const retry = (reason: string): void => {
+    if (retried) return;
+    retried = true;
+    if (attempt < MAX_WORKER_RETRY - 1) {
+      const delay = 300 * (attempt + 1);
+      console.warn(
+        `[OwnVoice] STT WASM worker errored (attempt ${attempt + 1}), retrying in ${delay}ms:`,
+        reason,
+      );
+      try { sttWorker.terminate(); } catch { /* ignore */ }
+      setTimeout(() => bootSTTWasm(attempt + 1), delay);
+    } else {
+      console.error(
+        `[OwnVoice] STT WASM worker failed after ${MAX_WORKER_RETRY} attempts:`,
+        reason,
+      );
+    }
+  };
+
+  sttWorker.onerror = (e) => retry(e.message || "worker error");
+  sttWorker.onmessage = (e) => {
+    if (e.data.type === "ready") {
+      mgr.setWorker("stt", sttWorker);
+      mgr.setReady("stt");
+      sttWorker.postMessage({ type: "warmup" });
+    } else if (e.data.type === "warm") {
+      mgr.markWarm("stt");
+    } else if (e.data.type === "error") {
+      mgr.setError("stt", e.data.message);
+    }
+  };
+
+  sttWorker.postMessage({ type: "init", modelUrl: MODEL_URLS.stt });
 }
 
 /**
@@ -109,52 +163,85 @@ function bootSTTWasm(): void {
  * WASM session creation doesn't race with the WebGPU shader compilation —
  * the original concern documented in `App.tsx` when these were serialized.
  */
-export async function bootTTSWasm(): Promise<void> {
+export async function bootTTSWasm(attempt = 0): Promise<void> {
   const mgr = getModelManager();
   await mgr.init();
 
+  let ttsWorker: Worker;
   try {
-    const ttsWorker = new Worker(
+    ttsWorker = new Worker(
       new URL("./ttsWorker.ts", import.meta.url),
       { type: "module" },
     );
-
-    let ttsInitDone = false;
-    ttsWorker.onmessage = (e) => {
-      if (e.data.type === "ready") {
-        ttsInitDone = true;
-        mgr.setReady("tts");
-        // Eager warmup: download + run a one-shot encoder inference so
-        // the user's first cloning attempt isn't gated on a 591 MB fetch.
-        ttsWorker.postMessage({ type: "warmup" });
-      } else if (e.data.type === "warm") {
-        mgr.markWarm("tts");
-      } else if (e.data.type === "progress" && e.data.total === -1) {
-        // Debug: EP signal from synthesis start (loaded=1 → WebGPU, loaded=0 → WASM)
-        console.log(`[OwnVoice:TTS] Synthesis EP: ${e.data.loaded ? "WebGPU" : "WASM"}`);
-      } else if (e.data.type === "error") {
-        if (!ttsInitDone || e.data.phase === "warmup" || e.data.phase === "init") {
-          // Init or warmup failure — mark model as broken so the UI can
-          // surface a recovery action. Without this, a failed warmup
-          // leaves the model in `ready` forever — the UI shows
-          // "Voice will start as soon as it's ready" with no error path.
-          mgr.setError("tts", e.data.message);
-        } else {
-          // Synthesis or embed failure — log but keep model ready for
-          // retries; the speak() pathway falls back to Web Speech.
-          console.error(`[OwnVoice:TTS] ${e.data.phase ?? "synthesis"} error: ${e.data.message}`);
-        }
-      }
-    };
-
-    mgr.setWorker("tts", ttsWorker);
-    // `?bench=true` flag is set on globalThis by main-app.tsx — propagate
-    // to the worker so it can log per-step timings (encoder + LM + decode).
-    const bench = (globalThis as { __OV_BENCH__?: boolean }).__OV_BENCH__ === true;
-    ttsWorker.postMessage({ type: "init", modelUrl: MODEL_URLS.tts, bench });
   } catch (err) {
+    if (attempt < MAX_WORKER_RETRY - 1) {
+      const delay = 300 * (attempt + 1);
+      console.warn(
+        `[OwnVoice] TTS worker creation failed (attempt ${attempt + 1}), retrying in ${delay}ms:`,
+        err,
+      );
+      setTimeout(() => { void bootTTSWasm(attempt + 1); }, delay);
+      return;
+    }
     console.warn("[OwnVoice] Failed to create TTS worker:", err);
+    return;
   }
+
+  let retried = false;
+  let ttsInitDone = false;
+  const retry = (reason: string): void => {
+    if (retried || ttsInitDone) return;
+    retried = true;
+    if (attempt < MAX_WORKER_RETRY - 1) {
+      const delay = 300 * (attempt + 1);
+      console.warn(
+        `[OwnVoice] TTS worker errored (attempt ${attempt + 1}), retrying in ${delay}ms:`,
+        reason,
+      );
+      try { ttsWorker.terminate(); } catch { /* ignore */ }
+      setTimeout(() => { void bootTTSWasm(attempt + 1); }, delay);
+    } else {
+      console.error(
+        `[OwnVoice] TTS worker failed after ${MAX_WORKER_RETRY} attempts:`,
+        reason,
+      );
+      mgr.setError("tts", reason);
+    }
+  };
+
+  ttsWorker.onerror = (e) => retry(e.message || "worker error");
+  ttsWorker.onmessage = (e) => {
+    if (e.data.type === "ready") {
+      ttsInitDone = true;
+      mgr.setReady("tts");
+      // Eager warmup: download + run a one-shot encoder inference so
+      // the user's first cloning attempt isn't gated on a 591 MB fetch.
+      ttsWorker.postMessage({ type: "warmup" });
+    } else if (e.data.type === "warm") {
+      mgr.markWarm("tts");
+    } else if (e.data.type === "progress" && e.data.total === -1) {
+      // Debug: EP signal from synthesis start (loaded=1 → WebGPU, loaded=0 → WASM)
+      console.log(`[OwnVoice:TTS] Synthesis EP: ${e.data.loaded ? "WebGPU" : "WASM"}`);
+    } else if (e.data.type === "error") {
+      if (!ttsInitDone || e.data.phase === "warmup" || e.data.phase === "init") {
+        // Init or warmup failure — mark model as broken so the UI can
+        // surface a recovery action. Without this, a failed warmup
+        // leaves the model in `ready` forever — the UI shows
+        // "Voice will start as soon as it's ready" with no error path.
+        mgr.setError("tts", e.data.message);
+      } else {
+        // Synthesis or embed failure — log but keep model ready for
+        // retries; the speak() pathway falls back to Web Speech.
+        console.error(`[OwnVoice:TTS] ${e.data.phase ?? "synthesis"} error: ${e.data.message}`);
+      }
+    }
+  };
+
+  mgr.setWorker("tts", ttsWorker);
+  // `?bench=true` flag is set on globalThis by main-app.tsx — propagate
+  // to the worker so it can log per-step timings (encoder + LM + decode).
+  const bench = (globalThis as { __OV_BENCH__?: boolean }).__OV_BENCH__ === true;
+  ttsWorker.postMessage({ type: "init", modelUrl: MODEL_URLS.tts, bench });
 }
 
 /**
