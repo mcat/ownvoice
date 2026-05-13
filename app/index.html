@@ -67,11 +67,15 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main-app.tsx"></script>
-    <script>
-      // Only register SW in production builds — in dev it caches stale worker bundles
-      if ("serviceWorker" in navigator && !window.location.port) {
-        navigator.serviceWorker.register("/sw.js", { scope: "/app/" });
-      }
-    </script>
+    <!--
+      Service Worker registration intentionally removed. iPadOS 26 Safari
+      has a WebKit bug where the *presence* of a SW as the page's
+      controller under COEP `require-corp` flips the loader into a
+      stricter access-control mode that refuses bundled module workers,
+      `fetch(url, {cache:"no-store"})`, and blob: URLs synthesized for
+      OPFS reads. See `public/sw.js` for the tombstone that evicts any
+      previously-registered SW. Existing iPad installs need one reload
+      after the deploy lands; new visitors never get a SW.
+    -->
   </body>
 </html>
