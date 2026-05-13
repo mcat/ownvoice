@@ -106,10 +106,15 @@ function bootSTTWasm(attempt = 0): void {
   }
   let sttWorker: Worker;
   try {
-    sttWorker = new Worker(
-      new URL("./sttWorker.ts", import.meta.url),
-      { type: "module" },
-    );
+    // Cache-bust on retry: Safari appears to cache the "access control
+    // checks" rejection per-URL during the manual-refresh window, so
+    // simply re-trying the same URL hits the same block. Appending
+    // `?retry=N` changes the URL identity for the browser's worker-load
+    // path while CF Pages serves the same script (query strings don't
+    // affect routing). Same-origin URL → same CORP → still works.
+    const baseUrl = new URL("./sttWorker.ts", import.meta.url);
+    const url = attempt > 0 ? new URL(`?retry=${attempt}`, baseUrl) : baseUrl;
+    sttWorker = new Worker(url, { type: "module" });
   } catch (err) {
     if (attempt < MAX_WORKER_RETRY - 1) {
       const delay = 300 * (attempt + 1);
@@ -174,10 +179,10 @@ export async function bootTTSWasm(attempt = 0): Promise<void> {
 
   let ttsWorker: Worker;
   try {
-    ttsWorker = new Worker(
-      new URL("./ttsWorker.ts", import.meta.url),
-      { type: "module" },
-    );
+    // Cache-bust on retry (see bootSTTWasm for rationale).
+    const baseUrl = new URL("./ttsWorker.ts", import.meta.url);
+    const url = attempt > 0 ? new URL(`?retry=${attempt}`, baseUrl) : baseUrl;
+    ttsWorker = new Worker(url, { type: "module" });
   } catch (err) {
     if (attempt < MAX_WORKER_RETRY - 1) {
       const delay = 300 * (attempt + 1);
