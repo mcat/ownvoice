@@ -12,10 +12,32 @@ describe("openAuditDb", () => {
     });
   });
 
-  it("creates ov-audit at version 1 with both stores", async () => {
+  it("creates ov-audit at the current version with both stores", async () => {
     const db = await openAuditDb();
     expect(db.name).toBe(AUDIT_DB_NAME);
     expect(db.version).toBe(AUDIT_DB_VERSION);
+    expect([...db.objectStoreNames].sort()).toEqual(["events", "workflows"]);
+    db.close();
+  });
+
+  it("heals a v1 DB that's missing object stores by bumping to current version", async () => {
+    // Simulate the iPad-observed corrupt state: ov-audit exists at v1 with
+    // no object stores. Opening at the current version (2+) must run the
+    // idempotent upgrade handler and add both missing stores.
+    await new Promise<void>((resolve, reject) => {
+      const req = indexedDB.open(AUDIT_DB_NAME, 1);
+      req.onupgradeneeded = () => {
+        /* deliberately create the DB at v1 with no stores */
+      };
+      req.onsuccess = () => {
+        req.result.close();
+        resolve();
+      };
+      req.onerror = () => reject(req.error);
+    });
+
+    const db = await openAuditDb();
+    expect(db.version).toBeGreaterThanOrEqual(2);
     expect([...db.objectStoreNames].sort()).toEqual(["events", "workflows"]);
     db.close();
   });

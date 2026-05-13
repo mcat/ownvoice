@@ -1,5 +1,12 @@
 export const AUDIT_DB_NAME = "ov-audit";
-export const AUDIT_DB_VERSION = 1;
+// Bumped 1 → 2 to recover installs that ended up with the DB at v1 but
+// missing one or both object stores (cause unconfirmed; seen on iPad after
+// the user manually deleted ov-audit in Safari DevTools). The upgrade
+// handler below is idempotent — both `createObjectStore` calls are guarded
+// by `contains(...)` checks — so this bump heals corrupted installs
+// without touching clean ones. Future bumps should layer real migrations
+// on top of this one.
+export const AUDIT_DB_VERSION = 2;
 
 /** Open the audit database, creating schema on first run. Single source
  *  of truth for the IDB schema; called from boot and from tests. */
