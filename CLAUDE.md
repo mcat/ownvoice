@@ -107,3 +107,15 @@ These are non-negotiable for this project:
 ## Target Platform
 
 iPad Pro (M5, 2025) with iPadOS 26+ and Safari 26. WebGPU via Metal is required for planned ONNX Runtime inference. Desktop/other browsers are not primary targets.
+
+## Known issues — do not chase
+
+**Console errors on Safari reload.** After a manual reload (Cmd+R, address-bar refresh, or `Cmd+Option+R`), the `/app/` document logs:
+
+```
+Cannot load .../assets/{stt,tts}Worker-*.js due to access control checks.
+[OwnVoice:{TTS,STT}:GPU] Init error: "Load failed"
+Fetch API cannot load .../ort/.../*.{mjs,wasm} due to access control checks.
+```
+
+This is a WebKit bug, not an OwnVoice bug. `new Worker(httpUrl)` on reloaded Safari documents fails regardless of timing or gesture; `fetch()` to the same URL succeeds. Reproduced on desktop Safari too — not iPad-specific. **Six distinct fix approaches were empirically falsified** (defer 3-8s, COEP-off, user-gesture wall with real System Events click at t+60s, blob workers, retry-with-backoff, drop-COEP). Full journey in PRs #254 and #255 (both closed without merging) and in `docs/webkit-bug/`. Errors are non-fatal — the app self-recovers and previously-cloned voices synthesize correctly. **Do not spend further engineering cycles on this in app code; the fix has to come from WebKit.**
