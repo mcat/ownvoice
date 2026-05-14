@@ -51,6 +51,67 @@ if (new URLSearchParams(globalThis.location?.search ?? "").get("bench") === "tru
   console.log("[OwnVoice:Bench] Bench mode active. Per-step TTS timings will be logged.");
 }
 
+// `?probe-worker-race=true` measures Safari's transient post-manual-refresh
+// window where `new Worker(...)` script loads fail with "access control
+// checks". Spawns a 1-line probe worker every 250ms; logs the first success
+// time. Drives calibration of the defer in App.tsx. Discardable diagnostic —
+// safe to remove once the defer is calibrated.
+if (
+  new URLSearchParams(globalThis.location?.search ?? "").get(
+    "probe-worker-race",
+  ) === "true"
+) {
+  const t0 = performance.now();
+  let succeeded = false;
+  let attempts = 0;
+  const tryOne = (): void => {
+    if (succeeded) return;
+    attempts += 1;
+    const attemptNum = attempts;
+    const startedAt = Math.round(performance.now() - t0);
+    let w: Worker;
+    try {
+      w = new Worker("/probe-worker.js");
+    } catch (err) {
+      console.log(
+        `[OwnVoice:RaceProbe] #${attemptNum} ctor threw at t+${startedAt}ms: ${err}`,
+      );
+      if (!succeeded) setTimeout(tryOne, 250);
+      return;
+    }
+    let settled = false;
+    w.onmessage = (): void => {
+      if (settled || succeeded) return;
+      settled = true;
+      succeeded = true;
+      const elapsed = Math.round(performance.now() - t0);
+      console.log(
+        `[OwnVoice:RaceProbe] FIRST SUCCESS at t+${elapsed}ms, attempt #${attemptNum} (started at t+${startedAt}ms)`,
+      );
+      w.terminate();
+    };
+    w.onerror = (e): void => {
+      if (settled) return;
+      settled = true;
+      const failAt = Math.round(performance.now() - t0);
+      console.log(
+        `[OwnVoice:RaceProbe] #${attemptNum} failed at t+${failAt}ms: ${e.message || "no msg"}`,
+      );
+      w.terminate();
+      if (!succeeded) setTimeout(tryOne, 250);
+    };
+  };
+  tryOne();
+  // Hard stop after 15s.
+  setTimeout(() => {
+    if (!succeeded) {
+      console.log(
+        `[OwnVoice:RaceProbe] GIVING UP after ${attempts} attempts and 15s`,
+      );
+    }
+  }, 15000);
+}
+
 // Handle PWA shortcut deep-links: ?tab=… and ?overlay=… are dispatched
 // after settings hydrate (so onboarding gates still apply), then stripped
 // from the URL so a reload doesn't re-fire them.
