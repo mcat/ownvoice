@@ -202,4 +202,13 @@ startWakeLock();
 // leftover WebGPU device state. See ./models/lifecycleCleanup.ts.
 installModelLifecycleCleanup();
 
+// Record any genuine user gesture as a "last interaction" for the
+// Diagnostics "Last used" line. recordInteraction() is internally
+// throttled to 60s so this is cheap even under rapid tapping.
+document.addEventListener(
+  "pointerdown",
+  () => useSettingsStore.getState().recordInteraction(),
+  { passive: true },
+);
+
 render(<App />, document.getElementById("root")!);
