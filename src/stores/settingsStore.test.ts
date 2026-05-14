@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { useSettingsStore } from "./settingsStore";
 import { makeTestCfg } from "../test/makeCfg";
 import type { AppSettings, Patient } from "../types";
@@ -829,6 +829,10 @@ describe("settingsStore — lastInteractionAt", () => {
     useSettingsStore.setState({ lastInteractionAt: null });
   });
 
+  afterEach(() => {
+    useSettingsStore.setState({ lastInteractionAt: null });
+  });
+
   it("starts with `lastInteractionAt: null` before any interaction", () => {
     expect(useSettingsStore.getState().lastInteractionAt).toBeNull();
   });
@@ -855,6 +859,13 @@ describe("settingsStore — lastInteractionAt", () => {
     useSettingsStore.setState({ lastInteractionAt: t0 });
     useSettingsStore.getState().recordInteraction();
     expect(useSettingsStore.getState().lastInteractionAt).toBeGreaterThan(t0);
+  });
+
+  it("`recordInteraction()` overwrites a future timestamp (clock skew)", () => {
+    const futureT = Date.now() + 1_000_000;
+    useSettingsStore.setState({ lastInteractionAt: futureT });
+    useSettingsStore.getState().recordInteraction();
+    expect(useSettingsStore.getState().lastInteractionAt).toBeLessThan(futureT);
   });
 });
 

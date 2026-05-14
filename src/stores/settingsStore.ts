@@ -107,6 +107,7 @@ export const useSettingsStore = create<SettingsState>()(
         const now = Date.now();
         if (
           lastInteractionAt != null &&
+          lastInteractionAt <= now &&
           now - lastInteractionAt < INTERACTION_THROTTLE_MS
         ) {
           return;
@@ -344,8 +345,14 @@ export const useSettingsStore = create<SettingsState>()(
         // initialized yet (we're inside create()). Use the `state` param
         // or defer with queueMicrotask.
         return (state) => {
+          // Seed lastInteractionAt via setState (not in-place mutation) so
+          // the persist middleware observes the change and writes it to IDB.
+          // Deferred to a microtask to run after hydration completes — an
+          // in-hydration setState would be a no-op for the persist write.
           if (state && state.lastInteractionAt == null) {
-            state.lastInteractionAt = Date.now();
+            queueMicrotask(() => {
+              useSettingsStore.setState({ lastInteractionAt: Date.now() });
+            });
           }
           queueMicrotask(() => {
             useSettingsStore.setState({ _hasHydrated: true });
