@@ -363,6 +363,27 @@ describe("DiagnosticsSection", () => {
     });
   });
 
+  it("uses expectedBytes (manifest total) — not the sum of in-flight progress — as the progress-bar denominator", () => {
+    // Mid-run state: primer running, manifest sums to ~1.5 GB, but only one
+    // small file's progress has been reported so far. Summing `progress[].total`
+    // would wrongly say "12 MB / 12 MB (100%)" — the correct snapshot is
+    // "12 MB / 1.40 GB (<1%)" with a fixed denominator.
+    useOfflineStore.getState().setPrimerRunning(true);
+    useOfflineStore.getState().beginPrimerRun(1_500_000_000);
+    useOfflineStore
+      .getState()
+      .reportProgress("tts", "tiny.onnx", 12_000_000, 12_000_000);
+
+    render(<DiagnosticsSection t={light} />);
+
+    const bar = screen.getByRole("progressbar");
+    expect(Number(bar.getAttribute("aria-valuenow"))).toBeLessThan(5);
+    // Denominator in the label is the manifest total, not the in-flight sum.
+    const text = document.body.textContent ?? "";
+    expect(text).toMatch(/1\.40 GB/);
+    expect(text).not.toMatch(/12\.0 MB \/ 12\.0 MB/);
+  });
+
   it("does NOT disable the secondary Check button during audio-cache rebuild", async () => {
     // Regression lock: audio-cache pre-gen is normal background behavior and
     // must not block clinician-initiated offline-prep actions.

@@ -58,4 +58,34 @@ describe("offlineStore", () => {
     expect(s.progress).toEqual({});
     expect(s.verified).toEqual({});
   });
+
+  it("starts with expectedBytes at 0", () => {
+    expect(useOfflineStore.getState().expectedBytes).toBe(0);
+  });
+
+  it("beginPrimerRun sets expectedBytes and clears any stale progress entries", () => {
+    // Stale state from a prior run: a progress entry that won't be touched again
+    // (e.g. a file dropped from the manifest in a new release).
+    useOfflineStore.getState().reportProgress("tts", "old.onnx", 100, 100);
+    useOfflineStore.getState().beginPrimerRun(1_500_000);
+    const s = useOfflineStore.getState();
+    expect(s.expectedBytes).toBe(1_500_000);
+    expect(s.progress).toEqual({});
+  });
+
+  it("beginPrimerRun does not flip primerRunning (caller controls that flag separately)", () => {
+    useOfflineStore.getState().setPrimerRunning(true);
+    useOfflineStore.getState().beginPrimerRun(42);
+    expect(useOfflineStore.getState().primerRunning).toBe(true);
+
+    useOfflineStore.getState().setPrimerRunning(false);
+    useOfflineStore.getState().beginPrimerRun(99);
+    expect(useOfflineStore.getState().primerRunning).toBe(false);
+  });
+
+  it("reset clears expectedBytes back to 0", () => {
+    useOfflineStore.getState().beginPrimerRun(2_000_000_000);
+    useOfflineStore.getState().reset();
+    expect(useOfflineStore.getState().expectedBytes).toBe(0);
+  });
 });

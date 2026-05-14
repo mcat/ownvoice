@@ -38,6 +38,7 @@ function formatBytes(n: number | null): string {
 export function DiagnosticsSection({ t }: Props) {
   const primerRunning = useOfflineStore((s) => s.primerRunning);
   const progress = useOfflineStore((s) => s.progress);
+  const expectedBytes = useOfflineStore((s) => s.expectedBytes);
   const verified = useOfflineStore((s) => s.verified);
   const lastVerifiedAt = useOfflineStore((s) => s.lastVerifiedAt);
   const markPrimerComplete = useOfflineStore((s) => s.markPrimerComplete);
@@ -187,10 +188,15 @@ export function DiagnosticsSection({ t }: Props) {
     statuses.length > 0 && statuses.every((s) => s === "verified");
   const anyNeedsRetry = statuses.some((s) => s === "needs-retry");
 
-  // Aggregate download progress across all files being primed.
-  const progressEntries = Object.values(progress);
-  const loadedBytes = progressEntries.reduce((s, p) => s + p.loaded, 0);
-  const totalBytes = progressEntries.reduce((s, p) => s + p.total, 0);
+  // Aggregate loaded across all files currently in flight. The denominator is
+  // the manifest's full expected total (published once at primer-start) — NOT
+  // a sum of `progress[].total`, which would grow each time a new file begins
+  // and make the bar non-monotonic.
+  const loadedBytes = Object.values(progress).reduce(
+    (s, p) => s + p.loaded,
+    0,
+  );
+  const totalBytes = expectedBytes;
   const percent =
     totalBytes > 0 ? Math.min(100, (loadedBytes / totalBytes) * 100) : 0;
 

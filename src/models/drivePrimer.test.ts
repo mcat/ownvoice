@@ -2,9 +2,15 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { useOfflineStore } from "../stores/offlineStore";
 
 const loadManifestMock = vi.fn();
-vi.mock("./modelsManifest", () => ({
-  loadManifest: () => loadManifestMock(),
-}));
+vi.mock(import("./modelsManifest"), async (importOriginal) => {
+  // Keep the real `totalBytes` helper — drivePrimer uses it to compute the
+  // expected-bytes total. Only loadManifest needs to be mocked.
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    loadManifest: () => loadManifestMock(),
+  };
+});
 
 const primeOfflineMock = vi.fn();
 vi.mock("./offlinePrimer", () => ({
@@ -178,5 +184,41 @@ describe("drivePrimer", () => {
       MANIFEST,
       expect.objectContaining({ onProgress: expect.any(Function) }),
     );
+  });
+
+  it("publishes the manifest's total expected bytes to offlineStore before the primer iterates", async () => {
+    // Sum of every file across every model in the fixture manifest.
+    const expected = Object.values(MANIFEST.models)
+      .flatMap((m) => m.files)
+      .reduce((sum, f) => sum + f.size, 0);
+
+    let seenWhileRunning: number | null = null;
+    primeOfflineMock.mockImplementation(async function* () {
+      // Snapshot the store the moment iteration begins — this is when the UI
+      // first paints a progress bar, so the denominator must already be set.
+      seenWhileRunning = useOfflineStore.getState().expectedBytes;
+      yield { type: "complete", allOk: true, downloadedCount: 0 };
+    });
+
+    const drivePrimer = await importDrivePrimer();
+    await drivePrimer();
+
+    expect(seenWhileRunning).toBe(expected);
+  });
+
+  it("clears stale progress entries when a new primer run begins", async () => {
+    // Pre-seed a stale entry from a hypothetical previous run.
+    useOfflineStore.getState().reportProgress("tts", "stale.onnx", 50, 50);
+
+    let progressDuringRun: Record<string, unknown> | null = null;
+    primeOfflineMock.mockImplementation(async function* () {
+      progressDuringRun = { ...useOfflineStore.getState().progress };
+      yield { type: "complete", allOk: true, downloadedCount: 0 };
+    });
+
+    const drivePrimer = await importDrivePrimer();
+    await drivePrimer();
+
+    expect(progressDuringRun).toEqual({});
   });
 });
