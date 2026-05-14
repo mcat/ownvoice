@@ -157,6 +157,7 @@ export function initGPU(modelUrl: string): Promise<boolean> {
     };
 
     try {
+      console.log(`[OwnVoice:DeferProbe] new Worker(tts-gpu-worker.js) at t+${Math.round(performance.now())}ms`);
       // Plain JS worker in public/ — not bundled by Vite
       worker = new Worker("/tts-gpu-worker.js", { type: "module" });
 

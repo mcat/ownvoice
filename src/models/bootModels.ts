@@ -34,6 +34,7 @@ export async function bootSTT(): Promise<void> {
 
   if ("gpu" in navigator) {
     try {
+      console.log(`[OwnVoice:DeferProbe] new Worker(stt-gpu-worker.js) at t+${Math.round(performance.now())}ms`);
       const gpuWorker = new Worker("/stt-gpu-worker.js", { type: "module" });
 
       gpuWorker.onmessage = (e) => {
@@ -78,6 +79,7 @@ function bootSTTWasm(): void {
   const mgr = getModelManager();
   console.log("[OwnVoice] STT: using WASM fallback");
   try {
+    console.log(`[OwnVoice:DeferProbe] new Worker(sttWorker.ts) at t+${Math.round(performance.now())}ms`);
     const sttWorker = new Worker(
       new URL("./sttWorker.ts", import.meta.url),
       { type: "module" },
@@ -114,6 +116,7 @@ export async function bootTTSWasm(): Promise<void> {
   await mgr.init();
 
   try {
+    console.log(`[OwnVoice:DeferProbe] new Worker(ttsWorker.ts) at t+${Math.round(performance.now())}ms`);
     const ttsWorker = new Worker(
       new URL("./ttsWorker.ts", import.meta.url),
       { type: "module" },
