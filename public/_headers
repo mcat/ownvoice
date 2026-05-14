@@ -39,13 +39,6 @@
   Cross-Origin-Embedder-Policy: require-corp
   Cross-Origin-Resource-Policy: same-origin
 
-# Diagnostic probe worker used by `?probe-worker-race=true` to measure
-# Safari's post-manual-refresh window where `new Worker(...)` script
-# loads fail. Same COEP/CORP envelope as the production workers.
-/probe-worker.js
-  Cross-Origin-Embedder-Policy: require-corp
-  Cross-Origin-Resource-Policy: same-origin
-
 # Vite emits the bundled WASM workers (ttsWorker, sttWorker) under
 # /assets/. Same COEP requirement as the GPU workers when loaded from /app/.
 /assets/*

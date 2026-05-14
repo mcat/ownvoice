@@ -34,13 +34,7 @@ export async function bootSTT(): Promise<void> {
 
   if ("gpu" in navigator) {
     try {
-      const gpuSpawnT = Math.round(performance.now());
-      console.log(`[OwnVoice:DeferProbe] new Worker(stt-gpu-worker.js) at t+${gpuSpawnT}ms`);
       const gpuWorker = new Worker("/stt-gpu-worker.js", { type: "module" });
-      const origOnerror = (e: ErrorEvent): void => {
-        console.log(`[OwnVoice:DeferProbe] stt-gpu-worker.js ONERROR at t+${Math.round(performance.now())}ms (spawned at t+${gpuSpawnT}ms, gap=${Math.round(performance.now()) - gpuSpawnT}ms): ${e.message || "no msg"}`);
-      };
-      gpuWorker.addEventListener("error", origOnerror);
 
       gpuWorker.onmessage = (e) => {
         if (e.data.type === "ready") {
@@ -84,15 +78,10 @@ function bootSTTWasm(): void {
   const mgr = getModelManager();
   console.log("[OwnVoice] STT: using WASM fallback");
   try {
-    const sttSpawnT = Math.round(performance.now());
-    console.log(`[OwnVoice:DeferProbe] new Worker(sttWorker.ts) at t+${sttSpawnT}ms`);
     const sttWorker = new Worker(
       new URL("./sttWorker.ts", import.meta.url),
       { type: "module" },
     );
-    sttWorker.onerror = (e) => {
-      console.log(`[OwnVoice:DeferProbe] sttWorker.ts ONERROR at t+${Math.round(performance.now())}ms (spawned at t+${sttSpawnT}ms, gap=${Math.round(performance.now()) - sttSpawnT}ms): ${e.message || "no msg"}`);
-    };
 
     sttWorker.onmessage = (e) => {
       if (e.data.type === "ready") {
@@ -125,15 +114,10 @@ export async function bootTTSWasm(): Promise<void> {
   await mgr.init();
 
   try {
-    const spawnT = Math.round(performance.now());
-    console.log(`[OwnVoice:DeferProbe] new Worker(ttsWorker.ts) at t+${spawnT}ms`);
     const ttsWorker = new Worker(
       new URL("./ttsWorker.ts", import.meta.url),
       { type: "module" },
     );
-    ttsWorker.onerror = (e) => {
-      console.log(`[OwnVoice:DeferProbe] ttsWorker.ts ONERROR at t+${Math.round(performance.now())}ms (spawned at t+${spawnT}ms, gap=${Math.round(performance.now()) - spawnT}ms): ${e.message || "no msg"}`);
-    };
 
     let ttsInitDone = false;
     ttsWorker.onmessage = (e) => {

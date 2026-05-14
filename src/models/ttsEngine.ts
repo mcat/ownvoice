@@ -157,13 +157,8 @@ export function initGPU(modelUrl: string): Promise<boolean> {
     };
 
     try {
-      const gpuSpawnT = Math.round(performance.now());
-      console.log(`[OwnVoice:DeferProbe] new Worker(tts-gpu-worker.js) at t+${gpuSpawnT}ms`);
       // Plain JS worker in public/ — not bundled by Vite
       worker = new Worker("/tts-gpu-worker.js", { type: "module" });
-      worker.addEventListener("error", (e) => {
-        console.log(`[OwnVoice:DeferProbe] tts-gpu-worker.js ONERROR at t+${Math.round(performance.now())}ms (spawned at t+${gpuSpawnT}ms, gap=${Math.round(performance.now()) - gpuSpawnT}ms, settled=${settled}): ${e.message || "no msg"}`);
-      });
 
       // 300s budget for multilingual: worker loads ~913 MB across 4 ONNX
       // sessions (vs Turbo's ~381 MB), and the 30-layer Llama LM has

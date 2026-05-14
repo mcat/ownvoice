@@ -46,11 +46,23 @@ import * as audioCacheRunner from "./models/audioCacheRunner";
 import { embeddingFingerprint } from "./models/audioCache";
 
 /**
- * Defer-on-reload budget. Calibrated empirically against the Safari
- * worker-spawn race window via `?probe-worker-race=true` (PR #255).
- * Set to observed-max + 1500ms safety margin. Cold loads use 0.
+ * Detect whether the current document is a reload (`location.reload()` or
+ * manual browser refresh) versus a cold navigation. Used to gate the boot
+ * useEffect on a user gesture — Safari (desktop + iPadOS) refuses
+ * `new Worker(...)` script loads with "access control checks" any time
+ * those spawns happen after a manual nav-bar refresh, including when
+ * fired as fallback paths much later in the page lifecycle. PR #253
+ * (1.8s retry) and a follow-up 8s defer both failed to clear the
+ * mechanism; the race is not time-based, it appears tied to WebKit's
+ * worker-pool state on the post-refresh document. A user gesture is
+ * the most reliable signal that the post-refresh transient has settled.
  */
-const RELOAD_WORKER_DEFER_MS = 8000; // placeholder — calibrate before merge
+function isReloadNavigation(): boolean {
+  const navEntry = performance.getEntriesByType(
+    "navigation",
+  )[0] as PerformanceNavigationTiming | undefined;
+  return navEntry?.type === "reload";
+}
 
 export function App() {
   // Theme state — useTheme attaches the system listener and syncs side effects.
@@ -149,75 +161,73 @@ export function App() {
     setPinIntent(null);
   }, [closeOverlay]);
 
+  // Track whether boot has been ungated. On cold loads this is true
+  // immediately; on reloads, it flips to true on first user gesture.
+  // See `isReloadNavigation` comment for the rationale.
+  const [bootUngated, setBootUngated] = useState<boolean>(
+    () => !isReloadNavigation(),
+  );
+
+  // On reload, wait for any user gesture (pointerdown or keydown) before
+  // booting workers. The gesture is the most reliable signal that
+  // WebKit's post-refresh transient has settled.
+  useEffect(() => {
+    if (bootUngated) return;
+    const ungate = (): void => setBootUngated(true);
+    window.addEventListener("pointerdown", ungate, { once: true });
+    window.addEventListener("keydown", ungate, { once: true });
+    return () => {
+      window.removeEventListener("pointerdown", ungate);
+      window.removeEventListener("keydown", ungate);
+    };
+  }, [bootUngated]);
+
   // Initialize model manager and boot the TTS + STT workers.
   useEffect(() => {
+    if (!bootUngated) return;
     let unsubResume: (() => void) | null = null;
 
-    // On Safari (desktop + iPadOS), manual nav-bar refresh enters a
-    // transient window during which `new Worker(...)` script loads fail
-    // with "Cannot load … due to access control checks" — direct
-    // `fetch()` to the same URLs succeeds during the same window
-    // (verified via probe in PR #255), so the bug is specific to worker
-    // construction, not the network or COEP. The race window outlasts
-    // PR #253's 1.8s retry budget. Defer worker spawns on any reload-
-    // type navigation; cold loads spawn immediately. `location.reload()`
-    // doesn't hit the bug but we can't distinguish it from manual refresh
-    // in `navigation.type`, so we eat the latency cost on both.
-    const navEntry = performance.getEntriesByType(
-      "navigation",
-    )[0] as PerformanceNavigationTiming | undefined;
-    const isReload = navEntry?.type === "reload";
-    const deferMs = isReload ? RELOAD_WORKER_DEFER_MS : 0;
+    // STT begins booting immediately, in parallel with GPU TTS shader
+    // compile. An earlier shape (pre-#234) that chained STT behind
+    // initGPU() meant STT could not start downloading until TTS shader
+    // compile finished — minutes on cold load.
+    bootSTT();
 
-    const bootEverything = (): void => {
-      const t = Math.round(performance.now());
-      console.log(
-        `[OwnVoice] Boot useEffect firing at t+${t}ms (defer=${deferMs}ms, navType=${navEntry?.type})`,
-      );
-      // STT begins booting immediately, in parallel with GPU TTS shader
-      // compile. An earlier shape (pre-#234) that chained STT behind
-      // initGPU() meant STT could not start downloading until TTS shader
-      // compile finished — minutes on cold load.
-      bootSTT();
-
-      // GPU TTS in parallel; defer the WASM TTS fallback until GPU TTS
-      // resolves either way, to avoid concurrent ORT-WASM/ORT-WebGPU
-      // init contention.
-      initGPU(MODEL_URLS.tts)
-        .then((ok) => {
-          console.log("[OwnVoice] GPU TTS:", ok ? "ready" : "unavailable");
-          bootTTSWasm();
-        })
-        .catch((err) => {
-          console.warn("[OwnVoice] GPU TTS error:", err);
-          bootTTSWasm();
-        });
-      // Run OPFS integrity check in parallel, then auto-prime if needed.
-      verifyAllOnBoot()
-        .then(() => {
-          const verified = useOfflineStore.getState().verified;
-          const needsPriming = Object.values(verified).some(
-            (s) => s !== "verified",
+    // GPU TTS in parallel; the WASM TTS fallback fires once GPU TTS
+    // resolves either way, to avoid concurrent ORT-WASM/ORT-WebGPU
+    // init contention.
+    initGPU(MODEL_URLS.tts)
+      .then((ok) => {
+        console.log("[OwnVoice] GPU TTS:", ok ? "ready" : "unavailable");
+        bootTTSWasm();
+      })
+      .catch((err) => {
+        console.warn("[OwnVoice] GPU TTS error:", err);
+        bootTTSWasm();
+      });
+    // Run OPFS integrity check in parallel, then auto-prime if needed.
+    verifyAllOnBoot()
+      .then(() => {
+        const verified = useOfflineStore.getState().verified;
+        const needsPriming = Object.values(verified).some(
+          (s) => s !== "verified",
+        );
+        if (needsPriming) {
+          drivePrimer().catch((err) =>
+            console.warn("[OwnVoice] auto-prime failed:", err),
           );
-          if (needsPriming) {
-            drivePrimer().catch((err) =>
-              console.warn("[OwnVoice] auto-prime failed:", err),
-            );
-          }
-        })
-        .catch((err) => console.warn("[OwnVoice] boot verify failed:", err));
-      // Resume any interrupted model downloads — fires on boot if partials
-      // exist, and again whenever the tab returns to the foreground.
-      unsubResume = resumePendingOnVisible();
-      primeSpeechSynthesis();
-    };
+        }
+      })
+      .catch((err) => console.warn("[OwnVoice] boot verify failed:", err));
+    // Resume any interrupted model downloads — fires on boot if partials
+    // exist, and again whenever the tab returns to the foreground.
+    unsubResume = resumePendingOnVisible();
+    primeSpeechSynthesis();
 
-    const timer = setTimeout(bootEverything, deferMs);
     return () => {
-      clearTimeout(timer);
       unsubResume?.();
     };
-  }, []);
+  }, [bootUngated]);
 
   // Sync the user-selected fallback voice to the speak module
   useEffect(() => {
