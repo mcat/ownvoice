@@ -63,6 +63,16 @@ These are validated instruments or protocols that OwnVoice implements directly. 
 
 **Validation status:** The SICG framework structure is clinically validated. The response options (e.g., "Being with my family", "Being at peace") are adapted from palliative care literature but need co-design validation with palliative care physicians, bioethicists, and patients before clinical deployment.
 
+#### ICU adaptations of the SICG — and the gap OwnVoice fills
+
+> Pasricha, V., Gorman, D., Laothamatas, K., Bhardwaj, A., Ganta, N., & Mikkelsen, M. E. (2020). Use of the Serious Illness Conversation Guide to Improve Communication with Surrogates of Critically Ill Patients: A Pilot Study. *ATS Scholar*, 1(2), 119–133. [doi.org/10.34197/ats-scholar.2019-0006OC](https://doi.org/10.34197/ats-scholar.2019-0006OC) — local copy: `docs/research/icu-communication/pasricha-2020-sicg-surrogates-critically-ill-pilot.pdf`
+>
+> Improving Critical Care Communication with the Serious Illness Conversation Guide at an Academic Medical Center. (2025). *Journal of Pain and Symptom Management*. [jpsmjournal.com](https://www.jpsmjournal.com/article/S0885-3924(25)00589-5/fulltext)
+
+**Why these matter:** Pasricha et al. (2020) is, to our knowledge, the first and only published ICU adaptation of the SICG. Critically, it was used with **surrogates** of mechanically ventilated patients — not the patients themselves — because the patients could not speak. The 2025 JPSM follow-up extends critical-care SICG use but again works through surrogates and clinicians. Across the broader AAC-in-ICU literature (SPEACS-2, VidaTalk, the 2016 *Critical Care* systematic review, the 2024 *AJSLP* scoping review), AAC has been studied for symptom and needs communication — never for SICG-structured goals-of-care conversations conducted directly with the patient.
+
+**Implication for OwnVoice:** The "My Wishes" feature is, to our knowledge, the first AAC-mediated implementation of the SICG framework that lets a non-speaking patient participate **directly** in their own goals-of-care conversation, rather than having one held *about* them through a surrogate. This is the specific gap to validate in clinical study (research plan Aim 3, H3).
+
 ---
 
 ## 2. Patient Communication Needs
@@ -102,6 +112,21 @@ Research that shaped the phrase library, communication categories, and emotional
 | Two-way conversation model with provider responses | `src/components/provider/ProviderPanel.tsx` — structured provider responses |
 | Conversation thread preserves exchange history across shifts | `src/stores/conversationStore.ts` — IndexedDB-backed persistent store |
 | CSRI planned as primary outcome measure | `docs/ownvoice-research-plan.md:149` |
+
+---
+
+### ICU-Talk Phrase Capture
+
+> MacAulay, F., Judson, A., Etchels, M., Ashraf, S., Ricketts, I. W., Waller, A., Brodie, J. K., Alm, N., Warden, A., Shearer, A. J., & Gordon, B. (2002). ICU-Talk, a communication aid for intubated intensive care patients. In *Proceedings of the Fifth International ACM Conference on Assistive Technologies (Assets '02)*, 226–227. [doi.org/10.1145/638249.638290](https://doi.org/10.1145/638249.638290) — see also: *Capturing phrases for ICU-Talk* (companion paper). Local copies: `docs/research/icu-talk/`.
+
+**Finding:** Empirical capture of the phrase vocabulary intubated ICU patients actually need, derived from observed nurse-patient interactions and pilot deployment of a computerized communication aid in an ICU. One of the earliest evidence-based ICU AAC phrase libraries.
+
+**Where it's applied:**
+
+| Decision | Implementation |
+|---|---|
+| Phrase library structured by observed ICU communication categories, not generic hospital-board content | `src/data/phraseRegistry.ts` (Quick, I Need, I Feel, Pain, Ask) — combined with SPEACS-2 categories above |
+| ICU-specific vocabulary (suction, ventilator, restraints) | `src/data/locales/en.ts` |
 
 ---
 
@@ -210,7 +235,10 @@ Research that shaped the phrase library, communication categories, and emotional
 
 > Dind, A. J., Starr, J. S., & Arora, S. (2021). iPad-based Apps to Facilitate Communication in Critically Ill Patients with Impaired Ability to Communicate: A Preclinical Analysis. *Indian Journal of Critical Care Medicine*, 25(11), 1232–1240. [doi.org/10.5005/jp-journals-10071-24019](https://doi.org/10.5005/jp-journals-10071-24019)
 
-**Finding:** Physical access to the device is a primary barrier to AAC adoption in ICUs. Up to 90% of communication-impaired ICU patients report extreme distress. Inadequate communication can impair symptom identification and reduce patient participation in care decisions.
+**Findings:**
+
+- Physical access to the device is a primary barrier to AAC adoption in ICUs. Up to 90% of communication-impaired ICU patients report extreme distress. Inadequate communication can impair symptom identification and reduce patient participation in care decisions.
+- **Competitor landscape.** The paper conducts a head-to-head preclinical evaluation of nine iPad-based ICU communication apps, including VidaTalk, CommuniCare ICU, and YoDoc. All three are static phrase boards: pre-translated content played back via either pre-recorded human audio (VidaTalk) or device-level text-to-speech for typed input (YoDoc, CommuniCare). None offer voice cloning, on-device language models for contextual sentence suggestion, or neural speech-to-text. Multilingual support is achieved through human-translated phrase libraries, not AI translation. Local copy: `docs/research/icu-communication/dind-2021-ipad-based-apps-to-facilitate-communication-in-cri.pdf`.
 
 **Where it's applied:**
 
@@ -220,6 +248,7 @@ Research that shaped the phrase library, communication categories, and emotional
 | 64px minimum touch targets for all patient-facing buttons | `src/app.css:59` — `--size-target: 64px` |
 | Emotional expression treated as clinical need, not secondary feature | `src/data/phraseRegistry.ts:112-141` — "I Feel" category |
 | No dead ends — every screen has navigation | `src/components/layout/TabBar.tsx` — always visible |
+| Competitive positioning — OwnVoice as AI-native AAC vs. static phrase boards | `docs/ownvoice-research-plan.md` §2.1; `src/homepage/sections/CommercialOpportunity.tsx` — "Differentiation" block |
 
 ---
 

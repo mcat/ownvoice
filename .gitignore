@@ -75,3 +75,7 @@ sample-voices/*
 !sample-voices/mark-voice.wav
 !sample-voices/README.md
 docs/*.pdf
+
+.agents
+AGENTS.md
+.codex
