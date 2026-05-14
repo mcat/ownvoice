@@ -211,15 +211,29 @@ export async function bootTTSWasm(attempt = 0): Promise<void> {
       try { ttsWorker.terminate(); } catch { /* ignore */ }
       setTimeout(() => { void bootTTSWasm(attempt + 1); }, delay);
     } else {
+      // Exhausted retries. Log only — do NOT mgr.setError. The WASM TTS
+      // worker is a fallback path; if the GPU TTS path is already ready,
+      // marking the model errored would surface a misleading UI state.
+      // The per-error handling below (`e.data.type === "error"`) covers
+      // the cases where setError is actually warranted.
       console.error(
         `[OwnVoice] TTS worker failed after ${MAX_WORKER_RETRY} attempts:`,
         reason,
       );
-      mgr.setError("tts", reason);
     }
   };
 
-  ttsWorker.onerror = (e) => retry(e.message || "worker error");
+  ttsWorker.onerror = (e) => {
+    const msg = e.message || "";
+    // Only retry on access-control-class load failures. Generic worker
+    // errors (e.g. ORT-Web internal init issues when running concurrent
+    // with a GPU TTS worker) won't be helped by retrying — fall through.
+    if (msg.includes("access control") || msg.includes("Load failed")) {
+      retry(msg);
+    } else {
+      console.warn(`[OwnVoice:TTS] worker error: ${msg || "(no message)"}`);
+    }
+  };
   ttsWorker.onmessage = (e) => {
     if (e.data.type === "ready") {
       ttsInitDone = true;
