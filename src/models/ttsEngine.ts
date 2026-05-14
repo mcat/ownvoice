@@ -23,6 +23,8 @@
  * need to respawn the worker.
  */
 
+import { spawnBlobWorker } from "./blobWorker";
+
 interface SpeakerData {
   condEmb: number[];
   condEmbShape: number[];
@@ -156,26 +158,36 @@ export function initGPU(modelUrl: string): Promise<boolean> {
       resolve(value);
     };
 
-    try {
-      // Plain JS worker in public/ — not bundled by Vite
-      worker = new Worker("/tts-gpu-worker.js", { type: "module" });
+    // 300s budget for multilingual (see comment block below).
+    const INIT_TIMEOUT_MS = 300000;
+    timeout = setTimeout(() => {
+      console.warn(`[OwnVoice:TTS:GPU] Init timeout (${INIT_TIMEOUT_MS / 1000}s)`);
+      settle(false);
+    }, INIT_TIMEOUT_MS);
 
-      // 300s budget for multilingual: worker loads ~913 MB across 4 ONNX
-      // sessions (vs Turbo's ~381 MB), and the 30-layer Llama LM has
-      // significantly more WebGPU shaders to compile on first run than
-      // Turbo's 24-layer GPT-2. With the conditional_decoder also on
-      // WebGPU EP (rather than WASM-only), shader compilation grew —
-      // observed 187s cold-load on M5 iPad after the WebGPU-decoder
-      // switch, which tripped the previous 180s timeout despite the
-      // worker succeeding seconds later. Tighter budgets risk a
-      // false-negative WASM fallback before WebGPU has a chance to finish.
-      const INIT_TIMEOUT_MS = 300000;
-      timeout = setTimeout(() => {
-        console.warn(`[OwnVoice:TTS:GPU] Init timeout (${INIT_TIMEOUT_MS / 1000}s)`);
-        settle(false);
-      }, INIT_TIMEOUT_MS);
+    // Plain JS worker in public/ — not bundled by Vite. Spawned via
+    // blob:URL to dodge the post-manual-refresh "access control checks"
+    // race in WebKit's worker-script loader (see ./blobWorker.ts).
+    //
+    // 300s budget rationale (preserved): worker loads ~913 MB across 4 ONNX
+    // sessions (vs Turbo's ~381 MB), and the 30-layer Llama LM has
+    // significantly more WebGPU shaders to compile on first run than
+    // Turbo's 24-layer GPT-2. With the conditional_decoder also on
+    // WebGPU EP (rather than WASM-only), shader compilation grew —
+    // observed 187s cold-load on M5 iPad after the WebGPU-decoder
+    // switch, which tripped the previous 180s timeout despite the
+    // worker succeeding seconds later. Tighter budgets risk a
+    // false-negative WASM fallback before WebGPU has a chance to finish.
+    spawnBlobWorker("/tts-gpu-worker.js", { type: "module" }).then((w) => {
+      worker = w;
+      attachWorkerHandlers(w);
+    }).catch((err) => {
+      console.warn("[OwnVoice:TTS:GPU] Failed to spawn blob worker:", err);
+      settle(false);
+    });
 
-      worker.onmessage = (e) => {
+    function attachWorkerHandlers(w: Worker): void {
+      w.onmessage = (e) => {
         if (e.data.type === "ready") {
           markReady();
           document.title = "OwnVoice [GPU ready]";
@@ -196,7 +208,7 @@ export function initGPU(modelUrl: string): Promise<boolean> {
       //                                        synth immediately so callers
       //                                        aren't stuck on their 300s
       //                                        pre-gen timeout
-      worker.onerror = (e) => {
+      w.onerror = (e) => {
         const message = e.message || "unknown";
         if (!settled) {
           document.title = "GPU WERR: " + message.slice(0, 80);
@@ -210,10 +222,7 @@ export function initGPU(modelUrl: string): Promise<boolean> {
       // `?bench=true` flag set by main-app.tsx — forwards to the GPU
       // worker so it can log per-step timings (LM + decode + RTF).
       const bench = (globalThis as { __OV_BENCH__?: boolean }).__OV_BENCH__ === true;
-      worker.postMessage({ type: "init", modelUrl, bench });
-    } catch (err) {
-      console.warn("[OwnVoice:TTS:GPU] Failed to create worker:", err);
-      settle(false);
+      w.postMessage({ type: "init", modelUrl, bench });
     }
   });
 }

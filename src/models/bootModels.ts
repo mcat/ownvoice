@@ -2,6 +2,7 @@ import { getModelManager } from "./modelManager";
 import { MODEL_URLS } from "./types";
 import { loadManifest, type ModelId } from "./modelsManifest";
 import { useOfflineStore } from "../stores/offlineStore";
+import { spawnBlobWorker } from "./blobWorker";
 
 /**
  * Boot all on-device models.
@@ -34,7 +35,9 @@ export async function bootSTT(): Promise<void> {
 
   if ("gpu" in navigator) {
     try {
-      const gpuWorker = new Worker("/stt-gpu-worker.js", { type: "module" });
+      const gpuWorker = await spawnBlobWorker("/stt-gpu-worker.js", {
+        type: "module",
+      });
 
       gpuWorker.onmessage = (e) => {
         if (e.data.type === "ready") {
@@ -74,11 +77,11 @@ export async function bootSTT(): Promise<void> {
 }
 
 /** Start the WASM STT worker (Vite-bundled, onnxruntime-web base package). */
-function bootSTTWasm(): void {
+async function bootSTTWasm(): Promise<void> {
   const mgr = getModelManager();
   console.log("[OwnVoice] STT: using WASM fallback");
   try {
-    const sttWorker = new Worker(
+    const sttWorker = await spawnBlobWorker(
       new URL("./sttWorker.ts", import.meta.url),
       { type: "module" },
     );
@@ -114,7 +117,7 @@ export async function bootTTSWasm(): Promise<void> {
   await mgr.init();
 
   try {
-    const ttsWorker = new Worker(
+    const ttsWorker = await spawnBlobWorker(
       new URL("./ttsWorker.ts", import.meta.url),
       { type: "module" },
     );
