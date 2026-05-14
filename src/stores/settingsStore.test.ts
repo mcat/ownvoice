@@ -539,7 +539,7 @@ describe("multi-patient actions", () => {
 });
 
 describe("settingsStore persist middleware wiring", () => {
-  it("partialize returns only { cfg, speakerData } — not internal flags", () => {
+  it("partialize returns only { cfg, speakerData, lastInteractionAt } — not internal flags", () => {
     useSettingsStore.setState({
       _hasHydrated: true,
       cfg: makeTestCfg({ patient: { name: "Maria" } }),
@@ -554,7 +554,7 @@ describe("settingsStore persist middleware wiring", () => {
       useSettingsStore.getState(),
     );
     // Strong assertion: partialize must export cfg + speakerData ONLY
-    expect(Object.keys(partialized).sort()).toEqual(["cfg", "speakerData"]);
+    expect(Object.keys(partialized).sort()).toEqual(["cfg", "lastInteractionAt", "speakerData"]);
     expect(partialized.cfg.patients[0].name).toBe("Maria");
     expect(partialized.speakerData).toEqual({ sampleData: true });
     // Introspection: must NOT include _hasHydrated or action functions
@@ -821,6 +821,40 @@ describe("settingsStore audit-aware named setters", () => {
 
     expect(useSettingsStore.getState().cfg!.activePatientId).toBeNull();
     expect(setHash).toHaveBeenCalledWith(null);
+  });
+});
+
+describe("settingsStore — lastInteractionAt", () => {
+  beforeEach(() => {
+    useSettingsStore.setState({ lastInteractionAt: null });
+  });
+
+  it("starts with `lastInteractionAt: null` before any interaction", () => {
+    expect(useSettingsStore.getState().lastInteractionAt).toBeNull();
+  });
+
+  it("`recordInteraction()` sets `lastInteractionAt` to now when previously null", () => {
+    const before = Date.now();
+    useSettingsStore.getState().recordInteraction();
+    const after = Date.now();
+    const value = useSettingsStore.getState().lastInteractionAt;
+    expect(value).not.toBeNull();
+    expect(value!).toBeGreaterThanOrEqual(before);
+    expect(value!).toBeLessThanOrEqual(after);
+  });
+
+  it("`recordInteraction()` is a no-op when called within 60s of the previous call", () => {
+    const t0 = Date.now() - 5_000;
+    useSettingsStore.setState({ lastInteractionAt: t0 });
+    useSettingsStore.getState().recordInteraction();
+    expect(useSettingsStore.getState().lastInteractionAt).toBe(t0);
+  });
+
+  it("`recordInteraction()` updates when called more than 60s after the previous call", () => {
+    const t0 = Date.now() - 120_000;
+    useSettingsStore.setState({ lastInteractionAt: t0 });
+    useSettingsStore.getState().recordInteraction();
+    expect(useSettingsStore.getState().lastInteractionAt).toBeGreaterThan(t0);
   });
 });
 
