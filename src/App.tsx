@@ -50,7 +50,7 @@ import { embeddingFingerprint } from "./models/audioCache";
  * worker-spawn race window via `?probe-worker-race=true` (PR #255).
  * Set to observed-max + 1500ms safety margin. Cold loads use 0.
  */
-const RELOAD_WORKER_DEFER_MS = 5000; // placeholder — calibrate before merge
+const RELOAD_WORKER_DEFER_MS = 8000; // placeholder — calibrate before merge
 
 export function App() {
   // Theme state — useTheme attaches the system listener and syncs side effects.
