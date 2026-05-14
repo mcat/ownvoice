@@ -50,7 +50,7 @@ import { embeddingFingerprint } from "./models/audioCache";
  * worker-spawn race window via `?probe-worker-race=true` (PR #255).
  * Set to observed-max + 1500ms safety margin. Cold loads use 0.
  */
-const RELOAD_WORKER_DEFER_MS = 3000; // placeholder — calibrate before merge
+const RELOAD_WORKER_DEFER_MS = 5000; // placeholder — calibrate before merge
 
 export function App() {
   // Theme state — useTheme attaches the system listener and syncs side effects.
@@ -170,6 +170,10 @@ export function App() {
     const deferMs = isReload ? RELOAD_WORKER_DEFER_MS : 0;
 
     const bootEverything = (): void => {
+      const t = Math.round(performance.now());
+      console.log(
+        `[OwnVoice] Boot useEffect firing at t+${t}ms (defer=${deferMs}ms, navType=${navEntry?.type})`,
+      );
       // STT begins booting immediately, in parallel with GPU TTS shader
       // compile. An earlier shape (pre-#234) that chained STT behind
       // initGPU() meant STT could not start downloading until TTS shader
