@@ -51,6 +51,11 @@ const CONTENT_TYPE_BY_EXT: Record<string, string> = {
   mjs: "application/javascript",
   js: "application/javascript",
   json: "application/json",
+  // Source maps are JSON. Without this, Safari's Web Inspector logs noisy
+  // "Source Map loading errors" because the bundled ORT .mjs files carry
+  // a `//# sourceMappingURL=...map` trailer and the inspector tries to
+  // resolve them on every stack trace.
+  map: "application/json",
   jinja: "text/plain; charset=utf-8",
   // ONNX model files: not a registered MIME type. octet-stream forces the
   // browser to treat as binary so streaming/range fetches don't text-decode.

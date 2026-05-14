@@ -63,7 +63,7 @@ describe("installModelLifecycleCleanup", () => {
     expect(stt.postMessage).toHaveBeenCalledWith({ type: "shutdown" });
   });
 
-  it("calls worker.terminate() as safety net after a delay", () => {
+  it("calls worker.terminate() synchronously on pagehide", () => {
     const mgr = getModelManager();
     const tts = makeMockWorker();
     mgr.setWorker("tts", tts);
@@ -71,9 +71,24 @@ describe("installModelLifecycleCleanup", () => {
     installModelLifecycleCleanup();
     fire(false);
 
-    expect(tts.terminate).not.toHaveBeenCalled();
-    vi.advanceTimersByTime(1000);
+    // Synchronous: no timer advance needed — the document may not survive
+    // long enough on manual refresh to fire a queued setTimeout.
     expect(tts.terminate).toHaveBeenCalled();
+  });
+
+  it("posts shutdown BEFORE terminate (best-effort release ordering)", () => {
+    const mgr = getModelManager();
+    const tts = makeMockWorker();
+    mgr.setWorker("tts", tts);
+
+    const calls: string[] = [];
+    tts.postMessage.mockImplementation(() => calls.push("postMessage"));
+    tts.terminate.mockImplementation(() => calls.push("terminate"));
+
+    installModelLifecycleCleanup();
+    fire(false);
+
+    expect(calls).toEqual(["postMessage", "terminate"]);
   });
 
   it("skips cleanup when entering bfcache (persisted=true)", () => {
