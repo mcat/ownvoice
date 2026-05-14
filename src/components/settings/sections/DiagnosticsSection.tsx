@@ -38,6 +38,7 @@ function formatBytes(n: number | null): string {
 export function DiagnosticsSection({ t }: Props) {
   const primerRunning = useOfflineStore((s) => s.primerRunning);
   const progress = useOfflineStore((s) => s.progress);
+  const expectedBytes = useOfflineStore((s) => s.expectedBytes);
   const verified = useOfflineStore((s) => s.verified);
   const lastVerifiedAt = useOfflineStore((s) => s.lastVerifiedAt);
   const markPrimerComplete = useOfflineStore((s) => s.markPrimerComplete);
@@ -187,12 +188,18 @@ export function DiagnosticsSection({ t }: Props) {
     statuses.length > 0 && statuses.every((s) => s === "verified");
   const anyNeedsRetry = statuses.some((s) => s === "needs-retry");
 
-  // Aggregate download progress across all files being primed.
-  const progressEntries = Object.values(progress);
-  const loadedBytes = progressEntries.reduce((s, p) => s + p.loaded, 0);
-  const totalBytes = progressEntries.reduce((s, p) => s + p.total, 0);
+  // Aggregate loaded across all files currently in flight. The denominator is
+  // `expectedBytes` from the store (published once at primer-start) — NOT a
+  // sum of `progress[].total`, which would grow each time a new file begins
+  // and make the bar non-monotonic.
+  const loadedBytes = Object.values(progress).reduce(
+    (s, p) => s + p.loaded,
+    0,
+  );
   const percent =
-    totalBytes > 0 ? Math.min(100, (loadedBytes / totalBytes) * 100) : 0;
+    expectedBytes > 0
+      ? Math.min(100, (loadedBytes / expectedBytes) * 100)
+      : 0;
 
   return (
     <Section label={resolvePhrase("ui.provider.settings.offline.heading", caregiverLang)} t={t}>
@@ -214,8 +221,9 @@ export function DiagnosticsSection({ t }: Props) {
           >
             <span>{resolvePhrase("ui.provider.settings.offline.downloading", caregiverLang)}</span>
             <span>
-              {formatBytes(loadedBytes)} / {formatBytes(totalBytes || null)}
-              {totalBytes > 0 && ` (${percent.toFixed(0)}%)`}
+              {formatBytes(loadedBytes)} /{" "}
+              {formatBytes(expectedBytes > 0 ? expectedBytes : null)}
+              {expectedBytes > 0 && ` (${percent.toFixed(0)}%)`}
             </span>
           </div>
           <div

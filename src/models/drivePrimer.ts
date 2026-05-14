@@ -1,4 +1,4 @@
-import { loadManifest } from "./modelsManifest";
+import { loadManifest, totalBytes } from "./modelsManifest";
 import { primeOffline } from "./offlinePrimer";
 import { useOfflineStore } from "../stores/offlineStore";
 import { ov } from "../audit/workflow";
@@ -33,6 +33,13 @@ export async function drivePrimer(opts?: {
   let downloadedCount = 0;
   try {
     const manifest = await loadManifest();
+    // Publish the manifest's total expected bytes now so the UI has a fixed
+    // denominator before primeOffline starts emitting per-file progress.
+    const expected = Object.values(manifest.models).reduce(
+      (sum, m) => sum + totalBytes(m),
+      0,
+    );
+    useOfflineStore.getState().beginPrimerRun(expected);
     await ov.workflow(
       "model_priming",
       (ctx) =>

@@ -19,12 +19,26 @@ interface OfflineState {
   primerRunning: boolean;
   /** Progress keyed `${model}/${file}`. */
   progress: Record<string, FileProgress>;
+  /**
+   * Total expected bytes for the current/most-recent primer run, derived from
+   * the manifest at run start. The UI uses this as a fixed denominator so the
+   * progress bar advances monotonically — summing `progress[].total` would
+   * grow each time a new file begins downloading.
+   */
+  expectedBytes: number;
   /** Per-model verification results from the last check. */
   verified: Partial<Record<ModelId, ModelVerifyStatus>>;
   /** Last primer-complete timestamp (ms since epoch) or null. */
   lastVerifiedAt: number | null;
 
   setPrimerRunning(v: boolean): void;
+  /**
+   * Snap the store to a fresh starting state for a new primer run: clear
+   * stale per-file progress and publish the expected total. Does NOT change
+   * `primerRunning` — the caller flips that early (on click) so the UI
+   * reflects the run before the manifest finishes loading.
+   */
+  beginPrimerRun(expectedBytes: number): void;
   reportProgress(model: ModelId, file: string, loaded: number, total: number): void;
   setModelVerified(model: ModelId, status: ModelVerifyStatus): void;
   markPrimerComplete(): void;
@@ -34,10 +48,12 @@ interface OfflineState {
 export const useOfflineStore = create<OfflineState>((set) => ({
   primerRunning: false,
   progress: {},
+  expectedBytes: 0,
   verified: {},
   lastVerifiedAt: null,
 
   setPrimerRunning: (v) => set({ primerRunning: v }),
+  beginPrimerRun: (expectedBytes) => set({ progress: {}, expectedBytes }),
   reportProgress: (model, file, loaded, total) =>
     set((s) => ({
       progress: { ...s.progress, [`${model}/${file}`]: { loaded, total } },
@@ -49,6 +65,7 @@ export const useOfflineStore = create<OfflineState>((set) => ({
     set({
       primerRunning: false,
       progress: {},
+      expectedBytes: 0,
       verified: {},
       lastVerifiedAt: null,
     }),
