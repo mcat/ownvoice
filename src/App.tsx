@@ -35,7 +35,7 @@ import { StaffSessionTimer } from "./components/shared/StaffSessionTimer";
 import { ResumePromptBanner } from "./components/diag/ResumePromptBanner";
 import { Setup } from "./components/settings/Setup";
 import { getModelManager } from "./models/modelManager";
-import { bootTTSWasm, bootSTT, verifyAllOnBoot, deferIfReload } from "./models/bootModels";
+import { bootTTSWasm, bootSTT, verifyAllOnBoot } from "./models/bootModels";
 import { drivePrimer } from "./models/drivePrimer";
 import { resumePendingOnVisible } from "./models/offlineResume";
 import { useOfflineStore } from "./stores/offlineStore";
@@ -144,28 +144,22 @@ export function App() {
 
   // Initialize model manager and boot the TTS + STT workers.
   useEffect(() => {
-    // On manual nav-bar refresh, Safari briefly rejects valid same-origin
-    // subresource fetches (worker scripts, /models/*, ORT .wasm) with
-    // "access control checks". The window is short; deferring boot moves
-    // past it. Cold navigations resolve immediately (no delay).
-    void deferIfReload().then(() => {
-      // STT begins booting immediately, in parallel with GPU TTS shader
-      // compile. An earlier shape (pre-#234) that chained STT behind
-      // initGPU() meant STT could not start downloading until TTS shader
-      // compile finished — minutes on cold load. The parallel pattern
-      // restored by Listen v2 (see #233 hints) is what makes the pill
-      // available within seconds of boot rather than minutes.
-      bootSTT();
+    // STT begins booting immediately, in parallel with GPU TTS shader
+    // compile. An earlier shape (pre-#234) that chained STT behind
+    // initGPU() meant STT could not start downloading until TTS shader
+    // compile finished — minutes on cold load. The parallel pattern
+    // restored by Listen v2 (see #233 hints) is what makes the pill
+    // available within seconds of boot rather than minutes.
+    bootSTT();
 
-      // GPU TTS in parallel; defer the WASM TTS fallback until GPU TTS resolves
-      // either way, to avoid concurrent ORT-WASM/ORT-WebGPU init contention.
-      initGPU(MODEL_URLS.tts).then(ok => {
-        console.log("[OwnVoice] GPU TTS:", ok ? "ready" : "unavailable");
-        bootTTSWasm();
-      }).catch(err => {
-        console.warn("[OwnVoice] GPU TTS error:", err);
-        bootTTSWasm();
-      });
+    // GPU TTS in parallel; defer the WASM TTS fallback until GPU TTS resolves
+    // either way, to avoid concurrent ORT-WASM/ORT-WebGPU init contention.
+    initGPU(MODEL_URLS.tts).then(ok => {
+      console.log("[OwnVoice] GPU TTS:", ok ? "ready" : "unavailable");
+      bootTTSWasm();
+    }).catch(err => {
+      console.warn("[OwnVoice] GPU TTS error:", err);
+      bootTTSWasm();
     });
     // Run OPFS integrity check in parallel, then auto-prime if needed.
     // The primer moves models into OPFS with resumable downloads + integrity
