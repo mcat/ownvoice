@@ -33,6 +33,7 @@ const NON_PHI_ATTR_KEYS: ReadonlySet<string> = new Set([
   ATTR.AUDIT_DROPPED_COUNT,
   ATTR.AUDIT_DEGRADED_REASON,
   ATTR.AUDIT_BYTES_USED,
+  ATTR.GRANTED,
 ]);
 
 describe("PHI redaction policy completeness", () => {
