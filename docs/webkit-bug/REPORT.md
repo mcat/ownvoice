@@ -29,18 +29,39 @@ Before filing, three existing bugs were reviewed:
   or `data:` URLs. Our repro uses plain `new Worker("worker.js")`
   with an `http(s):` URL.
 
-**Workaround hypothesis not yet tested:** [Predrag Gruevski's
+**Workaround tested and falsified (2026-05-14):** [Predrag Gruevski's
 write-up](https://predr.ag/blog/debugging-safari-if-at-first-you-succeed/)
-of #245346 shows that `Cache-Control: no-store` on the worker script
-response sidesteps the original 304-revalidation path. We have NOT
-yet tested whether this clears our 2026 occurrence — the OwnVoice
-production setup serves `/assets/*Worker-*.js` via Cloudflare Pages
-which overrides `Cache-Control` headers at serve time
-([CF Pages issue](https://github.com/cloudflare/wrangler-legacy/issues/3253),
-tracked in our repo as `_headers` comment in PR #131). Worth retrying
-this workaround via a Cloudflare Pages Function instead of `_headers`,
-or against a different host that respects the header. Marked as "open
-follow-up" in our internal notes.
+of #245346 documented that `Cache-Control: no-store` on the worker
+script response sidesteps the original 304-revalidation path. We
+deployed this via a Cloudflare Pages Function middleware (since
+`_headers` Cache-Control is overridden by CF Pages for static
+assets) and confirmed the header was applied to the response:
+
+```
+$ curl -sI https://<preview>/assets/sttWorker-<hash>.js
+HTTP/2 200
+content-type: application/javascript
+cache-control: no-store    ← workaround applied
+cross-origin-embedder-policy: require-corp
+cross-origin-resource-policy: same-origin
+```
+
+On Cmd+R refresh, the **exact same** errors fired:
+
+```
+Cannot load .../assets/sttWorker-<hash>.js due to access control checks.
+Cannot load .../assets/ttsWorker-<hash>.js due to access control checks.
+[OwnVoice:STT:GPU] Error: "Load failed"
+[OwnVoice:TTS:GPU] init error: "Load failed"
+```
+
+This confirms our 2026 occurrence is a **different code path** from
+the original 245346 (which the predr.ag workaround addressed) —
+same error string, different mechanism. The predr.ag workaround
+relies on `no-store` preventing cache revalidation entirely, so the
+304-CORP-drop bug never triggers; our error fires on what should be
+fresh (`no-store`) full-200 responses, so the underlying mechanism
+must be unrelated to cache revalidation.
 
 ---
 
@@ -112,7 +133,7 @@ worker is then unusable.
 | Service worker interference | Repro has no SW; bug still fires | Not SW |
 | Stale cached worker URLs | New origin, no cache, hard reload — bug still fires on subsequent reload | Not cache |
 | Same root cause as #245346 (304/CORP on cache hit) | #245346 was RESOLVED FIXED Oct 2022; we observe the same console string four years later with COEP off | Likely a regression or adjacent path |
-| `Cache-Control: no-store` on worker script (predr.ag workaround for #245346) | NOT YET TESTED on our infra — blocked by CF Pages overriding `Cache-Control` on static assets; needs a Pages Function or different host | UNKNOWN — worth testing |
+| `Cache-Control: no-store` on worker script (predr.ag workaround for #245346) | Pages Function middleware applies `no-store` to `/assets/*Worker-*.js`; verified by curl that the header reaches the response. Cmd+R on Safari still produces the same access-control-checks errors. | Falsified — same error string, different mechanism than the original 245346 |
 
 The failure surface that survives all these tests is: **WebKit's
 worker-script resource-load pathway on reloaded documents.** That's the
