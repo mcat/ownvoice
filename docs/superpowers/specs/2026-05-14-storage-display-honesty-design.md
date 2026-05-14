@@ -61,14 +61,28 @@ unavailable.
 or
 
 ```
-⚠️ Storage not protected — models may be removed after ~7 days of disuse
-   Approximately {days} days remaining
+⚠️ Storage not protected — add this app to Home Screen to keep models
+   on the device
+   Last used: {relative}
    [ Check protection status ]
 ```
 
-The countdown line and the action button are only shown in the unprotected
-state. See "Persistence and the 7-day countdown" below for the timer
-mechanics.
+The "Last used" line and the action button are only shown in the
+unprotected state. See "Last-used time and what it represents" below for
+how `{relative}` is computed.
+
+**Why no forward-looking countdown.** An earlier draft of this spec
+proposed "approximately N days remaining" based on a 7-day window from
+the WebKit ITP guidance. That was dropped: the browser does not expose
+eviction timing through any API, the 7-day figure comes from a 2020
+WebKit blog post that documents IndexedDB/SW behavior (not OPFS
+specifically), Chrome and Firefox do not apply the same rule at all, and
+even on Safari the rule is voided when the site is added to the Home
+Screen. A countdown built on those caveats implies precision the platform
+doesn't promise. Reporting the backward-looking "last used" timestamp is
+honest — the clinician can interpret risk from it themselves — and the
+mitigation hint ("add to Home Screen") points at the actual fix rather
+than burning the user's attention on a fake clock.
 
 The action button copy is **"Check protection status"** — not "Request
 protection" — because `navigator.storage.persist()` does not prompt the user
@@ -88,35 +102,47 @@ The `%` figure is removed from the headline. The 85% threshold is still
 computed internally to trigger the low-storage warning state and the existing
 "Clear audio cache" recovery flow — that behavior is unchanged.
 
-## Persistence and the 7-day countdown
+## Last-used time and what it represents
 
-WebKit ITP and analogous policies in other browsers evict storage from
-origins that have not received user interaction for ~7 days unless the origin
-holds `persisted()` permission. Surfacing this risk requires three pieces:
+Row 2's "Last used: {relative}" line is a backward-looking report — not a
+prediction — that surfaces how stale this install is. Two pieces:
 
 1. **A persistence probe.** `useStorageHealth` polls
    `navigator.storage.persisted()` alongside `estimate()` and exposes
    `persisted: boolean | null` (null when the API is absent).
 
-2. **A user-interaction timestamp.** Add `lastInteractionAt: number | null` to
-   `settingsStore` (already persisted to IndexedDB via the zustand IDB
-   adapter). Update via a document-level `pointerdown` listener installed at
-   app boot, throttled to once per minute to avoid write storms. The
+2. **A user-interaction timestamp.** Add `lastInteractionAt: number | null`
+   to `settingsStore` (already persisted to IndexedDB via the zustand IDB
+   adapter). Update via a document-level `pointerdown` listener installed
+   at app boot, throttled to once per minute to avoid write storms. The
    timestamp records that *something* user-driven happened — not which
-   action — which is precisely what WebKit's eviction heuristic counts.
+   action — which mirrors the kind of signal browser eviction heuristics
+   actually count (a first-party user gesture inside the page).
 
-3. **A countdown derivation.** When `persisted === false`, render
-   `Math.max(0, Math.ceil((lastInteractionAt + 7 * 24 * 60 * 60 * 1000 - Date.now()) / DAY_MS))`.
-   When the value reaches 0, the copy changes to "Storage may have been
-   cleared — re-verify on next use" and the "Check existing models" button
-   carries elevated visual prominence. Frame the 7 days as *approximate* in
-   the UI copy — different browsers apply different rules, and the spec
-   doesn't promise precision we can't deliver.
+   On first store hydration, if `lastInteractionAt === null`, initialise it
+   to `Date.now()` so the "Last used" line never reads a missing value for
+   a freshly installed app. The pointerdown listener takes over from there.
 
-The countdown is a defensive display: it only matters on browsers that do
-ITP-style eviction *and* refuse persistence. On Chrome desktop with
-persistence granted, Row 2 reads "Storage protected" and the countdown line
-never appears.
+**Relative formatting.** `{relative}` is computed by
+`new Intl.RelativeTimeFormat(caregiverLang, { numeric: 'auto' }).format(-daysSince, 'day')`,
+where `daysSince = Math.floor((Date.now() - lastInteractionAt) / DAY_MS)`.
+`Intl.RelativeTimeFormat` handles per-locale pluralization and the
+"today"/"yesterday" cases natively across all 24 supported locales (the
+API is available in every modern Safari, Chrome, and Firefox, including
+iPadOS 26 Safari per `caniuse`). The locale string for Row 2 contains a
+single `{relative}` placeholder rather than separate plural variants.
+
+**What this line is *not*.** It is not a contract with the browser. Our
+`lastInteractionAt` is the page's idea of last interaction; WebKit's
+eviction heuristic may use a different clock with smoothing we can't
+inspect. The display is a useful hint, paired with the protection-status
+warning and the "add to Home Screen" mitigation; the clinician interprets
+risk from those three signals together rather than from a fake countdown.
+
+The "Last used" line is rendered only when `persisted === false`. When
+persistence is granted, the row is just "Storage protected" with no
+last-used data — the information would be redundant since protected
+storage isn't at eviction risk regardless of staleness.
 
 ## Background re-request of persistence
 
@@ -184,14 +210,17 @@ Add five new keys with `{value}` placeholder slots, in the existing
 |-----|---------------|
 | `models_on_device` | `Voice & speech models: {bytes} on device` |
 | `storage_protected` | `Storage protected — models will stay on this device` |
-| `storage_not_protected` | `Storage not protected — models may be removed after ~7 days of disuse` |
-| `storage_days_remaining` | `Approximately {days} days remaining` |
+| `storage_not_protected` | `Storage not protected — add this app to Home Screen to keep models on the device` |
+| `storage_last_used` | `Last used: {relative}` |
 | `check_protection_button` | `Check protection status` |
 | `origin_usage_estimate` | `Origin usage: ~{used} used of ~{total} available (estimate)` |
 
-(The {bytes}, {days}, {used}, {total} placeholders use the existing
-`.replace("{name}", value)` pattern already used by the audio-cache
-"Rebuilding: {current}/{total}" string.)
+The `{bytes}`, `{used}`, `{total}` placeholders use the existing
+`.replace("{name}", value)` pattern (same as the audio-cache
+"Rebuilding: {current}/{total}" string). The `{relative}` slot is filled by
+`Intl.RelativeTimeFormat`, so a single string template covers
+"today", "yesterday", "2 days ago", etc. in every locale without
+language-specific plural keys.
 
 **Remove** the three keys made obsolete by Row 3's reframing, in all 24
 locale files:
@@ -230,10 +259,14 @@ audio cache" button below for the recovery flow.
 - Row 1 renders verified-state copy when all models are verified, the
   needs-retry copy when any are not, and the never-run copy when
   `expectedBytes === 0`.
-- Row 2 renders the protected copy, the unprotected copy + countdown, or is
-  absent when `persisted === null`.
-- Countdown shows the right day count for known `lastInteractionAt` values
-  and rolls to the "may have been cleared" copy at day 0.
+- Row 2 renders the protected copy with no "Last used" line when
+  `persisted === true`, the unprotected copy + "Last used: {relative}" line
+  when `persisted === false`, and is absent entirely when `persisted === null`.
+- "Last used" formatting passes a fixed `lastInteractionAt` and a fixed
+  "now" (vitest fake timers), then asserts the rendered text contains the
+  expected `Intl.RelativeTimeFormat` output for English ("today",
+  "yesterday", "3 days ago"). One spot-check for a non-en locale (e.g. `de`)
+  proves the locale propagates.
 - Row 3 renders the `(estimate)` framing and never shows a headline `%`.
 - The 85% low-storage threshold still triggers the existing "Clear audio
   cache" button.
@@ -243,21 +276,25 @@ audio cache" button below for the recovery flow.
 - The three removed locale keys are referenced only in `DiagnosticsSection`
   — confirmed by grep over `src/`. Removing them from every locale file in
   the same change is safe and avoids dangling translations.
-- `lastInteractionAt` is new state; existing IndexedDB rows will hydrate with
-  `null` and the boot listener will write the first value on the next
-  pointerdown. Until then the countdown row falls back to "Approximately 7
-  days remaining" using `now()` as the implicit anchor.
+- `lastInteractionAt` is new state. Existing IndexedDB rows hydrate with
+  `null`; on first hydration the store seeds it to `Date.now()` so the
+  "Last used: today" reading is honest from the moment the app opens. The
+  pointerdown listener takes over within the first 60 seconds of any real
+  use.
 
 ## Risks
 
-- **24-locale translation churn.** Five new keys × 23 non-en locales = 115
+- **24-locale translation churn.** Six new keys × 23 non-en locales = 138
   strings. Mitigate by keeping the strings short and parametric, and by
   generating drafts with machine translation, then asking the user to spot
   check Arabic, Hebrew, Japanese, Korean, and Chinese for layout fit.
-- **WebKit eviction rules drift.** The 7-day figure is heuristic, not
-  contractual. Framing as "approximately" hedges this. If WebKit publishes a
-  longer/shorter window, the constant is in one place
-  (`PERSISTENCE_GRACE_DAYS` in the hook).
+  `Intl.RelativeTimeFormat` removes the per-language plural variant problem
+  for the "Last used" line.
+- **`lastInteractionAt` is a proxy, not the browser's clock.** Our
+  pointerdown timestamp is what *we* observed; WebKit's eviction heuristic
+  may apply its own smoothing or use a different boundary. The "Last used"
+  line is therefore presented as a backward-looking fact ("Last used: 3
+  days ago"), not as a prediction of when eviction will occur.
 - **Manifest sum vs disk reality.** Row 1's "1.43 GB on device" is the
   manifest sum, not the actual OPFS file sizes. They should match when
   verification is green; if a file is partial, integrity check flips the
