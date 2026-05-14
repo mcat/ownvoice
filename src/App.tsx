@@ -45,6 +45,13 @@ import { primeSpeechSynthesis, setFallbackVoice } from "./speak";
 import * as audioCacheRunner from "./models/audioCacheRunner";
 import { embeddingFingerprint } from "./models/audioCache";
 
+/**
+ * Defer-on-reload budget. Calibrated empirically against the Safari
+ * worker-spawn race window via `?probe-worker-race=true` (PR #255).
+ * Set to observed-max + 1500ms safety margin. Cold loads use 0.
+ */
+const RELOAD_WORKER_DEFER_MS = 3000; // placeholder — calibrate before merge
+
 export function App() {
   // Theme state — useTheme attaches the system listener and syncs side effects.
   // The main.tsx subscribe callback handles DOM updates for the root div.
@@ -144,47 +151,67 @@ export function App() {
 
   // Initialize model manager and boot the TTS + STT workers.
   useEffect(() => {
-    // STT begins booting immediately, in parallel with GPU TTS shader
-    // compile. An earlier shape (pre-#234) that chained STT behind
-    // initGPU() meant STT could not start downloading until TTS shader
-    // compile finished — minutes on cold load. The parallel pattern
-    // restored by Listen v2 (see #233 hints) is what makes the pill
-    // available within seconds of boot rather than minutes.
-    bootSTT();
+    let unsubResume: (() => void) | null = null;
 
-    // GPU TTS in parallel; defer the WASM TTS fallback until GPU TTS resolves
-    // either way, to avoid concurrent ORT-WASM/ORT-WebGPU init contention.
-    initGPU(MODEL_URLS.tts).then(ok => {
-      console.log("[OwnVoice] GPU TTS:", ok ? "ready" : "unavailable");
-      bootTTSWasm();
-    }).catch(err => {
-      console.warn("[OwnVoice] GPU TTS error:", err);
-      bootTTSWasm();
-    });
-    // Run OPFS integrity check in parallel, then auto-prime if needed.
-    // The primer moves models into OPFS with resumable downloads + integrity
-    // verification. Without this, the app still works on first boot (workers
-    // fetch via the SW → network), but the bytes don't persist in a way that
-    // survives storage-pressure eviction.
-    verifyAllOnBoot()
-      .then(() => {
-        const verified = useOfflineStore.getState().verified;
-        const needsPriming = Object.values(verified).some(
-          (s) => s !== "verified",
-        );
-        if (needsPriming) {
-          drivePrimer().catch((err) =>
-            console.warn("[OwnVoice] auto-prime failed:", err),
+    // On Safari (desktop + iPadOS), manual nav-bar refresh enters a
+    // transient window during which `new Worker(...)` script loads fail
+    // with "Cannot load … due to access control checks" — direct
+    // `fetch()` to the same URLs succeeds during the same window
+    // (verified via probe in PR #255), so the bug is specific to worker
+    // construction, not the network or COEP. The race window outlasts
+    // PR #253's 1.8s retry budget. Defer worker spawns on any reload-
+    // type navigation; cold loads spawn immediately. `location.reload()`
+    // doesn't hit the bug but we can't distinguish it from manual refresh
+    // in `navigation.type`, so we eat the latency cost on both.
+    const navEntry = performance.getEntriesByType(
+      "navigation",
+    )[0] as PerformanceNavigationTiming | undefined;
+    const isReload = navEntry?.type === "reload";
+    const deferMs = isReload ? RELOAD_WORKER_DEFER_MS : 0;
+
+    const bootEverything = (): void => {
+      // STT begins booting immediately, in parallel with GPU TTS shader
+      // compile. An earlier shape (pre-#234) that chained STT behind
+      // initGPU() meant STT could not start downloading until TTS shader
+      // compile finished — minutes on cold load.
+      bootSTT();
+
+      // GPU TTS in parallel; defer the WASM TTS fallback until GPU TTS
+      // resolves either way, to avoid concurrent ORT-WASM/ORT-WebGPU
+      // init contention.
+      initGPU(MODEL_URLS.tts)
+        .then((ok) => {
+          console.log("[OwnVoice] GPU TTS:", ok ? "ready" : "unavailable");
+          bootTTSWasm();
+        })
+        .catch((err) => {
+          console.warn("[OwnVoice] GPU TTS error:", err);
+          bootTTSWasm();
+        });
+      // Run OPFS integrity check in parallel, then auto-prime if needed.
+      verifyAllOnBoot()
+        .then(() => {
+          const verified = useOfflineStore.getState().verified;
+          const needsPriming = Object.values(verified).some(
+            (s) => s !== "verified",
           );
-        }
-      })
-      .catch((err) => console.warn("[OwnVoice] boot verify failed:", err));
-    // Resume any interrupted model downloads — fires on boot if partials
-    // exist, and again whenever the tab returns to the foreground.
-    const unsubResume = resumePendingOnVisible();
-    primeSpeechSynthesis();
+          if (needsPriming) {
+            drivePrimer().catch((err) =>
+              console.warn("[OwnVoice] auto-prime failed:", err),
+            );
+          }
+        })
+        .catch((err) => console.warn("[OwnVoice] boot verify failed:", err));
+      // Resume any interrupted model downloads — fires on boot if partials
+      // exist, and again whenever the tab returns to the foreground.
+      unsubResume = resumePendingOnVisible();
+      primeSpeechSynthesis();
+    };
+
+    const timer = setTimeout(bootEverything, deferMs);
     return () => {
-      unsubResume();
+      clearTimeout(timer);
+      unsubResume?.();
     };
   }, []);
 
