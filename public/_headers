@@ -1,82 +1,32 @@
 /sw.js
   Service-Worker-Allowed: /app/
 
-# /app/* uses COEP `require-corp` rather than `credentialless`: iPadOS 26
-# Safari does not enable crossOriginIsolated for documents served with
-# credentialless, even when all subresources have appropriate CORP. WebKit's
-# require-corp path is more reliable. Subresources already comply:
-# /assets/*, /tts-gpu-worker.js, /stt-gpu-worker.js → CORP same-origin;
-# /ort/*, /models/* → CORP cross-origin. The meta-tag fallback in
-# /app/index.html still says credentialless; the HTTP header (this one) wins.
-/app/*
-  Cross-Origin-Opener-Policy: same-origin
-  Cross-Origin-Embedder-Policy: require-corp
+# DISCRIMINATOR EXPERIMENT (branch experiment/coep-off-discriminator):
+# COEP/COOP intentionally removed to test whether the "access control checks"
+# console errors on manual nav-bar refresh are caused by COEP enforcement.
+# If errors persist on this preview, COEP is not the cause and the
+# drop-SAB fix is invalid. If errors are gone, drop-SAB is confirmed.
+# Subsequent CORP entries are kept harmless — CORP without COEP is a no-op.
+#
+# DO NOT MERGE THIS BRANCH. It disables crossOriginIsolated entirely,
+# which silently degrades ORT to single-threaded WASM.
 
-# Workers loaded into the crossOriginIsolated /app/* context need their own
-# COEP header on the script response — without it the browser refuses to
-# instantiate the worker (DevTools: "Cross-Origin-Embedder-Policy: NOT-SET").
-# `credentialless` matches the parent page; CORP same-origin keeps the
-# scripts un-embeddable cross-origin.
-#
-# Note on Cache-Control: do NOT add `Cache-Control:` here. CF Pages
-# unconditionally substitutes its default (`public, max-age=14400,
-# must-revalidate`) for static-asset Cache-Control at serve time,
-# ignoring whatever `_headers` specifies — confirmed empirically in
-# PR #131 and tracked in issue #127. The same `_headers` block does
-# apply COOP/COEP/CORP correctly to these files; only Cache-Control
-# is silently dropped on static assets.
-#
-# Practical consequence: a future header-only change to these files
-# (e.g., tightening COEP) will be shadowed by edge-cache entries
-# revalidating with 304 against unchanged file bodies. Workaround:
-# bump the worker file body in the same commit (a one-line marker
-# comment is enough) — see PR #126 for the pattern.
 /tts-gpu-worker.js
-  Cross-Origin-Embedder-Policy: require-corp
   Cross-Origin-Resource-Policy: same-origin
 
 /stt-gpu-worker.js
-  Cross-Origin-Embedder-Policy: require-corp
   Cross-Origin-Resource-Policy: same-origin
 
-# Vite emits the bundled WASM workers (ttsWorker, sttWorker) under
-# /assets/. Same COEP requirement as the GPU workers when loaded from /app/.
 /assets/*
-  Cross-Origin-Embedder-Policy: require-corp
   Cross-Origin-Resource-Policy: same-origin
 
-# ORT's `simd-threaded` build spawns sub-workers that re-import the .mjs
-# glue from a worker context. Sub-worker entry-point scripts loaded into
-# a crossOriginIsolated page strictly require their response to carry a
-# COEP header — same constraint we hit for /tts-gpu-worker.js in #125.
-# Without these, Chrome surfaces it in DevTools as
-# "(blocked:COEP-framed resource needs COEP header)".
-#
-# Applied to /ort/* rather than narrowed to /ort/v*/*.mjs because
-# _headers' multi-splat patterns appear not to bind reliably (the
-# narrower form was tried in #134 and didn't apply — investigated and
-# documented in #135). For .wasm files in this dir served by the Pages
-# Function (functions/ort/[[path]].ts), the Function's own headers take
-# precedence per-header — Function sets CORP, _headers adds COEP since
-# Function doesn't.
 /ort/*
   Cache-Control: public, max-age=31536000, immutable
-  Cross-Origin-Embedder-Policy: require-corp
   Cross-Origin-Resource-Policy: cross-origin
 
 /models/*
   Cache-Control: public, max-age=31536000, immutable
 
-# Same-origin subresources fetched by the bundle under /app/* (require-corp
-# document) need explicit CORP. A survey of the live preview deploys (curl
-# against `/models-manifest.json`, `/manifest.webmanifest`, `/icons/*`,
-# `/splash/*`) showed these paths returning no CORP header, which is a
-# silent gap — the SW's now-falsified `withIsolationHeaders` wrap was
-# masking it for shell-asset paths it cached, but the manifest/icon fetches
-# from main-thread / OS PWA-install paths would have been refused under
-# strict require-corp enforcement. Filling them defensively here so the
-# headers are correct regardless of whether the request goes through the
-# SW or direct to CF.
 /models-manifest.json
   Cross-Origin-Resource-Policy: same-origin
 /manifest.webmanifest

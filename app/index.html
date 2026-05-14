@@ -25,14 +25,9 @@
     <meta name="format-detection" content="telephone=no, address=no, email=no, date=no" />
     <meta name="theme-color" content="#FAFAF8" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#111113" media="(prefers-color-scheme: dark)" />
-    <!--
-      Defense-in-depth for crossOriginIsolated. COOP cannot be set via meta
-      (HTTP header only — dev server + sw.js handle that), but COEP can, and
-      a missing COEP header is the more common failure mode on static hosts.
-      This tag ensures the document is COEP-gated even if the serving layer
-      forgets the header.
-    -->
-    <meta http-equiv="Cross-Origin-Embedder-Policy" content="credentialless" />
+    <!-- experiment/coep-off-discriminator: COEP meta intentionally removed. -->
+    <!-- DO NOT MERGE — for discriminator test only. -->
+
     <link rel="canonical" href="https://www.ownvoice.icu/app/" />
     <link rel="manifest" href="/manifest.json" />
     <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
