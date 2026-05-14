@@ -3,6 +3,15 @@ import { MODEL_URLS } from "./types";
 import { loadManifest, type ModelId } from "./modelsManifest";
 import { useOfflineStore } from "../stores/offlineStore";
 import { spawnBlobWorker } from "./blobWorker";
+// `?worker&url` imports get the URL of the bundled worker without
+// invoking Vite's `new Worker(new URL(...))` transform, so we can fetch
+// the bytes ourselves and feed them through spawnBlobWorker. Without
+// this import shape, `new URL("./sttWorker.ts", import.meta.url)`
+// resolves to the raw `.ts` source path because Vite only applies the
+// worker-bundling transform when the URL is passed directly to
+// `new Worker(...)`.
+import sttWorkerUrl from "./sttWorker.ts?worker&url";
+import ttsWorkerUrl from "./ttsWorker.ts?worker&url";
 
 /**
  * Boot all on-device models.
@@ -81,10 +90,9 @@ async function bootSTTWasm(): Promise<void> {
   const mgr = getModelManager();
   console.log("[OwnVoice] STT: using WASM fallback");
   try {
-    const sttWorker = await spawnBlobWorker(
-      new URL("./sttWorker.ts", import.meta.url),
-      { type: "module" },
-    );
+    const sttWorker = await spawnBlobWorker(sttWorkerUrl, {
+      type: "module",
+    });
 
     sttWorker.onmessage = (e) => {
       if (e.data.type === "ready") {
@@ -117,10 +125,9 @@ export async function bootTTSWasm(): Promise<void> {
   await mgr.init();
 
   try {
-    const ttsWorker = await spawnBlobWorker(
-      new URL("./ttsWorker.ts", import.meta.url),
-      { type: "module" },
-    );
+    const ttsWorker = await spawnBlobWorker(ttsWorkerUrl, {
+      type: "module",
+    });
 
     let ttsInitDone = false;
     ttsWorker.onmessage = (e) => {
