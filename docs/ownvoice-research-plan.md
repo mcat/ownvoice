@@ -16,7 +16,7 @@ This document describes the research plan for a clinical validation study of Own
 
 ### 2.1 Communication Failure in the ICU
 
-Approximately 33% of ICU patients meet AAC candidacy criteria from endotracheal intubation, tracheostomy, or neurological impairment (Zubow & Hurtig, 2013). Despite this prevalence, patients use alternative communication modes during only 11% of their ICU stay (Freeman-Sanderson et al., 2019), and staff report difficulty communicating with patients 35% of the time (Happ et al., 2011). Communication failure is associated with increased anxiety, depression, delirium, longer ICU stays, and adverse events (Happ et al., 2011).
+Approximately 33% of hospitalized patients meet AAC candidacy criteria from endotracheal intubation, tracheostomy, or neurological impairment (Zubow & Hurtig, 2013); within the ICU specifically, Freeman-Sanderson et al. (2019) observed that roughly one-third of the ICU caseload experienced communication difficulty across 232 occupied bed-days at a tertiary Australian hospital. Despite this prevalence, patients used alternative communication modes during only 11% of their ICU time, and staff reported difficulty communicating with patients on 35% of bed-days, with inability to communicate in 49% of those (Freeman-Sanderson et al., 2019). The candidacy figure is higher in the specific population OwnVoice serves: 53.9% of mechanically ventilated patients meet basic communication criteria — awake, alert, and responsive — for at least one 12-hour nursing shift while on MV ≥ 2 consecutive days (Happ et al., 2014). Communication failure is associated with increased anxiety, depression, delirium, longer ICU stays, and adverse events (Happ et al., 2011).
 
 Existing tablet-based AAC tools for the ICU (VidaTalk, CommuniCare, YoDoc) are essentially static phrase boards: pre-translated content played back in a generic synthetic or pre-recorded voice (Dind, Starr, & Arora, 2021). The preclinical comparison of nine iPad-based ICU communication apps in *Indian Journal of Critical Care Medicine* (Dind et al., 2021) confirms that none of the three offer voice cloning, on-device language models for contextual sentence suggestion, or neural speech-to-text. They do not address four gaps OwnVoice targets: (1) speech in the patient's own voice via zero-shot voice cloning, (2) AI-assisted sentence construction from limited reference content, (3) structured goals-of-care conversations using the SICG framework, and (4) on-device neural inference that eliminates cloud dependency, BAA negotiation, and PHI egress in the first place.
 
@@ -434,7 +434,7 @@ Brooke, J. (1996). SUS: A "quick and dirty" usability scale. Usability Evaluatio
 
 Carroll, S. M. (2007). Silent, slow lifeworld: The communication experience of nonvocal ventilated patients. Qualitative Health Research, 17(9), 1165–1177.
 
-Freeman-Sanderson, A., et al. (2019). Challenges of patient communication in the ICU. Australian Critical Care, 32(S1), 36.
+Freeman-Sanderson, A., Morris, K., & Elkins, M. (2019). Characteristics of patient communication and prevalence of communication difficulty in the intensive care unit: An observational study. Australian Critical Care, 32(5), 373–377. https://doi.org/10.1016/j.aucc.2018.09.002
 
 Happ, M. B., et al. (2011). Nurse-patient communication interactions in the ICU. American Journal of Critical Care, 20(2), e28–e40.
 

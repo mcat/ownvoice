@@ -115,6 +115,21 @@ Research that shaped the phrase library, communication categories, and emotional
 
 ---
 
+### ICU-Talk Phrase Capture
+
+> MacAulay, F., Judson, A., Etchels, M., Ashraf, S., Ricketts, I. W., Waller, A., Brodie, J. K., Alm, N., Warden, A., Shearer, A. J., & Gordon, B. (2002). ICU-Talk, a communication aid for intubated intensive care patients. In *Proceedings of the Fifth International ACM Conference on Assistive Technologies (Assets '02)*, 226–227. [doi.org/10.1145/638249.638290](https://doi.org/10.1145/638249.638290) — see also: *Capturing phrases for ICU-Talk* (companion paper). Local copies: `docs/research/icu-talk/`.
+
+**Finding:** Empirical capture of the phrase vocabulary intubated ICU patients actually need, derived from observed nurse-patient interactions and pilot deployment of a computerized communication aid in an ICU. One of the earliest evidence-based ICU AAC phrase libraries.
+
+**Where it's applied:**
+
+| Decision | Implementation |
+|---|---|
+| Phrase library structured by observed ICU communication categories, not generic hospital-board content | `src/data/phraseRegistry.ts` (Quick, I Need, I Feel, Pain, Ask) — combined with SPEACS-2 categories above |
+| ICU-specific vocabulary (suction, ventilator, restraints) | `src/data/locales/en.ts` |
+
+---
+
 ### AAC Candidacy Among Mechanically Ventilated Patients
 
 > Happ, M. B., Seaman, J. B., Nilsen, M. L., Sciulli, A., Tate, J. A., Saul, M., & Barnato, A. E. (2014). The number of mechanically ventilated ICU patients meeting communication criteria. *Heart & Lung*, 44(1), 45–49. [doi.org/10.1016/j.hrtlng.2014.08.010](https://doi.org/10.1016/j.hrtlng.2014.08.010)
