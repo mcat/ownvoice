@@ -33,7 +33,16 @@ export async function spawnBlobWorker(
       `spawnBlobWorker: fetch ${urlStr} failed: ${response.status}`,
     );
   }
-  const scriptText = await response.text();
+  let scriptText = await response.text();
+  // Safari resolves bare absolute paths (starting with "/") against the
+  // blob:URL base, which fails with "Module name '/foo' does not resolve
+  // to a valid URL". Rewrite absolute-path imports to full
+  // origin-qualified URLs so they resolve against the document origin.
+  // Matches `from "/..."`, `from "/...";`, `import("/...")`, etc.
+  scriptText = scriptText.replace(
+    /(from\s*["']|import\s*\(\s*["'])(\/[^"'\s)]+)(["'])/g,
+    (_, prefix, path, suffix) => `${prefix}${location.origin}${path}${suffix}`,
+  );
   const blob = new Blob([scriptText], { type: "application/javascript" });
   const blobUrl = URL.createObjectURL(blob);
   // Note: we don't revokeObjectURL — the worker holds a reference to it
