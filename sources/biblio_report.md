@@ -55,9 +55,9 @@ Each downloaded PDF is hosted locally; the PMID/PMCID/DOI links go to NCBI / DOI
 
 ### `docs/research/other/` (2)
 
-- [curtis-2016-randomized-trial-of-communication-facilitators-to.pdf](../docs/research/other/curtis-2016-randomized-trial-of-communication-facilitators-to.pdf) — **Curtis 2016**. American journal of respiratory and critical care medicine  
+- [curtis-2016-randomized-trial-of-communication-facilitators-to.pdf](../docs/research/icu-communication/curtis-2016-randomized-trial-of-communication-facilitators-to.pdf) — **Curtis 2016**. American journal of respiratory and critical care medicine  
   [PMID 26378963](https://pubmed.ncbi.nlm.nih.gov/26378963/) · [PMC4731711](https://pmc.ncbi.nlm.nih.gov/articles/PMC4731711/) · [doi:10.1164/rccm.201505-0900OC](https://doi.org/10.1164/rccm.201505-0900OC)
-- [rodriguez-2016-enhancing-the-communication-of-suddenly-speechless.pdf](../docs/research/other/rodriguez-2016-enhancing-the-communication-of-suddenly-speechless.pdf) — **Rodriguez 2016**. Enhancing the communication of suddenly speechless critical care patients  
+- [rodriguez-2016-enhancing-the-communication-of-suddenly-speechless.pdf](../docs/research/icu-communication/rodriguez-2016-enhancing-the-communication-of-suddenly-speechless.pdf) — **Rodriguez 2016**. Enhancing the communication of suddenly speechless critical care patients  
   [PMID 27134237](https://pubmed.ncbi.nlm.nih.gov/27134237/) · [PMC4855698](https://pmc.ncbi.nlm.nih.gov/articles/PMC4855698/)
 
 ## Paywalled
