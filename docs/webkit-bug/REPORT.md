@@ -5,6 +5,43 @@ Component: probably "Page Loading" or "WebCore Misc.". Suggest CCing
 the WebKit Workers maintainers via the existing
 [Worker meta-bug](https://bugs.webkit.org/buglist.cgi?component=Page%20Loading&product=WebKit).
 
+## Prior art — not a duplicate, but related
+
+Before filing, three existing bugs were reviewed:
+
+- **[#245346](https://bugs.webkit.org/show_bug.cgi?id=245346)** — RESOLVED
+  FIXED (Oct 2022). Same error string (`Cannot load … due to access
+  control checks`). Root cause was 304 Not Modified responses dropping
+  the CORP header on cache hit. Chris Dumez's fix landed in `main`
+  Oct 7, 2022. We're observing the same error string four years later
+  in Safari 26.x with COEP completely off — **likely a regression OR
+  an adjacent code path producing the same error**. Recommend
+  cross-linking when filing.
+- **[#261734](https://bugs.webkit.org/show_bug.cgi?id=261734)** — open
+  since 2023-09-26. "CORP headers mishandled inside Worker". Same
+  error string but **requires COEP enabled**; bug fires on static
+  module imports inside the worker. Our repro has COEP off and fails
+  on the outer `new Worker(httpUrl)` call itself, before any internal
+  imports run. Distinct mechanism.
+- **[#258443](https://bugs.webkit.org/show_bug.cgi?id=258443)** — open
+  since 2023-06-23. "Blob can't be read from opaque origined Workers".
+  Same error string but specifically about workers spawned from `blob:`
+  or `data:` URLs. Our repro uses plain `new Worker("worker.js")`
+  with an `http(s):` URL.
+
+**Workaround hypothesis not yet tested:** [Predrag Gruevski's
+write-up](https://predr.ag/blog/debugging-safari-if-at-first-you-succeed/)
+of #245346 shows that `Cache-Control: no-store` on the worker script
+response sidesteps the original 304-revalidation path. We have NOT
+yet tested whether this clears our 2026 occurrence — the OwnVoice
+production setup serves `/assets/*Worker-*.js` via Cloudflare Pages
+which overrides `Cache-Control` headers at serve time
+([CF Pages issue](https://github.com/cloudflare/wrangler-legacy/issues/3253),
+tracked in our repo as `_headers` comment in PR #131). Worth retrying
+this workaround via a Cloudflare Pages Function instead of `_headers`,
+or against a different host that respects the header. Marked as "open
+follow-up" in our internal notes.
+
 ---
 
 ## Title
@@ -74,6 +111,8 @@ worker is then unusable.
 | BFCache state | `pagehide` listener confirmed firing with `event.persisted === false` | Not BFCache |
 | Service worker interference | Repro has no SW; bug still fires | Not SW |
 | Stale cached worker URLs | New origin, no cache, hard reload — bug still fires on subsequent reload | Not cache |
+| Same root cause as #245346 (304/CORP on cache hit) | #245346 was RESOLVED FIXED Oct 2022; we observe the same console string four years later with COEP off | Likely a regression or adjacent path |
+| `Cache-Control: no-store` on worker script (predr.ag workaround for #245346) | NOT YET TESTED on our infra — blocked by CF Pages overriding `Cache-Control` on static assets; needs a Pages Function or different host | UNKNOWN — worth testing |
 
 The failure surface that survives all these tests is: **WebKit's
 worker-script resource-load pathway on reloaded documents.** That's the
