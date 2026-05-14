@@ -47,7 +47,11 @@ class ModelManager {
 
     // Request persistent storage so models aren't evicted
     if (navigator.storage?.persist) {
-      await navigator.storage.persist();
+      const granted = await navigator.storage.persist();
+      log({
+        name: EVENT.MODEL_PERSIST_RESULT,
+        attributes: { [ATTR.GRANTED]: granted },
+      });
     }
 
     console.log(

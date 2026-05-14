@@ -28,6 +28,8 @@ export const ATTR = {
   ERROR_MESSAGE:       "ownvoice.error.message",
   ERROR_STACK:         "ownvoice.error.stack",
 
+  GRANTED:             "ownvoice.granted",
+
   MODEL_NAME:          "ownvoice.model.name",
   MODEL_SIZE_BYTES:    "ownvoice.model.size_bytes",
   MODEL_VERSION:       "ownvoice.model.version",
