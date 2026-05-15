@@ -980,9 +980,13 @@ const da: LocaleStrings = {
     "kræver nyt forsøg",
   "ui.provider.settings.offline.last_verified_prefix":
     "Sidst verificeret: ",
-  "ui.provider.settings.offline.storage_prefix": "Lagerplads: ",
-  "ui.provider.settings.offline.storage_of": " af ",
-  "ui.provider.settings.offline.storage_used": " brugt",
+  "ui.provider.settings.offline.models_on_device": "Stemme- og talemodeller: {bytes} på enheden",
+  "ui.provider.settings.offline.models_not_yet_downloaded": "Modeller er ikke downloadet endnu",
+  "ui.provider.settings.offline.storage_protected": "Lager beskyttet — modeller bliver på denne enhed",
+  "ui.provider.settings.offline.storage_not_protected": "Lager ikke beskyttet — føj denne app til startskærmen for at beholde modellerne på enheden",
+  "ui.provider.settings.offline.storage_last_used": "Senest brugt: {relative}",
+  "ui.provider.settings.offline.check_protection_button": "Tjek beskyttelsesstatus",
+  "ui.provider.settings.offline.origin_usage_estimate": "Oprindelsesforbrug: ~{used} brugt af ~{total} tilgængelige (estimat)",
   "ui.provider.settings.offline.storage_low": " — ved at løbe tør",
   "ui.provider.settings.offline.clear_audio_cache":
     "Ryd lydcache",

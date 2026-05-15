@@ -973,9 +973,13 @@ const ms: LocaleStrings = {
     "perlu cuba semula",
   "ui.provider.settings.offline.last_verified_prefix":
     "Pengesahan terakhir: ",
-  "ui.provider.settings.offline.storage_prefix": "Storan: ",
-  "ui.provider.settings.offline.storage_of": " daripada ",
-  "ui.provider.settings.offline.storage_used": " digunakan",
+  "ui.provider.settings.offline.models_on_device": "Model suara & pertuturan: {bytes} pada peranti",
+  "ui.provider.settings.offline.models_not_yet_downloaded": "Model belum dimuat turun",
+  "ui.provider.settings.offline.storage_protected": "Storan dilindungi — model akan kekal pada peranti ini",
+  "ui.provider.settings.offline.storage_not_protected": "Storan tidak dilindungi — tambah apl ini ke Skrin Utama untuk mengekalkan model pada peranti",
+  "ui.provider.settings.offline.storage_last_used": "Terakhir digunakan: {relative}",
+  "ui.provider.settings.offline.check_protection_button": "Semak status perlindungan",
+  "ui.provider.settings.offline.origin_usage_estimate": "Penggunaan asal: ~{used} digunakan daripada ~{total} tersedia (anggaran)",
   "ui.provider.settings.offline.storage_low": " — semakin rendah",
   "ui.provider.settings.offline.clear_audio_cache":
     "Kosongkan cache audio",

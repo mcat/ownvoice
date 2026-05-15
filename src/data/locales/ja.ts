@@ -964,9 +964,13 @@ const ja: LocaleStrings = {
     "再試行が必要",
   "ui.provider.settings.offline.last_verified_prefix":
     "最終検証: ",
-  "ui.provider.settings.offline.storage_prefix": "ストレージ: ",
-  "ui.provider.settings.offline.storage_of": " / ",
-  "ui.provider.settings.offline.storage_used": " 使用中",
+  "ui.provider.settings.offline.models_on_device": "音声・発話モデル：デバイス上に {bytes}",
+  "ui.provider.settings.offline.models_not_yet_downloaded": "モデルはまだダウンロードされていません",
+  "ui.provider.settings.offline.storage_protected": "ストレージは保護されています — モデルはこのデバイスに保持されます",
+  "ui.provider.settings.offline.storage_not_protected": "ストレージは保護されていません — モデルをデバイスに保持するには、このアプリをホーム画面に追加してください",
+  "ui.provider.settings.offline.storage_last_used": "最終使用：{relative}",
+  "ui.provider.settings.offline.check_protection_button": "保護状態を確認",
+  "ui.provider.settings.offline.origin_usage_estimate": "オリジン使用量：約 {used} 使用 / 約 {total} 利用可能（推定）",
   "ui.provider.settings.offline.storage_low": " — 残りわずか",
   "ui.provider.settings.offline.clear_audio_cache":
     "音声キャッシュを消去",

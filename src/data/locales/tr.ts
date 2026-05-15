@@ -977,9 +977,13 @@ const tr: LocaleStrings = {
     "yeniden denenmeli",
   "ui.provider.settings.offline.last_verified_prefix":
     "Son doğrulama: ",
-  "ui.provider.settings.offline.storage_prefix": "Depolama: ",
-  "ui.provider.settings.offline.storage_of": " / ",
-  "ui.provider.settings.offline.storage_used": " kullanıldı",
+  "ui.provider.settings.offline.models_on_device": "Ses ve konuşma modelleri: cihazda {bytes}",
+  "ui.provider.settings.offline.models_not_yet_downloaded": "Modeller henüz indirilmedi",
+  "ui.provider.settings.offline.storage_protected": "Depolama korunuyor — modeller bu cihazda kalacak",
+  "ui.provider.settings.offline.storage_not_protected": "Depolama korunmuyor — modelleri cihazda tutmak için bu uygulamayı Ana Ekrana ekleyin",
+  "ui.provider.settings.offline.storage_last_used": "Son kullanım: {relative}",
+  "ui.provider.settings.offline.check_protection_button": "Koruma durumunu denetle",
+  "ui.provider.settings.offline.origin_usage_estimate": "Kaynak kullanımı: ~{total} kullanılabilirin ~{used} kadarı kullanılıyor (tahmini)",
   "ui.provider.settings.offline.storage_low": " — az kaldı",
   "ui.provider.settings.offline.clear_audio_cache":
     "Ses önbelleğini temizle",

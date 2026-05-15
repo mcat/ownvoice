@@ -1022,9 +1022,13 @@ const tl: LocaleStrings = {
     "kailangang subukan ulit",
   "ui.provider.settings.offline.last_verified_prefix":
     "Huling na-verify: ",
-  "ui.provider.settings.offline.storage_prefix": "Storage: ",
-  "ui.provider.settings.offline.storage_of": " ng ",
-  "ui.provider.settings.offline.storage_used": " ginamit",
+  "ui.provider.settings.offline.models_on_device": "Mga modelong tinig at pananalita: {bytes} sa device",
+  "ui.provider.settings.offline.models_not_yet_downloaded": "Hindi pa na-download ang mga modelo",
+  "ui.provider.settings.offline.storage_protected": "Protektado ang storage — mananatili ang mga modelo sa device na ito",
+  "ui.provider.settings.offline.storage_not_protected": "Hindi protektado ang storage — idagdag ang app na ito sa Home Screen para mapanatili ang mga modelo sa device",
+  "ui.provider.settings.offline.storage_last_used": "Huling ginamit: {relative}",
+  "ui.provider.settings.offline.check_protection_button": "Suriin ang katayuan ng proteksyon",
+  "ui.provider.settings.offline.origin_usage_estimate": "Paggamit ng origin: ~{used} sa ~{total} na available (tantya)",
   "ui.provider.settings.offline.storage_low": " — malapit nang maubos",
   "ui.provider.settings.offline.clear_audio_cache":
     "Burahin ang audio cache",

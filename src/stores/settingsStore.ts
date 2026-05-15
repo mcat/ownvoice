@@ -15,6 +15,7 @@ import { setActivePatientHash } from "../audit/session";
 // lag; only the disk write is batched.
 const PERSIST_DEBOUNCE_MS = 300;
 const STORE_VERSION = 4;
+const INTERACTION_THROTTLE_MS = 60_000;
 
 interface SettingsPersistedState {
   cfg: AppSettings | null;
@@ -22,6 +23,10 @@ interface SettingsPersistedState {
    *  Kept on the persisted shape for migration compatibility; set to null
    *  after migration and on v2 writes. */
   speakerData: unknown | null;
+  /** Wall-clock ms of the last user interaction. Throttled writes via
+   *  `recordInteraction()`. Null until the first interaction (seeded to
+   *  Date.now() on first hydration so "Last used" reads honestly). */
+  lastInteractionAt: number | null;
 }
 
 interface SettingsState extends SettingsPersistedState {
@@ -31,6 +36,7 @@ interface SettingsState extends SettingsPersistedState {
   setSpeakerData: (data: unknown) => void;
   setHasHydrated: (v: boolean) => void;
   reset: () => void;
+  recordInteraction: () => void;
 
   // Multi-patient actions
   addPatient: (data: Omit<Patient, "id" | "addedAt" | "lastActiveAt">) => Patient;
@@ -86,6 +92,7 @@ export const useSettingsStore = create<SettingsState>()(
     (set, get) => ({
       cfg: null,
       speakerData: null,
+      lastInteractionAt: null,
       _hasHydrated: false,
 
       setCfg: (cfg) => set({ cfg }),
@@ -93,7 +100,24 @@ export const useSettingsStore = create<SettingsState>()(
         set((s) => (s.cfg ? { cfg: { ...s.cfg, ...partial } } : {})),
       setSpeakerData: (speakerData) => set({ speakerData }),
       setHasHydrated: (v) => set({ _hasHydrated: v }),
-      reset: () => set({ cfg: null, speakerData: null }),
+      reset: () =>
+        set({ cfg: null, speakerData: null, lastInteractionAt: null }),
+
+      recordInteraction: () => {
+        const { lastInteractionAt } = get();
+        const now = Date.now();
+        // `lastInteractionAt <= now` guards a future timestamp from clock skew
+        // (NTP backward jump, manual clock change) — otherwise the action
+        // would no-op forever until wall-clock catches up.
+        if (
+          lastInteractionAt != null &&
+          lastInteractionAt <= now &&
+          now - lastInteractionAt < INTERACTION_THROTTLE_MS
+        ) {
+          return;
+        }
+        set({ lastInteractionAt: now });
+      },
 
       addPatient: (data) => {
         const now = Date.now();
@@ -235,7 +259,7 @@ export const useSettingsStore = create<SettingsState>()(
       storage: createJSONStorage(() => createDebouncedIDBStorage(PERSIST_DEBOUNCE_MS)),
       migrate: (persisted, fromVersion): SettingsPersistedState => {
         const typed = persisted as SettingsPersistedState | null;
-        if (!typed) return { cfg: null, speakerData: null };
+        if (!typed) return { cfg: null, speakerData: null, lastInteractionAt: null };
 
         // v0 → v1: add caregiverLang (from previous migration)
         let cfg = typed.cfg;
@@ -308,18 +332,32 @@ export const useSettingsStore = create<SettingsState>()(
         // Also scrub the legacy top-level speakerData (v1 layout) just in case.
         speakerData = scrubQualityIfInvalid(speakerData);
 
-        return { cfg, speakerData };
+        return {
+          cfg,
+          speakerData,
+          lastInteractionAt: typed.lastInteractionAt ?? null,
+        };
       },
       partialize: (s): SettingsPersistedState => ({
         cfg: s.cfg,
         speakerData: s.speakerData,
+        lastInteractionAt: s.lastInteractionAt,
       }),
       onRehydrateStorage: () => {
         // Return the post-hydration callback.
         // IMPORTANT: Do NOT reference useSettingsStore here — it's not
         // initialized yet (we're inside create()). Use the `state` param
         // or defer with queueMicrotask.
-        return () => {
+        return (state) => {
+          // Seed lastInteractionAt via setState (not in-place mutation) so
+          // the persist middleware observes the change and writes it to IDB.
+          // Deferred to a microtask to run after hydration completes — an
+          // in-hydration setState would be a no-op for the persist write.
+          if (state && state.lastInteractionAt == null) {
+            queueMicrotask(() => {
+              useSettingsStore.setState({ lastInteractionAt: Date.now() });
+            });
+          }
           queueMicrotask(() => {
             useSettingsStore.setState({ _hasHydrated: true });
           });

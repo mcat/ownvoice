@@ -991,9 +991,13 @@ const vi: LocaleStrings = {
     "cần thử lại",
   "ui.provider.settings.offline.last_verified_prefix":
     "Xác minh lần cuối: ",
-  "ui.provider.settings.offline.storage_prefix": "Lưu trữ: ",
-  "ui.provider.settings.offline.storage_of": " / ",
-  "ui.provider.settings.offline.storage_used": " đã dùng",
+  "ui.provider.settings.offline.models_on_device": "Mô hình giọng nói và phát âm: {bytes} trên thiết bị",
+  "ui.provider.settings.offline.models_not_yet_downloaded": "Chưa tải xuống các mô hình",
+  "ui.provider.settings.offline.storage_protected": "Bộ nhớ được bảo vệ — các mô hình sẽ ở lại trên thiết bị này",
+  "ui.provider.settings.offline.storage_not_protected": "Bộ nhớ chưa được bảo vệ — thêm ứng dụng này vào Màn hình chính để giữ các mô hình trên thiết bị",
+  "ui.provider.settings.offline.storage_last_used": "Lần dùng gần nhất: {relative}",
+  "ui.provider.settings.offline.check_protection_button": "Kiểm tra trạng thái bảo vệ",
+  "ui.provider.settings.offline.origin_usage_estimate": "Mức dùng nguồn: ~{used} đã dùng trên ~{total} khả dụng (ước tính)",
   "ui.provider.settings.offline.storage_low": " — sắp hết",
   "ui.provider.settings.offline.clear_audio_cache":
     "Xóa bộ nhớ đệm âm thanh",

@@ -981,9 +981,13 @@ const sw: LocaleStrings = {
     "inahitaji kujaribu tena",
   "ui.provider.settings.offline.last_verified_prefix":
     "Mara ya mwisho kuthibitishwa: ",
-  "ui.provider.settings.offline.storage_prefix": "Hifadhi: ",
-  "ui.provider.settings.offline.storage_of": " ya ",
-  "ui.provider.settings.offline.storage_used": " imetumika",
+  "ui.provider.settings.offline.models_on_device": "Mifano ya sauti na usemi: {bytes} kwenye kifaa",
+  "ui.provider.settings.offline.models_not_yet_downloaded": "Mifano bado haijapakuliwa",
+  "ui.provider.settings.offline.storage_protected": "Hifadhi imelindwa — mifano itabaki kwenye kifaa hiki",
+  "ui.provider.settings.offline.storage_not_protected": "Hifadhi haijalindwa — ongeza programu hii kwenye Skrini ya Mwanzo ili kuhifadhi mifano kwenye kifaa",
+  "ui.provider.settings.offline.storage_last_used": "Mwisho kutumika: {relative}",
+  "ui.provider.settings.offline.check_protection_button": "Kagua hali ya ulinzi",
+  "ui.provider.settings.offline.origin_usage_estimate": "Matumizi ya chanzo: ~{used} kati ya ~{total} zinazopatikana (makadirio)",
   "ui.provider.settings.offline.storage_low": " — inakaribia kuisha",
   "ui.provider.settings.offline.clear_audio_cache":
     "Futa hifadhi ya sauti",

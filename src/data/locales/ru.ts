@@ -965,9 +965,13 @@ const ru: LocaleStrings = {
     "требуется повтор",
   "ui.provider.settings.offline.last_verified_prefix":
     "Последняя проверка: ",
-  "ui.provider.settings.offline.storage_prefix": "Хранилище: ",
-  "ui.provider.settings.offline.storage_of": " из ",
-  "ui.provider.settings.offline.storage_used": " использовано",
+  "ui.provider.settings.offline.models_on_device": "Голосовые и речевые модели: {bytes} на устройстве",
+  "ui.provider.settings.offline.models_not_yet_downloaded": "Модели ещё не загружены",
+  "ui.provider.settings.offline.storage_protected": "Хранилище защищено — модели останутся на этом устройстве",
+  "ui.provider.settings.offline.storage_not_protected": "Хранилище не защищено — добавьте это приложение на главный экран, чтобы модели остались на устройстве",
+  "ui.provider.settings.offline.storage_last_used": "Последнее использование: {relative}",
+  "ui.provider.settings.offline.check_protection_button": "Проверить статус защиты",
+  "ui.provider.settings.offline.origin_usage_estimate": "Использование источника: ~{used} из ~{total} доступных (оценка)",
   "ui.provider.settings.offline.storage_low": " — мало места",
   "ui.provider.settings.offline.clear_audio_cache":
     "Очистить аудиокэш",

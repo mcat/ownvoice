@@ -949,9 +949,13 @@ const fi: LocaleStrings = {
     "vaatii uudelleenyrityksen",
   "ui.provider.settings.offline.last_verified_prefix":
     "Viimeksi varmistettu: ",
-  "ui.provider.settings.offline.storage_prefix": "Tallennustila: ",
-  "ui.provider.settings.offline.storage_of": "/",
-  "ui.provider.settings.offline.storage_used": " käytetty",
+  "ui.provider.settings.offline.models_on_device": "Ääni- ja puhemallit: {bytes} laitteella",
+  "ui.provider.settings.offline.models_not_yet_downloaded": "Malleja ei ole vielä ladattu",
+  "ui.provider.settings.offline.storage_protected": "Tallennustila suojattu — mallit pysyvät tällä laitteella",
+  "ui.provider.settings.offline.storage_not_protected": "Tallennustila ei ole suojattu — lisää tämä sovellus aloitusnäyttöön, jotta mallit pysyvät laitteella",
+  "ui.provider.settings.offline.storage_last_used": "Viimeksi käytetty: {relative}",
+  "ui.provider.settings.offline.check_protection_button": "Tarkista suojauksen tila",
+  "ui.provider.settings.offline.origin_usage_estimate": "Lähteen käyttö: ~{used} käytetty / ~{total} käytettävissä (arvio)",
   "ui.provider.settings.offline.storage_low": " — vähissä",
   "ui.provider.settings.offline.clear_audio_cache":
     "Tyhjennä äänivälimuisti",

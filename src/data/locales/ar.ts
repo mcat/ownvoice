@@ -961,9 +961,13 @@ const ar: LocaleStrings = {
     "يحتاج إعادة محاولة",
   "ui.provider.settings.offline.last_verified_prefix":
     "آخر تحقق: ",
-  "ui.provider.settings.offline.storage_prefix": "التخزين: ",
-  "ui.provider.settings.offline.storage_of": " من ",
-  "ui.provider.settings.offline.storage_used": " مستخدم",
+  "ui.provider.settings.offline.models_on_device": "نماذج الصوت والكلام: {bytes} على الجهاز",
+  "ui.provider.settings.offline.models_not_yet_downloaded": "لم يتم تنزيل النماذج بعد",
+  "ui.provider.settings.offline.storage_protected": "التخزين محمي — ستبقى النماذج على هذا الجهاز",
+  "ui.provider.settings.offline.storage_not_protected": "التخزين غير محمي — أضف هذا التطبيق إلى الشاشة الرئيسية للحفاظ على النماذج في الجهاز",
+  "ui.provider.settings.offline.storage_last_used": "آخر استخدام: {relative}",
+  "ui.provider.settings.offline.check_protection_button": "تحقق من حالة الحماية",
+  "ui.provider.settings.offline.origin_usage_estimate": "استخدام الأصل: ~{used} مستخدم من ~{total} متاح (تقدير)",
   "ui.provider.settings.offline.storage_low": " — المساحة منخفضة",
   "ui.provider.settings.offline.clear_audio_cache":
     "مسح ذاكرة الصوت التخزينية",
