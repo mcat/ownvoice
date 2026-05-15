@@ -245,23 +245,45 @@ describe("all ORT workers — multi-threaded WASM gating", () => {
   // are absent — e.g. first-load before the SW installs — so we never
   // trip a SharedArrayBuffer-unavailable runtime error.
   //
-  // All five sources get the same gate; a refactor that removes it from
-  // any one of them would silently regress pre-gen throughput on that
-  // path. Assert on all of them in one place.
-  const sources = [
-    { path: "public/tts-gpu-worker.js", label: "tts-gpu-worker" },
+  // The Vite-bundled workers share `workerOrtEnv.ts` and just call
+  // `configureOrtWasmEnv()`; the plain-JS GPU worker inlines the gate.
+  // A refactor that removes the gate from either site would silently
+  // regress pre-gen throughput.
+  it("workerOrtEnv: gates numThreads on crossOriginIsolated", () => {
+    const src = fs.readFileSync(
+      path.resolve(process.cwd(), "src/models/workerOrtEnv.ts"),
+      "utf-8",
+    );
+    expect(
+      src,
+      "workerOrtEnv must gate numThreads on self.crossOriginIsolated " +
+        "rather than setting a fixed thread count. Without the gate, " +
+        "single-thread environments would hit a SharedArrayBuffer error.",
+    ).toMatch(/numThreads\s*=\s*self\.crossOriginIsolated/);
+  });
+
+  it("tts-gpu-worker: gates numThreads on crossOriginIsolated", () => {
+    const src = fs.readFileSync(
+      path.resolve(process.cwd(), "public/tts-gpu-worker.js"),
+      "utf-8",
+    );
+    expect(src).toMatch(/numThreads\s*=\s*self\.crossOriginIsolated/);
+  });
+
+  const bundledWorkers = [
     { path: "src/models/ttsWorker.ts", label: "ttsWorker" },
+    { path: "src/models/sttWorker.ts", label: "sttWorker" },
+    { path: "src/models/denoiserWorker.ts", label: "denoiserWorker" },
   ];
 
-  for (const { path: relPath, label } of sources) {
-    it(`${label}: gates numThreads on crossOriginIsolated`, () => {
+  for (const { path: relPath, label } of bundledWorkers) {
+    it(`${label}: invokes configureOrtWasmEnv at module top`, () => {
       const src = fs.readFileSync(path.resolve(process.cwd(), relPath), "utf-8");
       expect(
         src,
-        `${label} must gate numThreads on self.crossOriginIsolated rather ` +
-          "than setting a fixed thread count. Without the gate, " +
-          "single-thread environments would hit a SharedArrayBuffer error.",
-      ).toMatch(/numThreads\s*=\s*self\.crossOriginIsolated/);
+        `${label} must call configureOrtWasmEnv() so it inherits the ` +
+          "crossOriginIsolated-gated thread count from the shared helper.",
+      ).toMatch(/configureOrtWasmEnv\s*\(\s*\)/);
     });
   }
 });

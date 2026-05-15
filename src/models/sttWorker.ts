@@ -27,23 +27,11 @@
  */
 
 import * as ort from "onnxruntime-web";
-import { ORT_VERSION } from "./assetVersions";
 import { linearResample } from "./resample";
+import { configureOrtWasmEnv } from "./workerOrtEnv";
+import { streamWithProgress } from "./workerStreamingFetch";
 
-// Multi-threaded WASM is only available when `crossOriginIsolated` is true
-// (page + SW serve COOP+COEP). Silently fall back to single-thread otherwise.
-ort.env.logLevel = "error";
-// See tts-gpu-worker.js for why this is capped at 4.
-if (ort.env?.wasm) {
-  // ORT loads WASM at runtime from this URL prefix. In production,
-  // /ort/* is served by a Pages Function backed by R2 (see
-  // functions/ort/[[path]].ts). In dev, a Vite middleware (see
-  // vite.config.ts) rewrites /ort/<version>/<file> to public/ort/<file>.
-  ort.env.wasm.wasmPaths = `/ort/${ORT_VERSION}/`;
-  ort.env.wasm.numThreads = self.crossOriginIsolated
-    ? Math.min(navigator.hardwareConcurrency ?? 4, 4)
-    : 1;
-}
+configureOrtWasmEnv();
 
 const LOG_PREFIX = "[OwnVoice:STT]";
 
@@ -511,46 +499,27 @@ function decodeTokens(tokenIds: number[]): string {
 
 // ─── Model lifecycle ────────────────────────────────────────────────
 
-/**
- * Download a model file from the given URL with progress reporting.
- */
 async function downloadModel(
   url: string,
   label: string,
 ): Promise<ArrayBuffer> {
   console.log(`${LOG_PREFIX} Downloading ${label} from ${url}`);
-
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${response.statusText} for ${label}`);
+  let bytes: ArrayBuffer;
+  try {
+    bytes = await streamWithProgress(url, (loaded, total) => {
+      self.postMessage({ type: "progress", label, loaded, total });
+    });
+  } catch (err) {
+    // STT downloads multiple files (encoder/decoder/tokenizer); preserve which
+    // file failed in the error message — the shared helper's HTTP error is
+    // generic.
+    const msg = err instanceof Error ? err.message : String(err);
+    throw new Error(`${msg} for ${label}`);
   }
-
-  const total = Number(response.headers.get("content-length")) || 0;
-  const reader = response.body?.getReader();
-  if (!reader) throw new Error("No response body");
-
-  const chunks: Uint8Array[] = [];
-  let loaded = 0;
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    chunks.push(value);
-    loaded += value.length;
-    self.postMessage({ type: "progress", label, loaded, total });
-  }
-
-  const combined = new Uint8Array(loaded);
-  let offset = 0;
-  for (const chunk of chunks) {
-    combined.set(chunk, offset);
-    offset += chunk.length;
-  }
-
   console.log(
-    `${LOG_PREFIX} ${label} download complete (${(loaded / 1e6).toFixed(1)} MB)`,
+    `${LOG_PREFIX} ${label} download complete (${(bytes.byteLength / 1e6).toFixed(1)} MB)`,
   );
-  return combined.buffer;
+  return bytes;
 }
 
 /**

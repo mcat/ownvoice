@@ -26,16 +26,11 @@
  */
 
 import * as ort from "onnxruntime-web";
-import { ORT_VERSION } from "./assetVersions";
 import { linearResample } from "./resample";
+import { configureOrtWasmEnv } from "./workerOrtEnv";
+import { streamWithProgress } from "./workerStreamingFetch";
 
-ort.env.logLevel = "error";
-if (ort.env?.wasm) {
-  ort.env.wasm.wasmPaths = `/ort/${ORT_VERSION}/`;
-  ort.env.wasm.numThreads = self.crossOriginIsolated
-    ? Math.min(navigator.hardwareConcurrency ?? 4, 4)
-    : 1;
-}
+configureOrtWasmEnv();
 
 const LOG_PREFIX = "[OwnVoice:Denoiser]";
 
@@ -105,38 +100,14 @@ function rotateState(
 
 let session: ort.InferenceSession | null = null;
 
-async function downloadModel(url: string): Promise<ArrayBuffer> {
-  console.log(`${LOG_PREFIX} Downloading model from ${url}`);
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-  }
-  const total = Number(response.headers.get("content-length")) || 0;
-  const reader = response.body?.getReader();
-  if (!reader) throw new Error("No response body");
-
-  const chunks: Uint8Array[] = [];
-  let loaded = 0;
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    chunks.push(value);
-    loaded += value.length;
-    self.postMessage({ type: "progress", loaded, total });
-  }
-  const combined = new Uint8Array(loaded);
-  let offset = 0;
-  for (const chunk of chunks) {
-    combined.set(chunk, offset);
-    offset += chunk.length;
-  }
-  console.log(`${LOG_PREFIX} Download complete (${(loaded / 1e6).toFixed(1)} MB)`);
-  return combined.buffer;
-}
-
 async function handleInit(modelUrl: string): Promise<void> {
   console.log(`${LOG_PREFIX} Initializing with URL: ${modelUrl}`);
-  const bytes = await downloadModel(modelUrl);
+  const bytes = await streamWithProgress(modelUrl, (loaded, total) => {
+    self.postMessage({ type: "progress", loaded, total });
+  });
+  console.log(
+    `${LOG_PREFIX} Download complete (${(bytes.byteLength / 1e6).toFixed(1)} MB)`,
+  );
   session = await ort.InferenceSession.create(bytes, {
     executionProviders: ["wasm"],
     logSeverityLevel: 3,
