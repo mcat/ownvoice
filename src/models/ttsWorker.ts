@@ -197,7 +197,7 @@ async function createSession(
  * Replaces the old GPT-2 BPE; the multilingual tokenizer handles [xx] language
  * tags and [SPACE] normalization natively.
  */
-async function loadTokenizer(tokenizerUrl: string): Promise<void> {
+async function loadTokenizer(tokenizerUrl: string, loadCangjie: boolean): Promise<void> {
   console.log(`${LOG} Loading tokenizer...`);
   const response = await fetch(tokenizerUrl);
   if (!response.ok) throw new Error(`Tokenizer fetch failed: ${response.status}`);
@@ -207,23 +207,33 @@ async function loadTokenizer(tokenizerUrl: string): Promise<void> {
   tokenizer = mod.buildMultilingualTokenizer(json);
   prepareLanguageFn = mod.prepareLanguage;
 
-  // Load Cangjie5 lookup for Chinese preprocessing alongside the tokenizer.
-  // Failure is non-fatal — Chinese inputs degrade silently, other languages
-  // keep working. Cangjie5_TC.json sits next to tokenizer.json in the
-  // multilingual model dir.
-  const cangjieUrl = tokenizerUrl.replace(/tokenizer\.json$/, "Cangjie5_TC.json");
-  try {
-    const cjResp = await fetch(cangjieUrl);
-    if (cjResp.ok) {
-      const entries: string[] = await cjResp.json();
-      mod.setCangjieData(entries);
-      console.log(`${LOG} Cangjie5 table loaded (${entries.length} entries)`);
-    } else {
-      throw new Error(`HTTP ${cjResp.status}`);
-    }
-  } catch (err) {
-    console.warn(`${LOG} Failed to load Cangjie5 (${err}); Chinese phrases will degrade`);
+  if (!loadCangjie) {
+    // No zh locale in this session — skip the Cangjie5 lookup table.
+    // Saves ~1.9 MB JSON download + the two Maps (~several MB) it would
+    // build in the worker heap. cangjieNormalize already warns + passes
+    // through unchanged when the data is absent, so a later language
+    // switch to zh degrades to "untokenized Chinese" rather than crash.
     mod.setCangjieData(null);
+    console.log(`${LOG} Cangjie5 skipped (no zh locale in session).`);
+  } else {
+    // Load Cangjie5 lookup for Chinese preprocessing alongside the tokenizer.
+    // Failure is non-fatal — Chinese inputs degrade silently, other languages
+    // keep working. Cangjie5_TC.json sits next to tokenizer.json in the
+    // multilingual model dir.
+    const cangjieUrl = tokenizerUrl.replace(/tokenizer\.json$/, "Cangjie5_TC.json");
+    try {
+      const cjResp = await fetch(cangjieUrl);
+      if (cjResp.ok) {
+        const entries: string[] = await cjResp.json();
+        mod.setCangjieData(entries);
+        console.log(`${LOG} Cangjie5 table loaded (${entries.length} entries)`);
+      } else {
+        throw new Error(`HTTP ${cjResp.status}`);
+      }
+    } catch (err) {
+      console.warn(`${LOG} Failed to load Cangjie5 (${err}); Chinese phrases will degrade`);
+      mod.setCangjieData(null);
+    }
   }
 
   console.log(`${LOG} Multilingual BPE tokenizer loaded (${Object.keys(json.model.vocab).length} vocab, ${json.model.merges.length} merges)`);
@@ -331,14 +341,18 @@ function sampleToken(logits: Float32Array, generatedTokens: number[]): number {
  * synth models eagerly during init was blocking `mgr.isReady("tts")` — and
  * therefore the enrollment UI — for ~150s+ on cold starts.
  */
-async function handleInit(modelUrl: string, benchFlag: boolean): Promise<void> {
+async function handleInit(
+  modelUrl: string,
+  benchFlag: boolean,
+  loadCangjie: boolean,
+): Promise<void> {
   baseUrl = modelUrl.endsWith("/") ? modelUrl : modelUrl + "/";
   bench = benchFlag;
   const ep = getEP();
   console.log(`${LOG} Initializing with EP: ${ep}${bench ? " (bench mode)" : ""}`);
 
   // Tokenizer is small and needed for any operation; load eagerly.
-  await loadTokenizer(baseUrl + CHATTERBOX_FILES.tokenizer);
+  await loadTokenizer(baseUrl + CHATTERBOX_FILES.tokenizer, loadCangjie);
 
   console.log(`${LOG} Init complete (synth models lazy-loaded on first synthesize). Ready.`);
   _postMessage({ type: "ready" });
@@ -809,7 +823,10 @@ self.addEventListener("message", async (e: MessageEvent) => {
   try {
     switch (msg.type) {
       case "init":
-        await handleInit(msg.modelUrl, msg.bench === true);
+        // `loadCangjie !== false` defaults to true when the field is
+        // absent — preserves prior behavior for any caller that hasn't
+        // been updated to pass the flag.
+        await handleInit(msg.modelUrl, msg.bench === true, msg.loadCangjie !== false);
         break;
 
       case "embed":

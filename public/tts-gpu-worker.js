@@ -574,10 +574,15 @@ function sampleToken(logits, generatedTokens) {
   return nucleus[nucleus.length - 1][0];
 }
 
-async function handleInit(modelUrl, benchFlag) {
+async function handleInit(modelUrl, benchFlag, loadCangjie) {
   const baseUrl = modelUrl.endsWith("/") ? modelUrl : modelUrl + "/";
   bench = benchFlag === true;
-  console.log(`${LOG} Initializing WebGPU TTS in DedicatedWorker...${bench ? " (bench mode)" : ""}`);
+  // Caller may omit loadCangjie — default to true (preserves prior
+  // behavior). Setting false skips the ~1.9 MB JSON download plus the
+  // two Maps it builds in worker heap; cangjieNormalize then degrades
+  // any Chinese input to passthrough (warned once).
+  const shouldLoadCangjie = loadCangjie !== false;
+  console.log(`${LOG} Initializing WebGPU TTS in DedicatedWorker...${bench ? " (bench mode)" : ""}${shouldLoadCangjie ? "" : " (cangjie skipped)"}`);
 
   const t0 = performance.now();
 
@@ -618,12 +623,20 @@ async function handleInit(modelUrl, benchFlag) {
     return result;
   };
 
-  console.log(`${LOG} Loading tokenizer + Cangjie + embed_tokens (parallel)...`);
-  const [, , embed] = await Promise.all([
+  console.log(`${LOG} Loading tokenizer${shouldLoadCangjie ? " + Cangjie" : ""} + embed_tokens (parallel)...`);
+  const parallel = [
     loadTokenizer(baseUrl + "tokenizer.json"),
-    loadCangjieData(baseUrl + "Cangjie5_TC.json"),
     createSession(baseUrl + "embed_tokens.onnx", true, true),
-  ]);
+  ];
+  if (shouldLoadCangjie) {
+    parallel.push(loadCangjieData(baseUrl + "Cangjie5_TC.json"));
+  } else {
+    // Tell the tokenizer there's no Cangjie data so cangjieNormalize
+    // passes through (with a one-shot warning) rather than waiting on a
+    // load that will never come.
+    setCangjieData(null);
+  }
+  const [, embed] = await Promise.all(parallel);
   embedTokensSession = embed;
 
   languageModelSession = await stage("language_model_q4 (WebGPU)", () =>
@@ -1031,7 +1044,7 @@ self.addEventListener("message", (e) => {
   if (!msg || !msg.type) return;
 
   if (msg.type === "init") {
-    handleInit(msg.modelUrl, msg.bench === true).catch((err) => {
+    handleInit(msg.modelUrl, msg.bench === true, msg.loadCangjie !== false).catch((err) => {
       const message = err instanceof Error ? err.message : String(err);
       console.error(`${LOG} Init error:`, message);
       postMessage({ type: "error", message });

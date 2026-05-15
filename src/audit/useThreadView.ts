@@ -22,6 +22,24 @@ const THREAD_VISIBLE: ReadonlySet<string> = new Set([
   EVENT.THREAD_COMPOSE,
 ]);
 
+/** Maximum entries held in memory for the live thread view. A long ICU
+ *  session can produce thousands of taps; without a cap the array grows
+ *  without bound (each ThreadEntry is ~hundreds of bytes, but the
+ *  cumulative heap cost matters for an iPad held over a multi-hour
+ *  shift). Older events stay in the audit IDB and remain queryable via
+ *  export; the cap only narrows the in-memory window. 500 entries is
+ *  generous (≈ a full caregiver shift of dense use) while keeping the
+ *  in-memory footprint well under 1 MB. */
+export const THREAD_VIEW_CAP = 500;
+
+/** Pure helper: trim a list to the most-recent `cap` entries.
+ *  Exported so the cap invariant can be unit-tested without driving the
+ *  full IDB-cursor + subscribe path of useThreadView, which is fragile
+ *  to seed reliably under fake-indexeddb at the 500-entry scale. */
+export function capToWindow<T>(entries: readonly T[], cap: number): readonly T[] {
+  return entries.length > cap ? entries.slice(-cap) : entries;
+}
+
 function recordToEntry(r: AuditRecord, patientName: string): ThreadEntry {
   const actor = r.attributes[ATTR.ACTOR] as "patient" | "provider" | undefined;
   const from: "patient" | "provider" =
@@ -82,13 +100,22 @@ export function useThreadView(
         tx.oncomplete = () => res();
       });
       db.close();
-      if (!cancelled) setEntries(initial);
+      if (!cancelled) {
+        // Index is ascending by time, so the most recent entries sit at
+        // the end — capToWindow slices from there.
+        setEntries(capToWindow(initial, THREAD_VIEW_CAP) as ThreadEntry[]);
+      }
     })();
 
     const unsub = subscribe((rec) => {
       if (!hash || rec.patient_id_hash !== hash) return;
       if (!THREAD_VISIBLE.has(rec.name)) return;
-      setEntries((prev) => [...prev, recordToEntry(rec, patientName)]);
+      setEntries((prev) =>
+        capToWindow(
+          [...prev, recordToEntry(rec, patientName)],
+          THREAD_VIEW_CAP,
+        ) as ThreadEntry[],
+      );
     });
 
     return () => {
