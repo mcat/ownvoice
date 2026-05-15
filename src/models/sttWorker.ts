@@ -504,9 +504,18 @@ async function downloadModel(
   label: string,
 ): Promise<ArrayBuffer> {
   console.log(`${LOG_PREFIX} Downloading ${label} from ${url}`);
-  const bytes = await streamWithProgress(url, (loaded, total) => {
-    self.postMessage({ type: "progress", label, loaded, total });
-  });
+  let bytes: ArrayBuffer;
+  try {
+    bytes = await streamWithProgress(url, (loaded, total) => {
+      self.postMessage({ type: "progress", label, loaded, total });
+    });
+  } catch (err) {
+    // STT downloads multiple files (encoder/decoder/tokenizer); preserve which
+    // file failed in the error message — the shared helper's HTTP error is
+    // generic.
+    const msg = err instanceof Error ? err.message : String(err);
+    throw new Error(`${msg} for ${label}`);
+  }
   console.log(
     `${LOG_PREFIX} ${label} download complete (${(bytes.byteLength / 1e6).toFixed(1)} MB)`,
   );
