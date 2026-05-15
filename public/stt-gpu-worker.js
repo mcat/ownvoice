@@ -9,7 +9,9 @@
  *     shader compilation). Without this, the first real transcription hangs
  *     for minutes while shaders compile synchronously.
  *   - Uses radix-2 FFT instead of naive DFT for mel spectrogram (~50x faster).
- *   - Concurrent transcription guard: only one transcription runs at a time.
+ *   - Transcribe requests are serialized through a FIFO promise chain. Whisper
+ *     can only decode one chunk at a time; queueing (rather than dropping)
+ *     incoming chunks is what makes long Listen sessions transcribe in full.
  *
  * Messages IN:
  *   { type: "init", modelUrl: string }
@@ -508,12 +510,23 @@ function softmaxProb(logits, rowOffset, vocabSize, tokenId) {
   return Math.exp(logits[rowOffset + tokenId] - maxLogit) / sumExp;
 }
 
+// Serial FIFO over transcribe requests. The browser fires onmessage for every
+// posted message; since handleTranscribe is async, multiple invocations would
+// otherwise run concurrently on a single ORT session. Whisper chunks (~30 s)
+// arrive back-to-back from useListenSession.dispatchPcm — without serialization
+// the second and third chunks hit the in-flight session mid-decode and were
+// previously dropped, losing the bulk of long Listen sessions (issue #263).
+let transcribeChain = Promise.resolve();
+function enqueueTranscribe(audio, sampleRate, language) {
+  const next = transcribeChain
+    .catch(() => undefined)
+    .then(() => handleTranscribe(audio, sampleRate, language));
+  transcribeChain = next;
+  return next;
+}
+
 async function handleTranscribe(audio, sampleRate, language = "en") {
   if (!encoderSession || !decoderSession) throw new Error("Model not initialized");
-  if (transcribing) {
-    console.warn(`${LOG} Already transcribing, dropping request`);
-    return;
-  }
   transcribing = true;
 
   try {
@@ -640,7 +653,7 @@ self.onmessage = async (e) => {
         await handleInit(msg.modelUrl);
         break;
       case "transcribe":
-        await handleTranscribe(msg.audio, msg.sampleRate, msg.language);
+        await enqueueTranscribe(msg.audio, msg.sampleRate, msg.language);
         break;
       case "shutdown":
         // Page is unloading. Release GPU resources so the next page's

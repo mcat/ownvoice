@@ -30,10 +30,29 @@ vi.mock("../models/modelManager", () => ({
   }),
 }));
 
+// Spy on audioCacheRunner so we can verify the Listen session pauses
+// pre-generation on start and resumes it on reset/unmount. Backs issue #263
+// fix 2: TTS pre-gen contends with STT decode for the WebGPU adapter.
+const pauseAllSpy = vi.fn();
+const resumeAllSpy = vi.fn().mockResolvedValue(undefined);
+vi.mock("../models/audioCacheRunner", () => ({
+  pauseAll: () => pauseAllSpy(),
+  resumeAll: (cfg: unknown) => resumeAllSpy(cfg),
+}));
+
+// Provide a cfg so resumePregen calls through (null cfg short-circuits).
+vi.mock("../stores/settingsStore", () => ({
+  useSettingsStore: {
+    getState: () => ({ cfg: { caregiverLang: "en", patientLang: "en" } }),
+  },
+}));
+
 beforeEach(async () => {
   fakeWorker.postMessage.mockReset();
   fakeWorker.addEventListener.mockReset();
   fakeWorker.removeEventListener.mockReset();
+  pauseAllSpy.mockReset();
+  resumeAllSpy.mockReset().mockResolvedValue(undefined);
   // Restore the default mic-mock implementation. Tests that override
   // useMicrophone via mockReturnValue/mockImplementation can leak state
   // across `it`s if we don't reset here.
@@ -347,5 +366,32 @@ describe("useListenSession", () => {
     const s = result.current.state as Extract<ListenState, { phase: "draft" }>;
     expect(s.error).toBeNull();
     expect(s.transcribing).toEqual({ done: 0, total: 1 });
+  });
+
+  it("pauses audioCacheRunner on start and resumes on reset (#263)", async () => {
+    const { result } = renderHook(() => useListenSession({ language: "en" }));
+    expect(pauseAllSpy).not.toHaveBeenCalled();
+
+    await act(async () => {
+      await result.current.start();
+    });
+    expect(pauseAllSpy).toHaveBeenCalledTimes(1);
+    expect(resumeAllSpy).not.toHaveBeenCalled();
+
+    await act(async () => {
+      await result.current.stop();
+    });
+    // Still paused during the draft (transcription) phase.
+    expect(resumeAllSpy).not.toHaveBeenCalled();
+
+    act(() => result.current.reset());
+    expect(resumeAllSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("only resumes pre-gen if we paused it (idempotent)", () => {
+    const { result } = renderHook(() => useListenSession({ language: "en" }));
+    // Reset without ever starting — must not call resumeAll.
+    act(() => result.current.reset());
+    expect(resumeAllSpy).not.toHaveBeenCalled();
   });
 });
