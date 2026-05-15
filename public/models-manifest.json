@@ -75,6 +75,16 @@
           "magic": "json"
         }
       ]
+    },
+    "denoiser": {
+      "baseUrl": "/models/2026-04-29/denoiser/",
+      "files": [
+        {
+          "name": "denoiser_model.onnx",
+          "size": 12401175,
+          "magic": "onnx"
+        }
+      ]
     }
   }
 }

@@ -20,7 +20,7 @@ import {
 
 describe("voiceQuality module constants", () => {
   it("exports QUALITY_VERSION at the current value", () => {
-    expect(QUALITY_VERSION).toBe(2);
+    expect(QUALITY_VERSION).toBe(3);
   });
 
   it("DEFAULT_WEIGHTS sum to 1.0", () => {
@@ -298,7 +298,7 @@ describe("scoreVoiceSample", () => {
       audio[i] = Math.sin(2 * Math.PI * f0 * t) * 0.4;
     }
     const result = scoreVoiceSample(audio, sr);
-    expect(result.qualityVersion).toBe(2);
+    expect(result.qualityVersion).toBe(3);
     expect(result.score).toBeGreaterThan(50);
     expect(result.breakdown.clipping).toBe(100);
     expect(result.breakdown.pitchVariation).not.toBeNull();

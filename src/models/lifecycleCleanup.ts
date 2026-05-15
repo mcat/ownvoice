@@ -1,7 +1,7 @@
 import { getModelManager } from "./modelManager";
 import type { ModelId } from "./types";
 
-const MODEL_IDS: ModelId[] = ["tts", "tts-encoder", "stt"];
+const MODEL_IDS: ModelId[] = ["tts", "tts-encoder", "stt", "denoiser"];
 
 /**
  * Tear down every model worker before the page unloads. The previously

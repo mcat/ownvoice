@@ -18,8 +18,15 @@ import type { VoiceQualityResult } from "./types";
  *  and spectralTilt return null when voicedFraction is below threshold;
  *  coverage measures effective speech duration (raw × voicedFraction)
  *  rather than raw audio length. Together these stop silence from scoring
- *  ~50 due to "absence of degradation" sub-scores giving full credit. */
-export const QUALITY_VERSION = 2;
+ *  ~50 due to "absence of degradation" sub-scores giving full credit.
+ *  v3 (2026-05-14): enrollment pipeline now denoises via DF3 before this
+ *  score runs (VoiceCapture.tsx). Sub-score formulas and weights are
+ *  UNCHANGED — only the input distribution shifted: denoised audio has
+ *  lower noise floor and slightly cleaner pitch tracks, so v3 scores
+ *  trend higher than v2 for the same recording. Thresholds remain
+ *  v2-calibrated; recalibrate against opt-in field data once a corpus
+ *  is collected. See [[project_voice_quality_recalibration]]. */
+export const QUALITY_VERSION = 3;
 
 /** Below this raw voiced-frame fraction, sub-scores that measure "absence
  *  of degradation" (clipping, loudnessConsistency, spectralTilt) return

@@ -45,6 +45,14 @@ Two grep'able log lines appear in the browser console:
 
 Both lines are space-key-value formatted for easy spreadsheet import. Bench mode is purely additive — the flag is parsed once at boot and the worker-side timing collection is gated behind a `bench` flag in the init message; zero overhead in normal sessions.
 
+## Enrollment denoise (DeepFilterNet3, always on)
+
+Every voice-clone enrollment — both microphone recording and uploaded audio file — is passed through a DeepFilterNet3 pre-filter before the speech encoder sees it. The denoiser is a 12 MB on-device ONNX model (combined-graph re-trace of upstream DF3, hosted at [mcat/ownvoice-denoiser](https://github.com/mcat/ownvoice-denoiser)) targeted at recovering identity cues from hospital-room ambient noise.
+
+The denoiser worker is lazy-loaded on first enrollment, then memoised for the page lifetime. The model ships through the standard manifest + offlinePrimer + OPFS pathway, so once a clinician has run "Prepare for offline" the per-enrollment cost is just worker construction and ~600 frame inferences (RTF ~0.5 on desktop, ~1–2 on iPad — sub-second to a few seconds depending on recording length). Run `npm run assets:download` to populate the local model copy under `public/models/<MODELS_RELEASE>/denoiser/`.
+
+Quality scores produced after this PR are tagged `qualityVersion: 3` to signal that the underlying audio distribution has shifted. Sub-score formulas and weights are unchanged from v2; thresholds remain v2-calibrated and will be recalibrated against a denoise-on field corpus.
+
 ## Voice-quality score: when to recalibrate
 
 The voice-clone enrollment flow includes an advisory 0-100 quality score
