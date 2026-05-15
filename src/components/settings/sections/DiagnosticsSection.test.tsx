@@ -402,12 +402,19 @@ describe("DiagnosticsSection", () => {
 });
 
 describe("DiagnosticsSection — storage rows", () => {
+  const originalStorage = Object.getOwnPropertyDescriptor(navigator, "storage");
+
   beforeEach(() => {
     useOfflineStore.getState().reset();
     useAudioCacheStore.getState().abortAll();
     useSettingsStore.getState().reset();
-    useSettingsStore.setState({ lastInteractionAt: null });
     installStorageEstimate(500, 10_000);
+  });
+
+  afterEach(() => {
+    if (originalStorage) {
+      Object.defineProperty(navigator, "storage", originalStorage);
+    }
   });
 
   // -------- Row 1: Models on device --------

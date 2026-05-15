@@ -213,6 +213,14 @@ export function DiagnosticsSection({ t }: Props) {
       ? Math.min(100, (loadedBytes / expectedBytes) * 100)
       : 0;
 
+  const modelsOnDeviceText =
+    expectedBytes > 0
+      ? resolvePhrase("ui.provider.settings.offline.models_on_device", caregiverLang)
+          .replace("{bytes}", formatBytes(expectedBytes))
+      : resolvePhrase("ui.provider.settings.offline.models_not_yet_downloaded", caregiverLang);
+  const modelsGlyph = expectedBytes > 0 ? (anyNeedsRetry ? "⚠️" : "✓") : "…";
+  const modelsColor = expectedBytes > 0 ? (anyNeedsRetry ? warnColor : t.text) : t.muted;
+
   return (
     <Section label={resolvePhrase("ui.provider.settings.offline.heading", caregiverLang)} t={t}>
       <p style={{ margin: "0 0 14px", color: t.sub, fontSize: 14 }}>
@@ -411,93 +419,77 @@ export function DiagnosticsSection({ t }: Props) {
         </p>
       )}
 
-      {(() => {
-        const modelsOnDeviceText = expectedBytes > 0
-          ? resolvePhrase("ui.provider.settings.offline.models_on_device", caregiverLang)
-              .replace("{bytes}", formatBytes(expectedBytes))
-          : resolvePhrase("ui.provider.settings.offline.models_not_yet_downloaded", caregiverLang);
+      {/* Row 1 — Models on device */}
+      <div
+        style={{
+          marginTop: 14,
+          paddingTop: 12,
+          borderTop: `1px solid ${t.border}`,
+          color: modelsColor,
+          fontSize: 14,
+          fontWeight: 500,
+        }}
+      >
+        <span aria-hidden="true">{modelsGlyph} </span>
+        {modelsOnDeviceText}
+      </div>
 
-        const modelsGlyph = expectedBytes > 0
-          ? (anyNeedsRetry ? "⚠️" : "✓")
-          : "…";
-        const modelsColor = expectedBytes > 0
-          ? (anyNeedsRetry ? warnColor : t.text)
-          : t.muted;
-
-        return (
-          <>
-            {/* Row 1 — Models on device */}
-            <div
+      {/* Row 2 — Storage protection (hidden when API absent) */}
+      {health.persisted !== null && (
+        <div
+          style={{
+            marginTop: 8,
+            color: health.persisted ? t.text : warnColor,
+            fontSize: 14,
+          }}
+        >
+          <div>
+            <span aria-hidden="true">{health.persisted ? "🔒 " : "⚠️ "}</span>
+            {health.persisted
+              ? resolvePhrase("ui.provider.settings.offline.storage_protected", caregiverLang)
+              : resolvePhrase("ui.provider.settings.offline.storage_not_protected", caregiverLang)}
+          </div>
+          {!health.persisted && lastInteractionAt != null && (
+            <div style={{ marginTop: 4, fontSize: 13, color: t.sub }}>
+              {resolvePhrase("ui.provider.settings.offline.storage_last_used", caregiverLang)
+                .replace("{relative}", formatLastUsed(lastInteractionAt, caregiverLang))}
+            </div>
+          )}
+          {!health.persisted && (
+            <Btn
+              onClick={() => {
+                void health.requestPersist();
+              }}
               style={{
-                marginTop: 14,
-                paddingTop: 12,
-                borderTop: `1px solid ${t.border}`,
-                color: modelsColor,
-                fontSize: 14,
-                fontWeight: 500,
+                marginTop: 6,
+                padding: "6px 12px",
+                fontSize: 13,
+                borderRadius: 8,
+                border: `1px solid ${t.border}`,
+                background: "transparent",
+                color: t.text,
+                fontFamily: "inherit",
               }}
             >
-              <span aria-hidden="true">{modelsGlyph} </span>
-              {modelsOnDeviceText}
-            </div>
+              {resolvePhrase("ui.provider.settings.offline.check_protection_button", caregiverLang)}
+            </Btn>
+          )}
+        </div>
+      )}
 
-            {/* Row 2 — Storage protection (hidden when API absent) */}
-            {health.persisted !== null && (
-              <div
-                style={{
-                  marginTop: 8,
-                  color: health.persisted ? t.text : warnColor,
-                  fontSize: 14,
-                }}
-              >
-                <div>
-                  <span aria-hidden="true">{health.persisted ? "🔒 " : "⚠️ "}</span>
-                  {health.persisted
-                    ? resolvePhrase("ui.provider.settings.offline.storage_protected", caregiverLang)
-                    : resolvePhrase("ui.provider.settings.offline.storage_not_protected", caregiverLang)}
-                </div>
-                {!health.persisted && lastInteractionAt != null && (
-                  <div style={{ marginTop: 4, fontSize: 13, color: t.sub }}>
-                    {resolvePhrase("ui.provider.settings.offline.storage_last_used", caregiverLang)
-                      .replace("{relative}", formatLastUsed(lastInteractionAt, caregiverLang))}
-                  </div>
-                )}
-                {!health.persisted && (
-                  <Btn
-                    onClick={() => health.requestPersist()}
-                    style={{
-                      marginTop: 6,
-                      padding: "6px 12px",
-                      fontSize: 13,
-                      borderRadius: 8,
-                      border: `1px solid ${t.border}`,
-                      background: "transparent",
-                      color: t.text,
-                      fontFamily: "inherit",
-                    }}
-                  >
-                    {resolvePhrase("ui.provider.settings.offline.check_protection_button", caregiverLang)}
-                  </Btn>
-                )}
-              </div>
-            )}
-
-            {/* Row 3 — Origin usage estimate */}
-            <div
-              style={{
-                marginTop: 8,
-                fontSize: 12,
-                color: health.warning ? warnColor : t.muted,
-              }}
-            >
-              {resolvePhrase("ui.provider.settings.offline.origin_usage_estimate", caregiverLang)
-                .replace("{used}", formatBytes(health.usage))
-                .replace("{total}", formatBytes(health.quota))}
-              {health.warning && resolvePhrase("ui.provider.settings.offline.storage_low", caregiverLang)}
-            </div>
-          </>
-        );
-      })()}
+      {/* Row 3 — Origin usage estimate */}
+      <div
+        style={{
+          marginTop: 8,
+          fontSize: 12,
+          color: health.warning ? warnColor : t.muted,
+        }}
+      >
+        {resolvePhrase("ui.provider.settings.offline.origin_usage_estimate", caregiverLang)
+          .replace("{used}", formatBytes(health.usage))
+          .replace("{total}", formatBytes(health.quota))}
+        {health.warning && resolvePhrase("ui.provider.settings.offline.storage_low", caregiverLang)}
+      </div>
 
       {health.warning && (
         <Btn
