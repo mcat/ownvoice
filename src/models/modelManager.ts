@@ -24,6 +24,12 @@ class ModelManager {
     tts: { status: "idle", loaded: 0, total: 0, worker: null },
     "tts-encoder": { status: "idle", loaded: 0, total: 0, worker: null },
     stt: { status: "idle", loaded: 0, total: 0, worker: null },
+    // Denoiser is lazy: no worker boot at app start, no eager OPFS-warming
+    // (the offlinePrimer reaches it via the manifest entry). The entry here
+    // exists so getProgress() / verifyOPFSCache() / Settings storage views
+    // see a consistent ModelId set; status stays "idle" until the first
+    // denoise() call in denoiserClient.ts spins up the worker.
+    denoiser: { status: "idle", loaded: 0, total: 0, worker: null },
   };
   private listeners: Set<ProgressCallback> = new Set();
   private initialized = false;

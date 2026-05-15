@@ -1,16 +1,15 @@
 /**
  * Main-thread client for the DeepFilterNet3 denoiser worker.
  *
- * Lazy: the worker isn't created until the first denoise() call, since
- * the feature is currently gated behind the `?denoise=true` URL flag
- * (see main-app.tsx). Once created, the worker is memoised for the
- * lifetime of the page.
+ * Lazy: the worker isn't created until the first denoise() call —
+ * enrollment is the only consumer and it happens rarely (once per
+ * patient). Once created, the worker is memoised for the page lifetime.
  *
- * Singleton pattern rather than ModelManager registration because the
- * feature is opt-in — registering at boot would force every user to
- * fetch the 12 MB model regardless of flag state, and would couple it
- * to the offlinePrimer + boot integrity-check before the UI surface
- * makes that worth it.
+ * The denoiser model itself ships through the standard manifest +
+ * offlinePrimer + OPFS pathway (see public/models-manifest.json), so
+ * once the user has run "Prepare for offline" the worker fetch hits
+ * OPFS and is instant. Pre-primer first-record incurs a network fetch
+ * via the Pages Function proxy.
  */
 import { MODEL_URLS } from "./types";
 
@@ -83,11 +82,6 @@ export async function denoise(
     worker.addEventListener("message", handler);
     worker.postMessage({ type: "denoise", audio, sampleRate, requestId });
   });
-}
-
-/** Whether the user has opted into the enrollment-denoise pass. */
-export function isDenoiseEnabled(): boolean {
-  return (globalThis as { __OV_DENOISE__?: boolean }).__OV_DENOISE__ === true;
 }
 
 /** Test hook — reset the memoised worker. */

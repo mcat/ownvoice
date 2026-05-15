@@ -1,4 +1,4 @@
-export type ModelId = "tts" | "stt";
+export type ModelId = "tts" | "stt" | "denoiser";
 
 export interface ManifestFile {
   /** Filename relative to the model baseUrl. */

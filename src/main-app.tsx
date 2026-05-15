@@ -51,15 +51,6 @@ if (new URLSearchParams(globalThis.location?.search ?? "").get("bench") === "tru
   console.log("[OwnVoice:Bench] Bench mode active. Per-step TTS timings will be logged.");
 }
 
-// `?denoise=true` enables a DeepFilterNet3 enrollment denoise pass before
-// the speech-encoder ingestion. Opt-in while we collect score-distribution
-// data to recalibrate voiceQuality thresholds; default-off ship plan until
-// the recalibration trigger in [[project_voice_quality_recalibration]] fires.
-if (new URLSearchParams(globalThis.location?.search ?? "").get("denoise") === "true") {
-  (globalThis as { __OV_DENOISE__?: boolean }).__OV_DENOISE__ = true;
-  console.log("[OwnVoice:Denoise] Enrollment denoise active. Recordings will be passed through DF3 before encoder ingestion.");
-}
-
 // Handle PWA shortcut deep-links: ?tab=… and ?overlay=… are dispatched
 // after settings hydrate (so onboarding gates still apply), then stripped
 // from the URL so a reload doesn't re-fire them.

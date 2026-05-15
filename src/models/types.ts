@@ -32,7 +32,7 @@
 
 import { MODELS_ASSET_PREFIX } from "./assetVersions";
 
-export type ModelId = "tts" | "tts-encoder" | "stt";
+export type ModelId = "tts" | "tts-encoder" | "stt" | "denoiser";
 
 export type ModelStatus =
   | "idle"
