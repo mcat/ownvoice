@@ -27,6 +27,7 @@
 
 import * as ort from "onnxruntime-web";
 import { ORT_VERSION } from "./assetVersions";
+import { linearResample } from "./resample";
 
 ort.env.logLevel = "error";
 if (ort.env?.wasm) {
@@ -100,33 +101,6 @@ function rotateState(
   return next;
 }
 
-// ─── Resampling ────────────────────────────────────────────────────
-
-/**
- * Linear-interpolation resampler. The agent-side caller has access to
- * `OfflineAudioContext` for higher-quality resampling, but for an
- * enrollment clip this is plenty — the model itself is the dominant
- * quality factor and DF3 was trained on linear-resampled augmentations.
- */
-function resample(
-  audio: Float32Array,
-  fromRate: number,
-  toRate: number,
-): Float32Array {
-  if (fromRate === toRate) return audio;
-  const ratio = fromRate / toRate;
-  const outLength = Math.round(audio.length / ratio);
-  const out = new Float32Array(outLength);
-  for (let i = 0; i < outLength; i++) {
-    const srcIdx = i * ratio;
-    const lo = Math.floor(srcIdx);
-    const hi = Math.min(lo + 1, audio.length - 1);
-    const frac = srcIdx - lo;
-    out[i] = audio[lo] * (1 - frac) + audio[hi] * frac;
-  }
-  return out;
-}
-
 // ─── Session lifecycle ─────────────────────────────────────────────
 
 let session: ort.InferenceSession | null = null;
@@ -192,7 +166,7 @@ async function handleDenoise(
     `${LOG_PREFIX} Denoising ${inputDurationSec.toFixed(2)} s (in: ${sampleRate} Hz)`,
   );
 
-  const audio48k = resample(audio, sampleRate, TARGET_SAMPLE_RATE);
+  const audio48k = linearResample(audio, sampleRate, TARGET_SAMPLE_RATE);
 
   // Pad to whole frames + drain frames for the 30 ms lookahead.
   const inputFrames = Math.ceil(audio48k.length / FRAME_SAMPLES);
@@ -202,12 +176,13 @@ async function handleDenoise(
 
   const enhanced = new Float32Array(totalFrames * FRAME_SAMPLES);
   let state = initialState();
-  const frameView = new Float32Array(FRAME_SAMPLES);
   const t0 = performance.now();
 
   for (let f = 0; f < totalFrames; f++) {
-    frameView.set(padded.subarray(f * FRAME_SAMPLES, (f + 1) * FRAME_SAMPLES));
-    const inputTensor = new ort.Tensor("float32", frameView.slice(), [FRAME_SAMPLES]);
+    // ort.Tensor copies the data on construction in WASM EP, so handing it
+    // a subarray view of `padded` is safe and avoids a per-frame allocation.
+    const frame = padded.subarray(f * FRAME_SAMPLES, (f + 1) * FRAME_SAMPLES);
+    const inputTensor = new ort.Tensor("float32", frame, [FRAME_SAMPLES]);
     const results = await session.run({ input_frame: inputTensor, ...state });
     const out = results["enhanced_audio_frame"];
     if (!out) throw new Error("denoiser missing output: enhanced_audio_frame");
@@ -223,7 +198,7 @@ async function handleDenoise(
     lookaheadSamples + audio48k.length,
   );
 
-  const out = resample(aligned, TARGET_SAMPLE_RATE, sampleRate);
+  const out = linearResample(aligned, TARGET_SAMPLE_RATE, sampleRate);
   const elapsed = (performance.now() - t0) / 1000;
   const rtf = elapsed / inputDurationSec;
   console.log(

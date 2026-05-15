@@ -28,6 +28,7 @@
 
 import * as ort from "onnxruntime-web";
 import { ORT_VERSION } from "./assetVersions";
+import { linearResample } from "./resample";
 
 // Multi-threaded WASM is only available when `crossOriginIsolated` is true
 // (page + SW serve COOP+COEP). Silently fall back to single-thread otherwise.
@@ -107,25 +108,8 @@ const NO_SPEECH_THRESHOLD = 0.6;
 
 // ─── Audio preprocessing ────────────────────────────────────────────
 
-/**
- * Resample audio to 16 kHz using linear interpolation.
- */
 function resampleTo16k(audio: Float32Array, fromRate: number): Float32Array {
-  if (fromRate === TARGET_SAMPLE_RATE) return audio;
-
-  const ratio = fromRate / TARGET_SAMPLE_RATE;
-  const outLength = Math.round(audio.length / ratio);
-  const out = new Float32Array(outLength);
-
-  for (let i = 0; i < outLength; i++) {
-    const srcIdx = i * ratio;
-    const lo = Math.floor(srcIdx);
-    const hi = Math.min(lo + 1, audio.length - 1);
-    const frac = srcIdx - lo;
-    out[i] = audio[lo] * (1 - frac) + audio[hi] * frac;
-  }
-
-  return out;
+  return linearResample(audio, fromRate, TARGET_SAMPLE_RATE);
 }
 
 /**
