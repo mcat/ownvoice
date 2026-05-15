@@ -2,12 +2,17 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { streamWithProgress } from "./workerStreamingFetch";
 
 /** Build a stubbed Response whose body emits the given chunks, with the
- *  given content-length header. */
+ *  given content-length header. `headers.get` returns null for any name
+ *  other than "content-length" — that's load-bearing for catching mutations
+ *  that change the requested header name. */
 function makeResponse(chunks: Uint8Array[], contentLength: number) {
   let i = 0;
   return {
     ok: true,
-    headers: { get: () => String(contentLength) },
+    headers: {
+      get: (name: string) =>
+        name === "content-length" ? String(contentLength) : null,
+    },
     body: {
       getReader: () => ({
         read: vi.fn(async () =>

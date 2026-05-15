@@ -1,3 +1,27 @@
+/*
+ * Mutation-audit accepted-survivor categories (as of 2026-05-15):
+ *
+ *  - Piecewise-linear curve interior points (`[1.0, 30]`-style ArrayDeclaration
+ *    mutants in `scoreSnr` / `scoreCoverage` / `scorePitchVariation` etc.).
+ *    Killing these would lock in the exact curve shape the team designs
+ *    iteratively. Sub-score outputs are tested at representative inputs;
+ *    asserting on every interior knot is brittle for an advisory metric.
+ *
+ *  - FFT / spectral arithmetic intermediates (ArithmeticOperator and
+ *    EqualityOperator mutants in `computeSpectralTiltAlphaDb`). Killing
+ *    requires asserting exact bin powers, which couples tests to FFT
+ *    implementation details rather than the classified output
+ *    (boomy/tinny/neutral) we actually care about.
+ *
+ *  - Guard-chain LogicalOperator mutants (`a && b` → `a || b`) where both
+ *    arms are exercised by separate tests with different observable
+ *    outcomes. The mutant produces the same observable result on the
+ *    inputs we test; the corner case where they'd diverge isn't load-
+ *    bearing for the advisory score.
+ *
+ * If the score becomes a hard gate rather than advisory, revisit — the
+ * brittleness/value tradeoff flips at that point.
+ */
 import { describe, it, expect } from "vitest";
 import {
   QUALITY_VERSION,
@@ -346,6 +370,10 @@ describe("scoreVoiceSample", () => {
     expect(result.breakdown.spectralTilt).toBeNull();
     expect(result.breakdown.voicedFraction).toBe(0);
     expect(result.breakdown.coverage).toBe(0);
+    // When the no-speech guard fires, tilt direction defaults to "neutral"
+    // rather than being computed from FFT of all-zero audio (which is
+    // undefined). Asserting the default keeps the contract pinned.
+    expect(result.spectralTiltDirection).toBe("neutral");
   });
 
   it("scores low-amplitude ambient noise at zero (no-speech guard fires)", () => {
@@ -413,6 +441,18 @@ describe("isValidQualityResult", () => {
     v.spectralTiltDirection = "weird";
     expect(isValidQualityResult(v)).toBe(false);
   });
+  // All three documented spectralTiltDirection values must be accepted.
+  // Without these, the VALID_TILT_DIRECTIONS Set's "boomy" and "tinny"
+  // entries are never exercised — only "neutral" is via the default
+  // `valid()` fixture — and a future refactor could silently drop them.
+  it.each(["boomy", "tinny", "neutral"] as const)(
+    "accepts spectralTiltDirection: %s",
+    (dir) => {
+      const v = valid() as { spectralTiltDirection: string };
+      v.spectralTiltDirection = dir;
+      expect(isValidQualityResult(v)).toBe(true);
+    },
+  );
   it("rejects pitchVariation undefined (only null is allowed)", () => {
     const v = valid() as { breakdown: Record<string, unknown> };
     v.breakdown.pitchVariation = undefined;
