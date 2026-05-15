@@ -30,7 +30,15 @@ const THREAD_VISIBLE: ReadonlySet<string> = new Set([
  *  export; the cap only narrows the in-memory window. 500 entries is
  *  generous (≈ a full caregiver shift of dense use) while keeping the
  *  in-memory footprint well under 1 MB. */
-const THREAD_VIEW_CAP = 500;
+export const THREAD_VIEW_CAP = 500;
+
+/** Pure helper: trim a list to the most-recent `cap` entries.
+ *  Exported so the cap invariant can be unit-tested without driving the
+ *  full IDB-cursor + subscribe path of useThreadView, which is fragile
+ *  to seed reliably under fake-indexeddb at the 500-entry scale. */
+export function capToWindow<T>(entries: readonly T[], cap: number): readonly T[] {
+  return entries.length > cap ? entries.slice(-cap) : entries;
+}
 
 function recordToEntry(r: AuditRecord, patientName: string): ThreadEntry {
   const actor = r.attributes[ATTR.ACTOR] as "patient" | "provider" | undefined;
@@ -93,25 +101,21 @@ export function useThreadView(
       });
       db.close();
       if (!cancelled) {
-        // Keep only the most recent THREAD_VIEW_CAP entries — index is
-        // ascending by time, so slicing from the end retains the latest.
-        setEntries(
-          initial.length > THREAD_VIEW_CAP
-            ? initial.slice(-THREAD_VIEW_CAP)
-            : initial,
-        );
+        // Index is ascending by time, so the most recent entries sit at
+        // the end — capToWindow slices from there.
+        setEntries(capToWindow(initial, THREAD_VIEW_CAP) as ThreadEntry[]);
       }
     })();
 
     const unsub = subscribe((rec) => {
       if (!hash || rec.patient_id_hash !== hash) return;
       if (!THREAD_VISIBLE.has(rec.name)) return;
-      setEntries((prev) => {
-        const next = [...prev, recordToEntry(rec, patientName)];
-        return next.length > THREAD_VIEW_CAP
-          ? next.slice(-THREAD_VIEW_CAP)
-          : next;
-      });
+      setEntries((prev) =>
+        capToWindow(
+          [...prev, recordToEntry(rec, patientName)],
+          THREAD_VIEW_CAP,
+        ) as ThreadEntry[],
+      );
     });
 
     return () => {
