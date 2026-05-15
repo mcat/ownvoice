@@ -142,9 +142,12 @@ useUIStore.subscribe((state, prev) => {
 // (used to derive the patient hash) is known. Hydration may have already
 // completed by the time this runs — handle both cases.
 {
-  const bootAudit = (): void => {
+  const bootAudit = async (): Promise<void> => {
     const cfg = useSettingsStore.getState().cfg;
-    void initAudit({
+    // Await initAudit so the previous-crash log() call below isn't
+    // dropped: the audit logger no-ops when its IDB handle is unset,
+    // which is the case until initLogger runs at the end of initAudit.
+    await initAudit({
       activePatientId: cfg?.activePatientId ?? null,
       onAbandoned: async (list) => {
         // Reconcile against current settings before surfacing — a
@@ -170,7 +173,7 @@ useUIStore.subscribe((state, prev) => {
     // present, the prior session terminated without running the pagehide
     // cleanup — most commonly a Safari renderer-OOM on iPad. The stage
     // label identifies which boundary was active at termination. Emitted
-    // once per boot (after initAudit so the event is buffered).
+    // once per boot after initAudit so the logger's IDB handle is wired.
     if (__ovPrevTombstone) {
       log({
         name: EVENT.DIAG_PREVIOUS_CRASH,
@@ -186,10 +189,10 @@ useUIStore.subscribe((state, prev) => {
     }
   };
   if (useSettingsStore.getState()._hasHydrated) {
-    bootAudit();
+    void bootAudit();
   } else {
     useSettingsStore.persist.onFinishHydration?.(() => {
-      bootAudit();
+      void bootAudit();
     });
   }
 

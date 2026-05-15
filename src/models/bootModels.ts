@@ -137,6 +137,10 @@ export async function bootTTSWasm(): Promise<void> {
       } else if (e.data.type === "warm") {
         mgr.markWarm("tts");
         recordStage("boot:tts-wasm-warm");
+      } else if (e.data.type === "stage" && typeof e.data.label === "string") {
+        // Worker-emitted memdiag stage label (currently from handleEmbed's
+        // enrollment substeps; recordStage is a no-op when memdiag is off).
+        recordStage(e.data.label);
       } else if (e.data.type === "progress" && e.data.total === -1) {
         // Debug: EP signal from synthesis start (loaded=1 → WebGPU, loaded=0 → WASM)
         console.log(`[OwnVoice:TTS] Synthesis EP: ${e.data.loaded ? "WebGPU" : "WASM"}`);
