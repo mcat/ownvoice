@@ -141,5 +141,22 @@ done
 echo "  Done: $(du -sh "$DIR" | cut -f1)"
 echo ""
 
+# ── DeepFilterNet3 denoiser (~12 MB) ──
+# Re-traced combined ONNX (raw PCM in/out @ 48 kHz). Hosted in a separate
+# provenance repo, pinned to the commit that exported the artifact we audited.
+# Upstream weights: Rikorose/DeepFilterNet (MIT/Apache-2.0).
+# Re-trace script: grazder/DeepFilterNet@408414f (see ownvoice-denoiser/NOTICE).
+DENOISER_COMMIT=17d22a5b028bb50e77538c5feb20e30d80cef229
+DENOISER_BASE="https://raw.githubusercontent.com/mcat/ownvoice-denoiser/$DENOISER_COMMIT"
+DIR="$BASE_DIR/denoiser"
+mkdir -p "$DIR"
+
+echo "==> DeepFilterNet3 denoiser"
+for f in denoiser_model.onnx LICENSE-APACHE LICENSE-MIT NOTICE; do
+  [ -f "$DIR/$f" ] && echo "  $f (cached)" || { echo "  $f"; curl -sL -o "$DIR/$f" "$DENOISER_BASE/$f"; }
+done
+echo "  Done: $(du -sh "$DIR" | cut -f1)"
+echo ""
+
 echo "All assets downloaded."
 du -sh "$ROOT/public/ort" "$ROOT/public/models"
