@@ -14,6 +14,11 @@ import { initAudit } from "./audit/init";
 import { setActivePatientHash } from "./audit/session";
 import { patientIdHash } from "./audit/hash";
 import { resumeWorkflow, reconcileAbandonedWithSettings } from "./audit/recovery";
+import {
+  enableMemDiag,
+  readPreviousTombstone,
+  recordStage,
+} from "./diagnostics/crashTombstone";
 
 window.addEventListener("error", (ev) => {
   log({
@@ -46,9 +51,25 @@ window.addEventListener("unhandledrejection", (ev) => {
 // issue #163. Look for `[OwnVoice:Bench]` lines in the console. The
 // flag is parsed once at boot and propagated to workers via the init
 // message; toggling at runtime requires a reload.
-if (new URLSearchParams(globalThis.location?.search ?? "").get("bench") === "true") {
+const __ovParams = new URLSearchParams(globalThis.location?.search ?? "");
+if (__ovParams.get("bench") === "true") {
   (globalThis as { __OV_BENCH__?: boolean }).__OV_BENCH__ = true;
   console.log("[OwnVoice:Bench] Bench mode active. Per-step TTS timings will be logged.");
+}
+
+// `?memdiag=true` enables the boundary-by-boundary memory-crash tombstone
+// in src/diagnostics/crashTombstone.ts. Each lifecycle stage records a
+// label to localStorage; on the next boot, if the lifecycle pagehide
+// handler did not clear that label, the previous session ended
+// ungracefully (most likely Safari renderer-OOM on iPad). Use when
+// investigating crashes; off in production. Read the tombstone first —
+// it tells us about the *previous* session regardless of whether memdiag
+// is enabled *now*.
+const __ovPrevTombstone = readPreviousTombstone();
+if (__ovParams.get("memdiag") === "true") {
+  enableMemDiag();
+  console.log("[OwnVoice:MemDiag] Memory crash tombstone active. Stage labels written to localStorage.");
+  recordStage("boot:main-app");
 }
 
 // Handle PWA shortcut deep-links: ?tab=… and ?overlay=… are dispatched
@@ -121,9 +142,12 @@ useUIStore.subscribe((state, prev) => {
 // (used to derive the patient hash) is known. Hydration may have already
 // completed by the time this runs — handle both cases.
 {
-  const bootAudit = (): void => {
+  const bootAudit = async (): Promise<void> => {
     const cfg = useSettingsStore.getState().cfg;
-    void initAudit({
+    // Await initAudit so the previous-crash log() call below isn't
+    // dropped: the audit logger no-ops when its IDB handle is unset,
+    // which is the case until initLogger runs at the end of initAudit.
+    await initAudit({
       activePatientId: cfg?.activePatientId ?? null,
       onAbandoned: async (list) => {
         // Reconcile against current settings before surfacing — a
@@ -144,12 +168,31 @@ useUIStore.subscribe((state, prev) => {
         }
       },
     });
+
+    // Surface the previous-session tombstone via the audit log. If it's
+    // present, the prior session terminated without running the pagehide
+    // cleanup — most commonly a Safari renderer-OOM on iPad. The stage
+    // label identifies which boundary was active at termination. Emitted
+    // once per boot after initAudit so the logger's IDB handle is wired.
+    if (__ovPrevTombstone) {
+      log({
+        name: EVENT.DIAG_PREVIOUS_CRASH,
+        severity: "WARN",
+        attributes: {
+          [ATTR.DIAG_LAST_STAGE]: __ovPrevTombstone.stage,
+          [ATTR.DIAG_LAST_STAGE_AGE_MS]: __ovPrevTombstone.ageMs,
+        },
+      });
+      console.warn(
+        `[OwnVoice:MemDiag] Previous session ended ungracefully at stage "${__ovPrevTombstone.stage}" (${__ovPrevTombstone.ageMs}ms ago).`,
+      );
+    }
   };
   if (useSettingsStore.getState()._hasHydrated) {
-    bootAudit();
+    void bootAudit();
   } else {
     useSettingsStore.persist.onFinishHydration?.(() => {
-      bootAudit();
+      void bootAudit();
     });
   }
 

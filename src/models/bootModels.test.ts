@@ -24,6 +24,17 @@ vi.mock("./modelManager", () => ({
   }),
 }));
 
+// Mock the settings store so bootTTSWasm's warmup-skip decision is
+// deterministic — the real store goes through Zustand's persist
+// middleware (async IDB hydration in jsdom) which would race with the
+// synchronous onmessage handler under test.
+const mockSettingsGetState = vi.fn<
+  () => { cfg: { patients: { speakerData: unknown }[] } | null; _hasHydrated: boolean }
+>(() => ({ cfg: null, _hasHydrated: false }));
+vi.mock("../stores/settingsStore", () => ({
+  useSettingsStore: { getState: mockSettingsGetState },
+}));
+
 vi.mock("./modelsManifest", () => ({
   loadManifest: vi.fn(async () => ({
     version: 1,
@@ -57,6 +68,9 @@ beforeEach(() => {
   vi.clearAllMocks();
   createdWorkers.length = 0;
   mockIsReady.mockReturnValue(false);
+  // Default to "not hydrated yet" — matches the prior-art assumption
+  // baked into the existing eager-warmup tests, so they keep passing.
+  mockSettingsGetState.mockReturnValue({ cfg: null, _hasHydrated: false });
 });
 
 describe("bootModels", () => {
@@ -257,5 +271,75 @@ describe("bootModels — eager warmup", () => {
     });
 
     expect(mockSetError).not.toHaveBeenCalled();
+  });
+});
+
+describe("bootTTSWasm — skip warmup when all patients enrolled", () => {
+  function hasWarmupCall(worker: MockWorker): boolean {
+    return worker.postMessage.mock.calls.some(
+      (call: unknown[]) =>
+        typeof call[0] === "object" &&
+        call[0] !== null &&
+        (call[0] as { type?: string }).type === "warmup",
+    );
+  }
+
+  it("skips warmup when every patient already has speakerData", async () => {
+    // Returning device with all patients fully enrolled. The eager
+    // encoder warmup would load ~291 MB just to prep first-enrollment
+    // latency — pointless when no enrollment is pending. Skipping
+    // drops that peak from the iPad boot path.
+    mockSettingsGetState.mockReturnValue({
+      cfg: { patients: [{ speakerData: { condEmb: [0.1] } }] },
+      _hasHydrated: true,
+    });
+
+    const { bootTTSWasm } = await import("./bootModels");
+    await bootTTSWasm();
+    createdWorkers[0].onmessage?.({ data: { type: "ready" } });
+
+    expect(hasWarmupCall(createdWorkers[0])).toBe(false);
+  });
+
+  it("posts warmup when at least one patient is missing speakerData", async () => {
+    mockSettingsGetState.mockReturnValue({
+      cfg: { patients: [{ speakerData: { condEmb: [0.1] } }, { speakerData: null }] },
+      _hasHydrated: true,
+    });
+
+    const { bootTTSWasm } = await import("./bootModels");
+    await bootTTSWasm();
+    createdWorkers[0].onmessage?.({ data: { type: "ready" } });
+
+    expect(hasWarmupCall(createdWorkers[0])).toBe(true);
+  });
+
+  it("posts warmup when settings have not hydrated yet (fall through to old behavior)", async () => {
+    // Edge case: TTS worker's "ready" arrives before settings rehydrate
+    // from IDB. We err on the side of warming so the user-facing
+    // first-enrollment path stays fast.
+    mockSettingsGetState.mockReturnValue({
+      cfg: { patients: [{ speakerData: { condEmb: [0.1] } }] },
+      _hasHydrated: false,
+    });
+
+    const { bootTTSWasm } = await import("./bootModels");
+    await bootTTSWasm();
+    createdWorkers[0].onmessage?.({ data: { type: "ready" } });
+
+    expect(hasWarmupCall(createdWorkers[0])).toBe(true);
+  });
+
+  it("posts warmup on a fresh device (no patients)", async () => {
+    mockSettingsGetState.mockReturnValue({
+      cfg: { patients: [] },
+      _hasHydrated: true,
+    });
+
+    const { bootTTSWasm } = await import("./bootModels");
+    await bootTTSWasm();
+    createdWorkers[0].onmessage?.({ data: { type: "ready" } });
+
+    expect(hasWarmupCall(createdWorkers[0])).toBe(true);
   });
 });

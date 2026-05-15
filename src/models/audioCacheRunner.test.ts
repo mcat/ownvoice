@@ -30,6 +30,7 @@ import {
   abort,
   pauseAll,
   discardRun,
+  speakerKindForLog,
 } from "./audioCacheRunner";
 
 const PATIENT_EMBED = new Float32Array([0.1, 0.2, 0.3, 0.4, 0.5]);
@@ -886,3 +887,24 @@ describe("audioCacheRunner.discardRun", () => {
     expect(useAudioCacheStore.getState().runs).toEqual({});
   });
 });
+
+describe('speakerKindForLog — PHI invariant', () => {
+  // These stage labels flow into localStorage via recordStage and then
+  // into the audit log via the DIAG_PREVIOUS_CRASH event. Patient UUIDs
+  // are hashed elsewhere in the audit pipeline; this helper must collapse
+  // them down to a workflow descriptor so a leaked tombstone can't be
+  // used to re-identify a patient.
+  it('strips patient UUID from patient: key', () => {
+    expect(speakerKindForLog('patient:cb1d-uuid-7ef2' as never)).toBe('patient');
+  });
+
+  it('preserves the :pain suffix while stripping UUID', () => {
+    expect(speakerKindForLog('patient:cb1d-uuid-7ef2:pain' as never)).toBe('patient:pain');
+  });
+
+  it('passes provider:N through unchanged (N is index, not PHI)', () => {
+    expect(speakerKindForLog('provider:0' as never)).toBe('provider:0');
+    expect(speakerKindForLog('provider:3' as never)).toBe('provider:3');
+  });
+});
+

@@ -37,6 +37,9 @@ export const ATTR = {
   AUDIT_DROPPED_COUNT:    "ownvoice.audit.dropped_count",
   AUDIT_DEGRADED_REASON:  "ownvoice.audit.degraded_reason",
   AUDIT_BYTES_USED:       "ownvoice.audit.bytes_used",
+
+  DIAG_LAST_STAGE:        "ownvoice.diagnostics.last_stage",
+  DIAG_LAST_STAGE_AGE_MS: "ownvoice.diagnostics.last_stage_age_ms",
 } as const;
 
 export const PHI_ATTR_KEYS: ReadonlySet<string> = new Set([

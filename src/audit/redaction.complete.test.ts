@@ -34,6 +34,12 @@ const NON_PHI_ATTR_KEYS: ReadonlySet<string> = new Set([
   ATTR.AUDIT_DEGRADED_REASON,
   ATTR.AUDIT_BYTES_USED,
   ATTR.GRANTED,
+  // Memory-crash tombstone — stage labels are workflow descriptors
+  // (e.g. "boot:tts-gpu-init", "pregen:patient:42/700"). Patient
+  // UUIDs are stripped at the recordStage call site (see
+  // speakerKindForLog in audioCacheRunner.ts), so the value is safe.
+  ATTR.DIAG_LAST_STAGE,
+  ATTR.DIAG_LAST_STAGE_AGE_MS,
 ]);
 
 describe("PHI redaction policy completeness", () => {

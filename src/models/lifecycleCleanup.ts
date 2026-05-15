@@ -1,5 +1,6 @@
 import { getModelManager } from "./modelManager";
 import type { ModelId } from "./types";
+import { clearTombstone } from "../diagnostics/crashTombstone";
 
 const MODEL_IDS: ModelId[] = ["tts", "tts-encoder", "stt", "denoiser"];
 
@@ -35,6 +36,10 @@ const MODEL_IDS: ModelId[] = ["tts", "tts-encoder", "stt", "denoiser"];
 export function installModelLifecycleCleanup(): void {
   const handler = (e: PageTransitionEvent): void => {
     if (e.persisted) return;
+    // Mark this session as having ended gracefully so the next boot
+    // doesn't mistake a clean exit for a renderer-OOM kill. No-op when
+    // memdiag wasn't enabled (no tombstone was ever written).
+    clearTombstone();
     const mgr = getModelManager();
     for (const id of MODEL_IDS) {
       const w = mgr.getWorker(id);

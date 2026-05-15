@@ -411,6 +411,15 @@ async function handleEmbed(
   requestId: number,
 ): Promise<void> {
   try {
+    // Stage labels for the memory-crash tombstone (gated on the main
+    // thread by ?memdiag=true; the worker always emits, the receiver
+    // decides whether to record). Enrollment is the second-largest
+    // memory peak in the app — the speech encoder loads ~291 MB on
+    // top of any already-resident GPU TTS sessions (~913 MB). Labeling
+    // each sub-step lets us tell encoder-load OOM from infer-OOM from
+    // post-infer JS-array-allocation OOM.
+    _postMessage({ type: "stage", label: "embed:start" });
+
     let audioMax = 0;
     let audioRms = 0;
     for (let i = 0; i < audio.length; i++) {
@@ -426,6 +435,7 @@ async function handleEmbed(
     // are near-instant. Notify the UI so it can switch to a "model
     // loading" indicator instead of a generic spinner.
     _postMessage({ type: "embed-progress", stage: "loading-model" });
+    _postMessage({ type: "stage", label: "embed:encoder-load" });
     console.log(`${LOG} Loading speech_encoder (on-demand, WASM)...`);
     const tLoad0 = performance.now();
     const speechEncoderSession = await createSession(
@@ -438,6 +448,7 @@ async function handleEmbed(
 
     // Run speech encoder
     // Input: audio_values (float32, [1, audio_length])
+    _postMessage({ type: "stage", label: "embed:infer" });
     const audioTensor = new ort.Tensor("float32", audio, [1, audio.length]);
     const tInfer0 = performance.now();
     const results = await speechEncoderSession.run({ audio_values: audioTensor });
@@ -480,6 +491,10 @@ async function handleEmbed(
 
     // Convert all typed arrays to plain number[] so the data survives
     // JSON.stringify round-trips (zustand persist uses JSON storage).
+    // Sized notes: condEmb alone is typically ~70K floats; boxed-double
+    // array storage roughly doubles the heap cost vs. the Float32Array
+    // it was just converted from — a real (small) memory peak here.
+    _postMessage({ type: "stage", label: "embed:array-from" });
     const speakerData: SpeakerData = {
       condEmb: Array.from(condEmb.data as Float32Array),
       condEmbShape: condEmb.dims as number[],
@@ -492,9 +507,11 @@ async function handleEmbed(
     };
 
     // Unload speech encoder to free ~178 MB
+    _postMessage({ type: "stage", label: "embed:encoder-release" });
     speechEncoderSession.release();
     console.log(`${LOG} Speech encoder unloaded. Embedding extracted.`);
 
+    _postMessage({ type: "stage", label: "embed:done" });
     _postMessage({ type: "embedding", data: speakerData, requestId });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);

@@ -2,6 +2,8 @@ import { getModelManager } from "./modelManager";
 import { MODEL_URLS } from "./types";
 import { loadManifest, type ModelId } from "./modelsManifest";
 import { useOfflineStore } from "../stores/offlineStore";
+import { useSettingsStore } from "../stores/settingsStore";
+import { recordStage } from "../diagnostics/crashTombstone";
 
 /**
  * Boot all on-device models.
@@ -30,6 +32,7 @@ export async function bootModels(): Promise<void> {
  */
 export async function bootSTT(): Promise<void> {
   const mgr = getModelManager();
+  recordStage("boot:stt-init");
   await mgr.init();
 
   if ("gpu" in navigator) {
@@ -47,6 +50,7 @@ export async function bootSTT(): Promise<void> {
           // without posting an extra `warmup` message (which the GPU
           // worker doesn't handle and would log as "Unknown message type").
           mgr.markWarm("stt");
+          recordStage("boot:stt-gpu-warm");
           console.log("[OwnVoice] STT: WebGPU ready");
         } else if (e.data.type === "error") {
           if (!mgr.isReady("stt")) {
@@ -87,9 +91,11 @@ function bootSTTWasm(): void {
       if (e.data.type === "ready") {
         mgr.setWorker("stt", sttWorker);
         mgr.setReady("stt");
+        recordStage("boot:stt-wasm-ready");
         sttWorker.postMessage({ type: "warmup" });
       } else if (e.data.type === "warm") {
         mgr.markWarm("stt");
+        recordStage("boot:stt-wasm-warm");
       } else if (e.data.type === "error") {
         mgr.setError("stt", e.data.message);
       }
@@ -111,6 +117,7 @@ function bootSTTWasm(): void {
  */
 export async function bootTTSWasm(): Promise<void> {
   const mgr = getModelManager();
+  recordStage("boot:tts-wasm-init");
   await mgr.init();
 
   try {
@@ -124,11 +131,43 @@ export async function bootTTSWasm(): Promise<void> {
       if (e.data.type === "ready") {
         ttsInitDone = true;
         mgr.setReady("tts");
-        // Eager warmup: download + run a one-shot encoder inference so
-        // the user's first cloning attempt isn't gated on a 591 MB fetch.
-        ttsWorker.postMessage({ type: "warmup" });
+        recordStage("boot:tts-wasm-ready");
+        // Skip the eager encoder warmup when every patient already has
+        // a speakerData embedding. The warmup loads ~291 MB of speech
+        // encoder weights solely to make the *first* enrollment fast;
+        // on a returning device with no pending enrollment, that's pure
+        // boot-time memory pressure that Safari/iPad can't absorb on
+        // top of GPU TTS shader compile + STT init. handleEmbed loads
+        // the encoder on demand (same code path) when a real
+        // enrollment is needed, so first enrollment for a *new* patient
+        // pays a few extra seconds (already-OPFS-cached weights → fast)
+        // but the steady-state boot path drops a ~291 MB peak.
+        // Fall through to warmup when state is uncertain — !hydrated or
+        // cfg null preserves the prior eager-warmup behavior.
+        const state = useSettingsStore.getState();
+        const cfg = state.cfg;
+        const allEnrolled =
+          state._hasHydrated &&
+          !!cfg &&
+          cfg.patients.length > 0 &&
+          cfg.patients.every((p) => !!p.speakerData);
+        if (allEnrolled) {
+          recordStage("boot:tts-wasm-warmup-skipped");
+          console.log(
+            "[OwnVoice:TTS] Warmup skipped — every patient already has a voice clone, encoder will load on next enrollment.",
+          );
+        } else {
+          // Eager warmup: download + run a one-shot encoder inference so
+          // the user's first cloning attempt isn't gated on a 591 MB fetch.
+          ttsWorker.postMessage({ type: "warmup" });
+        }
       } else if (e.data.type === "warm") {
         mgr.markWarm("tts");
+        recordStage("boot:tts-wasm-warm");
+      } else if (e.data.type === "stage" && typeof e.data.label === "string") {
+        // Worker-emitted memdiag stage label (currently from handleEmbed's
+        // enrollment substeps; recordStage is a no-op when memdiag is off).
+        recordStage(e.data.label);
       } else if (e.data.type === "progress" && e.data.total === -1) {
         // Debug: EP signal from synthesis start (loaded=1 → WebGPU, loaded=0 → WASM)
         console.log(`[OwnVoice:TTS] Synthesis EP: ${e.data.loaded ? "WebGPU" : "WASM"}`);
