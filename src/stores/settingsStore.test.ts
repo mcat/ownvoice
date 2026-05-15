@@ -527,14 +527,16 @@ describe("multi-patient actions", () => {
     expect(useSettingsStore.getState().cfg).toBe(before);
   });
 
-  it("reset() clears cfg and speakerData to null", () => {
+  it("reset() clears cfg, speakerData, and lastInteractionAt to null", () => {
     useSettingsStore.setState({
       cfg: makeTestCfg(),
       speakerData: { foo: 1 },
+      lastInteractionAt: Date.now(),
     });
     useSettingsStore.getState().reset();
     expect(useSettingsStore.getState().cfg).toBeNull();
     expect(useSettingsStore.getState().speakerData).toBeNull();
+    expect(useSettingsStore.getState().lastInteractionAt).toBeNull();
   });
 });
 

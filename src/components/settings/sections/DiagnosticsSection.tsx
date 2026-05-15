@@ -213,13 +213,26 @@ export function DiagnosticsSection({ t }: Props) {
       ? Math.min(100, (loadedBytes / expectedBytes) * 100)
       : 0;
 
-  const modelsOnDeviceText =
-    expectedBytes > 0
-      ? resolvePhrase("ui.provider.settings.offline.models_on_device", caregiverLang)
-          .replace("{bytes}", formatBytes(expectedBytes))
-      : resolvePhrase("ui.provider.settings.offline.models_not_yet_downloaded", caregiverLang);
-  const modelsGlyph = expectedBytes > 0 ? (anyNeedsRetry ? "⚠️" : "✓") : "…";
-  const modelsColor = expectedBytes > 0 ? (anyNeedsRetry ? warnColor : t.text) : t.muted;
+  const modelsRow =
+    expectedBytes === 0
+      ? {
+          text: resolvePhrase("ui.provider.settings.offline.models_not_yet_downloaded", caregiverLang),
+          glyph: "…",
+          color: t.muted,
+        }
+      : anyNeedsRetry
+        ? {
+            text: resolvePhrase("ui.provider.settings.offline.models_on_device", caregiverLang)
+              .replace("{bytes}", formatBytes(expectedBytes)),
+            glyph: "⚠️",
+            color: warnColor,
+          }
+        : {
+            text: resolvePhrase("ui.provider.settings.offline.models_on_device", caregiverLang)
+              .replace("{bytes}", formatBytes(expectedBytes)),
+            glyph: "✓",
+            color: t.text,
+          };
 
   return (
     <Section label={resolvePhrase("ui.provider.settings.offline.heading", caregiverLang)} t={t}>
@@ -425,13 +438,13 @@ export function DiagnosticsSection({ t }: Props) {
           marginTop: 14,
           paddingTop: 12,
           borderTop: `1px solid ${t.border}`,
-          color: modelsColor,
+          color: modelsRow.color,
           fontSize: 14,
           fontWeight: 500,
         }}
       >
-        <span aria-hidden="true">{modelsGlyph} </span>
-        {modelsOnDeviceText}
+        <span aria-hidden="true">{modelsRow.glyph} </span>
+        {modelsRow.text}
       </div>
 
       {/* Row 2 — Storage protection (hidden when API absent) */}

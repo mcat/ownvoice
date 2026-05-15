@@ -100,11 +100,15 @@ export const useSettingsStore = create<SettingsState>()(
         set((s) => (s.cfg ? { cfg: { ...s.cfg, ...partial } } : {})),
       setSpeakerData: (speakerData) => set({ speakerData }),
       setHasHydrated: (v) => set({ _hasHydrated: v }),
-      reset: () => set({ cfg: null, speakerData: null }),
+      reset: () =>
+        set({ cfg: null, speakerData: null, lastInteractionAt: null }),
 
       recordInteraction: () => {
         const { lastInteractionAt } = get();
         const now = Date.now();
+        // `lastInteractionAt <= now` guards a future timestamp from clock skew
+        // (NTP backward jump, manual clock change) — otherwise the action
+        // would no-op forever until wall-clock catches up.
         if (
           lastInteractionAt != null &&
           lastInteractionAt <= now &&
