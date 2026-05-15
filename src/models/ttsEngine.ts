@@ -23,6 +23,8 @@
  * need to respawn the worker.
  */
 
+import { recordStage } from "../diagnostics/crashTombstone";
+
 interface SpeakerData {
   condEmb: number[];
   condEmbShape: number[];
@@ -139,6 +141,7 @@ export function initGPU(modelUrl: string): Promise<boolean> {
     return Promise.resolve(false);
   }
 
+  recordStage("boot:tts-gpu-init");
   return new Promise<boolean>((resolve) => {
     let settled = false;
     // Declared at Promise-closure scope so `settle` can clear it; the
@@ -178,6 +181,7 @@ export function initGPU(modelUrl: string): Promise<boolean> {
       worker.onmessage = (e) => {
         if (e.data.type === "ready") {
           markReady();
+          recordStage("boot:tts-gpu-ready");
           document.title = "OwnVoice [GPU ready]";
           console.log("[OwnVoice:TTS:GPU] WebGPU TTS engine ready");
           settle(true);
@@ -241,6 +245,10 @@ export function synthesizeGPU(
 
   const timeoutMs = opts?.timeoutMs ?? DEFAULT_SYNTH_TIMEOUT_MS;
   const id = ++nextSynthId;
+  // Stage label scoped to one synth, so a crash mid-decode tells us
+  // whether KV-cache buffer growth on this call's specific text/length
+  // tripped Safari, vs. an earlier boundary.
+  recordStage(`synth:gpu:${id}`);
 
   return new Promise((resolve, reject) => {
     const handler = (e: MessageEvent) => {
@@ -252,6 +260,7 @@ export function synthesizeGPU(
       if (e.data.type === "audio") {
         clearTimeout(timeout);
         finalize();
+        recordStage(`synth:gpu:${id}:done`);
         resolve({ data: e.data.data, sampleRate: e.data.sampleRate });
       } else if (e.data.type === "error") {
         clearTimeout(timeout);

@@ -15,6 +15,7 @@ import {
 } from "../data/phraseRegistry";
 import { canCloneForLocale, baseLocale } from "../data/chatterboxLocales";
 import { isGPUReady } from "./ttsEngine";
+import { recordStage } from "../diagnostics/crashTombstone";
 
 /**
  * Orchestrates background pre-generation of cloned-voice audio for the
@@ -59,6 +60,20 @@ export interface SpeakerPlan {
 /** A speaker is runnable if its speakerData yields a real fingerprint. */
 function isRunnable(speakerData: unknown): boolean {
   return embeddingFingerprint(speakerData) !== "none";
+}
+
+/** Strip the raw patient UUID from a SpeakerKey for safe inclusion in
+ *  diagnostic stage labels (which flow to localStorage and the audit
+ *  log). Patient IDs are hashed elsewhere in the audit pipeline; this
+ *  preserves the WORKFLOW shape ("patient", "patient:pain",
+ *  "provider:N") without leaking the per-patient identifier.
+ *  Exported for the PHI-invariant test in audioCacheRunner.test.ts. */
+export function speakerKindForLog(key: SpeakerKey): string {
+  const parts = key.split(":");
+  if (parts[0] === "patient") {
+    return parts[2] === "pain" ? "patient:pain" : "patient";
+  }
+  return key; // "provider:N" is already a workflow descriptor.
 }
 
 function buildPlan(cfg: AppSettings): SpeakerPlan[] {
@@ -184,6 +199,7 @@ export async function runPreGeneration(cfg: AppSettings): Promise<void> {
 
     const fingerprint = embeddingFingerprint(speaker.speakerData);
     if (isAlreadyDone(speaker, fingerprint)) continue;
+    recordStage(`pregen:${speakerKindForLog(speaker.key)}:start`);
     store.start(
       speaker.key,
       speaker.phrases.length,
@@ -199,6 +215,9 @@ export async function runPreGeneration(cfg: AppSettings): Promise<void> {
         { gpuOnly: speaker.gpuOnly === true, patientId: speaker.patientId, languageId: speaker.languageId },
       )) {
         if (controller.signal.aborted) return;
+        recordStage(
+          `pregen:${speakerKindForLog(speaker.key)}:${progress.current}/${speaker.phrases.length}`,
+        );
         if (progress.failed) {
           store.fail(speaker.key, progress.phrase, progress.current);
         } else {
@@ -206,6 +225,7 @@ export async function runPreGeneration(cfg: AppSettings): Promise<void> {
         }
       }
       if (!controller.signal.aborted) {
+        recordStage(`pregen:${speakerKindForLog(speaker.key)}:done`);
         store.finish(speaker.key);
       }
     } catch (err) {
@@ -217,6 +237,7 @@ export async function runPreGeneration(cfg: AppSettings): Promise<void> {
       store.finish(speaker.key);
     }
   }
+  recordStage("pregen:all-done");
 }
 
 /** Retry only the previously-failed phrases for one speaker. */

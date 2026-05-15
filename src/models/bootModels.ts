@@ -2,6 +2,7 @@ import { getModelManager } from "./modelManager";
 import { MODEL_URLS } from "./types";
 import { loadManifest, type ModelId } from "./modelsManifest";
 import { useOfflineStore } from "../stores/offlineStore";
+import { recordStage } from "../diagnostics/crashTombstone";
 
 /**
  * Boot all on-device models.
@@ -30,6 +31,7 @@ export async function bootModels(): Promise<void> {
  */
 export async function bootSTT(): Promise<void> {
   const mgr = getModelManager();
+  recordStage("boot:stt-init");
   await mgr.init();
 
   if ("gpu" in navigator) {
@@ -47,6 +49,7 @@ export async function bootSTT(): Promise<void> {
           // without posting an extra `warmup` message (which the GPU
           // worker doesn't handle and would log as "Unknown message type").
           mgr.markWarm("stt");
+          recordStage("boot:stt-gpu-warm");
           console.log("[OwnVoice] STT: WebGPU ready");
         } else if (e.data.type === "error") {
           if (!mgr.isReady("stt")) {
@@ -87,9 +90,11 @@ function bootSTTWasm(): void {
       if (e.data.type === "ready") {
         mgr.setWorker("stt", sttWorker);
         mgr.setReady("stt");
+        recordStage("boot:stt-wasm-ready");
         sttWorker.postMessage({ type: "warmup" });
       } else if (e.data.type === "warm") {
         mgr.markWarm("stt");
+        recordStage("boot:stt-wasm-warm");
       } else if (e.data.type === "error") {
         mgr.setError("stt", e.data.message);
       }
@@ -111,6 +116,7 @@ function bootSTTWasm(): void {
  */
 export async function bootTTSWasm(): Promise<void> {
   const mgr = getModelManager();
+  recordStage("boot:tts-wasm-init");
   await mgr.init();
 
   try {
@@ -124,11 +130,13 @@ export async function bootTTSWasm(): Promise<void> {
       if (e.data.type === "ready") {
         ttsInitDone = true;
         mgr.setReady("tts");
+        recordStage("boot:tts-wasm-ready");
         // Eager warmup: download + run a one-shot encoder inference so
         // the user's first cloning attempt isn't gated on a 591 MB fetch.
         ttsWorker.postMessage({ type: "warmup" });
       } else if (e.data.type === "warm") {
         mgr.markWarm("tts");
+        recordStage("boot:tts-wasm-warm");
       } else if (e.data.type === "progress" && e.data.total === -1) {
         // Debug: EP signal from synthesis start (loaded=1 → WebGPU, loaded=0 → WASM)
         console.log(`[OwnVoice:TTS] Synthesis EP: ${e.data.loaded ? "WebGPU" : "WASM"}`);

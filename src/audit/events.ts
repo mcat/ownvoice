@@ -41,6 +41,14 @@ export const EVENT = {
   ERROR_UNHANDLED:         "error.unhandled",
   ERROR_REJECTION:         "error.unhandled_rejection",
 
+  /** Previous session ended without firing the `pagehide` handler that
+   *  clears the memory-diagnostics tombstone. Emitted at most once per
+   *  boot, only when `?memdiag=true` was active on the previous session.
+   *  Attributes carry the last recorded lifecycle stage and the time
+   *  since it was written, to pinpoint where Safari's memory ceiling
+   *  killed the renderer. See `src/diagnostics/crashTombstone.ts`. */
+  DIAG_PREVIOUS_CRASH:     "diagnostics.previous_crash",
+
   WAKE_LOCK_ACQUIRED:      "wake_lock.acquired",
   WAKE_LOCK_RELEASED:      "wake_lock.released",
   WAKE_LOCK_FAILED:        "wake_lock.failed",
