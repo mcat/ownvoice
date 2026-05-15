@@ -2,6 +2,8 @@ import { useState, useCallback, useEffect, useRef } from "preact/hooks";
 import { useMicrophone } from "./useMicrophone";
 import { getModelManager } from "../models/modelManager";
 import { segmentSentences } from "../utils/sentenceSegment";
+import * as audioCacheRunner from "../models/audioCacheRunner";
+import { useSettingsStore } from "../stores/settingsStore";
 
 const SAMPLE_RATE = 16000;
 const CHUNK_SAMPLES = 30 * SAMPLE_RATE; // 30 seconds
@@ -80,13 +82,39 @@ export function useListenSession(opts: { language: string }): UseListenSession {
   const micRef = useRef(mic);
   micRef.current = mic;
 
+  // Track whether *this* session paused audioCacheRunner, so we only resume
+  // if we were the ones who paused it (idempotent against external pauses
+  // from patient-switch flows etc.).
+  const pausedPregenRef = useRef(false);
+
+  const pausePregen = useCallback(() => {
+    if (pausedPregenRef.current) return;
+    audioCacheRunner.pauseAll();
+    pausedPregenRef.current = true;
+  }, []);
+
+  const resumePregen = useCallback(() => {
+    if (!pausedPregenRef.current) return;
+    pausedPregenRef.current = false;
+    const cfg = useSettingsStore.getState().cfg;
+    // No cfg means setup hasn't completed — pre-gen wouldn't have anything
+    // to run anyway. resumeAll itself requires a cfg, so skip cleanly.
+    if (cfg == null) return;
+    void audioCacheRunner.resumeAll(cfg);
+  }, []);
+
   const start = useCallback(async () => {
     transcriptIndexRef.current = 0;
     startTimeRef.current = Date.now();
     lastSpeechRef.current = Date.now();
+    // Pre-generation runs TTS synthesis through the same WebGPU adapter the
+    // STT decoder uses; leaving it running during Listen starves the STT
+    // decoder and inflates per-chunk latency. Pause for the full session
+    // lifetime (recording + draft) and resume on reset/unmount. See #263.
+    pausePregen();
     await micRef.current.start();
     setState({ phase: "recording", elapsedMs: 0, level: 0 });
-  }, []);
+  }, [pausePregen]);
 
   /**
    * Dispatch a PCM buffer to the STT worker as 30s chunks. Bumps the
@@ -293,17 +321,21 @@ export function useListenSession(opts: { language: string }): UseListenSession {
   const reset = useCallback(() => {
     lastPcmRef.current = null;
     setState({ phase: "idle" });
-  }, []);
+    resumePregen();
+  }, [resumePregen]);
 
   // Force-stop the mic on unmount — without it the browser indicator
   // stays on indefinitely with no handle to release the MediaStream.
+  // Also resume audioCacheRunner if we paused it: otherwise a
+  // mid-session unmount leaves pre-generation paused forever.
   useEffect(() => {
     return () => {
       if (micRef.current.recording) {
         void micRef.current.stop().catch(() => undefined);
       }
+      resumePregen();
     };
-  }, []);
+  }, [resumePregen]);
 
   // If the tab stays hidden > VISIBILITY_GRACE_MS while recording, end
   // the capture. Same indicator-leak reason as unmount cleanup.
@@ -318,6 +350,7 @@ export function useListenSession(opts: { language: string }): UseListenSession {
           setState((prev) => {
             if (prev.phase !== "recording") return prev;
             void micRef.current.stop().catch(() => undefined);
+            resumePregen();
             return { phase: "idle" };
           });
         }, VISIBILITY_GRACE_MS);
@@ -331,7 +364,7 @@ export function useListenSession(opts: { language: string }): UseListenSession {
       document.removeEventListener("visibilitychange", onVisibility);
       if (timeout != null) clearTimeout(timeout);
     };
-  }, []);
+  }, [resumePregen]);
 
   return { state, start, stop, editSentence, discardSentence, tryAgain, reset };
 }
