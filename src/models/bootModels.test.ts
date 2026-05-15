@@ -28,8 +28,16 @@ vi.mock("./modelManager", () => ({
 // deterministic — the real store goes through Zustand's persist
 // middleware (async IDB hydration in jsdom) which would race with the
 // synchronous onmessage handler under test.
+interface MockCfgPatient {
+  speakerData: unknown;
+  patientLang?: string;
+}
+interface MockCfg {
+  caregiverLang?: string;
+  patients: MockCfgPatient[];
+}
 const mockSettingsGetState = vi.fn<
-  () => { cfg: { patients: { speakerData: unknown }[] } | null; _hasHydrated: boolean }
+  () => { cfg: MockCfg | null; _hasHydrated: boolean }
 >(() => ({ cfg: null, _hasHydrated: false }));
 vi.mock("../stores/settingsStore", () => ({
   useSettingsStore: { getState: mockSettingsGetState },
@@ -169,89 +177,45 @@ describe("bootModels", () => {
 });
 
 describe("sessionNeedsCangjie", () => {
-  beforeEach(() => {
-    // The other tests mock modelManager but use the real settingsStore.
-    // Reset it to a known state before each Cangjie-flag test so the
-    // store-from-previous-test doesn't bleed across.
-  });
-
   it("returns true when settings have not hydrated yet (safe default)", async () => {
-    const { useSettingsStore } = await import("../stores/settingsStore");
-    useSettingsStore.setState({ cfg: null, _hasHydrated: false });
+    mockSettingsGetState.mockReturnValue({ cfg: null, _hasHydrated: false });
     const { sessionNeedsCangjie } = await import("./bootModels");
     expect(sessionNeedsCangjie()).toBe(true);
   });
 
   it("returns true when cfg is null (fresh device)", async () => {
-    const { useSettingsStore } = await import("../stores/settingsStore");
-    useSettingsStore.setState({ cfg: null, _hasHydrated: true });
+    mockSettingsGetState.mockReturnValue({ cfg: null, _hasHydrated: true });
     const { sessionNeedsCangjie } = await import("./bootModels");
     expect(sessionNeedsCangjie()).toBe(true);
   });
 
   it("returns true when caregiverLang is zh", async () => {
-    const { useSettingsStore } = await import("../stores/settingsStore");
-    useSettingsStore.setState({
+    mockSettingsGetState.mockReturnValue({
       _hasHydrated: true,
-      cfg: {
-        pin: "",
-        caregiverLang: "zh",
-        providers: [],
-        patients: [],
-        activePatientId: null,
-      },
+      cfg: { caregiverLang: "zh", patients: [] },
     });
     const { sessionNeedsCangjie } = await import("./bootModels");
     expect(sessionNeedsCangjie()).toBe(true);
   });
 
   it("returns true when caregiverLang is a zh-* sublocale", async () => {
-    const { useSettingsStore } = await import("../stores/settingsStore");
-    useSettingsStore.setState({
+    mockSettingsGetState.mockReturnValue({
       _hasHydrated: true,
-      cfg: {
-        pin: "",
-        caregiverLang: "zh-TW",
-        providers: [],
-        patients: [],
-        activePatientId: null,
-      },
+      cfg: { caregiverLang: "zh-TW", patients: [] },
     });
     const { sessionNeedsCangjie } = await import("./bootModels");
     expect(sessionNeedsCangjie()).toBe(true);
   });
 
   it("returns true when any patient's patientLang is zh", async () => {
-    const { useSettingsStore } = await import("../stores/settingsStore");
-    useSettingsStore.setState({
+    mockSettingsGetState.mockReturnValue({
       _hasHydrated: true,
       cfg: {
-        pin: "",
         caregiverLang: "en",
-        providers: [],
         patients: [
-          {
-            id: "a",
-            name: "",
-            bed: "",
-            patientLang: "en",
-            hasVoice: false,
-            speakerData: null,
-            addedAt: 0,
-            lastActiveAt: 0,
-          },
-          {
-            id: "b",
-            name: "",
-            bed: "",
-            patientLang: "zh",
-            hasVoice: false,
-            speakerData: null,
-            addedAt: 0,
-            lastActiveAt: 0,
-          },
+          { speakerData: null, patientLang: "en" },
+          { speakerData: null, patientLang: "zh" },
         ],
-        activePatientId: null,
       },
     });
     const { sessionNeedsCangjie } = await import("./bootModels");
@@ -259,26 +223,11 @@ describe("sessionNeedsCangjie", () => {
   });
 
   it("returns false when all locales are non-zh", async () => {
-    const { useSettingsStore } = await import("../stores/settingsStore");
-    useSettingsStore.setState({
+    mockSettingsGetState.mockReturnValue({
       _hasHydrated: true,
       cfg: {
-        pin: "",
         caregiverLang: "en",
-        providers: [],
-        patients: [
-          {
-            id: "a",
-            name: "",
-            bed: "",
-            patientLang: "es",
-            hasVoice: false,
-            speakerData: null,
-            addedAt: 0,
-            lastActiveAt: 0,
-          },
-        ],
-        activePatientId: null,
+        patients: [{ speakerData: null, patientLang: "es" }],
       },
     });
     const { sessionNeedsCangjie } = await import("./bootModels");
@@ -286,16 +235,9 @@ describe("sessionNeedsCangjie", () => {
   });
 
   it("returns false on a hydrated empty-patient device with non-zh caregiverLang", async () => {
-    const { useSettingsStore } = await import("../stores/settingsStore");
-    useSettingsStore.setState({
+    mockSettingsGetState.mockReturnValue({
       _hasHydrated: true,
-      cfg: {
-        pin: "",
-        caregiverLang: "fr",
-        providers: [],
-        patients: [],
-        activePatientId: null,
-      },
+      cfg: { caregiverLang: "fr", patients: [] },
     });
     const { sessionNeedsCangjie } = await import("./bootModels");
     expect(sessionNeedsCangjie()).toBe(false);
