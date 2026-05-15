@@ -25,8 +25,6 @@
   },
   "dependencies": {
     "@opentelemetry/api": "^1.9.1",
-    "@opentelemetry/api-logs": "^0.217.0",
-    "@opentelemetry/otlp-transformer": "^0.217.0",
     "@tanstack/virtual-core": "^3.14.0",
     "markdown-to-jsx": "^7.7.17",
     "onnxruntime-web": "^1.25.1",
