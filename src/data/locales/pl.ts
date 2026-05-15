@@ -1010,9 +1010,13 @@ const pl: LocaleStrings = {
     "wymaga ponowienia",
   "ui.provider.settings.offline.last_verified_prefix":
     "Ostatnia weryfikacja: ",
-  "ui.provider.settings.offline.storage_prefix": "Pamięć: ",
-  "ui.provider.settings.offline.storage_of": " z ",
-  "ui.provider.settings.offline.storage_used": " użyte",
+  "ui.provider.settings.offline.models_on_device": "Modele głosu i mowy: {bytes} na urządzeniu",
+  "ui.provider.settings.offline.models_not_yet_downloaded": "Modele nie zostały jeszcze pobrane",
+  "ui.provider.settings.offline.storage_protected": "Pamięć chroniona — modele pozostaną na tym urządzeniu",
+  "ui.provider.settings.offline.storage_not_protected": "Pamięć niechroniona — dodaj tę aplikację do ekranu głównego, aby zachować modele na urządzeniu",
+  "ui.provider.settings.offline.storage_last_used": "Ostatnio użyto: {relative}",
+  "ui.provider.settings.offline.check_protection_button": "Sprawdź stan ochrony",
+  "ui.provider.settings.offline.origin_usage_estimate": "Użycie źródła: ~{used} z ~{total} dostępnych (szacunek)",
   "ui.provider.settings.offline.storage_low": " — mało miejsca",
   "ui.provider.settings.offline.clear_audio_cache":
     "Wyczyść pamięć podręczną dźwięku",

@@ -962,9 +962,13 @@ const no: LocaleStrings = {
     "trenger nytt forsøk",
   "ui.provider.settings.offline.last_verified_prefix":
     "Sist verifisert: ",
-  "ui.provider.settings.offline.storage_prefix": "Lagring: ",
-  "ui.provider.settings.offline.storage_of": " av ",
-  "ui.provider.settings.offline.storage_used": " brukt",
+  "ui.provider.settings.offline.models_on_device": "Stemme- og talemodeller: {bytes} på enheten",
+  "ui.provider.settings.offline.models_not_yet_downloaded": "Modeller er ikke lastet ned ennå",
+  "ui.provider.settings.offline.storage_protected": "Lagring beskyttet — modellene blir på denne enheten",
+  "ui.provider.settings.offline.storage_not_protected": "Lagring ikke beskyttet — legg denne appen til på Hjem-skjermen for å beholde modellene på enheten",
+  "ui.provider.settings.offline.storage_last_used": "Sist brukt: {relative}",
+  "ui.provider.settings.offline.check_protection_button": "Sjekk beskyttelsesstatus",
+  "ui.provider.settings.offline.origin_usage_estimate": "Opprinnelsesbruk: ~{used} brukt av ~{total} tilgjengelig (estimat)",
   "ui.provider.settings.offline.storage_low": " — lite igjen",
   "ui.provider.settings.offline.clear_audio_cache":
     "Tøm lydbuffer",

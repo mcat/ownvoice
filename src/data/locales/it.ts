@@ -962,9 +962,13 @@ const it: LocaleStrings = {
     "riprova necessaria",
   "ui.provider.settings.offline.last_verified_prefix":
     "Ultima verifica: ",
-  "ui.provider.settings.offline.storage_prefix": "Spazio: ",
-  "ui.provider.settings.offline.storage_of": " di ",
-  "ui.provider.settings.offline.storage_used": " usato",
+  "ui.provider.settings.offline.models_on_device": "Modelli vocali e di parlato: {bytes} sul dispositivo",
+  "ui.provider.settings.offline.models_not_yet_downloaded": "Modelli non ancora scaricati",
+  "ui.provider.settings.offline.storage_protected": "Archiviazione protetta — i modelli rimarranno su questo dispositivo",
+  "ui.provider.settings.offline.storage_not_protected": "Archiviazione non protetta — aggiungi questa app alla schermata Home per mantenere i modelli sul dispositivo",
+  "ui.provider.settings.offline.storage_last_used": "Ultimo utilizzo: {relative}",
+  "ui.provider.settings.offline.check_protection_button": "Verifica stato di protezione",
+  "ui.provider.settings.offline.origin_usage_estimate": "Utilizzo origine: ~{used} usati su ~{total} disponibili (stima)",
   "ui.provider.settings.offline.storage_low": " — in esaurimento",
   "ui.provider.settings.offline.clear_audio_cache":
     "Svuota cache audio",

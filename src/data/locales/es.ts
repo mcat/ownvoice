@@ -961,9 +961,13 @@ const es: LocaleStrings = {
     "necesita reintento",
   "ui.provider.settings.offline.last_verified_prefix":
     "Última verificación: ",
-  "ui.provider.settings.offline.storage_prefix": "Almacenamiento: ",
-  "ui.provider.settings.offline.storage_of": " de ",
-  "ui.provider.settings.offline.storage_used": " usado",
+  "ui.provider.settings.offline.models_on_device": "Modelos de voz y habla: {bytes} en el dispositivo",
+  "ui.provider.settings.offline.models_not_yet_downloaded": "Modelos aún no descargados",
+  "ui.provider.settings.offline.storage_protected": "Almacenamiento protegido — los modelos permanecerán en este dispositivo",
+  "ui.provider.settings.offline.storage_not_protected": "Almacenamiento no protegido — añade esta app a la pantalla de inicio para mantener los modelos en el dispositivo",
+  "ui.provider.settings.offline.storage_last_used": "Último uso: {relative}",
+  "ui.provider.settings.offline.check_protection_button": "Comprobar estado de protección",
+  "ui.provider.settings.offline.origin_usage_estimate": "Uso del origen: ~{used} usados de ~{total} disponibles (estimación)",
   "ui.provider.settings.offline.storage_low": " — quedando poco",
   "ui.provider.settings.offline.clear_audio_cache":
     "Limpiar caché de audio",

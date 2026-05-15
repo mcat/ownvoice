@@ -981,9 +981,13 @@ const ko: LocaleStrings = {
     "재시도 필요",
   "ui.provider.settings.offline.last_verified_prefix":
     "마지막 검증: ",
-  "ui.provider.settings.offline.storage_prefix": "저장소: ",
-  "ui.provider.settings.offline.storage_of": " / ",
-  "ui.provider.settings.offline.storage_used": " 사용됨",
+  "ui.provider.settings.offline.models_on_device": "음성 및 발화 모델: 기기에 {bytes}",
+  "ui.provider.settings.offline.models_not_yet_downloaded": "모델이 아직 다운로드되지 않음",
+  "ui.provider.settings.offline.storage_protected": "저장소 보호됨 — 모델이 이 기기에 유지됩니다",
+  "ui.provider.settings.offline.storage_not_protected": "저장소가 보호되지 않음 — 모델을 기기에 유지하려면 이 앱을 홈 화면에 추가하세요",
+  "ui.provider.settings.offline.storage_last_used": "마지막 사용: {relative}",
+  "ui.provider.settings.offline.check_protection_button": "보호 상태 확인",
+  "ui.provider.settings.offline.origin_usage_estimate": "오리진 사용량: 약 {total} 중 약 {used} 사용 (추정)",
   "ui.provider.settings.offline.storage_low": " — 부족합니다",
   "ui.provider.settings.offline.clear_audio_cache":
     "오디오 캐시 지우기",

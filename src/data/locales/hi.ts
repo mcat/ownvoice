@@ -960,9 +960,13 @@ const hi: LocaleStrings = {
     "फिर से कोशिश ज़रूरी",
   "ui.provider.settings.offline.last_verified_prefix":
     "अंतिम सत्यापन: ",
-  "ui.provider.settings.offline.storage_prefix": "स्टोरेज: ",
-  "ui.provider.settings.offline.storage_of": " में से ",
-  "ui.provider.settings.offline.storage_used": " इस्तेमाल",
+  "ui.provider.settings.offline.models_on_device": "वॉइस और स्पीच मॉडल: डिवाइस पर {bytes}",
+  "ui.provider.settings.offline.models_not_yet_downloaded": "मॉडल अभी तक डाउनलोड नहीं हुए",
+  "ui.provider.settings.offline.storage_protected": "स्टोरेज सुरक्षित — मॉडल इस डिवाइस पर बने रहेंगे",
+  "ui.provider.settings.offline.storage_not_protected": "स्टोरेज सुरक्षित नहीं — मॉडल डिवाइस पर बनाए रखने के लिए इस ऐप को होम स्क्रीन में जोड़ें",
+  "ui.provider.settings.offline.storage_last_used": "अंतिम उपयोग: {relative}",
+  "ui.provider.settings.offline.check_protection_button": "सुरक्षा स्थिति जाँचें",
+  "ui.provider.settings.offline.origin_usage_estimate": "ऑरिजिन उपयोग: ~{total} उपलब्ध में से ~{used} उपयोग में (अनुमान)",
   "ui.provider.settings.offline.storage_low": " — कम हो रहा है",
   "ui.provider.settings.offline.clear_audio_cache":
     "ऑडियो कैश साफ़ करें",

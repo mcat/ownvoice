@@ -986,9 +986,13 @@ const de: LocaleStrings = {
     "Wiederholung nötig",
   "ui.provider.settings.offline.last_verified_prefix":
     "Zuletzt verifiziert: ",
-  "ui.provider.settings.offline.storage_prefix": "Speicher: ",
-  "ui.provider.settings.offline.storage_of": " von ",
-  "ui.provider.settings.offline.storage_used": " belegt",
+  "ui.provider.settings.offline.models_on_device": "Sprach- und Sprechmodelle: {bytes} auf dem Gerät",
+  "ui.provider.settings.offline.models_not_yet_downloaded": "Modelle noch nicht heruntergeladen",
+  "ui.provider.settings.offline.storage_protected": "Speicher geschützt — Modelle bleiben auf diesem Gerät",
+  "ui.provider.settings.offline.storage_not_protected": "Speicher nicht geschützt — fügen Sie diese App zum Home-Bildschirm hinzu, damit die Modelle auf dem Gerät bleiben",
+  "ui.provider.settings.offline.storage_last_used": "Zuletzt verwendet: {relative}",
+  "ui.provider.settings.offline.check_protection_button": "Schutzstatus prüfen",
+  "ui.provider.settings.offline.origin_usage_estimate": "Ursprungsnutzung: ~{used} von ~{total} verfügbar verwendet (Schätzung)",
   "ui.provider.settings.offline.storage_low": " – wird knapp",
   "ui.provider.settings.offline.clear_audio_cache":
     "Audio-Cache leeren",

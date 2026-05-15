@@ -986,9 +986,13 @@ const he: LocaleStrings = {
     "צריך ניסיון חוזר",
   "ui.provider.settings.offline.last_verified_prefix":
     "אומת לאחרונה: ",
-  "ui.provider.settings.offline.storage_prefix": "אחסון: ",
-  "ui.provider.settings.offline.storage_of": " מתוך ",
-  "ui.provider.settings.offline.storage_used": " בשימוש",
+  "ui.provider.settings.offline.models_on_device": "מודלים של קול ודיבור: {bytes} במכשיר",
+  "ui.provider.settings.offline.models_not_yet_downloaded": "המודלים עדיין לא הורדו",
+  "ui.provider.settings.offline.storage_protected": "האחסון מוגן — המודלים יישארו במכשיר זה",
+  "ui.provider.settings.offline.storage_not_protected": "האחסון אינו מוגן — הוסף את היישום למסך הבית כדי לשמור את המודלים במכשיר",
+  "ui.provider.settings.offline.storage_last_used": "שימוש אחרון: {relative}",
+  "ui.provider.settings.offline.check_protection_button": "בדוק מצב הגנה",
+  "ui.provider.settings.offline.origin_usage_estimate": "שימוש במקור: ~{used} בשימוש מתוך ~{total} זמינים (הערכה)",
   "ui.provider.settings.offline.storage_low": " — נגמר המקום",
   "ui.provider.settings.offline.clear_audio_cache":
     "נקה מטמון אודיו",

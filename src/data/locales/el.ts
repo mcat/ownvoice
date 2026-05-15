@@ -978,9 +978,13 @@ const el: LocaleStrings = {
   "ui.provider.settings.offline.model_status_needs_retry":
     "χρειάζεται επανάληψη",
   "ui.provider.settings.offline.last_verified_prefix": "Τελευταία επαλήθευση: ",
-  "ui.provider.settings.offline.storage_prefix": "Αποθήκευση: ",
-  "ui.provider.settings.offline.storage_of": " από ",
-  "ui.provider.settings.offline.storage_used": " χρησιμοποιούνται",
+  "ui.provider.settings.offline.models_on_device": "Μοντέλα φωνής και ομιλίας: {bytes} στη συσκευή",
+  "ui.provider.settings.offline.models_not_yet_downloaded": "Τα μοντέλα δεν έχουν ληφθεί ακόμη",
+  "ui.provider.settings.offline.storage_protected": "Ο χώρος αποθήκευσης προστατεύεται — τα μοντέλα θα παραμείνουν σε αυτή τη συσκευή",
+  "ui.provider.settings.offline.storage_not_protected": "Ο χώρος αποθήκευσης δεν προστατεύεται — προσθέστε αυτή την εφαρμογή στην αρχική οθόνη για να διατηρηθούν τα μοντέλα στη συσκευή",
+  "ui.provider.settings.offline.storage_last_used": "Τελευταία χρήση: {relative}",
+  "ui.provider.settings.offline.check_protection_button": "Έλεγχος κατάστασης προστασίας",
+  "ui.provider.settings.offline.origin_usage_estimate": "Χρήση προέλευσης: ~{used} σε χρήση από ~{total} διαθέσιμα (εκτίμηση)",
   "ui.provider.settings.offline.storage_low": " — χαμηλός χώρος",
   "ui.provider.settings.offline.clear_audio_cache":
     "Εκκαθάριση κρυφής μνήμης ήχου",
