@@ -30,9 +30,6 @@ vi.mock("../models/modelManager", () => ({
   }),
 }));
 
-// Spy on audioCacheRunner so we can verify the Listen session pauses
-// pre-generation on start and resumes it on reset/unmount. Backs issue #263
-// fix 2: TTS pre-gen contends with STT decode for the WebGPU adapter.
 const pauseAllSpy = vi.fn();
 const resumeAllSpy = vi.fn().mockResolvedValue(undefined);
 vi.mock("../models/audioCacheRunner", () => ({
@@ -40,7 +37,6 @@ vi.mock("../models/audioCacheRunner", () => ({
   resumeAll: (cfg: unknown) => resumeAllSpy(cfg),
 }));
 
-// Provide a cfg so resumePregen calls through (null cfg short-circuits).
 vi.mock("../stores/settingsStore", () => ({
   useSettingsStore: {
     getState: () => ({ cfg: { caregiverLang: "en", patientLang: "en" } }),
@@ -368,7 +364,7 @@ describe("useListenSession", () => {
     expect(s.transcribing).toEqual({ done: 0, total: 1 });
   });
 
-  it("pauses audioCacheRunner on start and resumes on reset (#263)", async () => {
+  it("pauses audioCacheRunner on start and resumes on reset", async () => {
     const { result } = renderHook(() => useListenSession({ language: "en" }));
     expect(pauseAllSpy).not.toHaveBeenCalled();
 

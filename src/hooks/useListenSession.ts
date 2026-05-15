@@ -82,9 +82,10 @@ export function useListenSession(opts: { language: string }): UseListenSession {
   const micRef = useRef(mic);
   micRef.current = mic;
 
-  // Track whether *this* session paused audioCacheRunner, so we only resume
-  // if we were the ones who paused it (idempotent against external pauses
-  // from patient-switch flows etc.).
+  // TTS pre-gen synthesizes through the same WebGPU adapter the STT decoder
+  // uses; running both concurrently starves STT. The ref tracks ownership so
+  // resume only fires for pauses *this* hook caused — external pauses
+  // (patient-switch, settings reset) stay paused on our resume.
   const pausedPregenRef = useRef(false);
 
   const pausePregen = useCallback(() => {
@@ -97,8 +98,6 @@ export function useListenSession(opts: { language: string }): UseListenSession {
     if (!pausedPregenRef.current) return;
     pausedPregenRef.current = false;
     const cfg = useSettingsStore.getState().cfg;
-    // No cfg means setup hasn't completed — pre-gen wouldn't have anything
-    // to run anyway. resumeAll itself requires a cfg, so skip cleanly.
     if (cfg == null) return;
     void audioCacheRunner.resumeAll(cfg);
   }, []);
@@ -107,10 +106,6 @@ export function useListenSession(opts: { language: string }): UseListenSession {
     transcriptIndexRef.current = 0;
     startTimeRef.current = Date.now();
     lastSpeechRef.current = Date.now();
-    // Pre-generation runs TTS synthesis through the same WebGPU adapter the
-    // STT decoder uses; leaving it running during Listen starves the STT
-    // decoder and inflates per-chunk latency. Pause for the full session
-    // lifetime (recording + draft) and resume on reset/unmount. See #263.
     pausePregen();
     await micRef.current.start();
     setState({ phase: "recording", elapsedMs: 0, level: 0 });
@@ -326,8 +321,6 @@ export function useListenSession(opts: { language: string }): UseListenSession {
 
   // Force-stop the mic on unmount — without it the browser indicator
   // stays on indefinitely with no handle to release the MediaStream.
-  // Also resume audioCacheRunner if we paused it: otherwise a
-  // mid-session unmount leaves pre-generation paused forever.
   useEffect(() => {
     return () => {
       if (micRef.current.recording) {
