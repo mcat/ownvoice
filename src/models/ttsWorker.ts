@@ -37,24 +37,12 @@
 // This worker is used when WebGPU is unavailable.
 import * as ort from "onnxruntime-web";
 import { CHATTERBOX_FILES, CHATTERBOX_TOKENS } from "./types";
-import { ORT_VERSION } from "./assetVersions";
+import { configureOrtWasmEnv } from "./workerOrtEnv";
+import { streamWithProgress } from "./workerStreamingFetch";
 
 const _postMessage = self.postMessage.bind(self);
 
-// Multi-threaded WASM is only available when `crossOriginIsolated` is true
-// (page + SW serve COOP+COEP). Silently fall back to single-thread otherwise.
-ort.env.logLevel = "error";
-// See tts-gpu-worker.js for why this is capped at 4.
-if (ort.env?.wasm) {
-  // ORT loads WASM at runtime from this URL prefix. In production,
-  // /ort/* is served by a Pages Function backed by R2 (see
-  // functions/ort/[[path]].ts). In dev, a Vite middleware (see
-  // vite.config.ts) rewrites /ort/<version>/<file> to public/ort/<file>.
-  ort.env.wasm.wasmPaths = `/ort/${ORT_VERSION}/`;
-  ort.env.wasm.numThreads = self.crossOriginIsolated
-    ? Math.min(navigator.hardwareConcurrency ?? 4, 4)
-    : 1;
-}
+configureOrtWasmEnv();
 
 const LOG = "[OwnVoice:TTS]";
 const { START_SPEECH, STOP_SPEECH, NUM_LAYERS, NUM_HEADS, HEAD_DIM, SAMPLE_RATE } = CHATTERBOX_TOKENS;
@@ -121,68 +109,22 @@ function getEP(): string {
   return "wasm";
 }
 
-/** Fetch a file as ArrayBuffer, reporting progress */
+/** Fetch a file as ArrayBuffer, reporting progress. */
 async function fetchFile(url: string): Promise<ArrayBuffer> {
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-
-  const total = Number(response.headers.get("content-length")) || 0;
-  const reader = response.body?.getReader();
-  if (!reader) throw new Error("No response body");
-
-  const chunks: Uint8Array[] = [];
-  let loaded = 0;
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    chunks.push(value);
-    loaded += value.length;
+  return streamWithProgress(url, (loaded, total) => {
     _postMessage({ type: "progress", loaded, total });
-  }
-
-  const combined = new Uint8Array(loaded);
-  let offset = 0;
-  for (const chunk of chunks) {
-    combined.set(chunk, offset);
-    offset += chunk.length;
-  }
-  return combined.buffer as ArrayBuffer;
+  });
 }
 
 /** Fetch a model file as ArrayBuffer, posting embed-progress events.
  *  Used during encoder load (embed call) so the UI can show a real
- *  countdown instead of a generic spinner. */
+ *  countdown instead of a generic spinner. The shared streaming helper
+ *  emits an initial (0, total) event after headers arrive, which is
+ *  what flips the UI into the loading state. */
 async function fetchEncoderWithProgress(url: string): Promise<ArrayBuffer> {
-  const response = await fetch(url);
-  if (!response.ok)
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-
-  const total = Number(response.headers.get("content-length")) || 0;
-  const reader = response.body?.getReader();
-  if (!reader) throw new Error("No response body");
-
-  const chunks: Uint8Array[] = [];
-  let loaded = 0;
-
-  // Initial event so UI can switch to the loading state.
-  _postMessage({ type: "embed-progress", stage: "loading-model", loaded: 0, total });
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    chunks.push(value);
-    loaded += value.length;
+  return streamWithProgress(url, (loaded, total) => {
     _postMessage({ type: "embed-progress", stage: "loading-model", loaded, total });
-  }
-
-  const combined = new Uint8Array(loaded);
-  let offset = 0;
-  for (const chunk of chunks) {
-    combined.set(chunk, offset);
-    offset += chunk.length;
-  }
-  return combined.buffer as ArrayBuffer;
+  });
 }
 
 // Re-export under a stable test name so tests can drive it directly.
