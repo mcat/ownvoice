@@ -26,6 +26,17 @@ function formatBytes(n: number | null): string {
   return `${(n / 1024 / 1024 / 1024).toFixed(2)} GB`;
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function formatLastUsed(lastInteractionAt: number | null, locale: string): string {
+  if (lastInteractionAt == null) return "";
+  const daysSince = Math.floor((Date.now() - lastInteractionAt) / DAY_MS);
+  return new Intl.RelativeTimeFormat(locale, { numeric: "auto" }).format(
+    -daysSince,
+    "day",
+  );
+}
+
 /**
  * "Diagnostics" section in the flat Settings panel: offline readiness,
  * model verification, audio cache rebuild, storage health. Renamed from
@@ -46,6 +57,7 @@ export function DiagnosticsSection({ t }: Props) {
   const cfg = useSettingsStore((s) => s.cfg);
   const active = useActivePatient();
   const caregiverLang = useSettingsStore((s) => s.cfg?.caregiverLang ?? "en");
+  const lastInteractionAt = useSettingsStore((s) => s.lastInteractionAt);
 
   const cacheRuns = useAudioCacheStore((s) => s.runs);
   const rebuildingCache = Object.values(cacheRuns).some(
@@ -399,23 +411,93 @@ export function DiagnosticsSection({ t }: Props) {
         </p>
       )}
 
-      <div
-        style={{
-          marginTop: 14,
-          paddingTop: 12,
-          borderTop: `1px solid ${t.border}`,
-          fontSize: 12,
-          color: health.warning ? warnColor : t.muted,
-        }}
-      >
-        {resolvePhrase("ui.provider.settings.offline.storage_prefix", caregiverLang)}
-        {formatBytes(health.usage)}
-        {resolvePhrase("ui.provider.settings.offline.storage_of", caregiverLang)}
-        {formatBytes(health.quota)}
-        {resolvePhrase("ui.provider.settings.offline.storage_used", caregiverLang)}
-        {health.percentUsed != null && ` (${health.percentUsed.toFixed(0)}%)`}
-        {health.warning && resolvePhrase("ui.provider.settings.offline.storage_low", caregiverLang)}
-      </div>
+      {(() => {
+        const modelsOnDeviceText = expectedBytes > 0
+          ? resolvePhrase("ui.provider.settings.offline.models_on_device", caregiverLang)
+              .replace("{bytes}", formatBytes(expectedBytes))
+          : resolvePhrase("ui.provider.settings.offline.models_not_yet_downloaded", caregiverLang);
+
+        const modelsGlyph = expectedBytes > 0
+          ? (anyNeedsRetry ? "⚠️" : "✓")
+          : "…";
+        const modelsColor = expectedBytes > 0
+          ? (anyNeedsRetry ? warnColor : t.text)
+          : t.muted;
+
+        return (
+          <>
+            {/* Row 1 — Models on device */}
+            <div
+              style={{
+                marginTop: 14,
+                paddingTop: 12,
+                borderTop: `1px solid ${t.border}`,
+                color: modelsColor,
+                fontSize: 14,
+                fontWeight: 500,
+              }}
+            >
+              <span aria-hidden="true">{modelsGlyph} </span>
+              {modelsOnDeviceText}
+            </div>
+
+            {/* Row 2 — Storage protection (hidden when API absent) */}
+            {health.persisted !== null && (
+              <div
+                style={{
+                  marginTop: 8,
+                  color: health.persisted ? t.text : warnColor,
+                  fontSize: 14,
+                }}
+              >
+                <div>
+                  <span aria-hidden="true">{health.persisted ? "🔒 " : "⚠️ "}</span>
+                  {health.persisted
+                    ? resolvePhrase("ui.provider.settings.offline.storage_protected", caregiverLang)
+                    : resolvePhrase("ui.provider.settings.offline.storage_not_protected", caregiverLang)}
+                </div>
+                {!health.persisted && lastInteractionAt != null && (
+                  <div style={{ marginTop: 4, fontSize: 13, color: t.sub }}>
+                    {resolvePhrase("ui.provider.settings.offline.storage_last_used", caregiverLang)
+                      .replace("{relative}", formatLastUsed(lastInteractionAt, caregiverLang))}
+                  </div>
+                )}
+                {!health.persisted && (
+                  <Btn
+                    onClick={() => health.requestPersist()}
+                    style={{
+                      marginTop: 6,
+                      padding: "6px 12px",
+                      fontSize: 13,
+                      borderRadius: 8,
+                      border: `1px solid ${t.border}`,
+                      background: "transparent",
+                      color: t.text,
+                      fontFamily: "inherit",
+                    }}
+                  >
+                    {resolvePhrase("ui.provider.settings.offline.check_protection_button", caregiverLang)}
+                  </Btn>
+                )}
+              </div>
+            )}
+
+            {/* Row 3 — Origin usage estimate */}
+            <div
+              style={{
+                marginTop: 8,
+                fontSize: 12,
+                color: health.warning ? warnColor : t.muted,
+              }}
+            >
+              {resolvePhrase("ui.provider.settings.offline.origin_usage_estimate", caregiverLang)
+                .replace("{used}", formatBytes(health.usage))
+                .replace("{total}", formatBytes(health.quota))}
+              {health.warning && resolvePhrase("ui.provider.settings.offline.storage_low", caregiverLang)}
+            </div>
+          </>
+        );
+      })()}
 
       {health.warning && (
         <Btn

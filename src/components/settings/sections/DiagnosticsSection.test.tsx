@@ -136,7 +136,7 @@ describe("DiagnosticsSection", () => {
     render(<DiagnosticsSection t={light} />);
     await waitFor(() => {
       const text = document.body.textContent ?? "";
-      expect(text).toMatch(/Storage:/i);
+      expect(text).toMatch(/Origin usage:/i);
       expect(text).toMatch(/used/);
     });
   });
@@ -398,5 +398,114 @@ describe("DiagnosticsSection", () => {
         screen.getByRole("button", { name: CHECK_NAME }),
       ).toHaveProperty("disabled", false);
     });
+  });
+});
+
+describe("DiagnosticsSection — storage rows", () => {
+  beforeEach(() => {
+    useOfflineStore.getState().reset();
+    useAudioCacheStore.getState().abortAll();
+    useSettingsStore.getState().reset();
+    useSettingsStore.setState({ lastInteractionAt: null });
+    installStorageEstimate(500, 10_000);
+  });
+
+  // -------- Row 1: Models on device --------
+
+  it("Row 1 shows manifest-bytes when all models verified and expectedBytes > 0", async () => {
+    useOfflineStore.getState().setModelVerified("tts", "verified");
+    useOfflineStore.getState().setModelVerified("stt", "verified");
+    useOfflineStore.getState().beginPrimerRun(1_500_000_000);
+    render(<DiagnosticsSection t={light} />);
+    expect(screen.getByText(/Voice & speech models: 1\.40 GB on device/i)).toBeTruthy();
+  });
+
+  it("Row 1 shows 'not yet downloaded' fallback when expectedBytes is 0", () => {
+    render(<DiagnosticsSection t={light} />);
+    expect(screen.getByText(/models not yet downloaded/i)).toBeTruthy();
+  });
+
+  // -------- Row 2: Storage protection --------
+
+  it("Row 2 shows 'protected' copy when persisted=true and no Last-used line", async () => {
+    Object.defineProperty(navigator, "storage", {
+      value: {
+        estimate: vi.fn(async () => ({ usage: 500, quota: 10_000 })),
+        persisted: vi.fn(async () => true),
+        persist: vi.fn(async () => true),
+      },
+      configurable: true,
+      writable: true,
+    });
+    render(<DiagnosticsSection t={light} />);
+    await waitFor(() => expect(screen.getByText(/Storage protected/i)).toBeTruthy());
+    expect(screen.queryByText(/Last used/i)).toBeNull();
+  });
+
+  it("Row 2 shows 'not protected' copy + 'Last used: today' when persisted=false", async () => {
+    Object.defineProperty(navigator, "storage", {
+      value: {
+        estimate: vi.fn(async () => ({ usage: 500, quota: 10_000 })),
+        persisted: vi.fn(async () => false),
+        persist: vi.fn(async () => false),
+      },
+      configurable: true,
+      writable: true,
+    });
+    useSettingsStore.setState({ lastInteractionAt: Date.now() });
+    render(<DiagnosticsSection t={light} />);
+    await waitFor(() => expect(screen.getByText(/Storage not protected/i)).toBeTruthy());
+    expect(screen.getByText(/Last used: today/i)).toBeTruthy();
+    expect(screen.getByRole("button", { name: /check protection status/i })).toBeTruthy();
+  });
+
+  it("Row 2 formats 'Last used: 3 days ago' for a known lastInteractionAt", async () => {
+    Object.defineProperty(navigator, "storage", {
+      value: {
+        estimate: vi.fn(async () => ({ usage: 500, quota: 10_000 })),
+        persisted: vi.fn(async () => false),
+      },
+      configurable: true,
+      writable: true,
+    });
+    useSettingsStore.setState({
+      lastInteractionAt: Date.now() - 3 * 24 * 60 * 60 * 1000,
+    });
+    render(<DiagnosticsSection t={light} />);
+    await waitFor(() => expect(screen.getByText(/Last used: 3 days ago/i)).toBeTruthy());
+  });
+
+  it("Row 2 is hidden entirely when navigator.storage.persisted is absent", async () => {
+    Object.defineProperty(navigator, "storage", {
+      value: {
+        estimate: vi.fn(async () => ({ usage: 500, quota: 10_000 })),
+        // No persisted/persist methods
+      },
+      configurable: true,
+      writable: true,
+    });
+    render(<DiagnosticsSection t={light} />);
+    await waitFor(() => expect(screen.getByText(/Origin usage/i)).toBeTruthy());
+    expect(screen.queryByText(/Storage protected/i)).toBeNull();
+    expect(screen.queryByText(/Storage not protected/i)).toBeNull();
+  });
+
+  // -------- Row 3: Origin usage estimate --------
+
+  it("Row 3 renders '(estimate)' framing and no headline %", async () => {
+    render(<DiagnosticsSection t={light} />);
+    await waitFor(() => {
+      const text = document.body.textContent ?? "";
+      expect(text).toMatch(/Origin usage:.*\(estimate\)/i);
+      expect(text).not.toMatch(/\(\d+%\)/);
+    });
+  });
+
+  it("Row 3 still triggers the 'Clear audio cache' warning when usage > 85% of quota", async () => {
+    installStorageEstimate(9000, 10_000);
+    render(<DiagnosticsSection t={light} />);
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /clear audio cache/i })).toBeTruthy(),
+    );
   });
 });
