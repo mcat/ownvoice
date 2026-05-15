@@ -2,6 +2,7 @@ import { getModelManager } from "./modelManager";
 import { MODEL_URLS } from "./types";
 import { loadManifest, type ModelId } from "./modelsManifest";
 import { useOfflineStore } from "../stores/offlineStore";
+import { useSettingsStore } from "../stores/settingsStore";
 import { recordStage } from "../diagnostics/crashTombstone";
 
 /**
@@ -131,9 +132,35 @@ export async function bootTTSWasm(): Promise<void> {
         ttsInitDone = true;
         mgr.setReady("tts");
         recordStage("boot:tts-wasm-ready");
-        // Eager warmup: download + run a one-shot encoder inference so
-        // the user's first cloning attempt isn't gated on a 591 MB fetch.
-        ttsWorker.postMessage({ type: "warmup" });
+        // Skip the eager encoder warmup when every patient already has
+        // a speakerData embedding. The warmup loads ~291 MB of speech
+        // encoder weights solely to make the *first* enrollment fast;
+        // on a returning device with no pending enrollment, that's pure
+        // boot-time memory pressure that Safari/iPad can't absorb on
+        // top of GPU TTS shader compile + STT init. handleEmbed loads
+        // the encoder on demand (same code path) when a real
+        // enrollment is needed, so first enrollment for a *new* patient
+        // pays a few extra seconds (already-OPFS-cached weights → fast)
+        // but the steady-state boot path drops a ~291 MB peak.
+        // Fall through to warmup when state is uncertain — !hydrated or
+        // cfg null preserves the prior eager-warmup behavior.
+        const state = useSettingsStore.getState();
+        const cfg = state.cfg;
+        const allEnrolled =
+          state._hasHydrated &&
+          !!cfg &&
+          cfg.patients.length > 0 &&
+          cfg.patients.every((p) => !!p.speakerData);
+        if (allEnrolled) {
+          recordStage("boot:tts-wasm-warmup-skipped");
+          console.log(
+            "[OwnVoice:TTS] Warmup skipped — every patient already has a voice clone, encoder will load on next enrollment.",
+          );
+        } else {
+          // Eager warmup: download + run a one-shot encoder inference so
+          // the user's first cloning attempt isn't gated on a 591 MB fetch.
+          ttsWorker.postMessage({ type: "warmup" });
+        }
       } else if (e.data.type === "warm") {
         mgr.markWarm("tts");
         recordStage("boot:tts-wasm-warm");
