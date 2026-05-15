@@ -122,6 +122,10 @@ describe("bootModels", () => {
       type: "init",
       modelUrl: MODEL_URLS.tts,
       bench: false,
+      // sessionNeedsCangjie defaults to true on a fresh/unhydrated store
+      // — the test env doesn't seed settings, so we always expect this
+      // safe-default branch.
+      loadCangjie: true,
     });
   });
 
@@ -161,6 +165,140 @@ describe("bootModels", () => {
     await expect(bootModels()).resolves.toBeUndefined();
     // restore for downstream tests
     vi.stubGlobal("Worker", FakeWorker);
+  });
+});
+
+describe("sessionNeedsCangjie", () => {
+  beforeEach(() => {
+    // The other tests mock modelManager but use the real settingsStore.
+    // Reset it to a known state before each Cangjie-flag test so the
+    // store-from-previous-test doesn't bleed across.
+  });
+
+  it("returns true when settings have not hydrated yet (safe default)", async () => {
+    const { useSettingsStore } = await import("../stores/settingsStore");
+    useSettingsStore.setState({ cfg: null, _hasHydrated: false });
+    const { sessionNeedsCangjie } = await import("./bootModels");
+    expect(sessionNeedsCangjie()).toBe(true);
+  });
+
+  it("returns true when cfg is null (fresh device)", async () => {
+    const { useSettingsStore } = await import("../stores/settingsStore");
+    useSettingsStore.setState({ cfg: null, _hasHydrated: true });
+    const { sessionNeedsCangjie } = await import("./bootModels");
+    expect(sessionNeedsCangjie()).toBe(true);
+  });
+
+  it("returns true when caregiverLang is zh", async () => {
+    const { useSettingsStore } = await import("../stores/settingsStore");
+    useSettingsStore.setState({
+      _hasHydrated: true,
+      cfg: {
+        pin: "",
+        caregiverLang: "zh",
+        providers: [],
+        patients: [],
+        activePatientId: null,
+      },
+    });
+    const { sessionNeedsCangjie } = await import("./bootModels");
+    expect(sessionNeedsCangjie()).toBe(true);
+  });
+
+  it("returns true when caregiverLang is a zh-* sublocale", async () => {
+    const { useSettingsStore } = await import("../stores/settingsStore");
+    useSettingsStore.setState({
+      _hasHydrated: true,
+      cfg: {
+        pin: "",
+        caregiverLang: "zh-TW",
+        providers: [],
+        patients: [],
+        activePatientId: null,
+      },
+    });
+    const { sessionNeedsCangjie } = await import("./bootModels");
+    expect(sessionNeedsCangjie()).toBe(true);
+  });
+
+  it("returns true when any patient's patientLang is zh", async () => {
+    const { useSettingsStore } = await import("../stores/settingsStore");
+    useSettingsStore.setState({
+      _hasHydrated: true,
+      cfg: {
+        pin: "",
+        caregiverLang: "en",
+        providers: [],
+        patients: [
+          {
+            id: "a",
+            name: "",
+            bed: "",
+            patientLang: "en",
+            hasVoice: false,
+            speakerData: null,
+            addedAt: 0,
+            lastActiveAt: 0,
+          },
+          {
+            id: "b",
+            name: "",
+            bed: "",
+            patientLang: "zh",
+            hasVoice: false,
+            speakerData: null,
+            addedAt: 0,
+            lastActiveAt: 0,
+          },
+        ],
+        activePatientId: null,
+      },
+    });
+    const { sessionNeedsCangjie } = await import("./bootModels");
+    expect(sessionNeedsCangjie()).toBe(true);
+  });
+
+  it("returns false when all locales are non-zh", async () => {
+    const { useSettingsStore } = await import("../stores/settingsStore");
+    useSettingsStore.setState({
+      _hasHydrated: true,
+      cfg: {
+        pin: "",
+        caregiverLang: "en",
+        providers: [],
+        patients: [
+          {
+            id: "a",
+            name: "",
+            bed: "",
+            patientLang: "es",
+            hasVoice: false,
+            speakerData: null,
+            addedAt: 0,
+            lastActiveAt: 0,
+          },
+        ],
+        activePatientId: null,
+      },
+    });
+    const { sessionNeedsCangjie } = await import("./bootModels");
+    expect(sessionNeedsCangjie()).toBe(false);
+  });
+
+  it("returns false on a hydrated empty-patient device with non-zh caregiverLang", async () => {
+    const { useSettingsStore } = await import("../stores/settingsStore");
+    useSettingsStore.setState({
+      _hasHydrated: true,
+      cfg: {
+        pin: "",
+        caregiverLang: "fr",
+        providers: [],
+        patients: [],
+        activePatientId: null,
+      },
+    });
+    const { sessionNeedsCangjie } = await import("./bootModels");
+    expect(sessionNeedsCangjie()).toBe(false);
   });
 });
 

@@ -24,6 +24,7 @@
  */
 
 import { recordStage } from "../diagnostics/crashTombstone";
+import { sessionNeedsCangjie } from "./bootModels";
 
 interface SpeakerData {
   condEmb: number[];
@@ -214,7 +215,12 @@ export function initGPU(modelUrl: string): Promise<boolean> {
       // `?bench=true` flag set by main-app.tsx — forwards to the GPU
       // worker so it can log per-step timings (LM + decode + RTF).
       const bench = (globalThis as { __OV_BENCH__?: boolean }).__OV_BENCH__ === true;
-      worker.postMessage({ type: "init", modelUrl, bench });
+      // Skip the Cangjie5 lookup table (~1.9 MB JSON + several MB of
+      // Maps in worker heap) when no zh locale is in the session.
+      // sessionNeedsCangjie defaults to true on uncertain state, so a
+      // pre-hydration boot preserves the prior eager-load behavior.
+      const loadCangjie = sessionNeedsCangjie();
+      worker.postMessage({ type: "init", modelUrl, bench, loadCangjie });
     } catch (err) {
       console.warn("[OwnVoice:TTS:GPU] Failed to create worker:", err);
       settle(false);

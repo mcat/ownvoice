@@ -22,6 +22,16 @@ const THREAD_VISIBLE: ReadonlySet<string> = new Set([
   EVENT.THREAD_COMPOSE,
 ]);
 
+/** Maximum entries held in memory for the live thread view. A long ICU
+ *  session can produce thousands of taps; without a cap the array grows
+ *  without bound (each ThreadEntry is ~hundreds of bytes, but the
+ *  cumulative heap cost matters for an iPad held over a multi-hour
+ *  shift). Older events stay in the audit IDB and remain queryable via
+ *  export; the cap only narrows the in-memory window. 500 entries is
+ *  generous (≈ a full caregiver shift of dense use) while keeping the
+ *  in-memory footprint well under 1 MB. */
+const THREAD_VIEW_CAP = 500;
+
 function recordToEntry(r: AuditRecord, patientName: string): ThreadEntry {
   const actor = r.attributes[ATTR.ACTOR] as "patient" | "provider" | undefined;
   const from: "patient" | "provider" =
@@ -82,13 +92,26 @@ export function useThreadView(
         tx.oncomplete = () => res();
       });
       db.close();
-      if (!cancelled) setEntries(initial);
+      if (!cancelled) {
+        // Keep only the most recent THREAD_VIEW_CAP entries — index is
+        // ascending by time, so slicing from the end retains the latest.
+        setEntries(
+          initial.length > THREAD_VIEW_CAP
+            ? initial.slice(-THREAD_VIEW_CAP)
+            : initial,
+        );
+      }
     })();
 
     const unsub = subscribe((rec) => {
       if (!hash || rec.patient_id_hash !== hash) return;
       if (!THREAD_VISIBLE.has(rec.name)) return;
-      setEntries((prev) => [...prev, recordToEntry(rec, patientName)]);
+      setEntries((prev) => {
+        const next = [...prev, recordToEntry(rec, patientName)];
+        return next.length > THREAD_VIEW_CAP
+          ? next.slice(-THREAD_VIEW_CAP)
+          : next;
+      });
     });
 
     return () => {

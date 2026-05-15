@@ -4,6 +4,23 @@ import { loadManifest, type ModelId } from "./modelsManifest";
 import { useOfflineStore } from "../stores/offlineStore";
 import { useSettingsStore } from "../stores/settingsStore";
 import { recordStage } from "../diagnostics/crashTombstone";
+import { baseLocale } from "../data/chatterboxLocales";
+
+/**
+ * True iff any locale in this session (caregiverLang or any patient's
+ * patientLang) is `zh`. The Cangjie5 lookup table is ~1.9 MB JSON that
+ * builds two Maps (~several MB) in worker heap; non-zh sessions never
+ * touch it, so we skip the load. If settings haven't hydrated yet we
+ * default to true so a fresh device or pre-hydration call preserves
+ * the prior eager-load behavior.
+ */
+export function sessionNeedsCangjie(): boolean {
+  const state = useSettingsStore.getState();
+  if (!state._hasHydrated || !state.cfg) return true;
+  const langs: (string | undefined)[] = [state.cfg.caregiverLang];
+  for (const p of state.cfg.patients) langs.push(p.patientLang);
+  return langs.some((l) => !!l && baseLocale(l) === "zh");
+}
 
 /**
  * Boot all on-device models.
@@ -190,7 +207,8 @@ export async function bootTTSWasm(): Promise<void> {
     // `?bench=true` flag is set on globalThis by main-app.tsx — propagate
     // to the worker so it can log per-step timings (encoder + LM + decode).
     const bench = (globalThis as { __OV_BENCH__?: boolean }).__OV_BENCH__ === true;
-    ttsWorker.postMessage({ type: "init", modelUrl: MODEL_URLS.tts, bench });
+    const loadCangjie = sessionNeedsCangjie();
+    ttsWorker.postMessage({ type: "init", modelUrl: MODEL_URLS.tts, bench, loadCangjie });
   } catch (err) {
     console.warn("[OwnVoice] Failed to create TTS worker:", err);
   }
