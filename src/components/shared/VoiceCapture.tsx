@@ -5,6 +5,7 @@ import { Btn } from "./Btn";
 import { getModelManager } from "../../models/modelManager";
 import { getRecordingScript } from "../../data/recordingScripts";
 import { preprocessEnrollment } from "../../models/enrollmentAudio";
+import { denoise, isDenoiseEnabled } from "../../models/denoiserClient";
 import { useModels } from "../../hooks/useModels";
 import { friendlyVoiceError } from "../../data/friendlyError";
 import { scoreVoiceSample } from "../../models/voiceQuality";
@@ -463,7 +464,12 @@ export function VoiceCapture({
     setCloneStatus("extracting");
     setError(null);
     try {
-      const rawAudio = await decodeAudio(blob);
+      let rawAudio = await decodeAudio(blob);
+      // `?denoise=true` URL flag — opt-in DeepFilterNet3 pre-filter on the
+      // enrollment clip. Best-effort; denoise() returns the input unchanged
+      // on worker init/run failures. Recalibration trigger is documented in
+      // [[project_voice_quality_recalibration]].
+      if (isDenoiseEnabled()) rawAudio = await denoise(rawAudio, 24000);
       // SNR/length gate only — pass raw audio to the encoder. Upstream
       // chatterbox-multilingual passes librosa.load output straight in;
       // our HP at 80Hz / peak-normalize / VAD-trim chain was scrubbing
@@ -503,7 +509,9 @@ export function VoiceCapture({
     setCloneStatus("extracting");
     setError(null);
     try {
-      const rawAudio = await decodeAudio(blob);
+      let rawAudio = await decodeAudio(blob);
+      // `?denoise=true` URL flag — see retryEmbedding above.
+      if (isDenoiseEnabled()) rawAudio = await denoise(rawAudio, 24000);
       // See retryEmbedding above — SNR gate only, raw audio to the encoder.
       const prep = preprocessEnrollment(rawAudio, 24000);
       if (!prep.acceptable) {
