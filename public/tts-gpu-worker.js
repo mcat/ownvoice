@@ -865,9 +865,6 @@ async function handleSynthesize(text, speakerData, id, languageId, exaggeration 
 
   // Batch[0]: full conditioning (condEmb + real text_embeds).
   // Batch[1]: text-zeroed (condEmb + zeros). Float32Array() is zero-init.
-  // `.set()` accepts a Float32Array source directly — the prior
-  // `new Float32Array(speakerData.condEmb)` intermediate was a redundant
-  // ~135 KB byte-copy on the worker side per synth (#310).
   const batchedEmbeds = new Float32Array(batch * rowSize);
   batchedEmbeds.set(speakerData.condEmb, 0);
   batchedEmbeds.set(textEmbeds.data, condLen * embedDim);
@@ -1010,13 +1007,10 @@ async function handleSynthesize(text, speakerData, id, languageId, exaggeration 
   console.log(`${LOG} Decoder input: ${decoderTokens.length} tokens (${promptTokens.length} prompt + ${speechOnly.length} speech + 3 silence)`);
   // Decoder uses WASM variant with int64 inputs (not the WebGPU int32 variant)
   const speechTok = new ort.Tensor("int64", BigInt64Array.from(decoderTokens.map(BigInt)), [1, decoderTokens.length]);
-  // speakerData.speakerEmbeddings / speakerFeatures are Float32Arrays
-  // cached in the speakers Map (#303). ORT's WebGPU EP doesn't mutate
-  // the input-tensor backing buffers; verified empirically across 30
-  // pre-gen synths under #310. Passing the cached arrays directly avoids
-  // a per-synth `new Float32Array(...)` byte-copy on the worker side —
-  // ~146 KB of allocation churn per synth, ~100 MB across a 700-phrase
-  // pre-gen pass.
+  // Pass the cached Float32Arrays directly. ORT's WebGPU EP does not
+  // mutate input-tensor backing buffers — adding a defensive
+  // `new Float32Array(speakerData.X)` copy here would be a per-synth
+  // byte-copy of cached data ORT only reads from.
   const spkEmb = new ort.Tensor("float32", speakerData.speakerEmbeddings, speakerData.speakerEmbeddingsShape);
   const spkFeat = new ort.Tensor("float32", speakerData.speakerFeatures, speakerData.speakerFeaturesShape);
 
