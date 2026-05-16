@@ -23,6 +23,11 @@ vi.mock("./ttsEngine", () => ({
   isGPUReady: () => isGPUReadyMock(),
 }));
 
+const recordStageMock = vi.fn();
+vi.mock("../diagnostics/crashTombstone", () => ({
+  recordStage: (label: string) => recordStageMock(label),
+}));
+
 import { generateAllPhrases, retryFailed as retryFailedGen } from "./audioCache";
 import {
   runPreGeneration,
@@ -62,6 +67,7 @@ beforeEach(() => {
   vi.mocked(retryFailedGen).mockReset();
   isGPUReadyMock.mockReset();
   isGPUReadyMock.mockReturnValue(false);
+  recordStageMock.mockReset();
 });
 
 describe("audioCacheRunner.runPreGeneration", () => {
@@ -604,6 +610,35 @@ describe("audioCacheRunner.runPreGeneration", () => {
     // First call is patient (patientId set), second is provider (null).
     expect(capturedOpts[0]?.patientId).toBe(TEST_PATIENT_ID);
     expect(capturedOpts[1]?.patientId).toBeNull();
+  });
+
+  it("skips the pregen:all-done stage label when every speaker was already done", async () => {
+    // After #290's visibility backoff lands, every hidden→visible cycle
+    // re-enters runPreGeneration. If everything is already cached, the
+    // loop has nothing to do — recording a fresh `pregen:all-done`
+    // stage label in that case pollutes the tombstone trail with
+    // misleading "we just finished" markers. Gate the label on actual
+    // work happening.
+    vi.mocked(generateAllPhrases).mockImplementation((phrases) =>
+      makeGenerator([
+        { phrase: phrases[0], current: 1, total: phrases.length },
+      ]),
+    );
+
+    // Run once to seed the store with done/total/fingerprint that
+    // matches whatever runPreGeneration computes for BASE_CFG.
+    await runPreGeneration(BASE_CFG);
+    expect(recordStageMock).toHaveBeenCalledWith("pregen:all-done");
+
+    recordStageMock.mockReset();
+    vi.mocked(generateAllPhrases).mockClear();
+
+    // Second run with everything already done — must produce no work
+    // and therefore no all-done label.
+    await runPreGeneration(BASE_CFG);
+
+    expect(generateAllPhrases).not.toHaveBeenCalled();
+    expect(recordStageMock).not.toHaveBeenCalledWith("pregen:all-done");
   });
 });
 

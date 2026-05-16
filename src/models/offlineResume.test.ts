@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { hasPendingDownloads, resumePendingOnVisible } from "./offlineResume";
 import { useOfflineStore } from "../stores/offlineStore";
+import { setVisibility } from "../test/visibility";
 
 const drivePrimerMock = vi.fn(async () => {});
 vi.mock("./drivePrimer", () => ({
@@ -268,19 +269,16 @@ describe("resumePendingOnVisible", () => {
 
   it("skips resume when tab is hidden on mount but fires when it becomes visible", async () => {
     installOPFS({ "models/tts": ["a.onnx", "a.onnx._progress.json"] });
-    let visibility: DocumentVisibilityState = "hidden";
     Object.defineProperty(document, "visibilityState", {
       configurable: true,
-      get: () => visibility,
+      get: () => "hidden",
     });
 
     const unsub = resumePendingOnVisible();
     await Promise.resolve();
     expect(drivePrimerMock).not.toHaveBeenCalled();
 
-    // Flip to visible and dispatch the event.
-    visibility = "visible";
-    document.dispatchEvent(new Event("visibilitychange"));
+    setVisibility("visible");
 
     await vi.waitFor(() => {
       expect(drivePrimerMock).toHaveBeenCalledTimes(1);

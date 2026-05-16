@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { AppSettings } from "../types";
+import { setVisibility } from "../test/visibility";
 import { backoffPregenOnHidden } from "./pregenVisibility";
 
 vi.mock("./audioCacheRunner", () => ({
@@ -14,14 +15,6 @@ vi.mock("../stores/settingsStore", () => ({
 
 import { pauseAll, resumeAll } from "./audioCacheRunner";
 import { useSettingsStore } from "../stores/settingsStore";
-
-function setVisibility(state: "visible" | "hidden"): void {
-  Object.defineProperty(document, "visibilityState", {
-    configurable: true,
-    get: () => state,
-  });
-  document.dispatchEvent(new Event("visibilitychange"));
-}
 
 function setCfg(cfg: AppSettings | null): void {
   vi.mocked(useSettingsStore).getState.mockReturnValue({ cfg } as never);
