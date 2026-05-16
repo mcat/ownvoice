@@ -41,6 +41,13 @@ async function flushMicrotasks(): Promise<void> {
   await Promise.resolve();
 }
 
+/** Filter postMessage calls by message type. Tests typically want to
+ *  inspect synthesize calls and ignore the set-speaker frame that
+ *  precedes the first synth for a new speaker (#303). */
+function callsOfType(worker: MockWorker, type: string) {
+  return worker.postMessage.mock.calls.filter((c) => c[0]?.type === type);
+}
+
 const SPEAKER: SpeakerDataLike = {
   condEmb: [0, 0, 0, 0],
   condEmbShape: [1, 1, 4],
@@ -202,12 +209,17 @@ describe("ttsEngine — synthesizeGPU", () => {
 
     const synthPromise = synthesizeGPU("hello", SPEAKER, "en", { timeoutMs: 5000 });
 
-    expect(worker.postMessage).toHaveBeenCalledTimes(1);
-    const call = worker.postMessage.mock.calls[0][0];
-    expect(call.type).toBe("synthesize");
+    // First synth for a new speaker fires set-speaker (#303) + synthesize.
+    const setCalls = callsOfType(worker, "set-speaker");
+    const synthCalls = callsOfType(worker, "synthesize");
+    expect(setCalls).toHaveLength(1);
+    expect(synthCalls).toHaveLength(1);
+
+    const call = synthCalls[0][0];
     expect(call.text).toBe("hello");
     expect(call.id).toBe(1);
-    expect(call.speakerData).toBe(SPEAKER);
+    expect(call.speakerId).toBe(setCalls[0][0].speakerId);
+    expect(call.speakerData).toBeUndefined();
     expect(call.languageId).toBe("en");
     expect(call.exaggeration).toBe(0.5);
 
@@ -240,8 +252,10 @@ describe("ttsEngine — synthesizeGPU", () => {
     const p0 = synthesizeGPU("alpha", SPEAKER, "en", { timeoutMs: 5000 });
     const p1 = synthesizeGPU("beta", SPEAKER, "en", { timeoutMs: 5000 });
 
-    const id0 = worker.postMessage.mock.calls[0][0].id;
-    const id1 = worker.postMessage.mock.calls[1][0].id;
+    const synthCalls = callsOfType(worker, "synthesize");
+    expect(synthCalls).toHaveLength(2);
+    const id0 = synthCalls[0][0].id;
+    const id1 = synthCalls[1][0].id;
     expect(id0).not.toBe(id1);
 
     // Reverse order audio delivery.
@@ -268,7 +282,7 @@ describe("ttsEngine — synthesizeGPU", () => {
     const worker = workers[0];
     worker.postMessage.mockClear();
     const synthPromise = synthesizeGPU("hello", SPEAKER, "en", { timeoutMs: 5000 });
-    const id = worker.postMessage.mock.calls[0][0].id;
+    const id = callsOfType(worker, "synthesize")[0][0].id;
 
     // Decoy audio with wrong id — should be ignored.
     worker.__post({
@@ -299,7 +313,7 @@ describe("ttsEngine — synthesizeGPU", () => {
     const worker = workers[0];
     worker.postMessage.mockClear();
     const synthPromise = synthesizeGPU("hello", SPEAKER, "en", { timeoutMs: 5000 });
-    const id = worker.postMessage.mock.calls[0][0].id;
+    const id = callsOfType(worker, "synthesize")[0][0].id;
     worker.__post({ type: "error", message: "synth failed", id });
 
     await expect(synthPromise).rejects.toThrow("synth failed");
@@ -367,7 +381,7 @@ describe("ttsEngine — synthesizeGPU", () => {
     // Mid-synth: entry is registered.
     expect(__testPendingSynthsSize()).toBe(1);
 
-    const id = worker.postMessage.mock.calls[0][0].id;
+    const id = callsOfType(worker, "synthesize")[0][0].id;
     worker.__post({
       type: "audio",
       data: new Float32Array([0.1]),
@@ -392,11 +406,167 @@ describe("ttsEngine — synthesizeGPU", () => {
     const p = synthesizeGPU("hello", SPEAKER, "en", { timeoutMs: 5000 });
     expect(__testPendingSynthsSize()).toBe(1);
 
-    const id = worker.postMessage.mock.calls[0][0].id;
+    const id = callsOfType(worker, "synthesize")[0][0].id;
     worker.__post({ type: "error", message: "boom", id });
 
     await expect(p).rejects.toThrow("boom");
     expect(__testPendingSynthsSize()).toBe(0);
+  });
+});
+
+describe("ttsEngine — speaker cache (#303)", () => {
+  beforeEach(() => {
+    vi.useRealTimers();
+  });
+
+  // A second speaker with a different embedding so embeddingFingerprint
+  // produces a distinct id. Same length as SPEAKER's embedding so the
+  // fingerprint logic (length_first_last) can disambiguate by value alone.
+  const SPEAKER_B: SpeakerDataLike = {
+    ...SPEAKER,
+    speakerEmbeddings: Array.from({ length: 192 }, (_, i) => (i === 0 ? 0.5 : 0)),
+  };
+
+  it("sends set-speaker with transferable float buffers on first synth", async () => {
+    const { workers, initGPU, synthesizeGPU } = await loadEngineWithMocks();
+    const initPromise = initGPU("/models");
+    workers[0].__post({ type: "ready" });
+    await initPromise;
+
+    const worker = workers[0];
+    worker.postMessage.mockClear();
+
+    const synthPromise = synthesizeGPU("hello", SPEAKER, "en", { timeoutMs: 5000 });
+
+    const setCalls = callsOfType(worker, "set-speaker");
+    expect(setCalls).toHaveLength(1);
+    const [msg, transfer] = setCalls[0];
+    expect(msg.type).toBe("set-speaker");
+    expect(typeof msg.speakerId).toBe("string");
+    expect(msg.speakerData.condEmb).toBeInstanceOf(Float32Array);
+    expect(msg.speakerData.speakerEmbeddings).toBeInstanceOf(Float32Array);
+    expect(msg.speakerData.speakerFeatures).toBeInstanceOf(Float32Array);
+    // The float buffers must be on the transfer list — that's how the
+    // zero-copy postMessage win actually lands. Without this assertion
+    // a regression to a structured-clone could pass silently.
+    expect(transfer).toContain(msg.speakerData.condEmb.buffer);
+    expect(transfer).toContain(msg.speakerData.speakerEmbeddings.buffer);
+    expect(transfer).toContain(msg.speakerData.speakerFeatures.buffer);
+
+    worker.__post({
+      type: "audio",
+      data: new Float32Array([0.1]),
+      sampleRate: 24000,
+      id: callsOfType(worker, "synthesize")[0][0].id,
+    });
+    await synthPromise;
+  });
+
+  it("does not resend set-speaker for subsequent synths with the same speaker", async () => {
+    // The dominant pre-gen win: one set-speaker followed by 700 cheap
+    // synthesize calls. A mutant that re-sent set-speaker every time
+    // would still produce correct audio but defeat the whole point.
+    const { workers, initGPU, synthesizeGPU } = await loadEngineWithMocks();
+    const initPromise = initGPU("/models");
+    workers[0].__post({ type: "ready" });
+    await initPromise;
+
+    const worker = workers[0];
+    worker.postMessage.mockClear();
+
+    for (let i = 0; i < 5; i++) {
+      const p = synthesizeGPU(`phrase-${i}`, SPEAKER, "en", { timeoutMs: 5000 });
+      const id = callsOfType(worker, "synthesize")[i][0].id;
+      worker.__post({
+        type: "audio",
+        data: new Float32Array([0.1]),
+        sampleRate: 24000,
+        id,
+      });
+      await p;
+    }
+
+    expect(callsOfType(worker, "set-speaker")).toHaveLength(1);
+    expect(callsOfType(worker, "synthesize")).toHaveLength(5);
+  });
+
+  it("resends set-speaker when the speaker changes", async () => {
+    const { workers, initGPU, synthesizeGPU } = await loadEngineWithMocks();
+    const initPromise = initGPU("/models");
+    workers[0].__post({ type: "ready" });
+    await initPromise;
+
+    const worker = workers[0];
+    worker.postMessage.mockClear();
+
+    // Synth with A
+    const pA = synthesizeGPU("alpha", SPEAKER, "en", { timeoutMs: 5000 });
+    worker.__post({
+      type: "audio",
+      data: new Float32Array([0.1]),
+      sampleRate: 24000,
+      id: callsOfType(worker, "synthesize")[0][0].id,
+    });
+    await pA;
+
+    // Synth with B → must trip a fresh set-speaker
+    const pB = synthesizeGPU("beta", SPEAKER_B, "en", { timeoutMs: 5000 });
+    worker.__post({
+      type: "audio",
+      data: new Float32Array([0.2]),
+      sampleRate: 24000,
+      id: callsOfType(worker, "synthesize")[1][0].id,
+    });
+    await pB;
+
+    const setCalls = callsOfType(worker, "set-speaker");
+    expect(setCalls).toHaveLength(2);
+    expect(setCalls[0][0].speakerId).not.toBe(setCalls[1][0].speakerId);
+  });
+
+  it("re-sends set-speaker on the respawned worker after a crash", async () => {
+    // A post-init crash terminates the worker and respawns it. The new
+    // worker has an empty speaker cache; without resetting the
+    // installedSpeakerId tracker, the next synth would send only
+    // `speakerId` and the respawned worker would error with "Speaker not
+    // cached" instead of producing audio.
+    const { workers, initGPU, synthesizeGPU } = await loadEngineWithMocks();
+    const initPromise = initGPU("/models");
+    workers[0].__post({ type: "ready" });
+    await initPromise;
+
+    // Prime the speaker on worker 0.
+    const pA = synthesizeGPU("alpha", SPEAKER, "en", { timeoutMs: 5000 });
+    workers[0].__post({
+      type: "audio",
+      data: new Float32Array([0.1]),
+      sampleRate: 24000,
+      id: callsOfType(workers[0], "synthesize")[0][0].id,
+    });
+    await pA;
+    expect(callsOfType(workers[0], "set-speaker")).toHaveLength(1);
+
+    // Crash + auto-respawn: ttsEngine spawns worker 1.
+    workers[0].__error("oom");
+    await flushMicrotasks();
+    // Wait for respawn worker to attach.
+    while (workers.length < 2) {
+      await flushMicrotasks();
+    }
+    workers[1].__post({ type: "ready" });
+    await flushMicrotasks();
+    workers[1].postMessage.mockClear();
+
+    // Next synth on the respawned worker must re-install the speaker.
+    const pB = synthesizeGPU("beta", SPEAKER, "en", { timeoutMs: 5000 });
+    expect(callsOfType(workers[1], "set-speaker")).toHaveLength(1);
+    workers[1].__post({
+      type: "audio",
+      data: new Float32Array([0.2]),
+      sampleRate: 24000,
+      id: callsOfType(workers[1], "synthesize")[0][0].id,
+    });
+    await pB;
   });
 });
 

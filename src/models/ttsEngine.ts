@@ -26,6 +26,7 @@
 import { recordStage } from "../diagnostics/crashTombstone";
 import { sessionNeedsCangjie } from "./bootModels";
 import { relayWorkerLog } from "../dev/logSink";
+import { embeddingFingerprint } from "./speakerFingerprint";
 
 interface SpeakerData {
   condEmb: Float32Array | number[];
@@ -57,6 +58,14 @@ const MAX_CRASH_RESPAWNS = 2;
 // late responses from timed-out synths are ignored instead of resolving
 // the next call's promise with stale audio.
 let nextSynthId = 0;
+
+// Fingerprint of the speaker the GPU worker currently has cached (#303).
+// Per-synth structured-clone of speakerData (~146 KB × 700 phrases) was
+// the dominant main-thread allocation source during pre-gen; this tracks
+// what the worker holds so we only send `set-speaker` (with transferable
+// buffers) when the speaker actually changes. Reset on worker spawn/crash
+// because the cache lives on the worker side and dies with the worker.
+let installedSpeakerId: string | null = null;
 
 // Every in-flight synthesizeGPU records its reject callback + listener
 // cleanup here. A post-init worker crash drains this map and rejects
@@ -163,6 +172,9 @@ function handlePostInitCrash(message: string) {
     // ignore — already dead
   }
   worker = null;
+  // Worker is gone → its speakerData cache is gone. Force the next
+  // synth to re-send set-speaker on the respawned worker.
+  installedSpeakerId = null;
 
   if (lastModelUrl && crashRespawnCount < MAX_CRASH_RESPAWNS) {
     crashRespawnCount += 1;
@@ -222,6 +234,10 @@ export function initGPU(modelUrl: string): Promise<boolean> {
     try {
       // Plain JS worker in public/ — not bundled by Vite
       worker = new Worker("/tts-gpu-worker.js", { type: "module" });
+      // Fresh worker → empty speakerData cache. The first synth call
+      // will trip ensureSpeakerInstalled to send set-speaker before
+      // posting its synthesize message.
+      installedSpeakerId = null;
 
       // 300s budget for multilingual: worker loads ~913 MB across 4 ONNX
       // sessions (vs Turbo's ~381 MB), and the 30-layer Llama LM has
@@ -305,6 +321,44 @@ export function initGPU(modelUrl: string): Promise<boolean> {
  * @param opts.timeoutMs — Override the default synthesis timeout. Live taps
  *   use the short default (fail fast); pre-gen passes a longer budget.
  */
+/** Send `set-speaker` if the worker doesn't already have this speaker cached.
+ *  Returns the speaker id the synthesize message should reference.
+ *
+ *  The float vectors are copied with `new Float32Array(source)` *before*
+ *  being transferred so the store's originals stay attached for other
+ *  readers (live taps, settings panel). For a 700-phrase pre-gen with
+ *  one patient this fires once; old code paid 700× structured-clone.
+ *
+ *  Returns null when the speakerData has no recognisable embedding —
+ *  the caller falls back to inline `speakerData` so the worker still
+ *  has a chance to surface a useful error. */
+function ensureSpeakerInstalled(speakerData: SpeakerData): string | null {
+  if (!worker) return null;
+  const id = embeddingFingerprint(speakerData);
+  if (id === "none") return null;
+  if (id === installedSpeakerId) return id;
+
+  const condEmb = new Float32Array(speakerData.condEmb);
+  const speakerEmbeddings = new Float32Array(speakerData.speakerEmbeddings);
+  const speakerFeatures = new Float32Array(speakerData.speakerFeatures);
+  const cached = {
+    condEmb,
+    condEmbShape: speakerData.condEmbShape,
+    promptToken: speakerData.promptToken,
+    promptTokenShape: speakerData.promptTokenShape,
+    speakerEmbeddings,
+    speakerEmbeddingsShape: speakerData.speakerEmbeddingsShape,
+    speakerFeatures,
+    speakerFeaturesShape: speakerData.speakerFeaturesShape,
+  };
+  worker.postMessage(
+    { type: "set-speaker", speakerId: id, speakerData: cached },
+    [condEmb.buffer, speakerEmbeddings.buffer, speakerFeatures.buffer],
+  );
+  installedSpeakerId = id;
+  return id;
+}
+
 export function synthesizeGPU(
   text: string,
   speakerData: SpeakerData,
@@ -321,6 +375,7 @@ export function synthesizeGPU(
   // whether KV-cache buffer growth on this call's specific text/length
   // tripped Safari, vs. an earlier boundary.
   recordStage(`synth:gpu:${id}`);
+  const speakerId = ensureSpeakerInstalled(speakerData);
 
   return new Promise((resolve, reject) => {
     const handler = (e: MessageEvent) => {
@@ -361,13 +416,21 @@ export function synthesizeGPU(
     }, timeoutMs);
 
     worker!.addEventListener("message", handler);
-    worker!.postMessage({
+    // Reference the cached speaker by id when ensureSpeakerInstalled
+    // succeeded; otherwise (no recognisable embedding) fall through to
+    // inline speakerData so the worker can surface a meaningful error.
+    const msg: Record<string, unknown> = {
       type: "synthesize",
       text,
-      speakerData,
       id,
       languageId,
       exaggeration: opts?.exaggeration ?? 0.5,
-    });
+    };
+    if (speakerId) {
+      msg.speakerId = speakerId;
+    } else {
+      msg.speakerData = speakerData;
+    }
+    worker!.postMessage(msg);
   });
 }
