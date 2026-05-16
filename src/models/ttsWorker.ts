@@ -66,17 +66,20 @@ const REPETITION_PENALTY = 1.2;
 const MIN_NEW_TOKENS = 10; // Don't allow STOP before this many speech tokens
 
 /** Outputs from the speech encoder, stored and reused for all synthesis calls.
- *  All arrays use JSON-safe types (number[]) so the data can be persisted
- *  via zustand's JSON storage. BigInt64Array values from ONNX are converted
- *  to number[] at extraction time and back to BigInt64Array at synthesis time. */
+ *  Float vectors round-trip through Zustand persistence via the
+ *  f32Replacer/f32Reviver pair in src/stores/persistTypedArrays.ts —
+ *  newly-extracted speakers store as Float32Array; legacy installs may
+ *  still hold number[] on read, hence the union. promptToken stays
+ *  number[]: it's int64 token IDs coerced through Number(), treated as
+ *  a token list rather than a numeric vector. */
 interface SpeakerData {
-  condEmb: number[];
+  condEmb: Float32Array | number[];
   condEmbShape: number[];
   promptToken: number[];
   promptTokenShape: number[];
-  speakerEmbeddings: number[];
+  speakerEmbeddings: Float32Array | number[];
   speakerEmbeddingsShape: number[];
-  speakerFeatures: number[];
+  speakerFeatures: Float32Array | number[];
   speakerFeaturesShape: number[];
 }
 
@@ -503,20 +506,22 @@ async function handleEmbed(
     console.log(`${LOG}   speakerEmb: shape=${speakerEmbeddings.dims}`);
     console.log(`${LOG}   speakerFeat: shape=${speakerFeatures.dims}`);
 
-    // Convert all typed arrays to plain number[] so the data survives
-    // JSON.stringify round-trips (zustand persist uses JSON storage).
-    // Sized notes: condEmb alone is typically ~70K floats; boxed-double
-    // array storage roughly doubles the heap cost vs. the Float32Array
-    // it was just converted from — a real (small) memory peak here.
+    // Float32Array fields survive JSON.stringify round-trips via the
+    // settingsStore replacer/reviver in src/stores/persistTypedArrays.ts —
+    // tagged on write, restored on read, so we keep the encoder's native
+    // typed-array output and skip the ~70K-element Array.from copy that
+    // doubled heap cost via boxed doubles. promptToken stays number[]:
+    // it's int64s coerced through Number(), and the synth path treats
+    // it as a token list rather than a numeric vector.
     _postMessage({ type: "stage", label: "embed:array-from" });
     const speakerData: SpeakerData = {
-      condEmb: Array.from(condEmb.data as Float32Array),
+      condEmb: new Float32Array(condEmb.data as Float32Array),
       condEmbShape: condEmb.dims as number[],
       promptToken: Array.from(promptToken.data as BigInt64Array, Number),
       promptTokenShape: promptToken.dims as number[],
-      speakerEmbeddings: Array.from(speakerEmbeddings.data as Float32Array),
+      speakerEmbeddings: new Float32Array(speakerEmbeddings.data as Float32Array),
       speakerEmbeddingsShape: speakerEmbeddings.dims as number[],
-      speakerFeatures: Array.from(speakerFeatures.data as Float32Array),
+      speakerFeatures: new Float32Array(speakerFeatures.data as Float32Array),
       speakerFeaturesShape: speakerFeatures.dims as number[],
     };
 
