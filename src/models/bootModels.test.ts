@@ -31,6 +31,8 @@ vi.mock("./modelManager", () => ({
 interface MockCfgPatient {
   speakerData: unknown;
   patientLang?: string;
+  hasVoice?: boolean;
+  pendingVoiceBlob?: string | null;
 }
 interface MockCfg {
   caregiverLang?: string;
@@ -72,13 +74,16 @@ class FakeWorker {
 
 vi.stubGlobal("Worker", FakeWorker);
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.clearAllMocks();
   createdWorkers.length = 0;
   mockIsReady.mockReturnValue(false);
   // Default to "not hydrated yet" — matches the prior-art assumption
   // baked into the existing eager-warmup tests, so they keep passing.
   mockSettingsGetState.mockReturnValue({ cfg: null, _hasHydrated: false });
+  // Reset the bootTTSWasm memoization so each test can spawn a fresh worker.
+  const mod = await import("./bootModels");
+  mod.__resetBootTTSWasmForTests();
 });
 
 describe("bootModels", () => {
@@ -370,7 +375,7 @@ describe("bootTTSWasm — skip warmup when all patients enrolled", () => {
     // latency — pointless when no enrollment is pending. Skipping
     // drops that peak from the iPad boot path.
     mockSettingsGetState.mockReturnValue({
-      cfg: { patients: [{ speakerData: { condEmb: [0.1] } }] },
+      cfg: { patients: [{ hasVoice: true, speakerData: { condEmb: [0.1] } }] },
       _hasHydrated: true,
     });
 
@@ -381,9 +386,14 @@ describe("bootTTSWasm — skip warmup when all patients enrolled", () => {
     expect(hasWarmupCall(createdWorkers[0])).toBe(false);
   });
 
-  it("posts warmup when at least one patient is missing speakerData", async () => {
+  it("posts warmup when an enrolling patient is missing speakerData", async () => {
     mockSettingsGetState.mockReturnValue({
-      cfg: { patients: [{ speakerData: { condEmb: [0.1] } }, { speakerData: null }] },
+      cfg: {
+        patients: [
+          { hasVoice: true, speakerData: { condEmb: [0.1] } },
+          { hasVoice: true, speakerData: null },
+        ],
+      },
       _hasHydrated: true,
     });
 
@@ -392,6 +402,27 @@ describe("bootTTSWasm — skip warmup when all patients enrolled", () => {
     createdWorkers[0].onmessage?.({ data: { type: "ready" } });
 
     expect(hasWarmupCall(createdWorkers[0])).toBe(true);
+  });
+
+  it("skips warmup when a patient declined voice cloning and the rest are enrolled", async () => {
+    // hasVoice=false means the patient chose Web Speech only. They will
+    // never need the speech encoder, so a missing speakerData does NOT
+    // require eager warmup.
+    mockSettingsGetState.mockReturnValue({
+      cfg: {
+        patients: [
+          { hasVoice: true, speakerData: { condEmb: [0.1] } },
+          { hasVoice: false, speakerData: null },
+        ],
+      },
+      _hasHydrated: true,
+    });
+
+    const { bootTTSWasm } = await import("./bootModels");
+    await bootTTSWasm();
+    createdWorkers[0].onmessage?.({ data: { type: "ready" } });
+
+    expect(hasWarmupCall(createdWorkers[0])).toBe(false);
   });
 
   it("posts warmup when settings have not hydrated yet (fall through to old behavior)", async () => {
@@ -421,5 +452,76 @@ describe("bootTTSWasm — skip warmup when all patients enrolled", () => {
     createdWorkers[0].onmessage?.({ data: { type: "ready" } });
 
     expect(hasWarmupCall(createdWorkers[0])).toBe(true);
+  });
+});
+
+describe("everyPatientIsResolved", () => {
+  it("returns false when settings haven't hydrated", async () => {
+    mockSettingsGetState.mockReturnValue({ cfg: null, _hasHydrated: false });
+    const { everyPatientIsResolved } = await import("./bootModels");
+    expect(everyPatientIsResolved()).toBe(false);
+  });
+
+  it("returns false when cfg has zero patients (fresh install)", async () => {
+    mockSettingsGetState.mockReturnValue({
+      cfg: { patients: [] },
+      _hasHydrated: true,
+    });
+    const { everyPatientIsResolved } = await import("./bootModels");
+    expect(everyPatientIsResolved()).toBe(false);
+  });
+
+  it("returns true when every patient has speakerData and no pending blob", async () => {
+    mockSettingsGetState.mockReturnValue({
+      cfg: {
+        patients: [
+          { hasVoice: true, speakerData: {}, pendingVoiceBlob: null },
+          { hasVoice: true, speakerData: {}, pendingVoiceBlob: null },
+        ],
+      },
+      _hasHydrated: true,
+    });
+    const { everyPatientIsResolved } = await import("./bootModels");
+    expect(everyPatientIsResolved()).toBe(true);
+  });
+
+  it("returns true when a patient declined voice cloning (hasVoice=false, no speakerData)", async () => {
+    mockSettingsGetState.mockReturnValue({
+      cfg: {
+        patients: [
+          { hasVoice: false, speakerData: null, pendingVoiceBlob: null },
+        ],
+      },
+      _hasHydrated: true,
+    });
+    const { everyPatientIsResolved } = await import("./bootModels");
+    expect(everyPatientIsResolved()).toBe(true);
+  });
+
+  it("returns false when any patient still has a pendingVoiceBlob", async () => {
+    mockSettingsGetState.mockReturnValue({
+      cfg: {
+        patients: [
+          { hasVoice: true, speakerData: {}, pendingVoiceBlob: null },
+          { hasVoice: true, speakerData: {}, pendingVoiceBlob: "Zm9v" },
+        ],
+      },
+      _hasHydrated: true,
+    });
+    const { everyPatientIsResolved } = await import("./bootModels");
+    expect(everyPatientIsResolved()).toBe(false);
+  });
+
+  it("returns false when a hasVoice patient still lacks speakerData", async () => {
+    mockSettingsGetState.mockReturnValue({
+      cfg: {
+        patients: [
+          { hasVoice: true, speakerData: null, pendingVoiceBlob: null },
+        ],
+      },
+      _hasHydrated: true,
+    });
+    const { everyPatientIsResolved } = await import("./bootModels");
+    expect(everyPatientIsResolved()).toBe(false);
   });
 });

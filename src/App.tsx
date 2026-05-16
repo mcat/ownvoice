@@ -35,13 +35,14 @@ import { StaffSessionTimer } from "./components/shared/StaffSessionTimer";
 import { ResumePromptBanner } from "./components/diag/ResumePromptBanner";
 import { Setup } from "./components/settings/Setup";
 import { getModelManager } from "./models/modelManager";
-import { bootTTSWasm, bootSTT, verifyAllOnBoot, waitForModelSettled } from "./models/bootModels";
+import { bootTTSWasm, bootSTT, verifyAllOnBoot, waitForModelSettled, everyPatientIsResolved } from "./models/bootModels";
 import { drivePrimer } from "./models/drivePrimer";
 import { resumePendingOnVisible } from "./models/offlineResume";
 import { useOfflineStore } from "./stores/offlineStore";
 import { initGPU, isGPUReady, onGPUReady } from "./models/ttsEngine";
 import { MODEL_URLS } from "./models/types";
 import { primeSpeechSynthesis, setFallbackVoice } from "./speak";
+import { recordStage } from "./diagnostics/crashTombstone";
 import * as audioCacheRunner from "./models/audioCacheRunner";
 import { embeddingFingerprint } from "./models/audioCache";
 
@@ -164,9 +165,24 @@ export function App() {
         console.warn("[OwnVoice] GPU TTS error:", err);
       }
       if (cancelled) return;
-      bootTTSWasm();
-      await waitForModelSettled("tts");
-      if (cancelled) return;
+
+      // Lazy WASM TTS: skip the worker when GPU TTS is healthy and every
+      // patient is resolved (either declined voice cloning, or has a
+      // finalized speakerData embedding with no pending blob).
+      // handleEmbed — the only steady-state WASM TTS consumer — is
+      // gated on a real enrollment, so VoiceCapture kicks bootTTSWasm()
+      // on demand when it mounts with hasVoice=true. A failed/unavail
+      // GPU still triggers eager WASM boot so synth has a path.
+      if (isGPUReady() && everyPatientIsResolved()) {
+        recordStage("boot:tts-wasm-skipped");
+        console.log(
+          "[OwnVoice] WASM TTS deferred — GPU TTS ready and every patient is resolved.",
+        );
+      } else {
+        bootTTSWasm();
+        await waitForModelSettled("tts");
+        if (cancelled) return;
+      }
 
       // Run OPFS integrity check after workers settle, then auto-prime
       // if needed. Without priming, the app still works on first boot

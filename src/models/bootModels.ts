@@ -159,14 +159,62 @@ function bootSTTWasm(): void {
 }
 
 /**
+ * True iff every patient in the current settings either declined voice
+ * cloning (hasVoice === false) OR has a finalized speakerData embedding
+ * with no leftover pendingVoiceBlob. Used by the boot sequencer and the
+ * WASM TTS warmup-skip path to decide whether the worker is needed on
+ * cold boot. Returns `false` whenever the store isn't hydrated, cfg is
+ * absent, or there are no patients — that conservative default keeps the
+ * eager-boot behavior on first run when state is uncertain.
+ */
+export function everyPatientIsResolved(): boolean {
+  const state = useSettingsStore.getState();
+  if (!state._hasHydrated || !state.cfg) return false;
+  const { patients } = state.cfg;
+  if (patients.length === 0) return false;
+  return patients.every(
+    (p) => !p.hasVoice || (!!p.speakerData && !p.pendingVoiceBlob),
+  );
+}
+
+/**
+ * Memoize the WASM TTS boot so callers can lazy-spawn from multiple sites
+ * (App boot fallback, VoiceCapture enrollment kick-off) without double-
+ * spawning the worker. Cleared by no one in production — the worker lives
+ * for the session.
+ */
+let wasmTtsBootPromise: Promise<void> | null = null;
+
+/**
  * Boot the TTS WASM worker. Always available alongside the GPU TTS path;
  * falls back automatically when synthesis can't run on WebGPU.
  *
- * Call this *after* `initGPU()` resolves (success or failure) so that ORT
- * WASM session creation doesn't race with the WebGPU shader compilation —
- * the original concern documented in `App.tsx` when these were serialized.
+ * Idempotent: subsequent calls return the original boot promise instead
+ * of spawning a second worker. App.tsx skips the eager call when GPU TTS
+ * is healthy and every patient is resolved; VoiceCapture kicks this on
+ * first mount with `hasVoice=true` so a fresh patient can still extract
+ * an embedding. The on-demand spawn adds ~1s of worker boot to the
+ * first enrollment of a non-warm session (the speech-encoder weights
+ * themselves still load on the existing handleEmbed lazy-load path);
+ * the backlog explicitly accepts this cost in exchange for a smaller
+ * steady-state baseline.
+ *
+ * Call this *after* `initGPU()` resolves (success or failure) when in
+ * the eager boot-fallback path so that ORT WASM session creation
+ * doesn't race with WebGPU shader compilation.
  */
-export async function bootTTSWasm(): Promise<void> {
+export function bootTTSWasm(): Promise<void> {
+  if (wasmTtsBootPromise) return wasmTtsBootPromise;
+  wasmTtsBootPromise = bootTTSWasmImpl();
+  return wasmTtsBootPromise;
+}
+
+/** Test-only: drop the memoized boot promise so a fresh test can spawn anew. */
+export function __resetBootTTSWasmForTests(): void {
+  wasmTtsBootPromise = null;
+}
+
+async function bootTTSWasmImpl(): Promise<void> {
   const mgr = getModelManager();
   recordStage("boot:tts-wasm-init");
   await mgr.init();
@@ -194,15 +242,9 @@ export async function bootTTSWasm(): Promise<void> {
         // pays a few extra seconds (already-OPFS-cached weights → fast)
         // but the steady-state boot path drops a ~291 MB peak.
         // Fall through to warmup when state is uncertain — !hydrated or
-        // cfg null preserves the prior eager-warmup behavior.
-        const state = useSettingsStore.getState();
-        const cfg = state.cfg;
-        const allEnrolled =
-          state._hasHydrated &&
-          !!cfg &&
-          cfg.patients.length > 0 &&
-          cfg.patients.every((p) => !!p.speakerData);
-        if (allEnrolled) {
+        // cfg null preserves the prior eager-warmup behavior, baked into
+        // everyPatientIsResolved's return-false defaults.
+        if (everyPatientIsResolved()) {
           recordStage("boot:tts-wasm-warmup-skipped");
           console.log(
             "[OwnVoice:TTS] Warmup skipped — every patient already has a voice clone, encoder will load on next enrollment.",
