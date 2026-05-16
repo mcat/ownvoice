@@ -42,9 +42,18 @@ export function startVoiceProcessor(opts: ProcessorOptions = {}): () => void {
 
   async function tick() {
     const mgr = getModelManager();
-    if (!mgr.isWarm("tts")) return;
     const cfg = useSettingsStore.getState().cfg;
     if (!cfg) return;
+    const hasPending = cfg.patients.some(
+      (p) => p.pendingVoiceBlob && !p.speakerData,
+    );
+    // Wake the lazy WASM TTS worker so the warm signal we're waiting on
+    // actually fires. bootTTSWasm is idempotent.
+    if (hasPending) {
+      const { bootTTSWasm } = await import("./bootModels");
+      bootTTSWasm();
+    }
+    if (!mgr.isWarm("tts")) return;
 
     for (const p of cfg.patients) {
       if (!p.pendingVoiceBlob || inFlight.has(p.id)) continue;

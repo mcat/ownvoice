@@ -42,6 +42,7 @@ import { useOfflineStore } from "./stores/offlineStore";
 import { initGPU, isGPUReady, onGPUReady } from "./models/ttsEngine";
 import { MODEL_URLS } from "./models/types";
 import { primeSpeechSynthesis, setFallbackVoice } from "./speak";
+import { recordStage } from "./diagnostics/crashTombstone";
 import * as audioCacheRunner from "./models/audioCacheRunner";
 import { embeddingFingerprint } from "./models/audioCache";
 
@@ -164,9 +165,31 @@ export function App() {
         console.warn("[OwnVoice] GPU TTS error:", err);
       }
       if (cancelled) return;
-      bootTTSWasm();
-      await waitForModelSettled("tts");
-      if (cancelled) return;
+
+      // Lazy WASM TTS: when GPU TTS is healthy AND every patient already
+      // has a voice clone AND no enrollment is pending, skip the WASM TTS
+      // worker on boot. handleEmbed (the only steady-state WASM TTS
+      // consumer) is gated on a real enrollment — VoiceCapture kicks
+      // bootTTSWasm() on demand when it mounts with hasVoice=true. A
+      // failed/unavailable GPU still triggers eager WASM boot so synth
+      // has a path. Tens of MB saved on returning, fully-enrolled
+      // devices (ORT WASM runtime baseline + tokenizer).
+      const gpuReady = isGPUReady();
+      const cfg = useSettingsStore.getState().cfg;
+      const allEnrolled =
+        !!cfg &&
+        cfg.patients.length > 0 &&
+        cfg.patients.every((p) => !!p.speakerData && !p.pendingVoiceBlob);
+      if (gpuReady && allEnrolled) {
+        recordStage("boot:tts-wasm-skipped");
+        console.log(
+          "[OwnVoice] WASM TTS deferred — GPU TTS ready and every patient is already enrolled.",
+        );
+      } else {
+        bootTTSWasm();
+        await waitForModelSettled("tts");
+        if (cancelled) return;
+      }
 
       // Run OPFS integrity check after workers settle, then auto-prime
       // if needed. Without priming, the app still works on first boot
