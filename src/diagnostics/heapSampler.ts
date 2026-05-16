@@ -75,19 +75,31 @@ function sampleHeap(): HeapWatermark {
  * periodic OPFS estimate refresh. Safe to call multiple times — the
  * second call short-circuits if the timer is already running. No-op
  * unless `?memdiag=true` enabled memdiag at boot.
+ *
+ * Returns a disposer that clears the interval — wired into the
+ * pagehide cleanup so the session-scoped sampler stops when the page
+ * unloads. Matches the `startVoiceProcessor` / `startWakeLock`
+ * convention elsewhere in the model layer.
  */
-export function startHeapSampler(): void {
-  if (!isMemDiagEnabled()) return;
+export function startHeapSampler(): () => void {
+  if (!isMemDiagEnabled()) return () => {};
   registerHeapSampler(sampleHeap);
-  if (opfsTimer !== null) return;
-  // Kick off an immediate estimate so the first stage label gets a
-  // non-null usage value (best-effort: the await may race with the
-  // boot's first recordStage and lose, in which case the first
-  // snapshot has opfsUsage=null and the second has a real value).
-  void refreshOpfsEstimate();
-  opfsTimer = setInterval(() => {
+  if (opfsTimer === null) {
+    // Kick off an immediate estimate so the first stage label gets a
+    // non-null usage value (best-effort: the await may race with the
+    // boot's first recordStage and lose, in which case the first
+    // snapshot has opfsUsage=null and the second has a real value).
     void refreshOpfsEstimate();
-  }, OPFS_SAMPLE_INTERVAL_MS);
+    opfsTimer = setInterval(() => {
+      void refreshOpfsEstimate();
+    }, OPFS_SAMPLE_INTERVAL_MS);
+  }
+  return () => {
+    if (opfsTimer !== null) {
+      clearInterval(opfsTimer);
+      opfsTimer = null;
+    }
+  };
 }
 
 /** Test-only: stop the timer and reset cached estimates. */

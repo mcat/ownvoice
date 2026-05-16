@@ -40,6 +40,9 @@ const NON_PHI_ATTR_KEYS: ReadonlySet<string> = new Set([
   // speakerKindForLog in audioCacheRunner.ts), so the value is safe.
   ATTR.DIAG_LAST_STAGE,
   ATTR.DIAG_LAST_STAGE_AGE_MS,
+  // JSON snapshot of OPFS usage, worker statuses, GPU TTS readiness —
+  // diagnostic state, no patient-identifying data.
+  ATTR.DIAG_LAST_STAGE_HW,
 ]);
 
 describe("PHI redaction policy completeness", () => {

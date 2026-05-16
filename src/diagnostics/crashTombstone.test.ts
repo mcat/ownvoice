@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import {
   enableMemDiag,
   isMemDiagEnabled,
@@ -93,11 +93,43 @@ describe("crashTombstone", () => {
     expect(prev?.hw).toBeNull();
   });
 
-  it("recordStage overwrites prior stage with the latest", () => {
+  it("recordStage writes the first call immediately (leading edge)", () => {
     enableMemDiag();
     recordStage("boot:foo");
-    recordStage("boot:bar");
-    expect(readPreviousTombstone()?.stage).toBe("boot:bar");
+    expect(readPreviousTombstone()?.stage).toBe("boot:foo");
+  });
+
+  it("recordStage throttles back-to-back calls and writes the latest after the cooldown", async () => {
+    vi.useFakeTimers();
+    try {
+      enableMemDiag();
+      recordStage("boot:foo");
+      expect(readPreviousTombstone()?.stage).toBe("boot:foo");
+      // Two more calls inside the 250ms window — should not write yet.
+      recordStage("boot:bar");
+      recordStage("boot:baz");
+      expect(readPreviousTombstone()?.stage).toBe("boot:foo");
+      // After the cooldown the trailing write fires with the *latest*
+      // stashed payload.
+      await vi.advanceTimersByTimeAsync(260);
+      expect(readPreviousTombstone()?.stage).toBe("boot:baz");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("clearTombstone cancels a pending throttled write so it cannot resurrect the tombstone", async () => {
+    vi.useFakeTimers();
+    try {
+      enableMemDiag();
+      recordStage("boot:foo");
+      recordStage("boot:bar"); // stashed
+      clearTombstone();
+      await vi.advanceTimersByTimeAsync(500);
+      expect(readPreviousTombstone()).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("readPreviousTombstone returns null when no tombstone exists", () => {

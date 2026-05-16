@@ -25,8 +25,24 @@
  * without needing the JS heap APIs Safari withholds.
  */
 
+import type { ModelId, ModelStatus } from "../models/types";
+
 const TOMBSTONE_KEY = "ov:memdiag:last-stage";
 const FLAG_KEY = "__OV_MEMDIAG__" as const;
+
+/**
+ * Minimum interval between two localStorage writes. Without throttling,
+ * a 700-phrase pre-gen pass would fire one stage label per completed
+ * phrase plus the sampler-driven allocations on top, which compounds
+ * the very main-thread pressure this diagnostic is meant to characterize.
+ * Leading-edge: the first call writes immediately so sparse stages
+ * (boot:*, synth:gpu:N) stay precise; subsequent calls inside the
+ * cooldown stash the latest payload and a trailing write fires once.
+ * Worst-case forensic loss on crash: WRITE_THROTTLE_MS of label
+ * staleness, which is still well below the granularity of any actionable
+ * fix (phrase 347 vs 348 in pre-gen tells us the same thing).
+ */
+const WRITE_THROTTLE_MS = 250;
 
 export interface HeapWatermark {
   /** OPFS quota usage in bytes. Updated by the async sampler every few
@@ -43,8 +59,9 @@ export interface HeapWatermark {
    *  but capped at 64. Useful for confirming the cache isn't leaking. */
   hotCacheEntries: number;
   /** Per-model worker status as reported by ModelManager. Empty when
-   *  no sampler is registered. */
-  workers: Record<string, string>;
+   *  no sampler is registered. `Partial` because some ModelId entries
+   *  (e.g. denoiser) may be absent on a given session. */
+  workers: Partial<Record<ModelId, ModelStatus>>;
   /** Whether the GPU TTS DedicatedWorker is in the ready state. */
   gpuTtsReady: boolean;
   /** In-flight GPU TTS synth requests at sample time. Non-zero means a
@@ -84,9 +101,16 @@ export function registerHeapSampler(fn: () => HeapWatermark): void {
   sampler = fn;
 }
 
-/** Test-only: drop the registered sampler so each test starts clean. */
+/** Test-only: drop the registered sampler and any pending throttled
+ *  write so each test starts clean. */
 export function _resetSamplerForTests(): void {
   sampler = null;
+  if (pendingTimer !== null) {
+    clearTimeout(pendingTimer);
+    pendingTimer = null;
+  }
+  pendingPayload = null;
+  lastWriteAt = 0;
 }
 
 export function enableMemDiag(): void {
@@ -97,15 +121,42 @@ export function isMemDiagEnabled(): boolean {
   return (globalThis as Record<string, unknown>)[FLAG_KEY] === true;
 }
 
-export function recordStage(stage: string): void {
-  if (!isMemDiagEnabled()) return;
+let lastWriteAt = 0;
+let pendingPayload: StoredTombstone | null = null;
+let pendingTimer: ReturnType<typeof setTimeout> | null = null;
+
+function writePayload(payload: StoredTombstone): void {
   try {
-    const hw = safeSample();
-    const payload: StoredTombstone = { stage, ts: Date.now(), hw, v: 2 };
     localStorage.setItem(TOMBSTONE_KEY, JSON.stringify(payload));
+    lastWriteAt = Date.now();
   } catch {
     // localStorage may be unavailable in private mode or full. The
     // tombstone is best-effort — silent failure is correct.
+  }
+}
+
+export function recordStage(stage: string): void {
+  if (!isMemDiagEnabled()) return;
+  const payload: StoredTombstone = {
+    stage,
+    ts: Date.now(),
+    hw: safeSample(),
+    v: 2,
+  };
+  const elapsed = payload.ts - lastWriteAt;
+  if (elapsed >= WRITE_THROTTLE_MS) {
+    writePayload(payload);
+    return;
+  }
+  pendingPayload = payload;
+  if (pendingTimer === null) {
+    pendingTimer = setTimeout(() => {
+      pendingTimer = null;
+      if (pendingPayload) {
+        writePayload(pendingPayload);
+        pendingPayload = null;
+      }
+    }, WRITE_THROTTLE_MS - elapsed);
   }
 }
 
@@ -121,6 +172,15 @@ function safeSample(): HeapWatermark | null {
 }
 
 export function clearTombstone(): void {
+  // Cancel any pending throttled write — otherwise a trailing-edge
+  // setTimeout would land *after* clearTombstone runs on pagehide,
+  // resurrecting the tombstone and turning a graceful exit into a
+  // false-positive crash report on the next boot.
+  if (pendingTimer !== null) {
+    clearTimeout(pendingTimer);
+    pendingTimer = null;
+  }
+  pendingPayload = null;
   try {
     localStorage.removeItem(TOMBSTONE_KEY);
   } catch {
