@@ -1,5 +1,6 @@
 import { useSettingsStore } from "../stores/settingsStore";
 import { getModelManager } from "./modelManager";
+import { bootTTSWasm } from "./bootModels";
 import { decodeAudioFromBase64 } from "./audioDecode";
 import { ov } from "../audit/workflow";
 import { enrollVoice } from "../audit/workflows/voiceEnrollment";
@@ -49,10 +50,7 @@ export function startVoiceProcessor(opts: ProcessorOptions = {}): () => void {
     );
     // Wake the lazy WASM TTS worker so the warm signal we're waiting on
     // actually fires. bootTTSWasm is idempotent.
-    if (hasPending) {
-      const { bootTTSWasm } = await import("./bootModels");
-      bootTTSWasm();
-    }
+    if (hasPending) bootTTSWasm();
     if (!mgr.isWarm("tts")) return;
 
     for (const p of cfg.patients) {
