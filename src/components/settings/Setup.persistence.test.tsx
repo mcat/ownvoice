@@ -89,4 +89,38 @@ describe("Setup — voice capture persistence (Bug 5)", () => {
     // No model warm → no embedding extracted.
     expect(cfg.patients[0].speakerData).toBeFalsy();
   });
+
+  it("clears pendingVoiceBlob when speakerData is populated at setup time", async () => {
+    const onFirstRunDone = vi.fn();
+    render(<Setup mode="first-run" onFirstRunDone={onFirstRunDone} />);
+
+    const nameInput = screen.getByPlaceholderText("First name or preferred name");
+    fireEvent.input(nameInput, { target: { value: "Alex" } });
+
+    fireEvent.click(screen.getByText("Continue"));
+    vi.advanceTimersByTime(300);
+
+    expect(capturedOnCapture).toBeTruthy();
+    const blob = new Blob([new Uint8Array([1, 2, 3, 4])], { type: "audio/webm" });
+    const fakeEmbedding = { condEmb: [0.1, 0.2], quality: { score: 0.9 } };
+    vi.useRealTimers();
+    await act(async () => {
+      await capturedOnCapture!(blob, fakeEmbedding);
+    });
+    vi.useFakeTimers();
+
+    fireEvent.click(screen.getByText("Continue"));
+    vi.advanceTimersByTime(300);
+    fireEvent.click(screen.getByText("Continue"));
+    vi.advanceTimersByTime(300);
+    fireEvent.click(screen.getByText("Start OwnVoice"));
+    vi.advanceTimersByTime(300);
+
+    expect(onFirstRunDone).toHaveBeenCalled();
+    const cfg = onFirstRunDone.mock.calls[0][0];
+    expect(cfg.patients[0].speakerData).toBeTruthy();
+    // Blob is dead weight once speakerData is populated — voiceProcessor
+    // mirrors this behavior on the async path.
+    expect(cfg.patients[0].pendingVoiceBlob).toBeNull();
+  });
 });
