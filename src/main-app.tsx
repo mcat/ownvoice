@@ -19,6 +19,7 @@ import {
   readPreviousTombstone,
   recordStage,
 } from "./diagnostics/crashTombstone";
+import { startHeapSampler } from "./diagnostics/heapSampler";
 
 window.addEventListener("error", (ev) => {
   log({
@@ -68,7 +69,11 @@ if (__ovParams.get("bench") === "true") {
 const __ovPrevTombstone = readPreviousTombstone();
 if (__ovParams.get("memdiag") === "true") {
   enableMemDiag();
-  console.log("[OwnVoice:MemDiag] Memory crash tombstone active. Stage labels written to localStorage.");
+  // Register the heap-watermark sampler before the first recordStage
+  // call so even the boot label captures a snapshot. The sampler also
+  // kicks off a periodic OPFS estimate refresh.
+  startHeapSampler();
+  console.log("[OwnVoice:MemDiag] Memory crash tombstone active. Stage labels + heap watermarks written to localStorage.");
   recordStage("boot:main-app");
 }
 
@@ -186,6 +191,13 @@ useUIStore.subscribe((state, prev) => {
       console.warn(
         `[OwnVoice:MemDiag] Previous session ended ungracefully at stage "${__ovPrevTombstone.stage}" (${__ovPrevTombstone.ageMs}ms ago).`,
       );
+      if (__ovPrevTombstone.hw) {
+        // Heap-watermark snapshot from the crashed stage. console.dir so
+        // the object is inspectable in the Safari console without us
+        // pre-stringifying — a future log copy/paste keeps the structure.
+        console.warn("[OwnVoice:MemDiag] Heap watermark at crash:");
+        console.dir(__ovPrevTombstone.hw);
+      }
     }
   };
   if (useSettingsStore.getState()._hasHydrated) {
