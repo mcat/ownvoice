@@ -83,6 +83,13 @@ interface SpeakerData {
   speakerFeaturesShape: number[];
 }
 
+/** Narrow a Float32Array | number[] field to Float32Array without allocating
+ *  when it's already the right shape. New speakers from handleEmbed hit the
+ *  identity branch; legacy hydrated speakers pay the one-time copy. */
+function asF32(x: Float32Array | number[]): Float32Array {
+  return x instanceof Float32Array ? x : new Float32Array(x);
+}
+
 // Runtime sessions (always loaded)
 let embedTokensSession: ort.InferenceSession | null = null;
 let languageModelSession: ort.InferenceSession | null = null;
@@ -510,9 +517,8 @@ async function handleEmbed(
     // settingsStore replacer/reviver in src/stores/persistTypedArrays.ts —
     // tagged on write, restored on read, so we keep the encoder's native
     // typed-array output and skip the ~70K-element Array.from copy that
-    // doubled heap cost via boxed doubles. promptToken stays number[]:
-    // it's int64s coerced through Number(), and the synth path treats
-    // it as a token list rather than a numeric vector.
+    // doubled heap cost via boxed doubles. See SpeakerData (above) for the
+    // per-field rationale.
     _postMessage({ type: "stage", label: "embed:array-from" });
     const speakerData: SpeakerData = {
       condEmb: new Float32Array(condEmb.data as Float32Array),
@@ -612,8 +618,11 @@ async function handleSynthesize(
     throw new Error(`embed_tokens failed. Available: ${Object.keys(embedResult).join(", ")}`);
   }
 
-  // Step 3: Autoregressive speech token generation via language_model
-  const condEmbF32 = new Float32Array(speakerData.condEmb);
+  // Step 3: Autoregressive speech token generation via language_model.
+  // asF32 avoids a redundant copy on the new-enrollment path; the
+  // condEmbF32 reference is read-only here (set() copies *from* it into
+  // combinedEmbeds below), so reusing the original buffer is safe.
+  const condEmbF32 = asF32(speakerData.condEmb);
 
   // Build initial input: [cond_emb, text_embeds] concatenated along sequence dimension
   const condLen = speakerData.condEmbShape[1] ?? 0;
@@ -763,14 +772,17 @@ async function handleSynthesize(
 
   console.log(`${LOG} Decoder input: ${decoderTokens.length} tokens (${promptTokens.length} prompt + ${speechOnly.length} speech + 3 silence)`);
   const speechTokensTensor = intTensor(decoderTokens, [1, decoderTokens.length]);
+  // asF32 is identity when speakerData already holds Float32Array — saves a
+  // copy per synth call on the steady-state (new-enrollment) path. Legacy
+  // number[] still pays the one-time copy on each call.
   const speakerEmbTensor = new ort.Tensor(
     "float32",
-    new Float32Array(speakerData.speakerEmbeddings),
+    asF32(speakerData.speakerEmbeddings),
     speakerData.speakerEmbeddingsShape,
   );
   const speakerFeatTensor = new ort.Tensor(
     "float32",
-    new Float32Array(speakerData.speakerFeatures),
+    asF32(speakerData.speakerFeatures),
     speakerData.speakerFeaturesShape,
   );
 
