@@ -31,6 +31,8 @@
 // must live at that same path. Update both this URL and the wasmPaths
 // string when bumping ORT_VERSION.
 import * as ort from "/ort/v1.25.1/ort.webgpu.min.mjs";
+import { installDevLogRelay } from "/__dev-log-relay.js";
+installDevLogRelay("worker:tts-gpu");
 
 const LOG = "[OwnVoice:TTS:GPU]";
 const SAMPLE_RATE = 24000;

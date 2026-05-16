@@ -5,6 +5,7 @@ import { useOfflineStore } from "../stores/offlineStore";
 import { useSettingsStore } from "../stores/settingsStore";
 import { recordStage } from "../diagnostics/crashTombstone";
 import { baseLocale } from "../data/chatterboxLocales";
+import { relayWorkerLog } from "../dev/logSink";
 
 /**
  * True iff any locale in this session (caregiverLang or any patient's
@@ -91,6 +92,11 @@ export async function bootSTT(): Promise<void> {
       const gpuWorker = new Worker("/stt-gpu-worker.js", { type: "module" });
 
       gpuWorker.onmessage = (e) => {
+        if (e.data.type === "__log") {
+          // Dev-only relay from public/stt-gpu-worker.js — see issue #306.
+          relayWorkerLog(e.data);
+          return;
+        }
         if (e.data.type === "ready") {
           mgr.setWorker("stt", gpuWorker);
           mgr.setReady("stt");

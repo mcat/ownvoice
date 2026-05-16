@@ -54,6 +54,38 @@ export function formatArgs(args: unknown[]): string {
   return args.map(safeStringify).join(" ");
 }
 
+/**
+ * Re-emit a relay message from a plain JS worker through the main-thread
+ * console so the line lands in logs/dev.log via the already-patched
+ * console.* methods. Called from each main-thread `worker.onmessage`
+ * branch that matches `{ type: "__log", ... }`. See issue #306 for the
+ * relay design.
+ *
+ * Levels not in the standard set fall back to `console.log`. The origin
+ * tag is prefixed to the message so the dev.log line shows
+ * `[worker:tts-gpu] ...` distinct from `[main] ...`.
+ */
+type RelayLevel = "log" | "info" | "warn" | "error" | "debug";
+type RelayLog = { level?: string; message?: string; origin?: string };
+const RELAY_LEVELS: ReadonlySet<RelayLevel> = new Set<RelayLevel>([
+  "log",
+  "info",
+  "warn",
+  "error",
+  "debug",
+]);
+function isRelayLevel(v: string | undefined): v is RelayLevel {
+  return v !== undefined && RELAY_LEVELS.has(v as RelayLevel);
+}
+export function relayWorkerLog(data: unknown): void {
+  if (!data || typeof data !== "object") return;
+  const m = data as RelayLog;
+  const level: RelayLevel = isRelayLevel(m.level) ? m.level : "log";
+  const tag = m.origin ? `[${m.origin}]` : "[worker]";
+  const text = typeof m.message === "string" ? m.message : "";
+  console[level](tag, text);
+}
+
 function detectOrigin(): string {
   if (typeof window !== "undefined") return "main";
   try {

@@ -26,6 +26,8 @@
 
 // Versioned to match wasmPaths below. See tts-gpu-worker.js for rationale.
 import * as ort from "/ort/v1.25.1/ort.webgpu.min.mjs";
+import { installDevLogRelay } from "/__dev-log-relay.js";
+installDevLogRelay("worker:stt-gpu");
 
 const LOG = "[OwnVoice:STT:GPU]";
 
