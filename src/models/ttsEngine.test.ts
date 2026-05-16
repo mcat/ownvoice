@@ -441,4 +441,48 @@ describe("ttsEngine — post-init worker crash rejects in-flight synths fast", (
       }
     }
   });
+
+  it("auto-respawns the worker after a post-init crash, up to the budget", async () => {
+    const { workers, initGPU, synthesizeGPU, isGPUReady } =
+      await loadEngineWithMocks();
+    const initPromise = initGPU("/models");
+    workers[0].__post({ type: "ready" });
+    await initPromise;
+    expect(workers).toHaveLength(1);
+
+    // Crash 1 → respawns worker #2 via queueMicrotask.
+    const p0 = synthesizeGPU("alpha", SPEAKER, "en", { timeoutMs: 300_000 });
+    workers[0].__error("oom 1");
+    await expect(p0).rejects.toThrow(/worker crashed/);
+    expect(isGPUReady()).toBe(false);
+    // Drain queued microtasks so the respawn fires.
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(workers).toHaveLength(2);
+    expect(workers[0].terminate).toHaveBeenCalled();
+    workers[1].__post({ type: "ready" });
+    // Yield so initGPU's promise settles before next call.
+    await Promise.resolve();
+    expect(isGPUReady()).toBe(true);
+
+    // Crash 2 → respawns worker #3.
+    const p1 = synthesizeGPU("beta", SPEAKER, "en", { timeoutMs: 300_000 });
+    workers[1].__error("oom 2");
+    await expect(p1).rejects.toThrow(/worker crashed/);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(workers).toHaveLength(3);
+    workers[2].__post({ type: "ready" });
+    await Promise.resolve();
+    expect(isGPUReady()).toBe(true);
+
+    // Crash 3 → budget exhausted, no more respawns.
+    const p2 = synthesizeGPU("gamma", SPEAKER, "en", { timeoutMs: 300_000 });
+    workers[2].__error("oom 3");
+    await expect(p2).rejects.toThrow(/worker crashed/);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(workers).toHaveLength(3);
+    expect(isGPUReady()).toBe(false);
+  });
 });
