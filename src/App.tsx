@@ -35,7 +35,7 @@ import { StaffSessionTimer } from "./components/shared/StaffSessionTimer";
 import { ResumePromptBanner } from "./components/diag/ResumePromptBanner";
 import { Setup } from "./components/settings/Setup";
 import { getModelManager } from "./models/modelManager";
-import { bootTTSWasm, bootSTT, verifyAllOnBoot } from "./models/bootModels";
+import { bootTTSWasm, bootSTT, verifyAllOnBoot, waitForModelSettled } from "./models/bootModels";
 import { drivePrimer } from "./models/drivePrimer";
 import { resumePendingOnVisible } from "./models/offlineResume";
 import { useOfflineStore } from "./stores/offlineStore";
@@ -144,30 +144,37 @@ export function App() {
 
   // Initialize model manager and boot the TTS + STT workers.
   useEffect(() => {
-    // STT begins booting immediately, in parallel with GPU TTS shader
-    // compile. An earlier shape (pre-#234) that chained STT behind
-    // initGPU() meant STT could not start downloading until TTS shader
-    // compile finished — minutes on cold load. The parallel pattern
-    // restored by Listen v2 (see #233 hints) is what makes the pill
-    // available within seconds of boot rather than minutes.
-    bootSTT();
+    let cancelled = false;
+    // Serialize cold boot to keep the peak memory window narrow:
+    //   STT → GPU TTS → WASM TTS fallback → verify/primer
+    // Pre-#297, all four ran in parallel, doubling the boot-window peak.
+    // STT is small (~30s download) and the Listen pill needs it first;
+    // GPU TTS shader-compile + decoder weights are the heavyweights and
+    // wait until STT settles. The primer can write hundreds of MB to
+    // OPFS, so it waits until both workers are out of init.
+    (async () => {
+      await bootSTT();
+      await waitForModelSettled("stt");
+      if (cancelled) return;
 
-    // GPU TTS in parallel; defer the WASM TTS fallback until GPU TTS resolves
-    // either way, to avoid concurrent ORT-WASM/ORT-WebGPU init contention.
-    initGPU(MODEL_URLS.tts).then(ok => {
-      console.log("[OwnVoice] GPU TTS:", ok ? "ready" : "unavailable");
+      try {
+        const ok = await initGPU(MODEL_URLS.tts);
+        console.log("[OwnVoice] GPU TTS:", ok ? "ready" : "unavailable");
+      } catch (err) {
+        console.warn("[OwnVoice] GPU TTS error:", err);
+      }
+      if (cancelled) return;
       bootTTSWasm();
-    }).catch(err => {
-      console.warn("[OwnVoice] GPU TTS error:", err);
-      bootTTSWasm();
-    });
-    // Run OPFS integrity check in parallel, then auto-prime if needed.
-    // The primer moves models into OPFS with resumable downloads + integrity
-    // verification. Without this, the app still works on first boot (workers
-    // fetch via the SW → network), but the bytes don't persist in a way that
-    // survives storage-pressure eviction.
-    verifyAllOnBoot()
-      .then(() => {
+      await waitForModelSettled("tts");
+      if (cancelled) return;
+
+      // Run OPFS integrity check after workers settle, then auto-prime
+      // if needed. Without priming, the app still works on first boot
+      // (workers fetch via the SW → network), but the bytes don't
+      // persist in a way that survives storage-pressure eviction.
+      try {
+        await verifyAllOnBoot();
+        if (cancelled) return;
         const verified = useOfflineStore.getState().verified;
         const needsPriming = Object.values(verified).some(
           (s) => s !== "verified",
@@ -177,13 +184,16 @@ export function App() {
             console.warn("[OwnVoice] auto-prime failed:", err),
           );
         }
-      })
-      .catch((err) => console.warn("[OwnVoice] boot verify failed:", err));
+      } catch (err) {
+        console.warn("[OwnVoice] boot verify failed:", err);
+      }
+    })();
     // Resume any interrupted model downloads — fires on boot if partials
     // exist, and again whenever the tab returns to the foreground.
     const unsubResume = resumePendingOnVisible();
     primeSpeechSynthesis();
     return () => {
+      cancelled = true;
       unsubResume();
     };
   }, []);
