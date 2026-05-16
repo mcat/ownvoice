@@ -1,3 +1,6 @@
+// Side-effect import: in dev, mirrors console + uncaught errors to
+// `logs/dev.log` via the Vite middleware. Tree-shaken in prod builds.
+import "./dev/logSink";
 import { render } from "preact";
 import { App } from "./App";
 import "./app.css";
