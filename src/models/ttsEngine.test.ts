@@ -29,6 +29,18 @@ interface SpeakerDataLike {
   speakerFeaturesShape: number[];
 }
 
+/**
+ * Drain the microtask queue. Used in real-timer tests that need to wait
+ * for queueMicrotask callbacks (e.g. the auto-respawn path in
+ * handlePostInitCrash) before asserting state. `vi.runAllTicks()` only
+ * exists under fake timers; two awaited microtask-yielding ticks are the
+ * equivalent for real-timer tests.
+ */
+async function flushMicrotasks(): Promise<void> {
+  await Promise.resolve();
+  await Promise.resolve();
+}
+
 const SPEAKER: SpeakerDataLike = {
   condEmb: [0, 0, 0, 0],
   condEmbShape: [1, 1, 4],
@@ -442,7 +454,7 @@ describe("ttsEngine — post-init worker crash rejects in-flight synths fast", (
     }
   });
 
-  it("auto-respawns the worker after a post-init crash, up to the budget", async () => {
+  it("auto-respawns after a post-init crash and refills budget on each successful ready", async () => {
     const { workers, initGPU, synthesizeGPU, isGPUReady } =
       await loadEngineWithMocks();
     const initPromise = initGPU("/models");
@@ -450,38 +462,63 @@ describe("ttsEngine — post-init worker crash rejects in-flight synths fast", (
     await initPromise;
     expect(workers).toHaveLength(1);
 
-    // Crash 1 → respawns worker #2 via queueMicrotask.
+    // Transient crash 1 → respawns worker #2; the new worker reaches
+    // ready and refills the budget.
     const p0 = synthesizeGPU("alpha", SPEAKER, "en", { timeoutMs: 300_000 });
     workers[0].__error("oom 1");
     await expect(p0).rejects.toThrow(/worker crashed/);
     expect(isGPUReady()).toBe(false);
-    // Drain queued microtasks so the respawn fires.
-    await Promise.resolve();
-    await Promise.resolve();
+    await flushMicrotasks();
     expect(workers).toHaveLength(2);
     expect(workers[0].terminate).toHaveBeenCalled();
     workers[1].__post({ type: "ready" });
-    // Yield so initGPU's promise settles before next call.
-    await Promise.resolve();
+    await flushMicrotasks();
     expect(isGPUReady()).toBe(true);
 
-    // Crash 2 → respawns worker #3.
+    // Independent transient crash 2 hours later — the budget was refilled
+    // on the previous ready, so respawn #2 also succeeds.
     const p1 = synthesizeGPU("beta", SPEAKER, "en", { timeoutMs: 300_000 });
     workers[1].__error("oom 2");
     await expect(p1).rejects.toThrow(/worker crashed/);
-    await Promise.resolve();
-    await Promise.resolve();
+    await flushMicrotasks();
     expect(workers).toHaveLength(3);
     workers[2].__post({ type: "ready" });
-    await Promise.resolve();
+    await flushMicrotasks();
     expect(isGPUReady()).toBe(true);
+  });
 
-    // Crash 3 → budget exhausted, no more respawns.
-    const p2 = synthesizeGPU("gamma", SPEAKER, "en", { timeoutMs: 300_000 });
-    workers[2].__error("oom 3");
-    await expect(p2).rejects.toThrow(/worker crashed/);
-    await Promise.resolve();
-    await Promise.resolve();
+  it("stops respawning when MAX_CRASH_RESPAWNS consecutive crashes never recover", async () => {
+    const { workers, initGPU, synthesizeGPU, isGPUReady } =
+      await loadEngineWithMocks();
+    const initPromise = initGPU("/models");
+    workers[0].__post({ type: "ready" });
+    await initPromise;
+
+    // First crash → counter=1, respawn worker #2.
+    const p0 = synthesizeGPU("alpha", SPEAKER, "en", { timeoutMs: 300_000 });
+    workers[0].__error("oom 1");
+    await expect(p0).rejects.toThrow(/worker crashed/);
+    await flushMicrotasks();
+    expect(workers).toHaveLength(2);
+
+    // Worker #2 hits init-path error (settle(false)); ready stays false,
+    // counter stays at 1 (only handlePostInitCrash increments).
+    workers[1].__post({ type: "error", message: "init failed" });
+    await flushMicrotasks();
+    expect(isGPUReady()).toBe(false);
+
+    // Worker #2 then emits a post-init error (settled is true post
+    // init-error) → counter=2, respawn worker #3.
+    workers[1].__error("late crash on #2");
+    await flushMicrotasks();
+    expect(workers).toHaveLength(3);
+    workers[2].__post({ type: "error", message: "init failed again" });
+    await flushMicrotasks();
+
+    // Worker #3's post-init error would push counter to 3, but the cap is
+    // MAX_CRASH_RESPAWNS (2). No new worker, log line fires instead.
+    workers[2].__error("late crash on #3");
+    await flushMicrotasks();
     expect(workers).toHaveLength(3);
     expect(isGPUReady()).toBe(false);
   });
