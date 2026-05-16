@@ -3,6 +3,7 @@ import { t as resolvePhrase } from "../../data/phraseRegistry";
 import { useSettingsStore } from "../../stores/settingsStore";
 import { Btn } from "./Btn";
 import { getModelManager } from "../../models/modelManager";
+import { bootTTSWasm } from "../../models/bootModels";
 import { getRecordingScript } from "../../data/recordingScripts";
 import { preprocessEnrollment } from "../../models/enrollmentAudio";
 import { denoise } from "../../models/denoiserClient";
@@ -294,6 +295,16 @@ export function VoiceCapture({
   // single source of truth for the model-loading line now.
   const { isWarm } = useModels();
   const ttsWarm = isWarm("tts");
+
+  // Lazy WASM TTS worker spawn: App.tsx defers bootTTSWasm when GPU TTS
+  // is healthy and every patient is already enrolled. A real enrollment
+  // (mounting this card with hasVoice=true) needs the encoder, so trigger
+  // the boot here. bootTTSWasm is idempotent — repeated calls return the
+  // same promise, so a re-mount won't double-spawn.
+  useEffect(() => {
+    if (!hasVoice) return;
+    bootTTSWasm();
+  }, [hasVoice]);
 
   // When the TTS model becomes warm, retry embedding extraction if we have
   // audio but no embedding.

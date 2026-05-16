@@ -72,13 +72,16 @@ class FakeWorker {
 
 vi.stubGlobal("Worker", FakeWorker);
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.clearAllMocks();
   createdWorkers.length = 0;
   mockIsReady.mockReturnValue(false);
   // Default to "not hydrated yet" — matches the prior-art assumption
   // baked into the existing eager-warmup tests, so they keep passing.
   mockSettingsGetState.mockReturnValue({ cfg: null, _hasHydrated: false });
+  // Reset the bootTTSWasm memoization so each test can spawn a fresh worker.
+  const mod = await import("./bootModels");
+  mod.__resetBootTTSWasmForTests();
 });
 
 describe("bootModels", () => {

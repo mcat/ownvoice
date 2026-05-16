@@ -159,14 +159,41 @@ function bootSTTWasm(): void {
 }
 
 /**
+ * Memoize the WASM TTS boot so callers can lazy-spawn from multiple sites
+ * (App boot fallback, VoiceCapture enrollment kick-off) without double-
+ * spawning the worker. Cleared by no one in production — the worker lives
+ * for the session.
+ */
+let wasmTtsBootPromise: Promise<void> | null = null;
+
+/**
  * Boot the TTS WASM worker. Always available alongside the GPU TTS path;
  * falls back automatically when synthesis can't run on WebGPU.
  *
- * Call this *after* `initGPU()` resolves (success or failure) so that ORT
- * WASM session creation doesn't race with the WebGPU shader compilation —
- * the original concern documented in `App.tsx` when these were serialized.
+ * Idempotent: subsequent calls return the original boot promise instead
+ * of spawning a second worker. App.tsx skips the eager call when GPU TTS
+ * is healthy and no pending enrollment is queued; VoiceCapture kicks
+ * this on first mount with `hasVoice=true` so a fresh patient can still
+ * extract an embedding. The on-demand spawn adds ~1s to the first
+ * enrollment of a non-warm session — the backlog explicitly accepts
+ * this cost in exchange for a smaller steady-state baseline.
+ *
+ * Call this *after* `initGPU()` resolves (success or failure) when in
+ * the eager boot-fallback path so that ORT WASM session creation
+ * doesn't race with WebGPU shader compilation.
  */
-export async function bootTTSWasm(): Promise<void> {
+export function bootTTSWasm(): Promise<void> {
+  if (wasmTtsBootPromise) return wasmTtsBootPromise;
+  wasmTtsBootPromise = bootTTSWasmImpl();
+  return wasmTtsBootPromise;
+}
+
+/** Test-only: drop the memoized boot promise so a fresh test can spawn anew. */
+export function __resetBootTTSWasmForTests(): void {
+  wasmTtsBootPromise = null;
+}
+
+async function bootTTSWasmImpl(): Promise<void> {
   const mgr = getModelManager();
   recordStage("boot:tts-wasm-init");
   await mgr.init();
