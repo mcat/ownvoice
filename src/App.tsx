@@ -38,6 +38,7 @@ import { getModelManager } from "./models/modelManager";
 import { bootTTSWasm, bootSTT, verifyAllOnBoot, waitForModelSettled, everyPatientIsResolved } from "./models/bootModels";
 import { drivePrimer } from "./models/drivePrimer";
 import { resumePendingOnVisible } from "./models/offlineResume";
+import { backoffPregenOnHidden } from "./models/pregenVisibility";
 import { useOfflineStore } from "./stores/offlineStore";
 import { initGPU, isGPUReady, onGPUReady } from "./models/ttsEngine";
 import { MODEL_URLS } from "./models/types";
@@ -207,10 +208,14 @@ export function App() {
     // Resume any interrupted model downloads — fires on boot if partials
     // exist, and again whenever the tab returns to the foreground.
     const unsubResume = resumePendingOnVisible();
+    // Soft-pause pre-gen whenever the tab is hidden so background work
+    // doesn't compete with the foreground app for GPU/CPU on iPad.
+    const unsubBackoff = backoffPregenOnHidden(() => cfgRef.current);
     primeSpeechSynthesis();
     return () => {
       cancelled = true;
       unsubResume();
+      unsubBackoff();
     };
   }, []);
 
