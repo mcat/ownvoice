@@ -1,3 +1,4 @@
+import "./dev/logSink";
 import { render } from "preact";
 import { HomepageApp } from "./homepage/HomepageApp";
 

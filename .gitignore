@@ -22,6 +22,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+# Dev-only browser-log mirror — see src/dev/logSink.ts + the
+# logSinkPlugin in vite.config.ts. Truncated on every `npm run dev`.
+logs/
 
 # Environment — never commit secrets
 .env

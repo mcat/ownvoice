@@ -1,3 +1,6 @@
+// Dev-only console mirror — must come before the build marker so even
+// early-boot worker logs land in `logs/dev.log`.
+import "../dev/logSink";
 // Build marker for CF edge cache invalidation. Bump when _headers rules
 // change so the edge re-fetches the bundle to pick up new response headers.
 // The string literal MUST survive minification — esbuild evaluates `void <const>`

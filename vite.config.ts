@@ -1,7 +1,7 @@
 import { defineConfig, type Plugin } from "vite";
 import { resolve, extname, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { promises as fs } from "node:fs";
+import { promises as fs, existsSync, mkdirSync, writeFileSync, appendFileSync } from "node:fs";
 import preact from "@preact/preset-vite";
 import tailwindcss from "@tailwindcss/vite";
 
@@ -73,8 +73,76 @@ function serveOrtFromPublic(): Plugin {
   };
 }
 
+/**
+ * Mirror browser-side `console.*` and uncaught errors to `logs/dev.log`.
+ *
+ * Why this exists: Claude Code can read files but can't see the browser's
+ * DevTools console, and IntelliJ's JS debugger is invisible to it too. A
+ * file sink turns every dev session's logs into something tail-able from
+ * the terminal — including logs from bundled workers and from an iPad on
+ * the LAN (run `npm run dev -- --host` for the latter). Pairs with
+ * `src/dev/logSink.ts`, which patches `console` on the browser side.
+ *
+ * The file is truncated on each server start so a tail reflects the
+ * current session. Empty body / disk errors are swallowed — log capture
+ * must never break the dev server.
+ */
+function logSinkPlugin(): Plugin {
+  const logDir = resolve(__dirname, "logs");
+  const logFile = resolve(logDir, "dev.log");
+  return {
+    name: "ownvoice-log-sink",
+    apply: "serve",
+    configureServer(server) {
+      try {
+        if (!existsSync(logDir)) mkdirSync(logDir, { recursive: true });
+        writeFileSync(logFile, `=== session start: ${new Date().toISOString()} ===\n`);
+        server.config.logger.info(`  ➜  browser logs: ${logFile}`);
+      } catch (err) {
+        server.config.logger.warn(`[log-sink] init failed: ${(err as Error).message}`);
+      }
+
+      server.middlewares.use("/__log", (req, res, next) => {
+        if (req.method !== "POST") return next();
+        let body = "";
+        req.setEncoding("utf8");
+        req.on("data", (chunk: string) => {
+          body += chunk;
+        });
+        req.on("end", () => {
+          try {
+            const payload = JSON.parse(body) as {
+              level: string;
+              message: string;
+              ts: number;
+              origin: string;
+            };
+            const iso = new Date(payload.ts).toISOString();
+            const line = `${iso} [${payload.level.toUpperCase()}] [${payload.origin}] ${payload.message}\n`;
+            try {
+              appendFileSync(logFile, line);
+            } catch {
+              // EACCES / ENOSPC etc — don't take down Vite. Caller still
+              // gets a 204 so the browser doesn't retry endlessly.
+            }
+            res.statusCode = 204;
+            res.end();
+          } catch {
+            res.statusCode = 400;
+            res.end();
+          }
+        });
+        req.on("error", () => {
+          res.statusCode = 400;
+          res.end();
+        });
+      });
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [preact(), tailwindcss(), serveOrtFromPublic()],
+  plugins: [preact(), tailwindcss(), serveOrtFromPublic(), logSinkPlugin()],
   build: {
     rollupOptions: {
       input: {

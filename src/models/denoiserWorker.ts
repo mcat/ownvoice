@@ -25,6 +25,9 @@
  *   { type: "error", message: string }
  */
 
+// Dev-only console mirror — first import so early-boot logs reach
+// `logs/dev.log`.
+import "../dev/logSink";
 import * as ort from "onnxruntime-web";
 import { linearResample } from "./resample";
 import { configureOrtWasmEnv } from "./workerOrtEnv";

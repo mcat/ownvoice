@@ -19,6 +19,7 @@ npm run test:watch     # Vitest in watch mode
 npm run test:coverage  # Vitest with coverage
 npm run manifest:regen # Refresh public/models-manifest.json from disk sizes
 npm run manifest:check # Verify manifest is in sync with disk (CI-safe)
+tail -f logs/dev.log   # Live browser-console mirror created by `npm run dev` (see "Debugging from the terminal")
 ```
 
 **After adding/replacing any file under `public/models/**`:** run `npm run manifest:regen` and commit the diff. The `manifestIntegrity` vitest covers drift automatically in CI.
@@ -43,7 +44,8 @@ The app is decomposed into focused modules. Colocated `*.test.ts(x)` files live 
 - `src/data/phraseRegistry.ts` — Single source of truth for all speakable text. `t(key, locale)` resolves a phrase; `getCategories`, `getProviderCategories`, `getEmojiFPS`, `getWishTopics`, `composePainSentence`, `composeWishSentence`, `getAllSpeakablePhrases` expose structure.
 - `src/data/locales/` — Per-locale string tables (currently `en.ts`). Statically imported so language switching works offline.
 - `src/hooks/` — `useTheme`, `useSpeakActions`, `useMicrophone`, `useModels`, `useDebouncedTap`
-- `src/models/` — On-device inference: `modelManager.ts` (worker lifecycle, OPFS model storage), `ttsEngine.ts` (WebGPU main-thread Chatterbox Multilingual), `ttsWorker.ts` / `sttWorker.ts` / `llmWorker.ts` (WASM fallbacks), `audioCache.ts` (OPFS-backed pre-generated phrase audio), `bootModels.ts`, `multilingualTokenizer.ts` (BPE + per-language preprocessors)
+- `src/models/` — On-device inference: `modelManager.ts` (worker lifecycle, OPFS model storage), `ttsEngine.ts` (WebGPU main-thread Chatterbox Multilingual), `ttsWorker.ts` / `sttWorker.ts` (WASM fallbacks), `denoiserWorker.ts` (DeepFilterNet3 enrollment cleanup), `audioCache.ts` (OPFS-backed pre-generated phrase audio), `bootModels.ts`, `multilingualTokenizer.ts` (BPE + per-language preprocessors)
+- `src/dev/logSink.ts` — Dev-only sink that mirrors `console.*` and uncaught errors to `logs/dev.log` via the `logSinkPlugin` middleware in `vite.config.ts`. Imported as a side effect from both Preact entry points and from each bundled worker (`ttsWorker`, `sttWorker`, `denoiserWorker`), so logs from every JS context end up in a single tail-able file. Tree-shaken in prod.
 - `src/stores/` — Zustand stores: `settingsStore`, `conversationStore`, `uiStore`; plus `idbStorage.ts` (Zustand IDB adapter) and `resetAll.ts` (wipes every persistent layer)
 - `src/theme/` — Theme tokens and palette
 - `docs/PRD.md` — Full product requirements (voice cloning, SICG, latency tiers, 4-phase roadmap)
@@ -87,6 +89,28 @@ Large assets (ORT WASM, model weights) are hosted in the Cloudflare R2 bucket `o
 ### Inline styling is intentional (for now)
 
 Components use inline style objects with tokens from the `theme` module. This keeps theming dynamic and dependency-free. Production may move to CSS modules or equivalent.
+
+### Debugging from the terminal
+
+**When investigating any runtime bug — failed boot, worker error, unexpected console output — read `logs/dev.log` first.** It's the source of truth Claude can actually see; the DevTools console is invisible from here.
+
+`npm run dev` truncates `logs/dev.log` on each start and then appends every browser `console.log/info/warn/error/debug/dir` call, plus uncaught errors and unhandled rejections, from the main thread *and* from each bundled worker. Each line is `<iso-ts> [LEVEL] [main|worker:<name>] <message>`.
+
+Typical workflow:
+
+```bash
+# In one terminal:
+npm run dev
+
+# In another (or via Claude's Read/Bash):
+tail -f logs/dev.log              # follow live
+grep "\[OwnVoice:TTS" logs/dev.log  # filter by existing module prefix
+grep "ERROR\|UNCAUGHT" logs/dev.log # surface errors only
+```
+
+**For iPad capture:** run `npm run dev -- --host`, point the iPad at `http://<laptop-ip>:3000/app/`, and the same file fills up with its logs. This is currently the only Claude-visible surface for iPad-Safari-only bugs (e.g. the unresolved boot race in PRs #254/#255/#257).
+
+The endpoint is dev-only — production builds tree-shake the sink and `/__log` doesn't exist on Pages. Plain JS workers in `public/` (e.g. `public/stt-gpu-worker.js`) bypass Vite and are NOT captured — their logs stay in the worker DevTools console.
 
 ## Accessibility Requirements
 
