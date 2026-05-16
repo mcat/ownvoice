@@ -43,7 +43,7 @@ async function flushMicrotasks(): Promise<void> {
 
 /** Filter postMessage calls by message type. Tests typically want to
  *  inspect synthesize calls and ignore the set-speaker frame that
- *  precedes the first synth for a new speaker (#303). */
+ *  precedes the first synth for a new speaker. */
 function callsOfType(worker: MockWorker, type: string) {
   return worker.postMessage.mock.calls.filter((c) => c[0]?.type === type);
 }
@@ -209,7 +209,7 @@ describe("ttsEngine — synthesizeGPU", () => {
 
     const synthPromise = synthesizeGPU("hello", SPEAKER, "en", { timeoutMs: 5000 });
 
-    // First synth for a new speaker fires set-speaker (#303) + synthesize.
+    // First synth for a new speaker fires set-speaker + synthesize.
     const setCalls = callsOfType(worker, "set-speaker");
     const synthCalls = callsOfType(worker, "synthesize");
     expect(setCalls).toHaveLength(1);

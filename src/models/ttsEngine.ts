@@ -59,12 +59,12 @@ const MAX_CRASH_RESPAWNS = 2;
 // the next call's promise with stale audio.
 let nextSynthId = 0;
 
-// Fingerprint of the speaker the GPU worker currently has cached (#303).
-// Per-synth structured-clone of speakerData (~146 KB × 700 phrases) was
-// the dominant main-thread allocation source during pre-gen; this tracks
-// what the worker holds so we only send `set-speaker` (with transferable
-// buffers) when the speaker actually changes. Reset on worker spawn/crash
-// because the cache lives on the worker side and dies with the worker.
+// Fingerprint of the speaker the GPU worker currently has cached.
+// Tracks what the worker holds so we only send `set-speaker` (with
+// transferable buffers) when the speaker actually changes — pre-gen
+// otherwise paid one structured-clone of speakerData per synth, which
+// dominated main-thread allocation during a 700-phrase pass. Reset on
+// worker spawn/crash because the cache lives on the worker side.
 let installedSpeakerId: string | null = null;
 
 // Every in-flight synthesizeGPU records its reject callback + listener
@@ -310,6 +310,46 @@ export function initGPU(modelUrl: string): Promise<boolean> {
   });
 }
 
+/** Send `set-speaker` if the worker doesn't already have this speaker cached.
+ *  Returns the speaker id the synthesize message should reference.
+ *
+ *  The float vectors are copied with `new Float32Array(source)` *before*
+ *  being transferred so the store's originals stay attached for other
+ *  readers (live taps, settings panel). For a 700-phrase pre-gen with
+ *  one patient this fires once; the old code paid one structured-clone
+ *  per synth.
+ *
+ *  Throws when the speakerData has no recognisable embedding. In
+ *  production this can't happen — synthesizeGPU is only callable when
+ *  the engine is ready, which implies enrollment has run — so the
+ *  caller surfaces it as a normal synth rejection. */
+function ensureSpeakerInstalled(speakerData: SpeakerData): string {
+  const id = embeddingFingerprint(speakerData);
+  if (id === "none") {
+    throw new Error("speakerData has no recognisable embedding");
+  }
+  if (id === installedSpeakerId) return id;
+
+  const condEmb = new Float32Array(speakerData.condEmb);
+  const speakerEmbeddings = new Float32Array(speakerData.speakerEmbeddings);
+  const speakerFeatures = new Float32Array(speakerData.speakerFeatures);
+  worker!.postMessage(
+    {
+      type: "set-speaker",
+      speakerId: id,
+      speakerData: {
+        ...speakerData,
+        condEmb,
+        speakerEmbeddings,
+        speakerFeatures,
+      },
+    },
+    [condEmb.buffer, speakerEmbeddings.buffer, speakerFeatures.buffer],
+  );
+  installedSpeakerId = id;
+  return id;
+}
+
 /**
  * Synthesize speech on the GPU worker.
  *
@@ -321,44 +361,6 @@ export function initGPU(modelUrl: string): Promise<boolean> {
  * @param opts.timeoutMs — Override the default synthesis timeout. Live taps
  *   use the short default (fail fast); pre-gen passes a longer budget.
  */
-/** Send `set-speaker` if the worker doesn't already have this speaker cached.
- *  Returns the speaker id the synthesize message should reference.
- *
- *  The float vectors are copied with `new Float32Array(source)` *before*
- *  being transferred so the store's originals stay attached for other
- *  readers (live taps, settings panel). For a 700-phrase pre-gen with
- *  one patient this fires once; old code paid 700× structured-clone.
- *
- *  Returns null when the speakerData has no recognisable embedding —
- *  the caller falls back to inline `speakerData` so the worker still
- *  has a chance to surface a useful error. */
-function ensureSpeakerInstalled(speakerData: SpeakerData): string | null {
-  if (!worker) return null;
-  const id = embeddingFingerprint(speakerData);
-  if (id === "none") return null;
-  if (id === installedSpeakerId) return id;
-
-  const condEmb = new Float32Array(speakerData.condEmb);
-  const speakerEmbeddings = new Float32Array(speakerData.speakerEmbeddings);
-  const speakerFeatures = new Float32Array(speakerData.speakerFeatures);
-  const cached = {
-    condEmb,
-    condEmbShape: speakerData.condEmbShape,
-    promptToken: speakerData.promptToken,
-    promptTokenShape: speakerData.promptTokenShape,
-    speakerEmbeddings,
-    speakerEmbeddingsShape: speakerData.speakerEmbeddingsShape,
-    speakerFeatures,
-    speakerFeaturesShape: speakerData.speakerFeaturesShape,
-  };
-  worker.postMessage(
-    { type: "set-speaker", speakerId: id, speakerData: cached },
-    [condEmb.buffer, speakerEmbeddings.buffer, speakerFeatures.buffer],
-  );
-  installedSpeakerId = id;
-  return id;
-}
-
 export function synthesizeGPU(
   text: string,
   speakerData: SpeakerData,
@@ -375,7 +377,13 @@ export function synthesizeGPU(
   // whether KV-cache buffer growth on this call's specific text/length
   // tripped Safari, vs. an earlier boundary.
   recordStage(`synth:gpu:${id}`);
-  const speakerId = ensureSpeakerInstalled(speakerData);
+
+  let speakerId: string;
+  try {
+    speakerId = ensureSpeakerInstalled(speakerData);
+  } catch (err) {
+    return Promise.reject(err instanceof Error ? err : new Error(String(err)));
+  }
 
   return new Promise((resolve, reject) => {
     const handler = (e: MessageEvent) => {
@@ -416,21 +424,13 @@ export function synthesizeGPU(
     }, timeoutMs);
 
     worker!.addEventListener("message", handler);
-    // Reference the cached speaker by id when ensureSpeakerInstalled
-    // succeeded; otherwise (no recognisable embedding) fall through to
-    // inline speakerData so the worker can surface a meaningful error.
-    const msg: Record<string, unknown> = {
+    worker!.postMessage({
       type: "synthesize",
       text,
+      speakerId,
       id,
       languageId,
       exaggeration: opts?.exaggeration ?? 0.5,
-    };
-    if (speakerId) {
-      msg.speakerId = speakerId;
-    } else {
-      msg.speakerData = speakerData;
-    }
-    worker!.postMessage(msg);
+    });
   });
 }

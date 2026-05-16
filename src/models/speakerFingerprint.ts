@@ -1,8 +1,7 @@
 /**
  * Stable identity for a speaker's voice vector. Used as:
  *   - audio-cache directory key (audioCache.ts)
- *   - worker-side speakerData cache key (#303: transferable buffers in
- *     ttsEngine.ts → tts-gpu-worker.js)
+ *   - worker-side speakerData cache key (ttsEngine.ts → tts-gpu-worker.js)
  *
  * Lives in its own module to break the audioCache ↔ ttsEngine import
  * cycle that would form if either module owned this function.

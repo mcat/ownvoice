@@ -10,14 +10,13 @@
  *   { type: "init", modelUrl: string }
  *   { type: "set-speaker", speakerId: string, speakerData: object }
  *       — Install speaker in this worker's cache. Sent with transferable
- *         buffers; the worker takes ownership of the Float32Arrays. Idempotent
- *         on the same speakerId.
- *   { type: "forget-speaker", speakerId: string }
- *       — Drop a cached speaker (e.g. on patient switch / re-enrollment).
- *   { type: "synthesize", text: string, speakerId?: string, speakerData?: object,
- *                         id?: number, languageId: string, exaggeration?: number }
- *       — Synthesize. Prefers `speakerId` (cache lookup, zero-copy); falls
- *         back to inline `speakerData` for legacy callers and tests.
+ *         buffers; the worker takes ownership of the Float32Arrays.
+ *         Idempotent on the same speakerId.
+ *   { type: "synthesize", text: string, speakerId: string, id?: number,
+ *                         languageId: string, exaggeration?: number }
+ *       — Synthesize using the speaker installed under `speakerId`. The
+ *         main thread is responsible for sending `set-speaker` first; the
+ *         worker errors out if the id isn't in its cache.
  *
  * Messages OUT:
  *   { type: "ready" }
@@ -796,10 +795,10 @@ async function warmupLanguageModel() {
   console.log(`${LOG} Warmup complete in ${((performance.now() - w0) / 1000).toFixed(1)}s`);
 }
 
-// Cached speakerData by fingerprint. Populated via set-speaker (#303),
-// looked up by speakerId on each synthesize. One entry per active speaker;
-// the main thread is responsible for forget-speaker on patient change so
-// stale embeddings don't accumulate.
+// Cached speakerData by fingerprint. Populated via set-speaker, looked
+// up by speakerId on each synthesize. The main thread sends set-speaker
+// whenever the speaker changes, so this Map holds at most a few entries
+// for the device's lifetime (1-2 patients per session in OwnVoice).
 const speakers = new Map();
 
 async function handleSynthesize(text, speakerData, id, languageId, exaggeration = 0.5) {
@@ -1070,34 +1069,21 @@ self.addEventListener("message", (e) => {
   }
 
   if (msg.type === "set-speaker") {
-    // Transferred Float32Array buffers land in `msg.speakerData` — owning
-    // refs on this side. Held until forget-speaker or worker termination.
     speakers.set(msg.speakerId, msg.speakerData);
     console.log(`${LOG} Speaker cached: ${msg.speakerId} (cache size ${speakers.size})`);
     return;
   }
 
-  if (msg.type === "forget-speaker") {
-    speakers.delete(msg.speakerId);
-    return;
-  }
-
   if (msg.type === "synthesize") {
     // Resolve speakerData up front so the chain sees a consistent value.
-    // `speakerId` (cache hit) is the post-#303 fast path; inline
-    // `speakerData` remains for tests and legacy callers that haven't
-    // adopted set-speaker.
-    let speakerData = msg.speakerData;
-    if (!speakerData && msg.speakerId) {
-      speakerData = speakers.get(msg.speakerId);
-      if (!speakerData) {
-        postMessage({
-          type: "error",
-          id: msg.id,
-          message: `Speaker not cached: ${msg.speakerId}. Main thread must send set-speaker before synthesize.`,
-        });
-        return;
-      }
+    const speakerData = speakers.get(msg.speakerId);
+    if (!speakerData) {
+      postMessage({
+        type: "error",
+        id: msg.id,
+        message: `Speaker not cached: ${msg.speakerId}. Main thread must send set-speaker before synthesize.`,
+      });
+      return;
     }
     // Chain on, swallowing per-synth failures so one bad phrase doesn't
     // break the chain for subsequent ones. The main thread correlates
