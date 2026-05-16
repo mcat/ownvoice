@@ -194,11 +194,18 @@ export async function runPreGeneration(cfg: AppSettings): Promise<void> {
     store.queue(speaker.key, speaker.phrases.length, locale, fingerprint);
   }
 
+  // Track whether any speaker actually ran. A re-entry where every
+  // speaker is already done — common after the #290 visibility backoff
+  // wakes pre-gen back up with nothing to do — should not pollute the
+  // tombstone trail with a spurious `pregen:all-done` stage label.
+  let workDone = false;
+
   for (const speaker of plan) {
     if (controller.signal.aborted || runId !== currentRunId) return;
 
     const fingerprint = embeddingFingerprint(speaker.speakerData);
     if (isAlreadyDone(speaker, fingerprint)) continue;
+    workDone = true;
     recordStage(`pregen:${speakerKindForLog(speaker.key)}:start`);
     store.start(
       speaker.key,
@@ -237,7 +244,9 @@ export async function runPreGeneration(cfg: AppSettings): Promise<void> {
       store.finish(speaker.key);
     }
   }
-  recordStage("pregen:all-done");
+  if (workDone) {
+    recordStage("pregen:all-done");
+  }
 }
 
 /** Retry only the previously-failed phrases for one speaker. */
