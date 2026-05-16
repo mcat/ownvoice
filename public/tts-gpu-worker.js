@@ -857,7 +857,6 @@ async function handleSynthesize(text, speakerData, id, languageId, exaggeration 
   const cfgEnabled = CFG_WEIGHT > 0;
   const batch = cfgEnabled ? 2 : 1;
 
-  const condEmbF32 = new Float32Array(speakerData.condEmb);
   const condLen = speakerData.condEmbShape[1] ?? 0;
   const textLen = textEmbeds.dims[1] ?? 0;
   const embedDim = textEmbeds.dims[2] ?? 0;
@@ -867,11 +866,11 @@ async function handleSynthesize(text, speakerData, id, languageId, exaggeration 
   // Batch[0]: full conditioning (condEmb + real text_embeds).
   // Batch[1]: text-zeroed (condEmb + zeros). Float32Array() is zero-init.
   const batchedEmbeds = new Float32Array(batch * rowSize);
-  batchedEmbeds.set(condEmbF32, 0);
+  batchedEmbeds.set(speakerData.condEmb, 0);
   batchedEmbeds.set(textEmbeds.data, condLen * embedDim);
   if (cfgEnabled) {
     // Uncond row: copy condEmb prefix only; text region stays zero.
-    batchedEmbeds.set(condEmbF32, rowSize);
+    batchedEmbeds.set(speakerData.condEmb, rowSize);
   }
 
   // attention_mask: one typed array per Tensor per run (ORT Web WebGPU has
@@ -1008,8 +1007,12 @@ async function handleSynthesize(text, speakerData, id, languageId, exaggeration 
   console.log(`${LOG} Decoder input: ${decoderTokens.length} tokens (${promptTokens.length} prompt + ${speechOnly.length} speech + 3 silence)`);
   // Decoder uses WASM variant with int64 inputs (not the WebGPU int32 variant)
   const speechTok = new ort.Tensor("int64", BigInt64Array.from(decoderTokens.map(BigInt)), [1, decoderTokens.length]);
-  const spkEmb = new ort.Tensor("float32", new Float32Array(speakerData.speakerEmbeddings), speakerData.speakerEmbeddingsShape);
-  const spkFeat = new ort.Tensor("float32", new Float32Array(speakerData.speakerFeatures), speakerData.speakerFeaturesShape);
+  // Pass the cached Float32Arrays directly. ORT's WebGPU EP does not
+  // mutate input-tensor backing buffers — adding a defensive
+  // `new Float32Array(speakerData.X)` copy here would be a per-synth
+  // byte-copy of cached data ORT only reads from.
+  const spkEmb = new ort.Tensor("float32", speakerData.speakerEmbeddings, speakerData.speakerEmbeddingsShape);
+  const spkFeat = new ort.Tensor("float32", speakerData.speakerFeatures, speakerData.speakerFeaturesShape);
 
   const tDec0 = bench ? performance.now() : 0;
   const decResult = await conditionalDecoderSession.run({
