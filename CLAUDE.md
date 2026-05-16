@@ -19,6 +19,7 @@ npm run test:watch     # Vitest in watch mode
 npm run test:coverage  # Vitest with coverage
 npm run manifest:regen # Refresh public/models-manifest.json from disk sizes
 npm run manifest:check # Verify manifest is in sync with disk (CI-safe)
+tail -f logs/dev.log   # Live browser-console mirror created by `npm run dev` (see "Debugging from the terminal")
 ```
 
 **After adding/replacing any file under `public/models/**`:** run `npm run manifest:regen` and commit the diff. The `manifestIntegrity` vitest covers drift automatically in CI.
@@ -91,7 +92,25 @@ Components use inline style objects with tokens from the `theme` module. This ke
 
 ### Debugging from the terminal
 
-`npm run dev` truncates `logs/dev.log` on each start and then appends every browser `console.log/info/warn/error/debug/dir` call, plus uncaught errors and unhandled rejections, from the main thread *and* from each bundled worker. Each line is `<iso-ts> [LEVEL] [main|worker:<name>] <message>`. Tail it from another terminal — or have Claude read it — instead of relying on DevTools you can't share. **For iPad capture:** run `npm run dev -- --host`, point the iPad at `http://<laptop-ip>:3000/app/`, and the same file fills up with its logs. The endpoint is dev-only — production builds tree-shake the sink and `/__log` doesn't exist on Pages.
+**When investigating any runtime bug — failed boot, worker error, unexpected console output — read `logs/dev.log` first.** It's the source of truth Claude can actually see; the DevTools console is invisible from here.
+
+`npm run dev` truncates `logs/dev.log` on each start and then appends every browser `console.log/info/warn/error/debug/dir` call, plus uncaught errors and unhandled rejections, from the main thread *and* from each bundled worker. Each line is `<iso-ts> [LEVEL] [main|worker:<name>] <message>`.
+
+Typical workflow:
+
+```bash
+# In one terminal:
+npm run dev
+
+# In another (or via Claude's Read/Bash):
+tail -f logs/dev.log              # follow live
+grep "\[OwnVoice:TTS" logs/dev.log  # filter by existing module prefix
+grep "ERROR\|UNCAUGHT" logs/dev.log # surface errors only
+```
+
+**For iPad capture:** run `npm run dev -- --host`, point the iPad at `http://<laptop-ip>:3000/app/`, and the same file fills up with its logs. This is currently the only Claude-visible surface for iPad-Safari-only bugs (e.g. the unresolved boot race in PRs #254/#255/#257).
+
+The endpoint is dev-only — production builds tree-shake the sink and `/__log` doesn't exist on Pages. Plain JS workers in `public/` (e.g. `public/stt-gpu-worker.js`) bypass Vite and are NOT captured — their logs stay in the worker DevTools console.
 
 ## Accessibility Requirements
 
