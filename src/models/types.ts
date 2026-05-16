@@ -84,19 +84,22 @@ export interface VoiceQualityResult {
 
 /**
  * Outputs from the Chatterbox-Multilingual speech encoder, stored and reused
- * for all synthesis calls. All arrays use JSON-safe types (number[]) so the
- * data can be persisted via zustand's JSON storage. BigInt64Array values
- * from ONNX are converted to number[] at extraction time and back at
- * synthesis time.
+ * for all synthesis calls. Float vectors round-trip through Zustand's JSON
+ * storage via the f32Replacer/f32Reviver pair in
+ * `src/stores/persistTypedArrays.ts` — newly-extracted speakers store as
+ * Float32Array; legacy installs (before that change landed) may still hold
+ * `number[]` on read, hence the union. promptToken stays `number[]`: int64
+ * token IDs coerced through Number(), treated as a token list rather than a
+ * numeric vector.
  */
 export interface SpeakerData {
-  condEmb: number[];
+  condEmb: Float32Array | number[];
   condEmbShape: number[];
   promptToken: number[];
   promptTokenShape: number[];
-  speakerEmbeddings: number[];
+  speakerEmbeddings: Float32Array | number[];
   speakerEmbeddingsShape: number[];
-  speakerFeatures: number[];
+  speakerFeatures: Float32Array | number[];
   speakerFeaturesShape: number[];
   /** Optional: undefined for speakers enrolled before this feature shipped. */
   quality?: VoiceQualityResult;

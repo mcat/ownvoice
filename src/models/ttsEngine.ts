@@ -27,13 +27,13 @@ import { recordStage } from "../diagnostics/crashTombstone";
 import { sessionNeedsCangjie } from "./bootModels";
 
 interface SpeakerData {
-  condEmb: number[];
+  condEmb: Float32Array | number[];
   condEmbShape: number[];
   promptToken: number[];
   promptTokenShape: number[];
-  speakerEmbeddings: number[];
+  speakerEmbeddings: Float32Array | number[];
   speakerEmbeddingsShape: number[];
-  speakerFeatures: number[];
+  speakerFeatures: Float32Array | number[];
   speakerFeaturesShape: number[];
 }
 

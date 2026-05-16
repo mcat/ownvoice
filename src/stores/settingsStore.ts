@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { createDebouncedIDBStorage } from "./idbStorage";
+import { f32Replacer, f32Reviver } from "./persistTypedArrays";
 import { isValidQualityResult } from "../models/voiceQuality";
 import type { AppSettings, Patient, Provider } from "../types";
 import { log } from "../audit/logger";
@@ -256,7 +257,10 @@ export const useSettingsStore = create<SettingsState>()(
     {
       name: "ov-settings",
       version: STORE_VERSION,
-      storage: createJSONStorage(() => createDebouncedIDBStorage(PERSIST_DEBOUNCE_MS)),
+      storage: createJSONStorage(
+        () => createDebouncedIDBStorage(PERSIST_DEBOUNCE_MS),
+        { replacer: f32Replacer, reviver: f32Reviver },
+      ),
       migrate: (persisted, fromVersion): SettingsPersistedState => {
         const typed = persisted as SettingsPersistedState | null;
         if (!typed) return { cfg: null, speakerData: null, lastInteractionAt: null };
