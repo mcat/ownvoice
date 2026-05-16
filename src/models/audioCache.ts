@@ -174,40 +174,8 @@ function hashKey(phrase: string, fingerprint: string): string {
   return `${hi}${lo}`;
 }
 
-/**
- * Pull the voice-distinguishing vector out of whatever shape speakerData
- * has. Chatterbox Turbo's `SpeakerData` stores `speakerEmbeddings` as a
- * plain number[] (so it round-trips through JSON persistence); earlier
- * code paths could also pass a raw `Float32Array`. The fingerprint only
- * needs numeric values indexable by position.
- */
-function pickEmbedding(data: unknown): ArrayLike<number> | null {
-  if (data instanceof Float32Array) return data;
-  if (Array.isArray(data)) return data as number[];
-  if (data && typeof data === "object") {
-    const obj = data as Record<string, unknown>;
-    const se = obj.speakerEmbeddings;
-    if (se instanceof Float32Array) return se;
-    if (Array.isArray(se)) return se as number[];
-    const e = obj.embedding;
-    if (e instanceof Float32Array) return e;
-    if (Array.isArray(e)) return e as number[];
-  }
-  return null;
-}
-
-/**
- * Stable fingerprint of a speaker. Used both as a cache-key component
- * and as a run identifier in the progress store. Returns "none" when
- * the input has no recognisable embedding vector.
- */
-export function embeddingFingerprint(speakerData: unknown): string {
-  const arr = pickEmbedding(speakerData);
-  if (!arr || arr.length < 4) return "none";
-  const first = Number(arr[0]).toFixed(4);
-  const last = Number(arr[arr.length - 1]).toFixed(4);
-  return `${arr.length}_${first}_${last}`;
-}
+import { embeddingFingerprint } from "./speakerFingerprint";
+export { embeddingFingerprint };
 
 /** Get the OPFS cache directory, creating it if needed.
  *  Memoised: navigator.storage.getDirectory() and the per-version

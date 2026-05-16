@@ -26,6 +26,7 @@
 import { recordStage } from "../diagnostics/crashTombstone";
 import { sessionNeedsCangjie } from "./bootModels";
 import { relayWorkerLog } from "../dev/logSink";
+import { embeddingFingerprint } from "./speakerFingerprint";
 
 interface SpeakerData {
   condEmb: Float32Array | number[];
@@ -57,6 +58,14 @@ const MAX_CRASH_RESPAWNS = 2;
 // late responses from timed-out synths are ignored instead of resolving
 // the next call's promise with stale audio.
 let nextSynthId = 0;
+
+// Fingerprint of the speaker the GPU worker currently has cached.
+// Tracks what the worker holds so we only send `set-speaker` (with
+// transferable buffers) when the speaker actually changes — pre-gen
+// otherwise paid one structured-clone of speakerData per synth, which
+// dominated main-thread allocation during a 700-phrase pass. Reset on
+// worker spawn/crash because the cache lives on the worker side.
+let installedSpeakerId: string | null = null;
 
 // Every in-flight synthesizeGPU records its reject callback + listener
 // cleanup here. A post-init worker crash drains this map and rejects
@@ -163,6 +172,9 @@ function handlePostInitCrash(message: string) {
     // ignore — already dead
   }
   worker = null;
+  // Worker is gone → its speakerData cache is gone. Force the next
+  // synth to re-send set-speaker on the respawned worker.
+  installedSpeakerId = null;
 
   if (lastModelUrl && crashRespawnCount < MAX_CRASH_RESPAWNS) {
     crashRespawnCount += 1;
@@ -222,6 +234,10 @@ export function initGPU(modelUrl: string): Promise<boolean> {
     try {
       // Plain JS worker in public/ — not bundled by Vite
       worker = new Worker("/tts-gpu-worker.js", { type: "module" });
+      // Fresh worker → empty speakerData cache. The first synth call
+      // will trip ensureSpeakerInstalled to send set-speaker before
+      // posting its synthesize message.
+      installedSpeakerId = null;
 
       // 300s budget for multilingual: worker loads ~913 MB across 4 ONNX
       // sessions (vs Turbo's ~381 MB), and the 30-layer Llama LM has
@@ -294,6 +310,46 @@ export function initGPU(modelUrl: string): Promise<boolean> {
   });
 }
 
+/** Send `set-speaker` if the worker doesn't already have this speaker cached.
+ *  Returns the speaker id the synthesize message should reference.
+ *
+ *  The float vectors are copied with `new Float32Array(source)` *before*
+ *  being transferred so the store's originals stay attached for other
+ *  readers (live taps, settings panel). For a 700-phrase pre-gen with
+ *  one patient this fires once; the old code paid one structured-clone
+ *  per synth.
+ *
+ *  Throws when the speakerData has no recognisable embedding. In
+ *  production this can't happen — synthesizeGPU is only callable when
+ *  the engine is ready, which implies enrollment has run — so the
+ *  caller surfaces it as a normal synth rejection. */
+function ensureSpeakerInstalled(speakerData: SpeakerData): string {
+  const id = embeddingFingerprint(speakerData);
+  if (id === "none") {
+    throw new Error("speakerData has no recognisable embedding");
+  }
+  if (id === installedSpeakerId) return id;
+
+  const condEmb = new Float32Array(speakerData.condEmb);
+  const speakerEmbeddings = new Float32Array(speakerData.speakerEmbeddings);
+  const speakerFeatures = new Float32Array(speakerData.speakerFeatures);
+  worker!.postMessage(
+    {
+      type: "set-speaker",
+      speakerId: id,
+      speakerData: {
+        ...speakerData,
+        condEmb,
+        speakerEmbeddings,
+        speakerFeatures,
+      },
+    },
+    [condEmb.buffer, speakerEmbeddings.buffer, speakerFeatures.buffer],
+  );
+  installedSpeakerId = id;
+  return id;
+}
+
 /**
  * Synthesize speech on the GPU worker.
  *
@@ -321,6 +377,13 @@ export function synthesizeGPU(
   // whether KV-cache buffer growth on this call's specific text/length
   // tripped Safari, vs. an earlier boundary.
   recordStage(`synth:gpu:${id}`);
+
+  let speakerId: string;
+  try {
+    speakerId = ensureSpeakerInstalled(speakerData);
+  } catch (err) {
+    return Promise.reject(err instanceof Error ? err : new Error(String(err)));
+  }
 
   return new Promise((resolve, reject) => {
     const handler = (e: MessageEvent) => {
@@ -364,7 +427,7 @@ export function synthesizeGPU(
     worker!.postMessage({
       type: "synthesize",
       text,
-      speakerData,
+      speakerId,
       id,
       languageId,
       exaggeration: opts?.exaggeration ?? 0.5,

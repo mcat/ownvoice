@@ -8,7 +8,15 @@
  *
  * Messages IN:
  *   { type: "init", modelUrl: string }
- *   { type: "synthesize", text: string, speakerData: object, id?: number, languageId: string, exaggeration?: number }
+ *   { type: "set-speaker", speakerId: string, speakerData: object }
+ *       — Install speaker in this worker's cache. Sent with transferable
+ *         buffers; the worker takes ownership of the Float32Arrays.
+ *         Idempotent on the same speakerId.
+ *   { type: "synthesize", text: string, speakerId: string, id?: number,
+ *                         languageId: string, exaggeration?: number }
+ *       — Synthesize using the speaker installed under `speakerId`. The
+ *         main thread is responsible for sending `set-speaker` first; the
+ *         worker errors out if the id isn't in its cache.
  *
  * Messages OUT:
  *   { type: "ready" }
@@ -787,6 +795,12 @@ async function warmupLanguageModel() {
   console.log(`${LOG} Warmup complete in ${((performance.now() - w0) / 1000).toFixed(1)}s`);
 }
 
+// Cached speakerData by fingerprint. Populated via set-speaker, looked
+// up by speakerId on each synthesize. The main thread sends set-speaker
+// whenever the speaker changes, so this Map holds at most a few entries
+// for the device's lifetime (1-2 patients per session in OwnVoice).
+const speakers = new Map();
+
 async function handleSynthesize(text, speakerData, id, languageId, exaggeration = 0.5) {
   if (!embedTokensSession || !languageModelSession || !conditionalDecoderSession || !tokenizer) {
     throw new Error("Models not initialized");
@@ -1054,13 +1068,29 @@ self.addEventListener("message", (e) => {
     return;
   }
 
+  if (msg.type === "set-speaker") {
+    speakers.set(msg.speakerId, msg.speakerData);
+    console.log(`${LOG} Speaker cached: ${msg.speakerId} (cache size ${speakers.size})`);
+    return;
+  }
+
   if (msg.type === "synthesize") {
+    // Resolve speakerData up front so the chain sees a consistent value.
+    const speakerData = speakers.get(msg.speakerId);
+    if (!speakerData) {
+      postMessage({
+        type: "error",
+        id: msg.id,
+        message: `Speaker not cached: ${msg.speakerId}. Main thread must send set-speaker before synthesize.`,
+      });
+      return;
+    }
     // Chain on, swallowing per-synth failures so one bad phrase doesn't
     // break the chain for subsequent ones. The main thread correlates
     // responses via `msg.id` and ignores those for synths it has
     // already timed out on.
     synthChain = synthChain.then(() =>
-      handleSynthesize(msg.text, msg.speakerData, msg.id, msg.languageId, msg.exaggeration).catch((err) => {
+      handleSynthesize(msg.text, speakerData, msg.id, msg.languageId, msg.exaggeration).catch((err) => {
         const message = err instanceof Error ? err.message : String(err);
         console.error(`${LOG} Synth error:`, message);
         postMessage({ type: "error", message, id: msg.id });
