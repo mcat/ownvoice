@@ -54,6 +54,37 @@ export function formatArgs(args: unknown[]): string {
   return args.map(safeStringify).join(" ");
 }
 
+/**
+ * Re-emit a relay message from a plain JS worker through the main-thread
+ * console so the line lands in logs/dev.log via the already-patched
+ * console.* methods. Called from each main-thread `worker.onmessage`
+ * branch that matches `{ type: "__log", ... }`. See issue #306 for the
+ * relay design.
+ *
+ * Levels not in the standard set fall back to `console.log`. The origin
+ * tag is prefixed to the message so the dev.log line shows
+ * `[worker:tts-gpu] ...` distinct from `[main] ...`.
+ */
+type RelayLog = { level?: string; message?: string; origin?: string };
+const RELAY_LEVELS: ReadonlySet<string> = new Set([
+  "log",
+  "info",
+  "warn",
+  "error",
+  "debug",
+]);
+export function relayWorkerLog(data: unknown): void {
+  if (!data || typeof data !== "object") return;
+  const m = data as RelayLog;
+  const level = RELAY_LEVELS.has(m.level ?? "") ? (m.level as keyof Console) : "log";
+  const tag = m.origin ? `[${m.origin}]` : "[worker]";
+  const text = typeof m.message === "string" ? m.message : "";
+  // Indexing console with a narrowed level union keeps TS happy without
+  // an `any` cast. The relay never throws — a malformed payload just
+  // produces a noisy console line, which is fine for dev diagnostics.
+  (console[level] as (...a: unknown[]) => void)(tag, text);
+}
+
 function detectOrigin(): string {
   if (typeof window !== "undefined") return "main";
   try {

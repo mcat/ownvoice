@@ -1,5 +1,11 @@
-import { describe, it, expect } from "vitest";
-import { truncate, safeStringify, formatArgs, MAX_ARG_CHARS } from "./logSink";
+import { describe, it, expect, vi } from "vitest";
+import {
+  truncate,
+  safeStringify,
+  formatArgs,
+  relayWorkerLog,
+  MAX_ARG_CHARS,
+} from "./logSink";
 
 describe("truncate", () => {
   it("returns short strings unchanged", () => {
@@ -81,5 +87,44 @@ describe("formatArgs", () => {
   it("handles a single Error arg by including its stack", () => {
     const out = formatArgs([new Error("kaboom")]);
     expect(out).toContain("kaboom");
+  });
+});
+
+describe("relayWorkerLog", () => {
+  // vi.restoreAllMocks in the global afterEach undoes module-level spies, so
+  // each test sets up its own spy. Cleared by the global hook.
+  function spy(level: "log" | "warn" | "error") {
+    return vi.spyOn(console, level).mockImplementation(() => {});
+  }
+
+  it("re-emits via the level the worker reported", () => {
+    const s = spy("warn");
+    relayWorkerLog({ level: "warn", message: "shader slow", origin: "worker:tts-gpu" });
+    expect(s).toHaveBeenCalledWith("[worker:tts-gpu]", "shader slow");
+  });
+
+  it("falls back to console.log for an unknown level", () => {
+    const s = spy("log");
+    relayWorkerLog({ level: "trace", message: "ping", origin: "worker:stt-gpu" });
+    expect(s).toHaveBeenCalledWith("[worker:stt-gpu]", "ping");
+  });
+
+  it("uses '[worker]' when origin is missing", () => {
+    const s = spy("log");
+    relayWorkerLog({ level: "log", message: "no origin" });
+    expect(s).toHaveBeenCalledWith("[worker]", "no origin");
+  });
+
+  it("returns silently on a malformed payload", () => {
+    const s = spy("log");
+    relayWorkerLog(null);
+    relayWorkerLog("not-an-object");
+    expect(s).not.toHaveBeenCalled();
+  });
+
+  it("treats non-string message as empty rather than throwing", () => {
+    const s = spy("error");
+    relayWorkerLog({ level: "error", message: undefined, origin: "worker:x" });
+    expect(s).toHaveBeenCalledWith("[worker:x]", "");
   });
 });

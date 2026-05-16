@@ -32,6 +32,41 @@
 // string when bumping ORT_VERSION.
 import * as ort from "/ort/v1.25.1/ort.webgpu.min.mjs";
 
+// Dev-only console relay: this plain JS worker bypasses Vite's transform
+// pipeline so it cannot `import "../dev/logSink"` like the bundled
+// workers do. Instead we patch console here and postMessage each call
+// back to the main thread, where the existing logSink-patched console
+// forwards it to /__log → logs/dev.log. Gated on hostname so production
+// builds skip the patch entirely. See issue #306.
+(function installDevLogRelay() {
+  const host = (self.location && self.location.hostname) || "";
+  if (host !== "localhost" && host !== "127.0.0.1") return;
+  const origin = "worker:tts-gpu";
+  for (const level of ["log", "info", "warn", "error", "debug"]) {
+    const orig = console[level].bind(console);
+    console[level] = function (...args) {
+      orig(...args);
+      try {
+        self.postMessage({
+          type: "__log",
+          level,
+          message: args
+            .map((a) => {
+              if (typeof a === "string") return a;
+              if (a instanceof Error) return a.stack || `${a.name}: ${a.message}`;
+              try { return JSON.stringify(a); } catch { return String(a); }
+            })
+            .join(" "),
+          origin,
+        });
+      } catch {
+        // Relay failure must not throw — the patched console is on every
+        // log path including error reporting.
+      }
+    };
+  }
+})();
+
 const LOG = "[OwnVoice:TTS:GPU]";
 const SAMPLE_RATE = 24000;
 const START_SPEECH_TOKEN = 6561;

@@ -25,6 +25,7 @@
 
 import { recordStage } from "../diagnostics/crashTombstone";
 import { sessionNeedsCangjie } from "./bootModels";
+import { relayWorkerLog } from "../dev/logSink";
 
 interface SpeakerData {
   condEmb: Float32Array | number[];
@@ -238,6 +239,13 @@ export function initGPU(modelUrl: string): Promise<boolean> {
       }, INIT_TIMEOUT_MS);
 
       worker.onmessage = (e) => {
+        if (e.data?.type === "__log") {
+          // Dev-only relay from public/tts-gpu-worker.js — re-emit through
+          // the main-thread (patched) console so the line lands in
+          // logs/dev.log via the existing /__log sink. Issue #306.
+          relayWorkerLog(e.data);
+          return;
+        }
         if (e.data.type === "ready") {
           markReady();
           recordStage("boot:tts-gpu-ready");
