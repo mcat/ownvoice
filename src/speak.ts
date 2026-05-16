@@ -51,6 +51,15 @@ export function _resetHotCacheForTests(): void {
   hotCache.clear();
 }
 
+/** Read-only snapshot of the hot-cache entry count for the heap-watermark
+ *  sampler. The cache is bounded at HOT_CACHE_MAX (64), so leaks would
+ *  show up as a steady-state ceiling instead of unbounded growth — but
+ *  the count is still useful for confirming the cache populated as
+ *  expected on a returning device. */
+export function getHotCacheSize(): number {
+  return hotCache.size;
+}
+
 /**
  * Walk a list of phrases and pull each one's pre-generated audio from
  * OPFS into the in-memory hot cache. Yields between phrases via

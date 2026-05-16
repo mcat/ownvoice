@@ -1,18 +1,32 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import {
   enableMemDiag,
   isMemDiagEnabled,
   recordStage,
   clearTombstone,
   readPreviousTombstone,
+  registerHeapSampler,
+  _resetSamplerForTests,
+  type HeapWatermark,
 } from "./crashTombstone";
 
 const FLAG_KEY = "__OV_MEMDIAG__" as const;
 const TOMBSTONE_KEY = "ov:memdiag:last-stage";
 
+const SAMPLE_HW: HeapWatermark = {
+  opfsUsage: 1234567,
+  opfsQuota: 99999999,
+  opfsAgeMs: 42,
+  hotCacheEntries: 7,
+  workers: { tts: "warm", stt: "ready" },
+  gpuTtsReady: true,
+  gpuTtsPendingSynths: 0,
+};
+
 beforeEach(() => {
   delete (globalThis as Record<string, unknown>)[FLAG_KEY];
   localStorage.clear();
+  _resetSamplerForTests();
 });
 
 describe("crashTombstone", () => {
@@ -30,7 +44,7 @@ describe("crashTombstone", () => {
     expect(localStorage.getItem(TOMBSTONE_KEY)).toBeNull();
   });
 
-  it("recordStage writes a stage + timestamp when enabled", () => {
+  it("recordStage writes a v2 stage + timestamp + null hw when enabled", () => {
     enableMemDiag();
     recordStage("boot:gpu-init");
     const raw = localStorage.getItem(TOMBSTONE_KEY);
@@ -38,14 +52,84 @@ describe("crashTombstone", () => {
     const parsed = JSON.parse(raw!);
     expect(parsed.stage).toBe("boot:gpu-init");
     expect(typeof parsed.ts).toBe("number");
-    expect(parsed.v).toBe(1);
+    expect(parsed.v).toBe(2);
+    expect(parsed.hw).toBeNull();
   });
 
-  it("recordStage overwrites prior stage with the latest", () => {
+  it("recordStage captures the registered sampler's HeapWatermark", () => {
+    enableMemDiag();
+    registerHeapSampler(() => SAMPLE_HW);
+    recordStage("synth:gpu:1");
+    const parsed = JSON.parse(localStorage.getItem(TOMBSTONE_KEY)!);
+    expect(parsed.hw).toEqual(SAMPLE_HW);
+  });
+
+  it("recordStage survives a misbehaving sampler — stage still written, hw null", () => {
+    enableMemDiag();
+    registerHeapSampler(() => {
+      throw new Error("sampler exploded");
+    });
+    expect(() => recordStage("synth:gpu:2")).not.toThrow();
+    const parsed = JSON.parse(localStorage.getItem(TOMBSTONE_KEY)!);
+    expect(parsed.stage).toBe("synth:gpu:2");
+    expect(parsed.hw).toBeNull();
+  });
+
+  it("readPreviousTombstone returns the HeapWatermark from the prior session", () => {
+    enableMemDiag();
+    registerHeapSampler(() => SAMPLE_HW);
+    recordStage("pregen:patient:42/702");
+    const prev = readPreviousTombstone();
+    expect(prev?.hw).toEqual(SAMPLE_HW);
+  });
+
+  it("readPreviousTombstone accepts a legacy v1 payload (no hw) and returns hw:null", () => {
+    localStorage.setItem(
+      TOMBSTONE_KEY,
+      JSON.stringify({ stage: "boot:legacy", ts: Date.now(), v: 1 }),
+    );
+    const prev = readPreviousTombstone();
+    expect(prev?.stage).toBe("boot:legacy");
+    expect(prev?.hw).toBeNull();
+  });
+
+  it("recordStage writes the first call immediately (leading edge)", () => {
     enableMemDiag();
     recordStage("boot:foo");
-    recordStage("boot:bar");
-    expect(readPreviousTombstone()?.stage).toBe("boot:bar");
+    expect(readPreviousTombstone()?.stage).toBe("boot:foo");
+  });
+
+  it("recordStage throttles back-to-back calls and writes the latest after the cooldown", async () => {
+    vi.useFakeTimers();
+    try {
+      enableMemDiag();
+      recordStage("boot:foo");
+      expect(readPreviousTombstone()?.stage).toBe("boot:foo");
+      // Two more calls inside the 250ms window — should not write yet.
+      recordStage("boot:bar");
+      recordStage("boot:baz");
+      expect(readPreviousTombstone()?.stage).toBe("boot:foo");
+      // After the cooldown the trailing write fires with the *latest*
+      // stashed payload.
+      await vi.advanceTimersByTimeAsync(260);
+      expect(readPreviousTombstone()?.stage).toBe("boot:baz");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("clearTombstone cancels a pending throttled write so it cannot resurrect the tombstone", async () => {
+    vi.useFakeTimers();
+    try {
+      enableMemDiag();
+      recordStage("boot:foo");
+      recordStage("boot:bar"); // stashed
+      clearTombstone();
+      await vi.advanceTimersByTimeAsync(500);
+      expect(readPreviousTombstone()).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("readPreviousTombstone returns null when no tombstone exists", () => {

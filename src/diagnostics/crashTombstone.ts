@@ -16,15 +16,65 @@
  * pay the per-stage localStorage write. Enable explicitly when
  * debugging crashes. See `project_safari_memory_apis.md` in auto-memory
  * for the broader context on iPad memory diagnostics.
+ *
+ * The v2 payload also carries a heap-watermark snapshot — proxy signals
+ * (OPFS usage, hot-cache size, worker readiness) captured by an
+ * inverted-control sampler registered at boot. A crash-time delta
+ * against a prior stage's snapshot is enough to discriminate between
+ * "the decoder load is the peak" and "cumulative drift during pre-gen"
+ * without needing the JS heap APIs Safari withholds.
  */
+
+import type { ModelId, ModelStatus } from "../models/types";
 
 const TOMBSTONE_KEY = "ov:memdiag:last-stage";
 const FLAG_KEY = "__OV_MEMDIAG__" as const;
 
+/**
+ * Minimum interval between two localStorage writes. Without throttling,
+ * a 700-phrase pre-gen pass would fire one stage label per completed
+ * phrase plus the sampler-driven allocations on top, which compounds
+ * the very main-thread pressure this diagnostic is meant to characterize.
+ * Leading-edge: the first call writes immediately so sparse stages
+ * (boot:*, synth:gpu:N) stay precise; subsequent calls inside the
+ * cooldown stash the latest payload and a trailing write fires once.
+ * Worst-case forensic loss on crash: WRITE_THROTTLE_MS of label
+ * staleness, which is still well below the granularity of any actionable
+ * fix (phrase 347 vs 348 in pre-gen tells us the same thing).
+ */
+const WRITE_THROTTLE_MS = 250;
+
+export interface HeapWatermark {
+  /** OPFS quota usage in bytes. Updated by the async sampler every few
+   *  seconds; null until the first estimate resolves. */
+  opfsUsage: number | null;
+  /** Total OPFS quota in bytes. Pairs with usage to give "%full" — a
+   *  near-quota disk can cause SyncAccessHandle writes to fail and is
+   *  worth distinguishing from a memory-only OOM. */
+  opfsQuota: number | null;
+  /** ms since the OPFS estimate was captured. */
+  opfsAgeMs: number | null;
+  /** Count of in-memory hot-cache entries (speak.ts cloned-audio cache).
+   *  Each entry holds a Float32Array of decoded PCM — small per entry
+   *  but capped at 64. Useful for confirming the cache isn't leaking. */
+  hotCacheEntries: number;
+  /** Per-model worker status as reported by ModelManager. Empty when
+   *  no sampler is registered. `Partial` because some ModelId entries
+   *  (e.g. denoiser) may be absent on a given session. */
+  workers: Partial<Record<ModelId, ModelStatus>>;
+  /** Whether the GPU TTS DedicatedWorker is in the ready state. */
+  gpuTtsReady: boolean;
+  /** In-flight GPU TTS synth requests at sample time. Non-zero means a
+   *  synth was running when the stage was recorded — useful when a
+   *  later crash points back at a long-running synth. */
+  gpuTtsPendingSynths: number;
+}
+
 interface StoredTombstone {
   stage: string;
   ts: number;
-  v: 1;
+  hw: HeapWatermark | null;
+  v: 2;
 }
 
 export interface PreviousTombstone {
@@ -34,6 +84,33 @@ export interface PreviousTombstone {
    *  "previous session died seconds ago" from "tombstone leftover from
    *  a week-old crash on a tab the user never reopened." */
   ageMs: number;
+  /** Heap-watermark snapshot at the moment the stage was recorded.
+   *  Null on a v1 tombstone from an older deploy, or when no sampler
+   *  was registered at the time recordStage ran. */
+  hw: HeapWatermark | null;
+}
+
+/**
+ * Boot code registers a closure that returns the current proxy
+ * signals so recordStage can pull them without crashTombstone needing
+ * to import the model layer. Pure inversion of control — the
+ * diagnostics module stays leaf-level.
+ */
+let sampler: (() => HeapWatermark) | null = null;
+export function registerHeapSampler(fn: () => HeapWatermark): void {
+  sampler = fn;
+}
+
+/** Test-only: drop the registered sampler and any pending throttled
+ *  write so each test starts clean. */
+export function _resetSamplerForTests(): void {
+  sampler = null;
+  if (pendingTimer !== null) {
+    clearTimeout(pendingTimer);
+    pendingTimer = null;
+  }
+  pendingPayload = null;
+  lastWriteAt = 0;
 }
 
 export function enableMemDiag(): void {
@@ -44,18 +121,66 @@ export function isMemDiagEnabled(): boolean {
   return (globalThis as Record<string, unknown>)[FLAG_KEY] === true;
 }
 
-export function recordStage(stage: string): void {
-  if (!isMemDiagEnabled()) return;
+let lastWriteAt = 0;
+let pendingPayload: StoredTombstone | null = null;
+let pendingTimer: ReturnType<typeof setTimeout> | null = null;
+
+function writePayload(payload: StoredTombstone): void {
   try {
-    const payload: StoredTombstone = { stage, ts: Date.now(), v: 1 };
     localStorage.setItem(TOMBSTONE_KEY, JSON.stringify(payload));
+    lastWriteAt = Date.now();
   } catch {
     // localStorage may be unavailable in private mode or full. The
     // tombstone is best-effort — silent failure is correct.
   }
 }
 
+export function recordStage(stage: string): void {
+  if (!isMemDiagEnabled()) return;
+  const payload: StoredTombstone = {
+    stage,
+    ts: Date.now(),
+    hw: safeSample(),
+    v: 2,
+  };
+  const elapsed = payload.ts - lastWriteAt;
+  if (elapsed >= WRITE_THROTTLE_MS) {
+    writePayload(payload);
+    return;
+  }
+  pendingPayload = payload;
+  if (pendingTimer === null) {
+    pendingTimer = setTimeout(() => {
+      pendingTimer = null;
+      if (pendingPayload) {
+        writePayload(pendingPayload);
+        pendingPayload = null;
+      }
+    }, WRITE_THROTTLE_MS - elapsed);
+  }
+}
+
+function safeSample(): HeapWatermark | null {
+  if (!sampler) return null;
+  try {
+    return sampler();
+  } catch {
+    // A misbehaving sampler must never crash the stage-recording path,
+    // which is on the boot hot path and runs through pre-gen.
+    return null;
+  }
+}
+
 export function clearTombstone(): void {
+  // Cancel any pending throttled write — otherwise a trailing-edge
+  // setTimeout would land *after* clearTombstone runs on pagehide,
+  // resurrecting the tombstone and turning a graceful exit into a
+  // false-positive crash report on the next boot.
+  if (pendingTimer !== null) {
+    clearTimeout(pendingTimer);
+    pendingTimer = null;
+  }
+  pendingPayload = null;
   try {
     localStorage.removeItem(TOMBSTONE_KEY);
   } catch {
@@ -70,10 +195,17 @@ export function readPreviousTombstone(): PreviousTombstone | null {
     const parsed = JSON.parse(raw) as Partial<StoredTombstone>;
     if (typeof parsed?.stage !== "string") return null;
     if (typeof parsed?.ts !== "number") return null;
+    // hw is optional — a v1 tombstone from an older deploy has no `hw`
+    // key. Treat any unknown shape as null rather than throwing.
+    const hw =
+      parsed.hw && typeof parsed.hw === "object"
+        ? (parsed.hw as HeapWatermark)
+        : null;
     return {
       stage: parsed.stage,
       ts: parsed.ts,
       ageMs: Math.max(0, Date.now() - parsed.ts),
+      hw,
     };
   } catch {
     return null;

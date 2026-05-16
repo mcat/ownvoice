@@ -19,6 +19,7 @@ import {
   readPreviousTombstone,
   recordStage,
 } from "./diagnostics/crashTombstone";
+import { startHeapSampler } from "./diagnostics/heapSampler";
 
 window.addEventListener("error", (ev) => {
   log({
@@ -66,9 +67,19 @@ if (__ovParams.get("bench") === "true") {
 // it tells us about the *previous* session regardless of whether memdiag
 // is enabled *now*.
 const __ovPrevTombstone = readPreviousTombstone();
+let __ovStopHeapSampler: (() => void) | null = null;
 if (__ovParams.get("memdiag") === "true") {
   enableMemDiag();
-  console.log("[OwnVoice:MemDiag] Memory crash tombstone active. Stage labels written to localStorage.");
+  // Register the heap-watermark sampler before the first recordStage
+  // call so even the boot label captures a snapshot. The sampler also
+  // kicks off a periodic OPFS estimate refresh. Disposer is wired into
+  // pagehide below so the interval stops cleanly on graceful exit.
+  __ovStopHeapSampler = startHeapSampler();
+  window.addEventListener("pagehide", () => {
+    __ovStopHeapSampler?.();
+    __ovStopHeapSampler = null;
+  });
+  console.log("[OwnVoice:MemDiag] Memory crash tombstone active. Stage labels + heap watermarks written to localStorage.");
   recordStage("boot:main-app");
 }
 
@@ -181,11 +192,23 @@ useUIStore.subscribe((state, prev) => {
         attributes: {
           [ATTR.DIAG_LAST_STAGE]: __ovPrevTombstone.stage,
           [ATTR.DIAG_LAST_STAGE_AGE_MS]: __ovPrevTombstone.ageMs,
+          // hw is JSON-stringified so the export bundle stays flat. Null
+          // when the previous boot ran a v1 tombstone (pre-PR #304).
+          [ATTR.DIAG_LAST_STAGE_HW]: __ovPrevTombstone.hw
+            ? JSON.stringify(__ovPrevTombstone.hw)
+            : null,
         },
       });
       console.warn(
         `[OwnVoice:MemDiag] Previous session ended ungracefully at stage "${__ovPrevTombstone.stage}" (${__ovPrevTombstone.ageMs}ms ago).`,
       );
+      if (__ovPrevTombstone.hw) {
+        // console.dir keeps the object structure inspectable in the
+        // Safari console; the audit-log emission above persists it
+        // for export bundles.
+        console.warn("[OwnVoice:MemDiag] Heap watermark at crash:");
+        console.dir(__ovPrevTombstone.hw);
+      }
     }
   };
   if (useSettingsStore.getState()._hasHydrated) {

@@ -40,6 +40,11 @@ export const ATTR = {
 
   DIAG_LAST_STAGE:        "ownvoice.diagnostics.last_stage",
   DIAG_LAST_STAGE_AGE_MS: "ownvoice.diagnostics.last_stage_age_ms",
+  /** JSON-stringified HeapWatermark snapshot from the crashed stage.
+   *  Stored as a string so the audit-export shape stays flat — readers
+   *  parse with JSON.parse on the way out. Null when the previous
+   *  session ran a v1 tombstone (pre-PR #304). */
+  DIAG_LAST_STAGE_HW:     "ownvoice.diagnostics.last_stage_hw",
 } as const;
 
 export const PHI_ATTR_KEYS: ReadonlySet<string> = new Set([

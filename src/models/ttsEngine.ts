@@ -81,16 +81,21 @@ export function hasWebGPU(): boolean {
 }
 
 /**
- * Test-only accessor for the in-flight synth registry size. The
- * registry is drained on every exit path (normal resolve, timeout,
- * error response, post-init crash); a silent leak — e.g., a mutant
- * that removes `pendingSynths.delete(id)` — wouldn't produce an
- * observable failure from the outside since reject on a settled
- * promise is a no-op and removeEventListener on an absent handler is
- * idempotent. This accessor lets ttsEngine.test.ts assert the
- * invariant directly. Not part of the public API; do not use from app
- * code.
+ * In-flight synth registry size. Used by the heap-watermark sampler
+ * (`?memdiag=true` builds) and by `ttsEngine.test.ts` as a leak guard:
+ * the registry is drained on every exit path (normal resolve, timeout,
+ * error response, post-init crash), but a mutant that removes
+ * `pendingSynths.delete(id)` wouldn't produce an observable failure
+ * from the outside since reject on a settled promise is a no-op and
+ * removeEventListener on an absent handler is idempotent. This
+ * accessor exposes the invariant directly.
  */
+export function getGpuPendingSynths(): number {
+  return pendingSynths.size;
+}
+
+/** @deprecated test-only alias kept for the `__test*` naming convention
+ *  in `ttsEngine.test.ts`; new callers should use {@link getGpuPendingSynths}. */
 export function __testPendingSynthsSize(): number {
   return pendingSynths.size;
 }
