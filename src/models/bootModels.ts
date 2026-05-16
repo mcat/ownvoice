@@ -23,6 +23,40 @@ export function sessionNeedsCangjie(): boolean {
 }
 
 /**
+ * Resolve once the given model has reached a settled state (ready/warm/error).
+ * Used by the boot sequencer to serialize STT → GPU TTS → verify/primer so
+ * concurrent downloads don't double the peak memory window on cold boot.
+ *
+ * Returns early if the model is already settled. The timeout is a safety net
+ * — long enough not to fire under normal cold-boot conditions, short enough
+ * that a stuck worker doesn't pin the rest of boot indefinitely.
+ */
+export function waitForModelSettled(
+  id: ModelId,
+  timeoutMs = 120_000,
+): Promise<void> {
+  const mgr = getModelManager();
+  const settled = (s: string) => s === "ready" || s === "warm" || s === "error";
+  const current = mgr.getProgress().find((p) => p.model === id);
+  if (current && settled(current.status)) return Promise.resolve();
+
+  return new Promise<void>((resolve) => {
+    const unsub = mgr.onProgress((progress) => {
+      const m = progress.find((p) => p.model === id);
+      if (m && settled(m.status)) {
+        unsub();
+        clearTimeout(timer);
+        resolve();
+      }
+    });
+    const timer = setTimeout(() => {
+      unsub();
+      resolve();
+    }, timeoutMs);
+  });
+}
+
+/**
  * Boot all on-device models.
  *
  * Preserved as a single entry point for tests and any caller that wants a
