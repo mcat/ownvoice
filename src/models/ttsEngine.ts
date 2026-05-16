@@ -41,6 +41,16 @@ let worker: Worker | null = null;
 let ready = false;
 const readyListeners = new Set<() => void>();
 
+// Remembered so handlePostInitCrash can re-invoke initGPU with the same
+// modelUrl the app originally booted with. The respawn budget is tiny: a
+// deterministic device-OOM reproduces on each respawn, and we don't want
+// to spin. The counter resets to zero from markReady() so a transient
+// crash that recovers on the next attempt refills the budget for any
+// future transient crash in the same session.
+let lastModelUrl: string | null = null;
+let crashRespawnCount = 0;
+const MAX_CRASH_RESPAWNS = 2;
+
 // Monotonic synth request ID. Each synthesizeGPU call increments this and
 // attaches a listener that only resolves/rejects on a matching echoed id —
 // late responses from timed-out synths are ignored instead of resolving
@@ -105,6 +115,11 @@ export function onGPUReady(cb: () => void): () => void {
 function markReady() {
   if (ready) return;
   ready = true;
+  // Refill the crash-respawn budget on every successful ready transition —
+  // including the one that follows a respawn. A transient OOM that
+  // recovers should not deplete the budget for the next transient OOM
+  // hours later in the same session.
+  crashRespawnCount = 0;
   for (const cb of readyListeners) {
     try { cb(); } catch (err) { console.warn("[OwnVoice:TTS:GPU] listener threw:", err); }
   }
@@ -130,6 +145,43 @@ function handlePostInitCrash(message: string) {
     cleanup();
     reject(new Error(`GPU worker crashed: ${message || "unknown"}`));
   }
+
+  // Best-effort: kill the crashed worker handle and attempt a bounded
+  // respawn so a transient OOM doesn't take the GPU TTS path out for the
+  // rest of the session. Live taps fall through to Web Speech (see
+  // speak.ts priority chain — Cache → Web Speech → tone; WASM TTS is
+  // explicitly NOT on the tap path) while the respawn is in flight.
+  try {
+    worker?.terminate();
+  } catch {
+    // ignore — already dead
+  }
+  worker = null;
+
+  if (lastModelUrl && crashRespawnCount < MAX_CRASH_RESPAWNS) {
+    crashRespawnCount += 1;
+    const attempt = crashRespawnCount;
+    const url = lastModelUrl;
+    console.warn(
+      `[OwnVoice:TTS:GPU] Auto-respawn attempt ${attempt}/${MAX_CRASH_RESPAWNS} after crash`,
+    );
+    recordStage(`tts-gpu-respawn:${attempt}`);
+    // Defer to a microtask so the rejected in-flight synth callers run
+    // their cleanup before the new worker starts allocating WebGPU
+    // resources. initGPU never rejects — every code path resolves to a
+    // boolean — so the bare .then is safe.
+    queueMicrotask(() => {
+      initGPU(url).then((ok) => {
+        console.log(
+          `[OwnVoice:TTS:GPU] Auto-respawn ${attempt} ${ok ? "succeeded" : "failed"}`,
+        );
+      });
+    });
+  } else if (lastModelUrl) {
+    console.error(
+      `[OwnVoice:TTS:GPU] Crash respawn budget exhausted (${MAX_CRASH_RESPAWNS}); live taps will use Web Speech and pre-gen will refill the cache via WASM TTS for the rest of the session.`,
+    );
+  }
 }
 
 /**
@@ -143,6 +195,7 @@ export function initGPU(modelUrl: string): Promise<boolean> {
   }
 
   recordStage("boot:tts-gpu-init");
+  lastModelUrl = modelUrl;
   return new Promise<boolean>((resolve) => {
     let settled = false;
     // Declared at Promise-closure scope so `settle` can clear it; the
