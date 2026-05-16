@@ -239,7 +239,7 @@ export function initGPU(modelUrl: string): Promise<boolean> {
       }, INIT_TIMEOUT_MS);
 
       worker.onmessage = (e) => {
-        if (e.data?.type === "__log") {
+        if (e.data.type === "__log") {
           // Dev-only relay from public/tts-gpu-worker.js — re-emit through
           // the main-thread (patched) console so the line lands in
           // logs/dev.log via the existing /__log sink. Issue #306.

@@ -92,7 +92,7 @@ export async function bootSTT(): Promise<void> {
       const gpuWorker = new Worker("/stt-gpu-worker.js", { type: "module" });
 
       gpuWorker.onmessage = (e) => {
-        if (e.data?.type === "__log") {
+        if (e.data.type === "__log") {
           // Dev-only relay from public/stt-gpu-worker.js — see issue #306.
           relayWorkerLog(e.data);
           return;

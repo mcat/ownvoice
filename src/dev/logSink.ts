@@ -65,24 +65,25 @@ export function formatArgs(args: unknown[]): string {
  * tag is prefixed to the message so the dev.log line shows
  * `[worker:tts-gpu] ...` distinct from `[main] ...`.
  */
+type RelayLevel = "log" | "info" | "warn" | "error" | "debug";
 type RelayLog = { level?: string; message?: string; origin?: string };
-const RELAY_LEVELS: ReadonlySet<string> = new Set([
+const RELAY_LEVELS: ReadonlySet<RelayLevel> = new Set<RelayLevel>([
   "log",
   "info",
   "warn",
   "error",
   "debug",
 ]);
+function isRelayLevel(v: string | undefined): v is RelayLevel {
+  return v !== undefined && RELAY_LEVELS.has(v as RelayLevel);
+}
 export function relayWorkerLog(data: unknown): void {
   if (!data || typeof data !== "object") return;
   const m = data as RelayLog;
-  const level = RELAY_LEVELS.has(m.level ?? "") ? (m.level as keyof Console) : "log";
+  const level: RelayLevel = isRelayLevel(m.level) ? m.level : "log";
   const tag = m.origin ? `[${m.origin}]` : "[worker]";
   const text = typeof m.message === "string" ? m.message : "";
-  // Indexing console with a narrowed level union keeps TS happy without
-  // an `any` cast. The relay never throws — a malformed payload just
-  // produces a noisy console line, which is fine for dev diagnostics.
-  (console[level] as (...a: unknown[]) => void)(tag, text);
+  console[level](tag, text);
 }
 
 function detectOrigin(): string {

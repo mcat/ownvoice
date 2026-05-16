@@ -26,38 +26,8 @@
 
 // Versioned to match wasmPaths below. See tts-gpu-worker.js for rationale.
 import * as ort from "/ort/v1.25.1/ort.webgpu.min.mjs";
-
-// Dev-only console relay (mirrors tts-gpu-worker.js). See issue #306 for
-// the design rationale. Plain JS worker → cannot import logSink → patch
-// console here, postMessage to main, main's already-patched console
-// forwards to /__log. Hostname-gated so prod builds skip entirely.
-(function installDevLogRelay() {
-  const host = (self.location && self.location.hostname) || "";
-  if (host !== "localhost" && host !== "127.0.0.1") return;
-  const origin = "worker:stt-gpu";
-  for (const level of ["log", "info", "warn", "error", "debug"]) {
-    const orig = console[level].bind(console);
-    console[level] = function (...args) {
-      orig(...args);
-      try {
-        self.postMessage({
-          type: "__log",
-          level,
-          message: args
-            .map((a) => {
-              if (typeof a === "string") return a;
-              if (a instanceof Error) return a.stack || `${a.name}: ${a.message}`;
-              try { return JSON.stringify(a); } catch { return String(a); }
-            })
-            .join(" "),
-          origin,
-        });
-      } catch {
-        // Relay failure must not throw.
-      }
-    };
-  }
-})();
+import { installDevLogRelay } from "/__dev-log-relay.js";
+installDevLogRelay("worker:stt-gpu");
 
 const LOG = "[OwnVoice:STT:GPU]";
 
