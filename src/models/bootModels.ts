@@ -23,12 +23,6 @@ export function sessionNeedsCangjie(): boolean {
 }
 
 /**
- * Boot all on-device models.
- *
- * Preserved as a single entry point for tests and any caller that wants a
- * "boot everything" handle.
- */
-/**
  * Resolve once the given model has reached a settled state (ready/warm/error).
  * Used by the boot sequencer to serialize STT → GPU TTS → verify/primer so
  * concurrent downloads don't double the peak memory window on cold boot.
@@ -62,6 +56,12 @@ export function waitForModelSettled(
   });
 }
 
+/**
+ * Boot all on-device models.
+ *
+ * Preserved as a single entry point for tests and any caller that wants a
+ * "boot everything" handle.
+ */
 export async function bootModels(): Promise<void> {
   // Parallel boot: STT begins downloading immediately, in parallel with
   // TTS shader compile. An earlier shape that chained STT behind
