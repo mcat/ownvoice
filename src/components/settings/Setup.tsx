@@ -116,6 +116,12 @@ export function Setup({ mode = "first-run", onFirstRunDone, onAddPatientDone, on
   }
 
   function finish() {
+    // Once speakerData is populated, the blob is dead weight — voiceProcessor
+    // already clears it via persistSpeakerData on the async path. Mirror that
+    // here so the setup-time path doesn't persist a stale base64 audio blob
+    // across boots (~MB per stale entry, reloaded into the heap on every
+    // session start).
+    const persistedPendingBlob = speakerData ? null : pendingBlob;
     if (isAddPatient) {
       audioCacheRunner.pauseAll();
       const patient = useSettingsStore.getState().addPatient({
@@ -125,7 +131,7 @@ export function Setup({ mode = "first-run", onFirstRunDone, onAddPatientDone, on
         hasVoice: patientVoice,
         speakerData: speakerData ?? null,
         fallbackVoice,
-        pendingVoiceBlob: pendingBlob,
+        pendingVoiceBlob: persistedPendingBlob,
       });
       onAddPatientDone?.(patient);
     } else {
@@ -138,7 +144,7 @@ export function Setup({ mode = "first-run", onFirstRunDone, onAddPatientDone, on
         hasVoice: patientVoice,
         speakerData: speakerData ?? null,
         fallbackVoice,
-        pendingVoiceBlob: pendingBlob,
+        pendingVoiceBlob: persistedPendingBlob,
         addedAt: now,
         lastActiveAt: now,
       };
