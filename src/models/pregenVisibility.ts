@@ -1,4 +1,4 @@
-import type { AppSettings } from "../types";
+import { useSettingsStore } from "../stores/settingsStore";
 import { pauseAll, resumeAll } from "./audioCacheRunner";
 
 /**
@@ -10,24 +10,25 @@ import { pauseAll, resumeAll } from "./audioCacheRunner";
  * to renderer-side memory pressure that can surface as our own tab
  * getting OOM-killed when it returns to the foreground.
  *
- * Returns an unsubscribe function.
+ * `pauseAll` only fires the JS-side `AbortController`; an in-flight
+ * synth that's already in the worker continues to completion and its
+ * output is discarded by the caller's signal check. That's the cost
+ * of preempting an un-cancellable worker — backoff is "no new synths
+ * after the current one," not "stop right now."
  *
- * `getCfg` is invoked on each visible transition so the resume picks
- * up the *current* settings — relevant if the patient was switched
- * while the tab was hidden.
+ * Returns an unsubscribe function.
  */
-export function backoffPregenOnHidden(
-  getCfg: () => AppSettings | null,
-): () => void {
+export function backoffPregenOnHidden(): () => void {
   const handler = () => {
     if (document.visibilityState === "hidden") {
       pauseAll();
       return;
     }
-    const cfg = getCfg();
-    if (cfg) {
-      void resumeAll(cfg);
-    }
+    const cfg = useSettingsStore.getState().cfg;
+    if (!cfg) return;
+    resumeAll(cfg).catch((err) => {
+      console.warn("[OwnVoice] pregen resume failed:", err);
+    });
   };
   document.addEventListener("visibilitychange", handler);
   return () => document.removeEventListener("visibilitychange", handler);

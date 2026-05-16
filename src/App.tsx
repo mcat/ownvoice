@@ -210,7 +210,7 @@ export function App() {
     const unsubResume = resumePendingOnVisible();
     // Soft-pause pre-gen whenever the tab is hidden so background work
     // doesn't compete with the foreground app for GPU/CPU on iPad.
-    const unsubBackoff = backoffPregenOnHidden(() => cfgRef.current);
+    const unsubBackoff = backoffPregenOnHidden();
     primeSpeechSynthesis();
     return () => {
       cancelled = true;
