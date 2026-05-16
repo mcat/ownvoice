@@ -722,54 +722,46 @@ describe("ttsWorker — embed requestId echo", () => {
   });
 });
 
-describe("ttsWorker — encoder fetch progress", () => {
-  it("posts embed-progress events as encoder bytes arrive", async () => {
-    const posted: unknown[] = [];
-    vi.stubGlobal("self", {
-      addEventListener: vi.fn(),
-      postMessage: (m: unknown) => posted.push(m),
-    });
-
-    // 4 chunks of 1024 bytes
-    const total = 4096;
-    const chunks = [
-      new Uint8Array(1024),
-      new Uint8Array(1024),
-      new Uint8Array(1024),
-      new Uint8Array(1024),
-    ];
-    const reader = makeChunkReader(chunks);
-    vi.stubGlobal("fetch", () =>
-      Promise.resolve({
-        ok: true,
-        headers: { get: () => String(total) },
-        body: { getReader: () => reader },
-        arrayBuffer: () => Promise.resolve(new ArrayBuffer(total)),
+describe("ttsWorker — external data wiring (#288)", () => {
+  it("passes external data as URL strings on every external-data session", async () => {
+    setupFetchMocks();
+    // Embed (speech_encoder) + lazy synth load (embed_tokens, language_model,
+    // conditional_decoder) all use externalData; this exercises every path.
+    mockSessionCreate.mockResolvedValue(
+      makeMockSession({
+        audio_features: { data: new Float32Array(80), dims: [1, 1, 80] },
+        audio_tokens: { data: new BigInt64Array(2), dims: [1, 2] },
+        speaker_embeddings: { data: new Float32Array(80), dims: [1, 1, 80] },
+        speaker_features: { data: new Float32Array(80), dims: [1, 1, 80] },
       }),
     );
 
-    // Reset modules so the worker re-binds _postMessage to the
-    // freshly-stubbed self.postMessage (the bind happens at module load).
     vi.resetModules();
-    const mod = await import("./ttsWorker");
-    await mod.__test__fetchModelWithProgress("https://example/encoder.onnx");
+    await import("./ttsWorker");
+    const handler = getMessageHandler();
+    await handler({
+      data: { type: "init", modelUrl: "/models/tts/" },
+    } as MessageEvent);
+    await handler({
+      data: {
+        type: "embed",
+        audio: new Float32Array([0.1, 0.2]),
+        sampleRate: 24000,
+        requestId: 1,
+      },
+    } as unknown as MessageEvent);
 
-    const progress = posted.filter(
-      (m: any) => m.type === "embed-progress" && m.stage === "loading-model",
-    );
-    expect(progress.length).toBeGreaterThanOrEqual(2);
-    const last = progress[progress.length - 1] as any;
-    expect(last.loaded).toBe(total);
-    expect(last.total).toBe(total);
+    // Every call that supplies externalData must use the URL string form.
+    // ArrayBuffer/Uint8Array form was the #288 regression: it forced ORT
+    // to hold a JS-side copy of ~291 MB during speech_encoder load. URL
+    // form lets ORT fetch directly into its WASM heap via the SW → OPFS
+    // proxy, with no JS-side transient.
+    const extEntries = mockSessionCreate.mock.calls
+      .flatMap((c) => c[1]?.externalData ?? [])
+      .map((e) => e.data);
+    expect(extEntries.length).toBeGreaterThan(0);
+    expect(
+      extEntries.every((d) => typeof d === "string" && /_data$/.test(d)),
+    ).toBe(true);
   });
 });
-
-function makeChunkReader(chunks: Uint8Array[]) {
-  let i = 0;
-  return {
-    read: async () => {
-      if (i >= chunks.length) return { done: true, value: undefined };
-      return { done: false, value: chunks[i++] };
-    },
-  };
-}

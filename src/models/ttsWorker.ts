@@ -41,7 +41,6 @@ import "../dev/logSink";
 import * as ort from "onnxruntime-web";
 import { CHATTERBOX_FILES, CHATTERBOX_TOKENS } from "./types";
 import { configureOrtWasmEnv } from "./workerOrtEnv";
-import { streamWithProgress } from "./workerStreamingFetch";
 
 const _postMessage = self.postMessage.bind(self);
 
@@ -122,41 +121,22 @@ function getEP(): string {
   return "wasm";
 }
 
-/** Fetch a file as ArrayBuffer, reporting progress. */
-async function fetchFile(url: string): Promise<ArrayBuffer> {
-  return streamWithProgress(url, (loaded, total) => {
-    _postMessage({ type: "progress", loaded, total });
-  });
-}
-
-/** Fetch a model file as ArrayBuffer, posting embed-progress events.
- *  Used during encoder load (embed call) so the UI can show a real
- *  countdown instead of a generic spinner. The shared streaming helper
- *  emits an initial (0, total) event after headers arrive, which is
- *  what flips the UI into the loading state. */
-async function fetchEncoderWithProgress(url: string): Promise<ArrayBuffer> {
-  return streamWithProgress(url, (loaded, total) => {
-    _postMessage({ type: "embed-progress", stage: "loading-model", loaded, total });
-  });
-}
-
-// Re-export under a stable test name so tests can drive it directly.
-export const __test__fetchModelWithProgress = fetchEncoderWithProgress;
-
 /** Create an ONNX session from a URL, handling external data files.
  *  Lists both WebGPU and WASM as execution providers — ONNX Runtime
  *  will try WebGPU first and fall back to WASM if operators aren't supported.
  *
+ *  Both EPs receive URLs for model + external data; ORT streams the bytes
+ *  through our SW → OPFS proxy into its WASM heap. Passing the external
+ *  data as an ArrayBuffer (the previous WASM path) cost a ~291 MB JS-side
+ *  transient on top of ORT's heap copy during speech_encoder load — see #288.
+ *
  *  @param hasExternalData — true if a companion `_data` file exists for this model.
  *    Avoids runtime HEAD probes that cause Cache API errors in the service worker.
- *  @param progressTag — when set to "encoder", routes the model + external-data
- *    fetches through `fetchEncoderWithProgress` so the UI can show a real
- *    byte-level countdown during the on-demand speech-encoder load. */
+ */
 async function createSession(
   onnxUrl: string,
   wasmOnly = false,
   hasExternalData = false,
-  progressTag: "none" | "encoder" = "none",
 ): Promise<ort.InferenceSession> {
   console.log(`${LOG} Loading ${onnxUrl}...`);
 
@@ -170,39 +150,13 @@ async function createSession(
     logSeverityLevel: 3,
   };
 
-  // For WebGPU, pass the URL directly — the EP needs to manage GPU buffer
-  // allocation during loading. For WASM-only, pass ArrayBuffer.
-  if (eps[0] === "webgpu") {
-    if (hasExternalData) {
-      const dataUrl = onnxUrl + "_data";
-      const dataFileName = onnxUrl.split("/").pop() + "_data";
-      opts.externalData = [{ path: dataFileName!, data: dataUrl }];
-    }
-    return ort.InferenceSession.create(onnxUrl, opts);
-  }
-
-  // WASM path: fetch model (and external data if needed) as ArrayBuffer.
-  // WASM can't resolve URL-based external data — must provide raw bytes.
-  const fetchModel =
-    progressTag === "encoder"
-      ? fetchEncoderWithProgress
-      : async (u: string) => {
-          const r = await fetch(u);
-          if (!r.ok) throw new Error(`Failed to fetch ${u}: ${r.status}`);
-          return r.arrayBuffer();
-        };
-
-  const modelData = await fetchModel(onnxUrl);
-
   if (hasExternalData) {
     const dataUrl = onnxUrl + "_data";
     const dataFileName = onnxUrl.split("/").pop() + "_data";
-    console.log(`${LOG} Fetching external data: ${dataUrl}...`);
-    const extData = await fetchModel(dataUrl);
-    opts.externalData = [{ path: dataFileName!, data: new Uint8Array(extData) }];
+    opts.externalData = [{ path: dataFileName!, data: dataUrl }];
   }
 
-  return ort.InferenceSession.create(modelData, opts);
+  return ort.InferenceSession.create(onnxUrl, opts);
 }
 
 /**
@@ -408,7 +362,6 @@ async function handleWarmup(): Promise<void> {
       baseUrl + CHATTERBOX_FILES.speechEncoder.onnx,
       true,
       true,
-      "encoder",
     );
     // Tiny silent buffer — just enough to confirm the graph runs.
     const silent = new Float32Array(SAMPLE_RATE / 2); // 0.5 s
@@ -457,10 +410,11 @@ async function handleEmbed(
     audioRms = Math.sqrt(audioRms / audio.length);
     console.log(`${LOG} Extracting speaker embedding from ${(audio.length / SAMPLE_RATE).toFixed(1)}s audio (max=${audioMax.toFixed(4)}, rms=${audioRms.toFixed(4)})`);
 
-    // The speech encoder external data is ~591 MB. First load can take
-    // minutes on slow networks; after OPFS caches it, subsequent loads
-    // are near-instant. Notify the UI so it can switch to a "model
-    // loading" indicator instead of a generic spinner.
+    // Speech encoder load can take seconds (OPFS-cached) to minutes
+    // (first-time network fetch). A single indeterminate-stage event
+    // tells the UI to switch to a model-loading indicator; ORT streams
+    // the ~291 MB external data straight into its WASM heap from the
+    // URL, so no per-byte progress is available worker-side (see #288).
     _postMessage({ type: "embed-progress", stage: "loading-model" });
     _postMessage({ type: "stage", label: "embed:encoder-load" });
     console.log(`${LOG} Loading speech_encoder (on-demand, WASM)...`);
@@ -469,7 +423,6 @@ async function handleEmbed(
       baseUrl + CHATTERBOX_FILES.speechEncoder.onnx,
       true,
       true,
-      "encoder",
     );
     const tLoadMs = performance.now() - tLoad0;
 
