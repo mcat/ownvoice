@@ -1033,10 +1033,37 @@ async function handleSynthesize(text, speakerData, id, languageId, exaggeration 
   const spkEmb = new ort.Tensor("float32", speakerData.speakerEmbeddings, speakerData.speakerEmbeddingsShape);
   const spkFeat = new ort.Tensor("float32", speakerData.speakerFeatures, speakerData.speakerFeaturesShape);
 
+  // Queue-settle probe (Probe 3a, see docs/probe-2-safari-webgpu-signals.md).
+  // `GPUQueue.onSubmittedWorkDone()` is the only Safari-implemented signal
+  // that discriminates "queue had work piled in front of me" from "queue
+  // was empty." Awaiting it here serializes the queue immediately before
+  // the decoder submit — so the measured decoder time below becomes
+  // queue-congestion-free, and the bimodality either persists (= not
+  // queue) or disappears (= queue congestion was the cause). Gated on
+  // memdiag so non-diagnostic runs don't pay the wait or its bias.
+  //
+  // To layer ORT-Web per-op profiling on top: set `ort.env.webgpu.profiling
+  // = { mode: "default", ondata: (d) => console.log(...) }` early in
+  // handleInit. ondata fires per-kernel and is host-wall-time only on
+  // Safari (timestamp-query unavailable on Apple Silicon TBDR).
+  let queueSettleMs = -1;
+  if (memdiag) {
+    try {
+      const dev = ort.env.webgpu.device;
+      if (dev && dev.queue) {
+        const t0 = performance.now();
+        await dev.queue.onSubmittedWorkDone();
+        queueSettleMs = Math.round(performance.now() - t0);
+      }
+    } catch {
+      // Probe failure must never affect synthesis. queueSettleMs stays
+      // at -1 to signal "probe didn't run."
+    }
+  }
   // Decoder input length is the variable axis the ONNX session sees as
   // its `speech_tokens` shape. Carrying it on the stage label makes
   // length-vs-time correlation a one-pass parse of the trail.
-  if (memdiag) postMessage({ type: "stage", label: `synth:gpu:${id}:decoder-start:decTokens=${decoderTokens.length}` });
+  if (memdiag) postMessage({ type: "stage", label: `synth:gpu:${id}:decoder-start:decTokens=${decoderTokens.length}:queueSettleMs=${queueSettleMs}` });
   const tDec0 = bench ? performance.now() : 0;
   const decResult = await conditionalDecoderSession.run({
     speech_tokens: speechTok,
