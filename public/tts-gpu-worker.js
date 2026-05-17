@@ -1191,16 +1191,32 @@ async function handleSynthesize(text, speakerData, id, languageId, exaggeration 
   // pipeline applies its own 5 ms cosine fade later; this longer fade
   // is the buzz-specific mitigation that ride on top.
   if (padBoundary > 0 && paddedDecLen > unpaddedDecLen) {
-    const safeUnpadded = Math.max(1, unpaddedDecLen - 3);
+    // FFT analysis of a padded synth (q5un1jhp48l.raw, 1.468 s total):
+    //   - Speech ends naturally around t=1.237 s (low-band energy → 0)
+    //   - A constant ~6 kHz tone starts at t=1.248 s and runs to the end
+    //   - The buzz spans the last 220 ms (~53 tokens at 4.17 ms/token)
+    //
+    // So the attention-spread tone reaches ~50 tokens back from the
+    // audio end — much further than the 3 natural silence tokens or
+    // even the ~30 pad tokens. The original `unpadded/padded` cut and
+    // the earlier `unpadded - 3` cut both left ~150 ms of buzz in the
+    // kept audio. Two fixes together:
+    //
+    //   1. Trim back 30 tokens from `unpaddedDecLen` (≈ 125 ms in
+    //      output samples at the typical ratio). Excludes the bulk of
+    //      the buzz region while preserving the natural speech fade.
+    //   2. Apply a 200 ms cosine fade-out to whatever remains so any
+    //      residual tone is attenuated below audibility.
+    //
+    // For very short phrases this cut may bite into the speech tail
+    // by 50-80 ms — perceptually a slightly shorter ending, but the
+    // buzz disappears, which is the priority. If that loss is too
+    // aggressive in practice, the next dial is a smaller `padShape`
+    // bucket (16 instead of 32) to reduce attention spread.
+    const safeUnpadded = Math.max(1, unpaddedDecLen - 30);
     const trimmedSamples = Math.max(1, Math.round(audioData.length * (safeUnpadded / paddedDecLen)));
     audioData = audioData.subarray(0, trimmedSamples);
-    // The buzz isn't strictly at the cut boundary — it extends back into
-    // the speech tail by ~100-150 ms because the decoder's self-attention
-    // pulled pad-token context into the later audio frames. A 150 ms
-    // cosine fade-out attenuates the buzz region. Worth losing a bit of
-    // natural ending energy: ~150 ms is short enough that listeners
-    // perceive a natural endpoint, not a cutoff.
-    const fadeMs = 150;
+    const fadeMs = 200;
     const fadeSamples = Math.min(
       Math.floor((SAMPLE_RATE * fadeMs) / 1000),
       Math.floor(audioData.length / 2),
