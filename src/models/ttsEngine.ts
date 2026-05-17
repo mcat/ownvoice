@@ -309,12 +309,22 @@ export function initGPU(modelUrl: string): Promise<boolean> {
       // already a no-op when memdiag is off; gating at the source
       // removes the postMessage + structured-clone cost too.
       const memdiag = isMemDiagEnabled();
+      // `?padShape=N` URL param (any positive integer) tells the worker
+      // to pad the decoder input length up to a multiple of N. 0 / not
+      // present = off. Experiment for the bimodal-decoder investigation;
+      // see docs/probe-ort-shape-dispatch.md.
+      const padBoundary = (() => {
+        const raw = new URLSearchParams(globalThis.location?.search ?? "").get("padShape");
+        if (!raw) return 0;
+        const n = Number(raw);
+        return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
+      })();
       // Skip the Cangjie5 lookup table (~1.9 MB JSON + several MB of
       // Maps in worker heap) when no zh locale is in the session.
       // sessionNeedsCangjie defaults to true on uncertain state, so a
       // pre-hydration boot preserves the prior eager-load behavior.
       const loadCangjie = sessionNeedsCangjie();
-      worker.postMessage({ type: "init", modelUrl, bench, loadCangjie, memdiag });
+      worker.postMessage({ type: "init", modelUrl, bench, loadCangjie, memdiag, padBoundary });
     } catch (err) {
       console.warn("[OwnVoice:TTS:GPU] Failed to create worker:", err);
       settle(false);

@@ -153,6 +153,7 @@ describe("ttsEngine — initGPU", () => {
       // store — preserves the prior eager-load behavior in tests.
       loadCangjie: true,
       memdiag: false,
+      padBoundary: 0,
     });
     expect(isGPUReady()).toBe(false);
 

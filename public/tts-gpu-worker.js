@@ -164,6 +164,14 @@ let memdiag = false;
 // docs/bimodal-decoder-investigation.md.
 let profileEntries = [];
 
+// Shape-padding remediation: pad `decoderTokens.length` up to the next
+// multiple of `padBoundary` before submitting to the decoder. Goal: avoid
+// shape-dependent shader-selection slowdowns in ORT's MatMul packed path
+// (`matmul_packed_webgpu.ts:463-472` — see docs/probe-ort-shape-dispatch.md).
+// 0 = off (default). Set via init-message `padBoundary` field, forwarded
+// from `?padShape=N` URL param on the main thread.
+let padBoundary = 0;
+
 function quantile(arr, q) {
   if (arr.length === 0) return 0;
   const sorted = [...arr].sort((a, b) => a - b);
@@ -598,16 +606,17 @@ function sampleToken(logits, generatedTokens) {
   return nucleus[nucleus.length - 1][0];
 }
 
-async function handleInit(modelUrl, benchFlag, loadCangjie, memdiagFlag) {
+async function handleInit(modelUrl, benchFlag, loadCangjie, memdiagFlag, padBoundaryArg) {
   const baseUrl = modelUrl.endsWith("/") ? modelUrl : modelUrl + "/";
   bench = benchFlag === true;
   memdiag = memdiagFlag === true;
+  padBoundary = Number.isFinite(padBoundaryArg) && padBoundaryArg > 0 ? Math.floor(padBoundaryArg) : 0;
   // Caller may omit loadCangjie — default to true (preserves prior
   // behavior). Setting false skips the ~1.9 MB JSON download plus the
   // two Maps it builds in worker heap; cangjieNormalize then degrades
   // any Chinese input to passthrough (warned once).
   const shouldLoadCangjie = loadCangjie !== false;
-  console.log(`${LOG} Initializing WebGPU TTS in DedicatedWorker...${bench ? " (bench mode)" : ""}${shouldLoadCangjie ? "" : " (cangjie skipped)"}`);
+  console.log(`${LOG} Initializing WebGPU TTS in DedicatedWorker...${bench ? " (bench mode)" : ""}${shouldLoadCangjie ? "" : " (cangjie skipped)"}${padBoundary > 0 ? ` (pad decoder to *${padBoundary})` : ""}`);
 
   const t0 = performance.now();
 
@@ -1047,7 +1056,28 @@ async function handleSynthesize(text, speakerData, id, languageId, exaggeration 
   const promptTokens = Array.from(speakerData.promptToken);
   const decoderTokens = [...promptTokens, ...speechOnly, SILENCE_TOKEN, SILENCE_TOKEN, SILENCE_TOKEN];
 
-  console.log(`${LOG} Decoder input: ${decoderTokens.length} tokens (${promptTokens.length} prompt + ${speechOnly.length} speech + 3 silence)`);
+  // Shape-padding experiment (Probe Remediation A, see
+  // docs/probe-ort-shape-dispatch.md). Round `decoderTokens.length` up to
+  // the next multiple of `padBoundary` to keep the decoder's input shape
+  // in a small canonical set. Hypothesis: ORT's MatMul packed path
+  // (matmul_packed_webgpu.ts:463-472) makes shape-dependent shader
+  // selections (`isVec4`, `elementsPerThread`, workgroup-tail divergence)
+  // that some shapes hit fast and others don't. The cross-browser
+  // 326-fast-cohort finding hints alignment matters more than length.
+  // Pad with SILENCE_TOKEN (already used for the trailing 3 silences).
+  // After the decoder runs, audio is trimmed back to the original-length
+  // proportion so the output duration matches what an unpadded run would
+  // have produced.
+  const unpaddedDecLen = decoderTokens.length;
+  let paddedDecLen = unpaddedDecLen;
+  if (padBoundary > 0) {
+    paddedDecLen = Math.ceil(unpaddedDecLen / padBoundary) * padBoundary;
+    while (decoderTokens.length < paddedDecLen) {
+      decoderTokens.push(SILENCE_TOKEN);
+    }
+  }
+
+  console.log(`${LOG} Decoder input: ${decoderTokens.length} tokens (${promptTokens.length} prompt + ${speechOnly.length} speech + 3 silence${padBoundary > 0 ? ` + ${paddedDecLen - unpaddedDecLen} pad` : ""})`);
   // Decoder uses WASM variant with int64 inputs (not the WebGPU int32 variant)
   const speechTok = new ort.Tensor("int64", BigInt64Array.from(decoderTokens.map(BigInt)), [1, decoderTokens.length]);
   // Pass the cached Float32Arrays directly. ORT's WebGPU EP does not
@@ -1086,8 +1116,11 @@ async function handleSynthesize(text, speakerData, id, languageId, exaggeration 
   }
   // Decoder input length is the variable axis the ONNX session sees as
   // its `speech_tokens` shape. Carrying it on the stage label makes
-  // length-vs-time correlation a one-pass parse of the trail.
-  if (memdiag) postMessage({ type: "stage", label: `synth:gpu:${id}:decoder-start:decTokens=${decoderTokens.length}:queueSettleMs=${queueSettleMs}` });
+  // length-vs-time correlation a one-pass parse of the trail. When
+  // padding is on, both the padded and unpadded lengths are emitted so
+  // the analyzer can distinguish `decTokens` (what ORT sees) from the
+  // model's content length.
+  if (memdiag) postMessage({ type: "stage", label: `synth:gpu:${id}:decoder-start:decTokens=${decoderTokens.length}:unpaddedDecTokens=${unpaddedDecLen}:queueSettleMs=${queueSettleMs}` });
   // Toggle ORT per-op profiling on around the decoder run. Mode stays
   // "off" for the LM autoregressive loop so its kernels don't pollute the
   // buffer. The 326-fast-cohort finding (docs/bimodal-data/chrome-summary)
@@ -1139,7 +1172,19 @@ async function handleSynthesize(text, speakerData, id, languageId, exaggeration 
   const wav = decResult["waveform"] ?? decResult["wav"];
   if (!wav) throw new Error("Decoder missing output: " + Object.keys(decResult));
 
-  const audioData = new Float32Array(wav.data);
+  let audioData = new Float32Array(wav.data);
+
+  // If we padded the decoder input, the output audio includes audio
+  // corresponding to the extra silence tokens at the end. Trim it back
+  // to the duration the unpadded input would have produced. Ratio is
+  // unpaddedDecLen / paddedDecLen — assuming the vocoder maps input
+  // tokens to output samples at a fixed rate across the sequence (true
+  // for Chatterbox per upstream code; verify empirically by listening
+  // to padded vs unpadded outputs).
+  if (padBoundary > 0 && paddedDecLen > unpaddedDecLen) {
+    const trimmedSamples = Math.round(audioData.length * (unpaddedDecLen / paddedDecLen));
+    audioData = audioData.subarray(0, trimmedSamples);
+  }
 
   if (bench) {
     const totalMs = performance.now() - tSynth0;
@@ -1177,7 +1222,7 @@ self.addEventListener("message", (e) => {
   if (!msg || !msg.type) return;
 
   if (msg.type === "init") {
-    handleInit(msg.modelUrl, msg.bench === true, msg.loadCangjie !== false, msg.memdiag === true).catch((err) => {
+    handleInit(msg.modelUrl, msg.bench === true, msg.loadCangjie !== false, msg.memdiag === true, msg.padBoundary).catch((err) => {
       const message = err instanceof Error ? err.message : String(err);
       console.error(`${LOG} Init error:`, message);
       postMessage({ type: "error", message });
