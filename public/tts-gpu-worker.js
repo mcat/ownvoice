@@ -1177,13 +1177,33 @@ async function handleSynthesize(text, speakerData, id, languageId, exaggeration 
   // If we padded the decoder input, the output audio includes audio
   // corresponding to the extra silence tokens at the end. Trim it back
   // to the duration the unpadded input would have produced. Ratio is
-  // unpaddedDecLen / paddedDecLen — assuming the vocoder maps input
-  // tokens to output samples at a fixed rate across the sequence (true
-  // for Chatterbox per upstream code; verify empirically by listening
-  // to padded vs unpadded outputs).
+  // (unpaddedDecLen - 3) / paddedDecLen — the `-3` excludes the natural
+  // 3 trailing silence tokens from the kept audio, not because they
+  // are bad but because the audio at the boundary between natural and
+  // pad silences shows a high-frequency buzz on Chatterbox Multilingual
+  // (empirically — the model wasn't trained on extended silence
+  // sequences, so the vocoder emits a tone during the pad region, and
+  // attention spreads that tone slightly back into the natural-silence
+  // region).
+  //
+  // After the hard trim, apply a 30 ms linear fade-out so any residual
+  // boundary noise is attenuated rather than abruptly cut. speak.ts's
+  // pipeline applies its own 5 ms cosine fade later; this longer fade
+  // is the buzz-specific mitigation that ride on top.
   if (padBoundary > 0 && paddedDecLen > unpaddedDecLen) {
-    const trimmedSamples = Math.round(audioData.length * (unpaddedDecLen / paddedDecLen));
+    const safeUnpadded = Math.max(1, unpaddedDecLen - 3);
+    const trimmedSamples = Math.max(1, Math.round(audioData.length * (safeUnpadded / paddedDecLen)));
     audioData = audioData.subarray(0, trimmedSamples);
+    const fadeMs = 30;
+    const fadeSamples = Math.min(
+      Math.floor((SAMPLE_RATE * fadeMs) / 1000),
+      Math.floor(audioData.length / 4),
+    );
+    for (let i = 0; i < fadeSamples; i++) {
+      const idx = audioData.length - fadeSamples + i;
+      const gain = 1 - i / fadeSamples;
+      audioData[idx] *= gain;
+    }
   }
 
   if (bench) {
