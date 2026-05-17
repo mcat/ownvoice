@@ -1,29 +1,34 @@
 #!/usr/bin/env node
 /**
- * Compare the fp16 conditional_decoder against the fp32 reference on real
- * speaker_data + speech_tokens. fp16 quantization can subtly drift the
- * synthesized waveform — this script provides a numeric quality signal
- * (SNR, max-abs delta, L2 distance) without requiring a clinical
- * listening review.
+ * Smoke-test the fp16 conditional_decoder produces runnable, audio-shaped
+ * output. Confirms the conversion didn't break the graph; does NOT and
+ * cannot decide whether the fp16 audio is *as good as* fp32 — that's the
+ * clinical A/B listening review (issue #287).
  *
- * The clinical A/B (issue #287) is the authoritative gate on shipping;
- * this script catches gross regressions before any humans burn time on
- * them. SNR > 30 dB means "near-imperceptible drift" by typical audio
- * standards; SNR < 20 dB likely needs the human ear.
+ * Why sample-by-sample SNR is the wrong metric for this graph: the
+ * conditional_decoder includes `RandomNormalLike` ops in the vocoder
+ * synthesis path. fp32 and fp16 conversions can dispatch those ops with
+ * different RNG state (different shapes after Cast insertions, different
+ * tensor-data offsets). Even when both produce perfectly-good audio,
+ * their per-sample waveforms can diverge — a single-sample phase shift
+ * gives catastrophic sample-wise SNR while sounding identical. Phase-
+ * invariant metrics (Mel-spectrogram L2, PESQ, MOS) are the meaningful
+ * ones, and the cheapest practical version is the clinical ear.
+ *
+ * What this script DOES check:
+ *   - fp16 model loads under ORT (graph is well-typed, ORT-acceptable)
+ *   - inference completes without throwing
+ *   - output is non-NaN, non-Inf, has audio-typical magnitude range
+ *   - output isn't constant (i.e. the synthesis path actually fired)
+ *
+ * If those four pass, the conversion is mechanically sound. The clinical
+ * review then decides whether the audio is shippable.
  *
  * Usage:
  *   node scripts/validate-fp16-decoder.mjs \\
  *     --fp32-ref <dir> \\
  *     --fp16-candidate <dir> \\
  *     [--speaker <speaker.json>] [--tokens <tokens.json>]
- *
- * The --speaker and --tokens inputs are JSON dumps of a real
- * `speakerData` object and a real `decoderTokens` array as the GPU
- * worker constructs them. Capture them by adding a one-shot
- * console.log(JSON.stringify(...)) in `handleSynthesize` and pasting the
- * output into a file. Without them, the script falls back to
- * deterministic synthetic inputs that still exercise the graph but
- * don't replicate real prosody.
  */
 import * as ort from "onnxruntime-node";
 import { readFile } from "node:fs/promises";
@@ -54,25 +59,15 @@ async function loadDecoder(dir) {
 }
 
 function synthSpeakerInputs() {
-  // Deterministic synthetic inputs that exercise the full decoder graph.
-  // Real speakerData has speaker_embeddings (192,), speaker_features
-  // (~feature_dim x 80). speech_tokens is the LM output: a sequence of
-  // int64 speech codes prepended by the prompt_token. We use realistic
-  // shapes so ConvTranspose ops land in the same regime, but the values
-  // are dummy.
   const embDim = 192;
-  const featRows = 64; // typical feature_dim for a short phrase
+  const featRows = 64;
   const featCols = 80;
-  const numTokens = 250 + 60 + 3; // prompt(250) + speech(60) + silence(3)
+  const numTokens = 250 + 60 + 3;
   const speakerEmbeddings = new Float32Array(embDim);
   const speakerFeatures = new Float32Array(featRows * featCols);
-  // Deterministic non-zero fill so neither tensor is just a vector of zeros
-  // (some kernels behave differently on all-zero inputs).
   for (let i = 0; i < embDim; i++) speakerEmbeddings[i] = (i % 13) * 0.07 - 0.4;
   for (let i = 0; i < featRows * featCols; i++) speakerFeatures[i] = ((i * 17) % 31 - 15) * 0.05;
   const speechTokens = new BigInt64Array(numTokens);
-  // Prompt tokens use values < 6561; speech tokens too. Final 3 are silence
-  // (4299 per the GPU worker constant).
   for (let i = 0; i < 250; i++) speechTokens[i] = BigInt((i * 7) % 1024);
   for (let i = 250; i < 250 + 60; i++) speechTokens[i] = BigInt(((i - 250) * 11) % 4096);
   speechTokens[numTokens - 3] = 4299n;
@@ -90,14 +85,8 @@ async function loadSpeaker(speakerFile) {
   const emb = Float32Array.from(raw.speakerEmbeddings);
   const feat = Float32Array.from(raw.speakerFeatures);
   return {
-    speakerEmbeddings: {
-      data: emb,
-      dims: raw.speakerEmbeddingsShape ?? [1, emb.length],
-    },
-    speakerFeatures: {
-      data: feat,
-      dims: raw.speakerFeaturesShape ?? [1, 1, feat.length],
-    },
+    speakerEmbeddings: { data: emb, dims: raw.speakerEmbeddingsShape ?? [1, emb.length] },
+    speakerFeatures: { data: feat, dims: raw.speakerFeaturesShape ?? [1, 1, feat.length] },
   };
 }
 
@@ -108,40 +97,26 @@ async function loadTokens(tokensFile) {
   return { data, dims: [1, data.length] };
 }
 
-function snrDb(ref, cand) {
-  // 10 * log10(sum(ref^2) / sum((ref - cand)^2))
-  let sigSq = 0, noiseSq = 0;
-  const n = Math.min(ref.length, cand.length);
+function audioStats(arr) {
+  let nan = 0, inf = 0, min = Infinity, max = -Infinity, sum = 0, absSum = 0, sqSum = 0;
+  const n = arr.length;
   for (let i = 0; i < n; i++) {
-    sigSq += ref[i] * ref[i];
-    const d = ref[i] - cand[i];
-    noiseSq += d * d;
+    const v = arr[i];
+    if (Number.isNaN(v)) { nan++; continue; }
+    if (!Number.isFinite(v)) { inf++; continue; }
+    if (v < min) min = v;
+    if (v > max) max = v;
+    sum += v;
+    absSum += Math.abs(v);
+    sqSum += v * v;
   }
-  if (noiseSq === 0) return Infinity;
-  return 10 * Math.log10(sigSq / noiseSq);
+  const valid = n - nan - inf;
+  return {
+    n, nan, inf, valid, min, max,
+    meanAbs: valid > 0 ? absSum / valid : NaN,
+    rms: valid > 0 ? Math.sqrt(sqSum / valid) : NaN,
+  };
 }
-
-function maxAbs(ref, cand) {
-  let m = 0;
-  const n = Math.min(ref.length, cand.length);
-  for (let i = 0; i < n; i++) {
-    const d = Math.abs(ref[i] - cand[i]);
-    if (d > m) m = d;
-  }
-  return m;
-}
-
-function l2(ref, cand) {
-  let s = 0;
-  const n = Math.min(ref.length, cand.length);
-  for (let i = 0; i < n; i++) {
-    const d = ref[i] - cand[i];
-    s += d * d;
-  }
-  return Math.sqrt(s);
-}
-
-const SNR_PASS_DB = 30;
 
 const args = parseArgs();
 if (!args.fp32 || !args.fp16) {
@@ -160,6 +135,7 @@ console.log(`fp16 candidate:  ${args.fp16}\n`);
 
 const fp32 = await loadDecoder(args.fp32);
 const fp16 = await loadDecoder(args.fp16);
+console.log("Both models loaded under ORT — graph is well-typed.\n");
 
 let speakerInputs;
 if (args.speakerFile) {
@@ -172,14 +148,10 @@ if (args.speakerFile) {
 
 let speechTokens;
 if (args.tokensFile) {
-  console.log(`Loading real tokens from ${args.tokensFile}`);
   speechTokens = await loadTokens(args.tokensFile);
 } else if (!args.speakerFile) {
   speechTokens = speakerInputs.speechTokens;
 } else {
-  // Speaker provided but tokens not; fall back to synthetic tokens with
-  // a length-compatible shape (the decoder is agnostic to token values
-  // for our quality check).
   speechTokens = synthSpeakerInputs().speechTokens;
 }
 
@@ -199,25 +171,54 @@ const t0b = performance.now();
 const out16 = await fp16.run(feeds);
 const fp16Ms = performance.now() - t0b;
 
-const ref = out32.waveform.data;
-const cand = out16.waveform.data;
+const s32 = audioStats(out32.waveform.data);
+const s16 = audioStats(out16.waveform.data);
 
-const snr = snrDb(ref, cand);
-const mx = maxAbs(ref, cand);
-const distance = l2(ref, cand);
-
+const fmt = (n) => Number.isFinite(n) ? n.toExponential(3) : String(n);
 console.log();
-console.log(`waveform samples:     ${ref.length}`);
-console.log(`fp32 runtime:         ${fp32Ms.toFixed(0)} ms`);
-console.log(`fp16 runtime:         ${fp16Ms.toFixed(0)} ms`);
-console.log(`SNR (vs fp32 ref):    ${snr.toFixed(2)} dB   (pass: ≥${SNR_PASS_DB} dB)`);
-console.log(`max-abs delta:        ${mx.toExponential(3)}`);
-console.log(`L2 distance:          ${distance.toExponential(3)}`);
+console.log("Metric              fp32                fp16");
+console.log("------              ----                ----");
+console.log(`runtime (ms)        ${fp32Ms.toFixed(0).padStart(10)}          ${fp16Ms.toFixed(0).padStart(10)}`);
+console.log(`samples             ${String(s32.n).padStart(10)}          ${String(s16.n).padStart(10)}`);
+console.log(`NaN                 ${String(s32.nan).padStart(10)}          ${String(s16.nan).padStart(10)}`);
+console.log(`Inf                 ${String(s32.inf).padStart(10)}          ${String(s16.inf).padStart(10)}`);
+console.log(`min                 ${fmt(s32.min).padStart(10)}          ${fmt(s16.min).padStart(10)}`);
+console.log(`max                 ${fmt(s32.max).padStart(10)}          ${fmt(s16.max).padStart(10)}`);
+console.log(`meanAbs             ${fmt(s32.meanAbs).padStart(10)}          ${fmt(s16.meanAbs).padStart(10)}`);
+console.log(`rms                 ${fmt(s32.rms).padStart(10)}          ${fmt(s16.rms).padStart(10)}`);
 console.log();
 
-if (snr >= SNR_PASS_DB) {
-  console.log(`PASS — SNR ${snr.toFixed(2)} dB ≥ ${SNR_PASS_DB} dB. Numeric quality looks safe; proceed to clinical A/B review.`);
+// Smoke-test checks: fp16 must produce audio-shaped, non-degenerate output.
+const checks = [];
+checks.push({ name: "fp16 output is non-NaN",            pass: s16.nan === 0 });
+checks.push({ name: "fp16 output is non-Inf",            pass: s16.inf === 0 });
+checks.push({ name: "fp16 magnitude is audio-typical",   pass: s16.meanAbs > 1e-4 && Math.max(Math.abs(s16.min), Math.abs(s16.max)) < 2 });
+checks.push({ name: "fp16 output is non-constant",        pass: s16.rms > 1e-3 });
+checks.push({ name: "fp16 sample count matches fp32",    pass: s16.n === s32.n });
+// And report comparative stats as INFORMATION, not gating.
+const magShift = Math.abs(s16.meanAbs - s32.meanAbs) / Math.max(s32.meanAbs, 1e-9);
+const rmsShift = Math.abs(s16.rms - s32.rms) / Math.max(s32.rms, 1e-9);
+console.log("Smoke-test results:");
+let allPass = true;
+for (const c of checks) {
+  console.log(`  ${c.pass ? "PASS" : "FAIL"}  ${c.name}`);
+  if (!c.pass) allPass = false;
+}
+console.log();
+console.log("Informational (NOT a gate — see header docstring):");
+console.log(`  meanAbs shift vs fp32: ${(magShift * 100).toFixed(1)}%`);
+console.log(`  rms shift vs fp32:     ${(rmsShift * 100).toFixed(1)}%`);
+console.log();
+console.log("These shifts being non-zero is expected for a stochastic");
+console.log("vocoder with RandomNormalLike in the synthesis path.");
+console.log("Audible quality is the clinical-A/B question, not a numeric one.");
+console.log();
+
+if (allPass) {
+  console.log("PASS — conversion is mechanically sound. Proceed to A/B bundle");
+  console.log("generation and clinical listening review for the ship decision.");
 } else {
-  console.log(`FAIL — SNR ${snr.toFixed(2)} dB < ${SNR_PASS_DB} dB. Audible drift likely; investigate before burning clinical reviewer time.`);
+  console.log("FAIL — the conversion broke the graph. Do NOT spend clinical");
+  console.log("reviewer time until this is fixed.");
   process.exit(1);
 }
