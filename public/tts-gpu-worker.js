@@ -1011,7 +1011,9 @@ async function handleSynthesize(text, speakerData, id, languageId, exaggeration 
   }
 
   console.log(`${LOG} Generated ${generatedTokens.length} speech tokens in ${((performance.now() - t0) / 1000).toFixed(1)}s`);
-  if (memdiag) postMessage({ type: "stage", label: `synth:gpu:${id}:lm-done` });
+  // Carry the LM output length on the stage label so the memdiag trail
+  // can correlate decoder time with input shape without a separate join.
+  if (memdiag) postMessage({ type: "stage", label: `synth:gpu:${id}:lm-done:lmTokens=${generatedTokens.length}` });
 
   // Step 4: Decode → audio
   // Post-process: strip ALL control tokens (>= 6561), prepend prompt_token, append 3× silence.
@@ -1031,7 +1033,10 @@ async function handleSynthesize(text, speakerData, id, languageId, exaggeration 
   const spkEmb = new ort.Tensor("float32", speakerData.speakerEmbeddings, speakerData.speakerEmbeddingsShape);
   const spkFeat = new ort.Tensor("float32", speakerData.speakerFeatures, speakerData.speakerFeaturesShape);
 
-  if (memdiag) postMessage({ type: "stage", label: `synth:gpu:${id}:decoder-start` });
+  // Decoder input length is the variable axis the ONNX session sees as
+  // its `speech_tokens` shape. Carrying it on the stage label makes
+  // length-vs-time correlation a one-pass parse of the trail.
+  if (memdiag) postMessage({ type: "stage", label: `synth:gpu:${id}:decoder-start:decTokens=${decoderTokens.length}` });
   const tDec0 = bench ? performance.now() : 0;
   const decResult = await conditionalDecoderSession.run({
     speech_tokens: speechTok,
