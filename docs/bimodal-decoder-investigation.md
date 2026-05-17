@@ -1,6 +1,6 @@
 # Bimodal decoder latency investigation
 
-Status: 2026-05-17 — four-probe instrumentation landed in PR #323; data capture pending.
+Status: 2026-05-17 — four-probe instrumentation landed in PR #323. **First data capture completed 2026-05-17** (18 complete synths, see `docs/bimodal-data/analysis-2026-05-17.json`). Hypotheses 1 (shape) and 2/4 (queue) are now empirically falsified; Hypothesis 3 (memory / internal WebGPU state) is the surviving suspect.
 
 ## What we know
 
@@ -99,3 +99,67 @@ After PR #323 lands and a session captures ≥30 synths with `?memdiag=true`, th
 ## Pending data
 
 The analyzer accepts trails from the Settings → Diagnostics → "Download trail" button. Once data is captured, paste/share the JSONL and we'll run the discriminator together.
+
+## 2026-05-17 capture results
+
+Drove 30 phrase taps on desktop Safari 26 (M-series Mac, fresh tab, audio cache cleared, memdiag enabled). 18 complete synths landed in the trail with the new instrumentation.
+
+| metric | value |
+|--------|------:|
+| decoder min | 3489 ms |
+| decoder p10 | 4394 ms |
+| decoder median | 9968 ms |
+| decoder p90 | 11112 ms |
+| decoder max | 11399 ms |
+| fast (<6500 ms) | 4 / 18 |
+| slow (≥6500 ms) | 14 / 18 |
+| Pearson R (decTokens × decMs) | **0.052** |
+| Mean queueSettleMs (slow) | **0 ms** |
+| Mean queueSettleMs (fast) | **0 ms** |
+
+### Hypothesis 1 (shape) — falsified
+
+`decTokens` ranged 313-331 (a 6% spread, dominated by the fixed 250-token speaker prompt; the variable speech-token tail is small). Within that narrow range, the Pearson R between input length and decoder time is **0.052** — essentially zero correlation.
+
+Concretely, synths with identical input shapes show wildly different times:
+
+| Synth | decTokens | decMs | Mode |
+|------:|----------:|------:|------|
+| 8  | 323 | 9968 | slow |
+| 10 | 323 | 8855 | slow |
+| 14 | 323 | 11112 | slow |
+| 17 | 323 | 9935 | slow |
+| 22 | 316 | 3489 | fast |
+| 20 | 316 | 4394 | fast |
+| 21 | 317 | 10264 | slow |
+
+Shader-cache-miss on new shapes is not the cause. Same-shape inputs hit both modes.
+
+### Hypothesis 2 / 4 (queue congestion / encoder bleed-in) — falsified
+
+`onSubmittedWorkDone()` settled in **0-1 ms on every single synth**, slow or fast. The GPU command queue is reliably empty by the time the decoder is about to submit. There's no queued work from prior LM submits, encoder warmup, or background tasks bleeding into the decoder's measured time.
+
+### Heap-watermark proxy signals — invariant
+
+OPFS usage, hot-cache size, worker states, pending-synths counter — all identical between fast and slow synths. As Probe 2's research warned, Safari exposes no GPU-memory or device-pressure signal from JavaScript; the proxy signals we *can* sample don't discriminate.
+
+### What's left
+
+Hypothesis 3 (internal WebGPU buffer-pool churn / Metal scheduling) is the surviving candidate. The bimodality is real, lives entirely inside the `conditional_decoder` ORT session, doesn't depend on input shape, and isn't queue-driven. That places it in the WebGPU/Metal stack at a layer we cannot directly observe from JS.
+
+There's also a tantalizing temporal pattern: of the 18 captured synths, fast ones appeared at indices 7, 12, 20, 22 — roughly every 5-8 synths apart. Could be coincidence with N=18, but consistent with a periodic-flush or buffer-pool-rotation mechanism.
+
+## Next steps (revised)
+
+1. **Remediation D in the original menu (ORT-Web per-op profiler)** is now the highest-priority next probe. With queue and shape eliminated, the question becomes "*which* kernel inside `conditional_decoder` has bimodal time?" If a single kernel doubles on slow runs, that's a targeted fix path. If all kernels scale uniformly, it's a more global scheduling/throttling story.
+
+2. **Larger-N capture** to confirm the periodic-fast pattern. If N=50+ shows a consistent ~5-8 synth fast cadence, that's a strong signal for an internal flush rhythm we can characterize.
+
+3. **Remediation C (boot-time decoder warmup) is now low priority** — the shader-cache theory it was designed to test has been falsified by the same-shape-different-time data. The warmup might still help by some other mechanism, but it's no longer the leading bet.
+
+4. **Iterate on Hypothesis 3 instrumentation**: add buffer-pool counters if ORT exposes them, or use the per-op profiler's emission timing to detect compute-vs-memory phase shifts.
+
+## Issue thread
+
+Findings filed at [#324](https://github.com/mcat/ownvoice/issues/324). Trail JSONL + analyzer output at `docs/bimodal-data/*` for reproducibility.
+
