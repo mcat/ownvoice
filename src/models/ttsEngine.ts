@@ -23,7 +23,7 @@
  * need to respawn the worker.
  */
 
-import { recordStage } from "../diagnostics/crashTombstone";
+import { recordStage, isMemDiagEnabled } from "../diagnostics/crashTombstone";
 import { sessionNeedsCangjie } from "./bootModels";
 import { relayWorkerLog } from "../dev/logSink";
 import { embeddingFingerprint } from "./speakerFingerprint";
@@ -304,12 +304,17 @@ export function initGPU(modelUrl: string): Promise<boolean> {
       // `?bench=true` flag set by main-app.tsx — forwards to the GPU
       // worker so it can log per-step timings (LM + decode + RTF).
       const bench = (globalThis as { __OV_BENCH__?: boolean }).__OV_BENCH__ === true;
+      // `?memdiag=true` flag forwarded so the worker can gate its
+      // sub-stage postMessages. recordStage on the main thread is
+      // already a no-op when memdiag is off; gating at the source
+      // removes the postMessage + structured-clone cost too.
+      const memdiag = isMemDiagEnabled();
       // Skip the Cangjie5 lookup table (~1.9 MB JSON + several MB of
       // Maps in worker heap) when no zh locale is in the session.
       // sessionNeedsCangjie defaults to true on uncertain state, so a
       // pre-hydration boot preserves the prior eager-load behavior.
       const loadCangjie = sessionNeedsCangjie();
-      worker.postMessage({ type: "init", modelUrl, bench, loadCangjie });
+      worker.postMessage({ type: "init", modelUrl, bench, loadCangjie, memdiag });
     } catch (err) {
       console.warn("[OwnVoice:TTS:GPU] Failed to create worker:", err);
       settle(false);

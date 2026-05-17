@@ -150,6 +150,13 @@ let tokenizer = null;
 // + decode timings. See issue #163 for WASM-vs-WebGPU comparison context.
 let bench = false;
 
+// Set by `?memdiag=true` URL flag (propagated through init message). When
+// true, handleSynthesize emits sub-stage `{type:"stage"}` postMessages
+// so the main-thread memdiag trail discriminates LM vs decoder time.
+// Gating here keeps the diagnostic free when the feature is off — same
+// shape as `bench` above.
+let memdiag = false;
+
 function quantile(arr, q) {
   if (arr.length === 0) return 0;
   const sorted = [...arr].sort((a, b) => a - b);
@@ -584,9 +591,10 @@ function sampleToken(logits, generatedTokens) {
   return nucleus[nucleus.length - 1][0];
 }
 
-async function handleInit(modelUrl, benchFlag, loadCangjie) {
+async function handleInit(modelUrl, benchFlag, loadCangjie, memdiagFlag) {
   const baseUrl = modelUrl.endsWith("/") ? modelUrl : modelUrl + "/";
   bench = benchFlag === true;
+  memdiag = memdiagFlag === true;
   // Caller may omit loadCangjie — default to true (preserves prior
   // behavior). Setting false skips the ~1.9 MB JSON download plus the
   // two Maps it builds in worker heap; cangjieNormalize then degrades
@@ -897,8 +905,9 @@ async function handleSynthesize(text, speakerData, id, languageId, exaggeration 
   // tail (#285 investigation) was not explained by main-thread allocation
   // (#309) nor worker-side defensive copies (#316). Splitting LM vs
   // decoder time lets memdiag trail data discriminate which sub-path
-  // owns the slow-mode events.
-  postMessage({ type: "stage", label: `synth:gpu:${id}:lm-start` });
+  // owns the slow-mode events. Gated on `memdiag` so the postMessage +
+  // structured-clone cost vanishes when the feature is off.
+  if (memdiag) postMessage({ type: "stage", label: `synth:gpu:${id}:lm-start` });
 
   const tSynth0 = bench ? performance.now() : 0;
   const lmStepMs = bench ? [] : null;
@@ -1002,7 +1011,7 @@ async function handleSynthesize(text, speakerData, id, languageId, exaggeration 
   }
 
   console.log(`${LOG} Generated ${generatedTokens.length} speech tokens in ${((performance.now() - t0) / 1000).toFixed(1)}s`);
-  postMessage({ type: "stage", label: `synth:gpu:${id}:lm-done` });
+  if (memdiag) postMessage({ type: "stage", label: `synth:gpu:${id}:lm-done` });
 
   // Step 4: Decode → audio
   // Post-process: strip ALL control tokens (>= 6561), prepend prompt_token, append 3× silence.
@@ -1022,7 +1031,7 @@ async function handleSynthesize(text, speakerData, id, languageId, exaggeration 
   const spkEmb = new ort.Tensor("float32", speakerData.speakerEmbeddings, speakerData.speakerEmbeddingsShape);
   const spkFeat = new ort.Tensor("float32", speakerData.speakerFeatures, speakerData.speakerFeaturesShape);
 
-  postMessage({ type: "stage", label: `synth:gpu:${id}:decoder-start` });
+  if (memdiag) postMessage({ type: "stage", label: `synth:gpu:${id}:decoder-start` });
   const tDec0 = bench ? performance.now() : 0;
   const decResult = await conditionalDecoderSession.run({
     speech_tokens: speechTok,
@@ -1030,7 +1039,7 @@ async function handleSynthesize(text, speakerData, id, languageId, exaggeration 
     speaker_features: spkFeat,
   });
   const tDecMs = bench ? performance.now() - tDec0 : 0;
-  postMessage({ type: "stage", label: `synth:gpu:${id}:decoder-done` });
+  if (memdiag) postMessage({ type: "stage", label: `synth:gpu:${id}:decoder-done` });
 
   const wav = decResult["waveform"] ?? decResult["wav"];
   if (!wav) throw new Error("Decoder missing output: " + Object.keys(decResult));
@@ -1073,7 +1082,7 @@ self.addEventListener("message", (e) => {
   if (!msg || !msg.type) return;
 
   if (msg.type === "init") {
-    handleInit(msg.modelUrl, msg.bench === true, msg.loadCangjie !== false).catch((err) => {
+    handleInit(msg.modelUrl, msg.bench === true, msg.loadCangjie !== false, msg.memdiag === true).catch((err) => {
       const message = err instanceof Error ? err.message : String(err);
       console.error(`${LOG} Init error:`, message);
       postMessage({ type: "error", message });

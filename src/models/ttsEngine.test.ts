@@ -152,6 +152,7 @@ describe("ttsEngine — initGPU", () => {
       // sessionNeedsCangjie defaults to true on an unhydrated/empty
       // store — preserves the prior eager-load behavior in tests.
       loadCangjie: true,
+      memdiag: false,
     });
     expect(isGPUReady()).toBe(false);
 
