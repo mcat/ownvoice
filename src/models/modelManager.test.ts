@@ -314,6 +314,95 @@ describe("ModelManager — WebGPU detection", () => {
     expect(mgr.hasWebGPU).toBe(false);
     expect(mgr.executionProvider).toBe("wasm");
   });
+
+  it("logs adapter info + limits on init when WebGPU is present (#292)", async () => {
+    const logs: string[] = [];
+    const logSpy = vi.spyOn(console, "log").mockImplementation((...args: unknown[]) => {
+      logs.push(args.map((a) => String(a)).join(" "));
+    });
+    // 268 MB — comfortably above the 256 MB spec minimum
+    Object.defineProperty(navigator, "gpu", {
+      value: {
+        requestAdapter: async () => ({
+          info: { vendor: "Apple", architecture: "metal", device: "iPad" },
+          limits: {
+            maxBufferSize: 268435456,
+            maxStorageBufferBindingSize: 134217728,
+            maxComputeWorkgroupStorageSize: 16384,
+            maxStorageBuffersPerShaderStage: 8,
+            maxBindGroups: 4,
+          },
+        }),
+      },
+      configurable: true,
+      writable: true,
+    });
+
+    const mgr = getModelManager();
+    await mgr.init();
+
+    expect(logs.some((l) => l.includes("[OwnVoice:WebGPU] adapter: Apple / metal / iPad"))).toBe(true);
+    expect(logs.some((l) => l.includes("maxBufferSize=268435456"))).toBe(true);
+
+    logSpy.mockRestore();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    delete (navigator as any).gpu;
+  });
+
+  it("warns when maxBufferSize falls below the WebGPU spec minimum (#292)", async () => {
+    const warns: string[] = [];
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation((...args: unknown[]) => {
+      warns.push(args.map((a) => String(a)).join(" "));
+    });
+    Object.defineProperty(navigator, "gpu", {
+      value: {
+        requestAdapter: async () => ({
+          info: { vendor: "test" },
+          // 128 MB — below the 256 MB spec minimum, signaling a tightened
+          // platform we'd expect to see in a future iPadOS regression.
+          limits: {
+            maxBufferSize: 134217728,
+            maxStorageBufferBindingSize: 67108864,
+            maxComputeWorkgroupStorageSize: 16384,
+            maxStorageBuffersPerShaderStage: 8,
+            maxBindGroups: 4,
+          },
+        }),
+      },
+      configurable: true,
+      writable: true,
+    });
+
+    const mgr = getModelManager();
+    await mgr.init();
+
+    expect(warns.some((l) => l.includes("below the WebGPU-spec minimum"))).toBe(true);
+
+    warnSpy.mockRestore();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    delete (navigator as any).gpu;
+  });
+
+  it("warns and falls through when requestAdapter returns null (#292)", async () => {
+    const warns: string[] = [];
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation((...args: unknown[]) => {
+      warns.push(args.map((a) => String(a)).join(" "));
+    });
+    Object.defineProperty(navigator, "gpu", {
+      value: { requestAdapter: async () => null },
+      configurable: true,
+      writable: true,
+    });
+
+    const mgr = getModelManager();
+    await mgr.init();
+
+    expect(warns.some((l) => l.includes("requestAdapter returned null"))).toBe(true);
+
+    warnSpy.mockRestore();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    delete (navigator as any).gpu;
+  });
 });
 
 // =============================================================================

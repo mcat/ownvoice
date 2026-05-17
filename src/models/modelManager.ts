@@ -60,9 +60,55 @@ class ModelManager {
       });
     }
 
+    if (this.hasWebGPU) {
+      await this.probeWebGPULimits();
+    }
+
     console.log(
       `[OwnVoice] Model manager initialized. EP: ${this.executionProvider}`,
     );
+  }
+
+  /** Log WebGPU adapter info + limits at boot. iPad Safari has historically
+   *  allowed buffer allocations up to a few hundred MB; a tightening at
+   *  the OS level would make the decoder load fail at allocation rather
+   *  than at any deterministic check. Surfacing the actual limits at init
+   *  gives tombstone analysis a baseline to correlate against — see #292. */
+  private async probeWebGPULimits(): Promise<void> {
+    try {
+      const adapter = await navigator.gpu.requestAdapter();
+      if (!adapter) {
+        console.warn("[OwnVoice:WebGPU] requestAdapter returned null; degrading to WASM");
+        return;
+      }
+      const info = (adapter as { info?: { vendor?: string; architecture?: string; device?: string; description?: string } }).info;
+      const { limits } = adapter;
+      // The WebGPU spec guarantees maxBufferSize >= 256 MB on any adapter
+      // that claims support. Anything below means the conditional_decoder's
+      // largest tensor allocations may fail at runtime even though hasWebGPU
+      // returned true. Surface it so tombstones make sense.
+      const SPEC_MIN_BUFFER_BYTES = 256 * 1024 * 1024;
+      const adapterInfo = info
+        ? `${info.vendor ?? "?"} / ${info.architecture ?? "?"} / ${info.device ?? "?"}`
+        : "(adapter.info unavailable)";
+      console.log(`[OwnVoice:WebGPU] adapter: ${adapterInfo}`);
+      console.log(
+        `[OwnVoice:WebGPU] limits: maxBufferSize=${limits.maxBufferSize} ` +
+          `maxStorageBufferBindingSize=${limits.maxStorageBufferBindingSize} ` +
+          `maxComputeWorkgroupStorageSize=${limits.maxComputeWorkgroupStorageSize} ` +
+          `maxStorageBuffersPerShaderStage=${limits.maxStorageBuffersPerShaderStage} ` +
+          `maxBindGroups=${limits.maxBindGroups}`,
+      );
+      if (limits.maxBufferSize < SPEC_MIN_BUFFER_BYTES) {
+        console.warn(
+          `[OwnVoice:WebGPU] maxBufferSize ${limits.maxBufferSize} is below the ` +
+            `WebGPU-spec minimum ${SPEC_MIN_BUFFER_BYTES}. The decoder load may fail ` +
+            `at allocation; tombstone evidence will tell us whether to gate on this.`,
+        );
+      }
+    } catch (err) {
+      console.warn("[OwnVoice:WebGPU] adapter probe failed:", err);
+    }
   }
 
   /** Check if a specific model is ready for inference. Returns true for
