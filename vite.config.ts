@@ -116,9 +116,15 @@ function logSinkPlugin(): Plugin {
               message: string;
               ts: number;
               origin: string;
+              tabId?: string;
             };
             const iso = new Date(payload.ts).toISOString();
-            const line = `${iso} [${payload.level.toUpperCase()}] [${payload.origin}] ${payload.message}\n`;
+            // Per-context tab-id tag sits between origin and message so that
+            // greps for `[main]` or `[worker:<name>]` keep working. Missing
+            // tabId stays absent (workers older than the field still
+            // append; they just look unattributed).
+            const tabTag = payload.tabId ? `[t:${payload.tabId}] ` : "";
+            const line = `${iso} [${payload.level.toUpperCase()}] [${payload.origin}] ${tabTag}${payload.message}\n`;
             try {
               appendFileSync(logFile, line);
             } catch {

@@ -24,7 +24,19 @@ type LogPayload = {
   message: string;
   ts: number;
   origin: string;
+  /** Per-context id generated once at module load. Disambiguates lines
+   *  from concurrent tabs / workers writing to the same `logs/dev.log`.
+   *  Without this, multi-tab dev sessions produce interleaved logs that
+   *  look like single-tab bugs (e.g. a "second worker spawning 3s after
+   *  the first" that's actually two tabs each booting normally). */
+  tabId: string;
 };
+
+/** Short random id, module-local. Each browser context (main thread,
+ *  bundled worker) gets a unique value because each loads this module
+ *  fresh. Plain-JS-worker logs route through main's patched console via
+ *  relayWorkerLog, so they pick up main's tabId automatically. */
+const TAB_ID = Math.random().toString(36).slice(2, 10);
 
 export function truncate(s: string): string {
   if (s.length <= MAX_ARG_CHARS) return s;
@@ -124,6 +136,7 @@ function patchConsole(): void {
         message: formatArgs(args),
         ts: Date.now(),
         origin: detectOrigin(),
+        tabId: TAB_ID,
       });
     };
   }
@@ -145,6 +158,7 @@ function installGlobalErrorHandlers(): void {
       message: `${e.message}${loc}`,
       ts: Date.now(),
       origin: detectOrigin(),
+      tabId: TAB_ID,
     });
   });
   target.addEventListener("unhandledrejection", (ev: Event) => {
@@ -154,6 +168,7 @@ function installGlobalErrorHandlers(): void {
       message: safeStringify(e.reason),
       ts: Date.now(),
       origin: detectOrigin(),
+      tabId: TAB_ID,
     });
   });
 }
