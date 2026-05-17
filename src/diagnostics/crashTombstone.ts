@@ -28,7 +28,21 @@
 import type { ModelId, ModelStatus } from "../models/types";
 
 const TOMBSTONE_KEY = "ov:memdiag:last-stage";
+const TRAIL_KEY = "ov:memdiag:trail";
 const FLAG_KEY = "__OV_MEMDIAG__" as const;
+
+/** Cap on the serialized trail size in localStorage. localStorage origin
+ *  quota is ~5 MB on most browsers; 256 KB is a safe headroom-bounded
+ *  budget. When the trail grows past this, the oldest entries are
+ *  evicted FIFO until it fits. */
+const MAX_TRAIL_BYTES = 256 * 1024;
+/** Hard cap on entries — prevents the JSON array from growing unbounded
+ *  during a long pre-gen even if individual entries are small. Per-entry
+ *  size is dominated by HeapWatermark + stage string, typically ~300 B,
+ *  so 2 000 entries × 300 B ≈ 600 KB worst-case before the byte cap
+ *  starts trimming. The byte cap is the real bound; the count cap is
+ *  belt-and-suspenders against degenerate per-entry growth. */
+const MAX_TRAIL_ENTRIES = 2000;
 
 /**
  * Minimum interval between two localStorage writes. Without throttling,
@@ -143,6 +157,11 @@ export function recordStage(stage: string): void {
     hw: safeSample(),
     v: 2,
   };
+  // Trail append is independent of the tombstone throttle: the tombstone
+  // overwrites a single slot, so throttling avoids redundant writes; the
+  // trail appends, so every recordStage carries forensic value. The 250ms
+  // throttle would lose intermediate stages during a long pre-gen run.
+  appendToTrail(payload);
   const elapsed = payload.ts - lastWriteAt;
   if (elapsed >= WRITE_THROTTLE_MS) {
     writePayload(payload);
@@ -157,6 +176,47 @@ export function recordStage(stage: string): void {
         pendingPayload = null;
       }
     }, WRITE_THROTTLE_MS - elapsed);
+  }
+}
+
+function appendToTrail(entry: StoredTombstone): void {
+  try {
+    const raw = localStorage.getItem(TRAIL_KEY);
+    const trail: StoredTombstone[] = raw ? JSON.parse(raw) : [];
+    trail.push(entry);
+    while (trail.length > MAX_TRAIL_ENTRIES) trail.shift();
+    let serialized = JSON.stringify(trail);
+    while (serialized.length > MAX_TRAIL_BYTES && trail.length > 1) {
+      trail.shift();
+      serialized = JSON.stringify(trail);
+    }
+    localStorage.setItem(TRAIL_KEY, serialized);
+  } catch {
+    // localStorage write failures are best-effort. The most likely cause
+    // is quota exhaustion from other origin data; not a crash signal.
+  }
+}
+
+/** Returns the in-memdiag trail of stage transitions since last clear.
+ *  Each entry is the same shape the tombstone writes (stage + ts + hw +
+ *  v). Used by the Diagnostics panel to expose forensic data without
+ *  shipping it elsewhere. Returns [] on parse error or absent key. */
+export function readTrail(): StoredTombstone[] {
+  try {
+    const raw = localStorage.getItem(TRAIL_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+export function clearTrail(): void {
+  try {
+    localStorage.removeItem(TRAIL_KEY);
+  } catch {
+    // Same rationale as recordStage — silent.
   }
 }
 
@@ -186,6 +246,10 @@ export function clearTombstone(): void {
   } catch {
     // Same rationale as recordStage — silent.
   }
+  // The trail is session-scoped forensic data too. Wiping it on a
+  // graceful exit keeps next session's trail uncontaminated by stages
+  // from a prior healthy run.
+  clearTrail();
 }
 
 export function readPreviousTombstone(): PreviousTombstone | null {

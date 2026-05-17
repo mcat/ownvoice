@@ -13,6 +13,11 @@ import { useSettingsStore, useActivePatient } from "../../../stores/settingsStor
 import { useAudioCacheStore } from "../../../stores/audioCacheStore";
 import { useStorageHealth } from "../../../hooks/useStorageHealth";
 import { EngineOutcomesPanel } from "../EngineOutcomesPanel";
+import {
+  isMemDiagEnabled,
+  readTrail,
+  clearTrail,
+} from "../../../diagnostics/crashTombstone";
 
 interface Props {
   t: ThemeTokens;
@@ -545,7 +550,81 @@ export function DiagnosticsSection({ t }: Props) {
         </h4>
         <EngineOutcomesPanel t={t} />
       </div>
+
+      <MemdiagTrailPanel t={t} />
     </Section>
+  );
+}
+
+/**
+ * Memory-diagnostic trail (#315): exposes the stage-transition log
+ * captured during this session under ?memdiag=true. Renders nothing
+ * when memdiag is disabled — the trail is forensic infrastructure
+ * for a future tombstone-aggregator workflow, not user-facing data.
+ *
+ * Two actions: download as JSONL (for sharing with the dev team or
+ * offline analysis) and clear (to reset between test runs without
+ * a full pagehide).
+ */
+function MemdiagTrailPanel({ t }: { t: ThemeTokens }) {
+  const [entryCount, setEntryCount] = useState(() => readTrail().length);
+  const enabled = isMemDiagEnabled();
+
+  if (!enabled) return null;
+
+  const refreshCount = () => setEntryCount(readTrail().length);
+
+  const downloadTrail = useCallback(() => {
+    const trail = readTrail();
+    const jsonl = trail.map((e) => JSON.stringify(e)).join("\n") + "\n";
+    const blob = new Blob([jsonl], { type: "application/x-ndjson" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `memdiag-trail-${new Date().toISOString().replace(/[:.]/g, "-")}.jsonl`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, []);
+
+  const handleClear = useCallback(() => {
+    clearTrail();
+    refreshCount();
+  }, []);
+
+  return (
+    <div style={{ marginTop: 24, paddingTop: 18, borderTop: `1px solid ${t.border}` }}>
+      <h4
+        style={{
+          fontSize: 14,
+          fontWeight: 600,
+          color: t.text,
+          margin: "0 0 6px",
+        }}
+      >
+        Memory diagnostic trail
+      </h4>
+      <p style={{ fontSize: 13, color: t.muted, margin: "0 0 12px" }}>
+        Captured {entryCount} stage transition{entryCount === 1 ? "" : "s"} this
+        session. Download as JSONL for forensic analysis or clear to reset between
+        test runs.
+      </p>
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        <Btn
+          onClick={() => {
+            refreshCount();
+            downloadTrail();
+          }}
+          disabled={entryCount === 0}
+        >
+          Download trail
+        </Btn>
+        <Btn onClick={handleClear} disabled={entryCount === 0}>
+          Clear trail
+        </Btn>
+      </div>
+    </div>
   );
 }
 
