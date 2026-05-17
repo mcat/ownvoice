@@ -1194,14 +1194,21 @@ async function handleSynthesize(text, speakerData, id, languageId, exaggeration 
     const safeUnpadded = Math.max(1, unpaddedDecLen - 3);
     const trimmedSamples = Math.max(1, Math.round(audioData.length * (safeUnpadded / paddedDecLen)));
     audioData = audioData.subarray(0, trimmedSamples);
-    const fadeMs = 30;
+    // The buzz isn't strictly at the cut boundary — it extends back into
+    // the speech tail by ~100-150 ms because the decoder's self-attention
+    // pulled pad-token context into the later audio frames. A 150 ms
+    // cosine fade-out attenuates the buzz region. Worth losing a bit of
+    // natural ending energy: ~150 ms is short enough that listeners
+    // perceive a natural endpoint, not a cutoff.
+    const fadeMs = 150;
     const fadeSamples = Math.min(
       Math.floor((SAMPLE_RATE * fadeMs) / 1000),
-      Math.floor(audioData.length / 4),
+      Math.floor(audioData.length / 2),
     );
     for (let i = 0; i < fadeSamples; i++) {
       const idx = audioData.length - fadeSamples + i;
-      const gain = 1 - i / fadeSamples;
+      const t = i / fadeSamples;
+      const gain = 0.5 * (1 + Math.cos(Math.PI * t));
       audioData[idx] *= gain;
     }
   }
