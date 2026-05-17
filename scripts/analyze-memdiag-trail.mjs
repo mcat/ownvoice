@@ -37,7 +37,18 @@ for (const e of entries) {
   if (!m) continue;
   const id = Number(m[1]);
   const suffix = m[2] ?? "";
-  if (!synths.has(id)) synths.set(id, { id, ts: {}, lmTokens: null, decTokens: null, queueSettleMs: null });
+  if (!synths.has(id)) synths.set(id, {
+    id,
+    ts: {},
+    lmTokens: null,
+    decTokens: null,
+    queueSettleMs: null,
+    profileN: null,
+    profileTotalUs: null,
+    profileTopUs: null,
+    profileTopType: null,
+    profileTopName: null,
+  });
   const s = synths.get(id);
 
   if (suffix === "") s.ts.queueStart = e.ts;
@@ -54,6 +65,20 @@ for (const e of entries) {
     if (q) s.queueSettleMs = Number(q[1]);
   } else if (suffix === "decoder-done") s.ts.decoderDone = e.ts;
   else if (suffix === "done") s.ts.done = e.ts;
+  else if (suffix.startsWith("profile")) {
+    // Per-op profiler summary appended after decoder-done. Format:
+    // `profile:n=N:totalUs=U:topUs=U:topType=T:topName=K`
+    const n = suffix.match(/n=(\d+)/);
+    const tot = suffix.match(/totalUs=(-?\d+)/);
+    const top = suffix.match(/topUs=(-?\d+)/);
+    const tt = suffix.match(/topType=([^:]+)/);
+    const tn = suffix.match(/topName=([^:]+)/);
+    if (n) s.profileN = Number(n[1]);
+    if (tot) s.profileTotalUs = Number(tot[1]);
+    if (top) s.profileTopUs = Number(top[1]);
+    if (tt) s.profileTopType = tt[1];
+    if (tn) s.profileTopName = tn[1];
+  }
 }
 
 const rows = [];
@@ -73,6 +98,11 @@ for (const s of synths.values()) {
     lmTokens: s.lmTokens,
     decTokens: s.decTokens,
     queueSettleMs: s.queueSettleMs,
+    profileN: s.profileN,
+    profileTotalUs: s.profileTotalUs,
+    profileTopUs: s.profileTopUs,
+    profileTopType: s.profileTopType,
+    profileTopName: s.profileTopName,
   });
 }
 rows.sort((a, b) => a.id - b.id);
@@ -158,6 +188,40 @@ const queueSettleAnalysis = withSettle.length >= 3 ? {
   })(),
 } : { note: "queueSettleMs not in trail or fewer than 3 datapoints" };
 
+// Per-op profiler analysis. Discriminates "single kernel doubles on slow
+// runs" from "all kernels scale uniformly":
+// - If profileTopName differs between slow and fast synths OR the same
+//   kernel name's topUs roughly doubles in slow mode → pipeline-cache miss
+//   on a specific kernel; fix is to pre-warm or pad inputs.
+// - If profileN (kernel count) differs → ORT is dispatching a different
+//   subgraph path on slow synths.
+// - If profileTotalUs scales with decMs uniformly across kernels → external
+//   throttle (memory pressure, GPU clock state); no single-kernel fix.
+const withProfile = rows.filter((r) => r.profileN != null && r.profileTopUs != null);
+const profileAnalysis = withProfile.length >= 3 ? (() => {
+  const slow = withProfile.filter((r) => r.decMs > slowThreshold);
+  const fast = withProfile.filter((r) => r.decMs <= slowThreshold);
+  const meanTopUs = (xs) => meanOf(xs.map((r) => r.profileTopUs));
+  const topNameTally = (xs) => {
+    const m = new Map();
+    for (const r of xs) m.set(r.profileTopName, (m.get(r.profileTopName) ?? 0) + 1);
+    return [...m.entries()].sort((a, b) => b[1] - a[1]);
+  };
+  return {
+    sampleSize: withProfile.length,
+    slowCount: slow.length,
+    fastCount: fast.length,
+    slowMeanTopUs: Math.round(meanTopUs(slow)),
+    fastMeanTopUs: Math.round(meanTopUs(fast)),
+    slowMeanTotalUs: Math.round(meanOf(slow.map((r) => r.profileTotalUs))),
+    fastMeanTotalUs: Math.round(meanOf(fast.map((r) => r.profileTotalUs))),
+    slowMeanN: Math.round(meanOf(slow.map((r) => r.profileN))),
+    fastMeanN: Math.round(meanOf(fast.map((r) => r.profileN))),
+    slowTopNameCounts: topNameTally(slow),
+    fastTopNameCounts: topNameTally(fast),
+  };
+})() : { note: "profile fields not in trail or fewer than 3 datapoints" };
+
 const summary = {
   source: arg === "-" ? "stdin" : arg,
   totalEntries: entries.length,
@@ -166,6 +230,7 @@ const summary = {
   decoderMs: { min, p10, median, mean: Math.round(mean), p90, p95, max },
   histogram,
   bimodalSignal,
+  profileAnalysis,
   lengthCorrelation: pearson != null ? {
     pearsonR: Number(pearson.toFixed(3)),
     sampleSize: withTokens.length,

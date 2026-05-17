@@ -1,0 +1,34 @@
+2026-05-17T12:30:19.480Z [LOG] [main] [t:7ngjnbg7] [worker:stt-gpu] [OwnVoice:STT:GPU] Decoder inputs: [input_ids,encoder_hidden_states,past_key_values.0.decoder.key,past_key_values.0.decoder.value,past_key_values.0.encoder.key...], outputs: [logits,present.0.decoder.key,present.0.decoder.value,present.0.encoder.key,present.0.encoder.value...]
+2026-05-17T12:33:12.958Z [LOG] [main] [t:7ngjnbg7] [worker:tts-gpu] [OwnVoice:TTS:GPU] Generated 85 speech tokens in 4.2s
+2026-05-17T12:33:12.961Z [LOG] [main] [t:7ngjnbg7] [worker:tts-gpu] [OwnVoice:TTS:GPU] Decoder input: 337 tokens (250 prompt + 84 speech + 3 silence)
+2026-05-17T12:33:32.525Z [LOG] [main] [t:7ngjnbg7] [worker:tts-gpu] [OwnVoice:TTS:GPU] Total: 23.8s, 3.5s audio
+2026-05-17T12:33:35.716Z [LOG] [main] [t:7ngjnbg7] [worker:tts-gpu] [OwnVoice:TTS:GPU] Generated 73 speech tokens in 3.1s
+2026-05-17T12:33:35.720Z [LOG] [main] [t:7ngjnbg7] [worker:tts-gpu] [OwnVoice:TTS:GPU] Decoder input: 325 tokens (250 prompt + 72 speech + 3 silence)
+2026-05-17T12:33:52.669Z [LOG] [main] [t:7ngjnbg7] [worker:tts-gpu] [OwnVoice:TTS:GPU] Total: 20.1s, 3.0s audio
+2026-05-17T12:33:55.840Z [LOG] [main] [t:7ngjnbg7] [worker:tts-gpu] [OwnVoice:TTS:GPU] Generated 74 speech tokens in 3.1s
+2026-05-17T12:33:55.844Z [LOG] [main] [t:7ngjnbg7] [worker:tts-gpu] [OwnVoice:TTS:GPU] Decoder input: 326 tokens (250 prompt + 73 speech + 3 silence)
+2026-05-17T12:34:02.564Z [LOG] [main] [t:7ngjnbg7] [worker:tts-gpu] [OwnVoice:TTS:GPU] Total: 9.8s, 3.0s audio
+2026-05-17T12:34:05.159Z [LOG] [main] [t:7ngjnbg7] [worker:tts-gpu] [OwnVoice:TTS:GPU] Generated 57 speech tokens in 2.5s
+2026-05-17T12:34:05.162Z [LOG] [main] [t:7ngjnbg7] [worker:tts-gpu] [OwnVoice:TTS:GPU] Decoder input: 309 tokens (250 prompt + 56 speech + 3 silence)
+2026-05-17T12:34:20.658Z [LOG] [main] [t:7ngjnbg7] [worker:tts-gpu] [OwnVoice:TTS:GPU] Total: 18.0s, 2.4s audio
+2026-05-17T12:34:24.703Z [LOG] [main] [t:7ngjnbg7] [worker:tts-gpu] [OwnVoice:TTS:GPU] Generated 74 speech tokens in 3.9s
+2026-05-17T12:34:24.706Z [LOG] [main] [t:7ngjnbg7] [worker:tts-gpu] [OwnVoice:TTS:GPU] Decoder input: 326 tokens (250 prompt + 73 speech + 3 silence)
+2026-05-17T12:34:31.259Z [LOG] [main] [t:7ngjnbg7] [worker:tts-gpu] [OwnVoice:TTS:GPU] Total: 10.5s, 3.0s audio
+2026-05-17T12:34:35.087Z [LOG] [main] [t:7ngjnbg7] [worker:tts-gpu] [OwnVoice:TTS:GPU] Generated 69 speech tokens in 3.8s
+2026-05-17T12:34:35.090Z [LOG] [main] [t:7ngjnbg7] [worker:tts-gpu] [OwnVoice:TTS:GPU] Decoder input: 321 tokens (250 prompt + 68 speech + 3 silence)
+2026-05-17T12:34:51.447Z [LOG] [main] [t:7ngjnbg7] [worker:tts-gpu] [OwnVoice:TTS:GPU] Total: 20.1s, 2.8s audio
+2026-05-17T12:34:54.636Z [LOG] [main] [t:7ngjnbg7] [worker:tts-gpu] [OwnVoice:TTS:GPU] Generated 79 speech tokens in 3.1s
+2026-05-17T12:34:54.639Z [LOG] [main] [t:7ngjnbg7] [worker:tts-gpu] [OwnVoice:TTS:GPU] Decoder input: 331 tokens (250 prompt + 78 speech + 3 silence)
+2026-05-17T12:35:11.695Z [LOG] [main] [t:7ngjnbg7] [worker:tts-gpu] [OwnVoice:TTS:GPU] Total: 20.2s, 3.2s audio
+2026-05-17T12:35:14.712Z [LOG] [main] [t:7ngjnbg7] [worker:tts-gpu] [OwnVoice:TTS:GPU] Generated 74 speech tokens in 2.9s
+2026-05-17T12:35:14.715Z [LOG] [main] [t:7ngjnbg7] [worker:tts-gpu] [OwnVoice:TTS:GPU] Decoder input: 326 tokens (250 prompt + 73 speech + 3 silence)
+2026-05-17T12:35:21.206Z [LOG] [main] [t:7ngjnbg7] [worker:tts-gpu] [OwnVoice:TTS:GPU] Total: 9.4s, 3.0s audio
+2026-05-17T12:35:24.441Z [LOG] [main] [t:7ngjnbg7] [worker:tts-gpu] [OwnVoice:TTS:GPU] Generated 81 speech tokens in 3.2s
+2026-05-17T12:35:24.444Z [LOG] [main] [t:7ngjnbg7] [worker:tts-gpu] [OwnVoice:TTS:GPU] Decoder input: 333 tokens (250 prompt + 80 speech + 3 silence)
+2026-05-17T12:35:41.399Z [LOG] [main] [t:7ngjnbg7] [worker:tts-gpu] [OwnVoice:TTS:GPU] Total: 20.2s, 3.3s audio
+2026-05-17T12:35:44.134Z [LOG] [main] [t:7ngjnbg7] [worker:tts-gpu] [OwnVoice:TTS:GPU] Generated 66 speech tokens in 2.7s
+2026-05-17T12:35:44.137Z [LOG] [main] [t:7ngjnbg7] [worker:tts-gpu] [OwnVoice:TTS:GPU] Decoder input: 318 tokens (250 prompt + 65 speech + 3 silence)
+2026-05-17T12:35:50.109Z [LOG] [main] [t:7ngjnbg7] [worker:tts-gpu] [OwnVoice:TTS:GPU] Total: 8.6s, 2.7s audio
+2026-05-17T12:35:53.077Z [LOG] [main] [t:7ngjnbg7] [worker:tts-gpu] [OwnVoice:TTS:GPU] Generated 71 speech tokens in 2.9s
+2026-05-17T12:35:53.080Z [LOG] [main] [t:7ngjnbg7] [worker:tts-gpu] [OwnVoice:TTS:GPU] Decoder input: 323 tokens (250 prompt + 70 speech + 3 silence)
+2026-05-17T12:36:08.403Z [LOG] [main] [t:7ngjnbg7] [worker:tts-gpu] [OwnVoice:TTS:GPU] Total: 18.2s, 2.9s audio

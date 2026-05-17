@@ -157,6 +157,13 @@ let bench = false;
 // shape as `bench` above.
 let memdiag = false;
 
+// ORT-Web per-op profiler buffer. Filled by `ort.env.webgpu.profiling.ondata`
+// during decoder.run when memdiag is active. Cleared just before each
+// decoder.run, summarized just after. The mode flag is toggled around the
+// decoder call so LM kernels don't pollute the buffer. See Probe 3b in
+// docs/bimodal-decoder-investigation.md.
+let profileEntries = [];
+
 function quantile(arr, q) {
   if (arr.length === 0) return 0;
   const sorted = [...arr].sort((a, b) => a - b);
@@ -676,6 +683,23 @@ async function handleInit(modelUrl, benchFlag, loadCangjie, memdiagFlag) {
 
   console.log(`${LOG} All models loaded in ${((performance.now() - t0) / 1000).toFixed(1)}s`);
 
+  // Arm the ORT per-op profiler so handleSynthesize can capture per-kernel
+  // timings during the decoder run. Mode stays "off" globally; toggled to
+  // "default" around `conditionalDecoderSession.run` so LM kernels are
+  // excluded. The ondata callback checks the current mode defensively in
+  // case ORT flushes deferred entries after we've toggled off.
+  if (memdiag && ort?.env?.webgpu) {
+    ort.env.webgpu.profiling = {
+      mode: "off",
+      ondata: (data) => {
+        if (ort.env.webgpu.profiling?.mode === "default") {
+          profileEntries.push(data);
+        }
+      },
+    };
+    console.log(`${LOG} ORT per-op profiler armed for memdiag captures`);
+  }
+
   // Warm the hot path. Without this, the first real synthesis pays WebGPU
   // shader compilation, initial command-queue setup, and ORT's first-run
   // graph planning costs — typically 3-8s on top of steady-state time.
@@ -1064,6 +1088,16 @@ async function handleSynthesize(text, speakerData, id, languageId, exaggeration 
   // its `speech_tokens` shape. Carrying it on the stage label makes
   // length-vs-time correlation a one-pass parse of the trail.
   if (memdiag) postMessage({ type: "stage", label: `synth:gpu:${id}:decoder-start:decTokens=${decoderTokens.length}:queueSettleMs=${queueSettleMs}` });
+  // Toggle ORT per-op profiling on around the decoder run. Mode stays
+  // "off" for the LM autoregressive loop so its kernels don't pollute the
+  // buffer. The 326-fast-cohort finding (docs/bimodal-data/chrome-summary)
+  // hints this is shape-categorical inside ORT; per-op breakdown
+  // discriminates "one kernel doubles" (= pipeline-cache miss) from
+  // "all kernels scale uniformly" (= external throttle).
+  if (memdiag && ort?.env?.webgpu?.profiling) {
+    profileEntries.length = 0;
+    ort.env.webgpu.profiling.mode = "default";
+  }
   const tDec0 = bench ? performance.now() : 0;
   const decResult = await conditionalDecoderSession.run({
     speech_tokens: speechTok,
@@ -1071,7 +1105,36 @@ async function handleSynthesize(text, speakerData, id, languageId, exaggeration 
     speaker_features: spkFeat,
   });
   const tDecMs = bench ? performance.now() - tDec0 : 0;
+  if (memdiag && ort?.env?.webgpu?.profiling) {
+    ort.env.webgpu.profiling.mode = "off";
+  }
   if (memdiag) postMessage({ type: "stage", label: `synth:gpu:${id}:decoder-done` });
+
+  // Summarize the per-op profile: total kernel time, top kernel by time,
+  // kernel count. Units are whatever ORT's profiler reports (typically
+  // microseconds — empirically verify against `tDecMs` once data lands).
+  // Kernel names/types are sanitized so the `:`-separated stage format
+  // stays parseable.
+  if (memdiag && profileEntries.length > 0) {
+    let totalUs = 0;
+    let topUs = 0;
+    let topName = "";
+    let topType = "";
+    for (const e of profileEntries) {
+      const us = (e?.endTime ?? 0) - (e?.startTime ?? 0);
+      totalUs += us;
+      if (us > topUs) {
+        topUs = us;
+        topName = e?.kernelName ?? e?.programName ?? "?";
+        topType = e?.kernelType ?? "?";
+      }
+    }
+    const safe = (s) => String(s).replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 32);
+    postMessage({
+      type: "stage",
+      label: `synth:gpu:${id}:profile:n=${profileEntries.length}:totalUs=${Math.round(totalUs)}:topUs=${Math.round(topUs)}:topType=${safe(topType)}:topName=${safe(topName)}`,
+    });
+  }
 
   const wav = decResult["waveform"] ?? decResult["wav"];
   if (!wav) throw new Error("Decoder missing output: " + Object.keys(decResult));
