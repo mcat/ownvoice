@@ -893,6 +893,13 @@ async function handleSynthesize(text, speakerData, id, languageId, exaggeration 
   // and leak into subsequent sentences during batch pre-gen.
   let priorGpuKV = [];
 
+  // Sub-stage labels for the memdiag trail. The bimodal pre-gen latency
+  // tail (#285 investigation) was not explained by main-thread allocation
+  // (#309) nor worker-side defensive copies (#316). Splitting LM vs
+  // decoder time lets memdiag trail data discriminate which sub-path
+  // owns the slow-mode events.
+  postMessage({ type: "stage", label: `synth:gpu:${id}:lm-start` });
+
   const tSynth0 = bench ? performance.now() : 0;
   const lmStepMs = bench ? [] : null;
 
@@ -995,6 +1002,7 @@ async function handleSynthesize(text, speakerData, id, languageId, exaggeration 
   }
 
   console.log(`${LOG} Generated ${generatedTokens.length} speech tokens in ${((performance.now() - t0) / 1000).toFixed(1)}s`);
+  postMessage({ type: "stage", label: `synth:gpu:${id}:lm-done` });
 
   // Step 4: Decode → audio
   // Post-process: strip ALL control tokens (>= 6561), prepend prompt_token, append 3× silence.
@@ -1014,6 +1022,7 @@ async function handleSynthesize(text, speakerData, id, languageId, exaggeration 
   const spkEmb = new ort.Tensor("float32", speakerData.speakerEmbeddings, speakerData.speakerEmbeddingsShape);
   const spkFeat = new ort.Tensor("float32", speakerData.speakerFeatures, speakerData.speakerFeaturesShape);
 
+  postMessage({ type: "stage", label: `synth:gpu:${id}:decoder-start` });
   const tDec0 = bench ? performance.now() : 0;
   const decResult = await conditionalDecoderSession.run({
     speech_tokens: speechTok,
@@ -1021,6 +1030,7 @@ async function handleSynthesize(text, speakerData, id, languageId, exaggeration 
     speaker_features: spkFeat,
   });
   const tDecMs = bench ? performance.now() - tDec0 : 0;
+  postMessage({ type: "stage", label: `synth:gpu:${id}:decoder-done` });
 
   const wav = decResult["waveform"] ?? decResult["wav"];
   if (!wav) throw new Error("Decoder missing output: " + Object.keys(decResult));

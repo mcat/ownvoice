@@ -262,6 +262,13 @@ export function initGPU(modelUrl: string): Promise<boolean> {
           relayWorkerLog(e.data);
           return;
         }
+        if (e.data.type === "stage" && typeof e.data.label === "string") {
+          // Worker-emitted sub-stage label (LM start/done, decoder
+          // start/done). Forward to the memdiag trail so per-synth
+          // timing breakdowns reach the JSONL download in Settings.
+          recordStage(e.data.label);
+          return;
+        }
         if (e.data.type === "ready") {
           markReady();
           recordStage("boot:tts-gpu-ready");
