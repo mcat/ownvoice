@@ -18,8 +18,14 @@ export const ORT_VERSION = "v1.25.1";
  * Bumped when we change which model bytes ship. Date-based label
  * (yyyy-mm-dd) rather than a model-specific name — the release covers
  * the entire set of models (TTS + LLM + STT), not just one.
+ *
+ * 2026-05-17 ships the fp16 conditional_decoder (#287). All other model
+ * files are byte-identical to 2026-04-29; only the decoder weights
+ * change (~534 MB → ~261 MB at fp32→fp16). The release is bumped
+ * uniformly to keep `MODELS_RELEASE` / manifest baseUrls in lockstep,
+ * matching the historical pattern from the fp16 encoder release.
  */
-export const MODELS_RELEASE = "2026-04-29";
+export const MODELS_RELEASE = "2026-05-17";
 
 /** Asset path prefixes — used by upload script and Pages Functions. */
 export const ORT_ASSET_PREFIX = `ort/${ORT_VERSION}`;
