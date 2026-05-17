@@ -1,0 +1,263 @@
+{
+  "source": "/tmp/trail-raw.txt",
+  "totalEntries": 128,
+  "synthsParsed": 19,
+  "synthsComplete": 18,
+  "decoderMs": {
+    "min": 3489,
+    "p10": 4394,
+    "median": 9968,
+    "mean": 8936,
+    "p90": 11112,
+    "p95": 11399,
+    "max": 11399
+  },
+  "histogram": [
+    {
+      "binStartMs": 3000,
+      "binEndMs": 3500,
+      "count": 1
+    },
+    {
+      "binStartMs": 4000,
+      "binEndMs": 4500,
+      "count": 1
+    },
+    {
+      "binStartMs": 4500,
+      "binEndMs": 5000,
+      "count": 1
+    },
+    {
+      "binStartMs": 5000,
+      "binEndMs": 5500,
+      "count": 1
+    },
+    {
+      "binStartMs": 8500,
+      "binEndMs": 9000,
+      "count": 1
+    },
+    {
+      "binStartMs": 9500,
+      "binEndMs": 10000,
+      "count": 5
+    },
+    {
+      "binStartMs": 10000,
+      "binEndMs": 10500,
+      "count": 4
+    },
+    {
+      "binStartMs": 10500,
+      "binEndMs": 11000,
+      "count": 1
+    },
+    {
+      "binStartMs": 11000,
+      "binEndMs": 11500,
+      "count": 3
+    }
+  ],
+  "bimodalSignal": {
+    "countAtP10": 1,
+    "countAtMedian": 5,
+    "countAtP90": 3,
+    "bimodalLikely": false
+  },
+  "lengthCorrelation": {
+    "pearsonR": 0.052,
+    "sampleSize": 18,
+    "note": "weak/no correlation — shape isn't the discriminator"
+  },
+  "queueSettleAnalysis": {
+    "sampleSize": 18,
+    "slowMeanSettleMs": 0,
+    "fastMeanSettleMs": 0,
+    "slowCount": 14,
+    "fastCount": 4,
+    "note": "queue-settle similar — queue falsified; shader/compile is the suspect"
+  },
+  "rows": [
+    {
+      "id": 7,
+      "queueMs": 5,
+      "lmMs": 2126,
+      "decMs": 5094,
+      "totalMs": 7229,
+      "lmTokens": 74,
+      "decTokens": 326,
+      "queueSettleMs": 0
+    },
+    {
+      "id": 8,
+      "queueMs": 4,
+      "lmMs": 1952,
+      "decMs": 9968,
+      "totalMs": 11929,
+      "lmTokens": 71,
+      "decTokens": 323,
+      "queueSettleMs": 0
+    },
+    {
+      "id": 9,
+      "queueMs": 8,
+      "lmMs": 2105,
+      "decMs": 11399,
+      "totalMs": 13517,
+      "lmTokens": 73,
+      "decTokens": 325,
+      "queueSettleMs": 1
+    },
+    {
+      "id": 10,
+      "queueMs": 5,
+      "lmMs": 1940,
+      "decMs": 8855,
+      "totalMs": 10803,
+      "lmTokens": 71,
+      "decTokens": 323,
+      "queueSettleMs": 0
+    },
+    {
+      "id": 11,
+      "queueMs": 4,
+      "lmMs": 2065,
+      "decMs": 10450,
+      "totalMs": 12522,
+      "lmTokens": 73,
+      "decTokens": 325,
+      "queueSettleMs": 0
+    },
+    {
+      "id": 12,
+      "queueMs": 6,
+      "lmMs": 2090,
+      "decMs": 4514,
+      "totalMs": 6613,
+      "lmTokens": 76,
+      "decTokens": 328,
+      "queueSettleMs": 0
+    },
+    {
+      "id": 13,
+      "queueMs": 4,
+      "lmMs": 2136,
+      "decMs": 9641,
+      "totalMs": 11785,
+      "lmTokens": 79,
+      "decTokens": 331,
+      "queueSettleMs": 0
+    },
+    {
+      "id": 14,
+      "queueMs": 4,
+      "lmMs": 1996,
+      "decMs": 11112,
+      "totalMs": 13116,
+      "lmTokens": 71,
+      "decTokens": 323,
+      "queueSettleMs": 0
+    },
+    {
+      "id": 15,
+      "queueMs": 6,
+      "lmMs": 2051,
+      "decMs": 9557,
+      "totalMs": 11618,
+      "lmTokens": 73,
+      "decTokens": 325,
+      "queueSettleMs": 1
+    },
+    {
+      "id": 16,
+      "queueMs": 3,
+      "lmMs": 2011,
+      "decMs": 9763,
+      "totalMs": 11781,
+      "lmTokens": 73,
+      "decTokens": 325,
+      "queueSettleMs": 0
+    },
+    {
+      "id": 17,
+      "queueMs": 6,
+      "lmMs": 2010,
+      "decMs": 9935,
+      "totalMs": 11954,
+      "lmTokens": 71,
+      "decTokens": 323,
+      "queueSettleMs": 0
+    },
+    {
+      "id": 18,
+      "queueMs": 4,
+      "lmMs": 1925,
+      "decMs": 10791,
+      "totalMs": 12724,
+      "lmTokens": 69,
+      "decTokens": 321,
+      "queueSettleMs": 0
+    },
+    {
+      "id": 19,
+      "queueMs": 4,
+      "lmMs": 1846,
+      "decMs": 10338,
+      "totalMs": 12192,
+      "lmTokens": 65,
+      "decTokens": 317,
+      "queueSettleMs": 0
+    },
+    {
+      "id": 20,
+      "queueMs": 7,
+      "lmMs": 1817,
+      "decMs": 4394,
+      "totalMs": 6223,
+      "lmTokens": 64,
+      "decTokens": 316,
+      "queueSettleMs": 0
+    },
+    {
+      "id": 21,
+      "queueMs": 4,
+      "lmMs": 1837,
+      "decMs": 10264,
+      "totalMs": 12109,
+      "lmTokens": 65,
+      "decTokens": 317,
+      "queueSettleMs": 0
+    },
+    {
+      "id": 22,
+      "queueMs": 4,
+      "lmMs": 1807,
+      "decMs": 3489,
+      "totalMs": 5305,
+      "lmTokens": 64,
+      "decTokens": 316,
+      "queueSettleMs": 0
+    },
+    {
+      "id": 23,
+      "queueMs": 8,
+      "lmMs": 1884,
+      "decMs": 11003,
+      "totalMs": 12900,
+      "lmTokens": 67,
+      "decTokens": 319,
+      "queueSettleMs": 0
+    },
+    {
+      "id": 24,
+      "queueMs": 4,
+      "lmMs": 1807,
+      "decMs": 10283,
+      "totalMs": 12099,
+      "lmTokens": 61,
+      "decTokens": 313,
+      "queueSettleMs": 0
+    }
+  ]
+}
