@@ -5,6 +5,8 @@ import {
   recordStage,
   clearTombstone,
   readPreviousTombstone,
+  readTrail,
+  clearTrail,
   registerHeapSampler,
   _resetSamplerForTests,
   type HeapWatermark,
@@ -12,6 +14,7 @@ import {
 
 const FLAG_KEY = "__OV_MEMDIAG__" as const;
 const TOMBSTONE_KEY = "ov:memdiag:last-stage";
+const TRAIL_KEY = "ov:memdiag:trail";
 
 const SAMPLE_HW: HeapWatermark = {
   opfsUsage: 1234567,
@@ -170,5 +173,102 @@ describe("crashTombstone", () => {
   it("readPreviousTombstone rejects non-number ts", () => {
     localStorage.setItem(TOMBSTONE_KEY, JSON.stringify({ stage: "x", ts: "no", v: 1 }));
     expect(readPreviousTombstone()).toBeNull();
+  });
+});
+
+describe("crashTombstone — trail (#315)", () => {
+  it("readTrail is empty by default", () => {
+    expect(readTrail()).toEqual([]);
+  });
+
+  it("recordStage does not write to trail when memdiag is disabled", () => {
+    recordStage("boot:test");
+    expect(readTrail()).toEqual([]);
+  });
+
+  it("recordStage appends each call to the trail unthrottled", () => {
+    enableMemDiag();
+    recordStage("a");
+    recordStage("b");
+    recordStage("c");
+    const trail = readTrail();
+    expect(trail.map((e) => e.stage)).toEqual(["a", "b", "c"]);
+    // Every entry has timestamp + v
+    for (const e of trail) {
+      expect(typeof e.ts).toBe("number");
+      expect(e.v).toBe(2);
+    }
+  });
+
+  it("trail captures sampler heap watermark on each entry", () => {
+    enableMemDiag();
+    registerHeapSampler(() => SAMPLE_HW);
+    recordStage("synth:gpu:1");
+    recordStage("synth:gpu:2");
+    const trail = readTrail();
+    expect(trail).toHaveLength(2);
+    expect(trail[0].hw).toEqual(SAMPLE_HW);
+    expect(trail[1].hw).toEqual(SAMPLE_HW);
+  });
+
+  it("trail bounds itself by entry count under degenerate load", () => {
+    enableMemDiag();
+    // Push more than the entry cap; trail must trim the oldest.
+    for (let i = 0; i < 2050; i++) {
+      recordStage(`s${i}`);
+    }
+    const trail = readTrail();
+    expect(trail.length).toBeLessThanOrEqual(2000);
+    // Oldest are evicted; newest is the last we recorded.
+    expect(trail[trail.length - 1].stage).toBe("s2049");
+  });
+
+  it("trail bounds itself by byte size when entries get large", () => {
+    enableMemDiag();
+    registerHeapSampler(() => SAMPLE_HW);
+    // Append entries with long stage names so the byte cap (256 KB)
+    // engages before the entry-count cap (2 000).
+    const longStage = "stage:" + "x".repeat(500);
+    for (let i = 0; i < 1000; i++) {
+      recordStage(`${longStage}:${i}`);
+    }
+    const raw = localStorage.getItem(TRAIL_KEY)!;
+    expect(raw.length).toBeLessThanOrEqual(256 * 1024);
+    // At least some entries survived — we didn't end up with an empty
+    // log because eviction was too aggressive.
+    expect(readTrail().length).toBeGreaterThan(0);
+  });
+
+  it("clearTrail wipes the trail without touching the tombstone", () => {
+    enableMemDiag();
+    recordStage("boot:foo");
+    expect(readTrail()).toHaveLength(1);
+    expect(readPreviousTombstone()).not.toBeNull();
+    clearTrail();
+    expect(readTrail()).toEqual([]);
+    // Tombstone still present for the boot-time crash check.
+    expect(readPreviousTombstone()).not.toBeNull();
+  });
+
+  it("clearTombstone also clears the trail (graceful-exit cleanup)", () => {
+    enableMemDiag();
+    recordStage("boot:foo");
+    recordStage("boot:bar");
+    expect(readTrail()).toHaveLength(2);
+    clearTombstone();
+    // Graceful exit wipes both: next boot should not see either as
+    // forensic evidence.
+    expect(readTrail()).toEqual([]);
+    expect(readPreviousTombstone()).toBeNull();
+  });
+
+  it("readTrail tolerates malformed JSON in the trail key", () => {
+    localStorage.setItem(TRAIL_KEY, "not-json");
+    expect(readTrail()).toEqual([]);
+  });
+
+  it("readTrail tolerates non-array JSON in the trail key", () => {
+    localStorage.setItem(TRAIL_KEY, '{"stage":"x"}');
+    expect(readTrail()).toEqual([]);
   });
 });
