@@ -234,26 +234,45 @@ function spectralDenoise(audio: Float32Array, sampleRate: number): void {
   const re = new Float64Array(frameSize);
   const im = new Float64Array(frameSize);
 
-  // 1. Estimate noise magnitude spectrum from the first noiseFrames.
-  //    NOTE — structurally the audio's first frames are speech onset,
-  //    not silence (the leading-silence trim ran above). Using speech
-  //    as the "noise reference" makes spectral subtraction over-
-  //    attenuate speech HF content, effectively a broadband HF
-  //    roll-off. That roll-off inadvertently MASKS a real model-side
-  //    artifact in conditional_decoder's onset output — without it the
-  //    model's onset bzzt becomes audible.
+  // 1. Estimate noise magnitude spectrum from the QUIETEST region of
+  //    the file. The original heuristic was "the first 20 ms" on the
+  //    assumption that decoder output started with silence — but the
+  //    leading-silence trim (step 2 above) runs before this denoiser,
+  //    so the first frames after the trim are speech ONSET, not silence.
+  //    Using speech magnitudes as the noise reference makes spectral
+  //    subtraction attenuate speech formants on every subsequent frame
+  //    — effectively a broadband HF roll-off. Switching to the quietest
+  //    contiguous frames gives the denoiser an actual silent reference.
   //
-  //    A prior version of this code (commit 791ee27) switched to
-  //    estimating noise from the quietest contiguous frames, which is
-  //    technically more correct. It also exposed the bzzt that users
-  //    don't hear in production. Reverted. Until the upstream model is
-  //    fixed, the first-frames reference is the right behavior for
-  //    perceived audio quality. See docs/known-issue-onset-bzzt.md.
+  //    Two-pass: compute per-frame energy, find the lowest-total run of
+  //    noiseFrames frames, then average their spectra.
+  const numFrames = Math.max(0, Math.floor((n - frameSize) / hop) + 1);
+  if (numFrames < noiseFrames) return;
+  const frameEnergy = new Float64Array(numFrames);
+  for (let f = 0; f < numFrames; f++) {
+    const off = f * hop;
+    let e = 0;
+    for (let i = 0; i < frameSize; i++) {
+      const s = audio[off + i];
+      e += s * s;
+    }
+    frameEnergy[f] = e;
+  }
+  let runEnergy = 0;
+  for (let f = 0; f < noiseFrames; f++) runEnergy += frameEnergy[f];
+  let bestRunEnergy = runEnergy;
+  let bestRunStart = 0;
+  for (let f = noiseFrames; f < numFrames; f++) {
+    runEnergy += frameEnergy[f] - frameEnergy[f - noiseFrames];
+    if (runEnergy < bestRunEnergy) {
+      bestRunEnergy = runEnergy;
+      bestRunStart = f - noiseFrames + 1;
+    }
+  }
   const noiseMag = new Float64Array(frameSize);
   let noiseCount = 0;
-  for (let f = 0; f < noiseFrames; f++) {
+  for (let f = bestRunStart; f < bestRunStart + noiseFrames; f++) {
     const off = f * hop;
-    if (off + frameSize > n) break;
     for (let i = 0; i < frameSize; i++) { re[i] = audio[off + i] * win[i]; im[i] = 0; }
     fft(re, im, false);
     for (let i = 0; i < frameSize; i++) noiseMag[i] += Math.sqrt(re[i] * re[i] + im[i] * im[i]);
@@ -456,14 +475,6 @@ export function postProcessAudio(raw: Float32Array, sampleRate: number): Float32
   const gateThreshold = noiseRms * 3;
 
   if (gateThreshold > 0.0001) {
-    // Per-window constant gain. A prior version (commit 69a0c3e)
-    // linearly interpolated gain across samples within each window on
-    // the theory that the per-window step discontinuity created a
-    // 500 Hz step-modulation. The math was correct but the perceived
-    // result was worse — production listeners report clean audio with
-    // this step pattern, and the linear-interpolation variant exposed
-    // a real model-side bzzt that the steps were inadvertently masking.
-    // Reverted to per-window constant. See docs/known-issue-onset-bzzt.md.
     const windowLen = Math.floor(sampleRate * 0.002); // 2 ms analysis window
     let gateGain = 0; // starts closed
     const attack = 0.3;  // gate opens quickly
@@ -475,9 +486,27 @@ export function postProcessAudio(raw: Float32Array, sampleRate: number): Float32
       const winRms = Math.sqrt(winEnergy / (end - i));
 
       const target = winRms > gateThreshold ? 1 : 0;
+      const prevGain = gateGain;
       gateGain += (target - gateGain) * (target > gateGain ? attack : release);
 
-      for (let j = i; j < end; j++) audio[j] *= gateGain;
+      // Linearly interpolate gain across the window. Applying a CONSTANT
+      // gain per 2 ms block produced step discontinuities at every window
+      // boundary — a 500 Hz square-wave amplitude modulation superimposed
+      // on the speech, with harmonics at 1k / 1.5k / 2k / 2.5k / 3k Hz...
+      // Visible in FFT analysis as a peak at 2706 Hz (the 5th-6th harmonic
+      // of 500 Hz). Inaudible to most listeners under fp32 decoder output
+      // but technically wrong; this fix produces a sample-smooth gate
+      // attack ramp.
+      //
+      // Previously reverted because we mis-attributed the fp16-decoder
+      // bzzt to the unmasking effect of this fix. Re-applied after #287
+      // rolled back to the fp32 decoder; the gate fix is now safe.
+      const span = end - i;
+      for (let j = i; j < end; j++) {
+        const t = (j - i) / span;
+        const g = prevGain + (gateGain - prevGain) * t;
+        audio[j] *= g;
+      }
     }
   }
 

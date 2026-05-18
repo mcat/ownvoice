@@ -132,16 +132,20 @@ import { pregenAudio } from "../audit/workflows/audioCachePregen";
 //            (post-processed v22 pipeline) from being confused with
 //            v23 raw audio.
 // v23 → v24: REVERTED the v21 gate-smoothing and v22 denoise-quietest-
-//            frame "fixes". Both were technically correct improvements
-//            but the prior buggy behaviors were inadvertently masking a
-//            real model-side artifact in conditional_decoder's onset
-//            output (the "bzzt" — see docs/known-issue-onset-bzzt.md).
-//            Production users (audio rendered under v20 code) report
-//            clean playback. The fixes exposed an artifact the user
-//            base hadn't been hearing. Reverted to v20-equivalent
-//            post-processing math; cache version bumped to invalidate
-//            v22/v23 audio carrying the unmasked bzzt.
-const CACHE_DIR = "audio-cache-v24";
+//            frame "fixes". I'd wrongly attributed the user-reported
+//            bzzt to those fixes unmasking a model artifact; the
+//            actual cause was the fp16 decoder (#287/#317/#318),
+//            since rolled back. See docs/known-issue-onset-bzzt.md.
+// v24 → v25: now that the fp16-decoder bzzt is gone (MODELS_RELEASE
+//            reverted to 2026-04-29 fp32), the v21 gate interpolation
+//            and v22 denoise quietest-frame fixes are re-applied.
+//            Both address objectively-real bugs (500 Hz step
+//            modulation in the gate; speech-as-noise-reference in
+//            the denoiser) that were below most listeners' perceptual
+//            threshold under fp32 but technically wrong. v25 forces
+//            re-render of any v24 audio that has the reverted
+//            post-processing baked in.
+const CACHE_DIR = "audio-cache-v25";
 const SAMPLE_RATE = 24000; // Chatterbox conditional decoder output rate (S3GEN_SR)
 const INT16_SCALE = 32767;
 
