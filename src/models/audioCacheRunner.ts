@@ -215,12 +215,14 @@ export async function runPreGeneration(cfg: AppSettings): Promise<void> {
     );
 
     try {
+      let sawProgress = false;
       for await (const progress of generateAllPhrases(
         speaker.phrases,
         speaker.speakerData,
         controller.signal,
         { gpuOnly: speaker.gpuOnly === true, patientId: speaker.patientId, languageId: speaker.languageId },
       )) {
+        sawProgress = true;
         if (controller.signal.aborted) return;
         recordStage(
           `pregen:${speakerKindForLog(speaker.key)}:${progress.current}/${speaker.phrases.length}`,
@@ -232,8 +234,22 @@ export async function runPreGeneration(cfg: AppSettings): Promise<void> {
         }
       }
       if (!controller.signal.aborted) {
-        recordStage(`pregen:${speakerKindForLog(speaker.key)}:done`);
-        store.finish(speaker.key);
+        if (sawProgress) {
+          recordStage(`pregen:${speakerKindForLog(speaker.key)}:done`);
+          store.finish(speaker.key);
+        } else {
+          // generateAllPhrases yielded zero events — it took an early
+          // `return` path (no TTS path ready, no embedding, gpuOnly
+          // without GPU). The run made no progress, so do NOT call
+          // store.finish, which would flip status to 'done' and the UI
+          // would show "Voice clone active — all N phrases ready in <name>'s
+          // voice" while the OPFS audio cache is in fact empty. The
+          // existing 'running' state is what we want the UI to keep
+          // showing — preparing, waiting for the synth path. Whichever
+          // listener re-kicks pre-gen (onGPUReady, mgr.onProgress) will
+          // start a fresh run with a real synthesis path.
+          recordStage(`pregen:${speakerKindForLog(speaker.key)}:skipped`);
+        }
       }
     } catch (err) {
       if (controller.signal.aborted) return;
