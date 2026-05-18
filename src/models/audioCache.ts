@@ -125,7 +125,13 @@ import { pregenAudio } from "../audit/workflows/audioCachePregen";
 //            denoise-misreference was the other half. Now noise is
 //            estimated from the quietest contiguous frames in the
 //            audio — i.e. an actual silent region.
-const CACHE_DIR = "audio-cache-v22";
+// v22 → v23: cache key bumped to keep `?nopost=true` raw-audio runs
+//            isolated from post-processed audio in the same OPFS dir.
+//            Both writes land in v23 but with different contents;
+//            mixing them is wrong. Bumping here keeps any v22 audio
+//            (post-processed v22 pipeline) from being confused with
+//            v23 raw audio.
+const CACHE_DIR = "audio-cache-v23";
 const SAMPLE_RATE = 24000; // Chatterbox conditional decoder output rate (S3GEN_SR)
 const INT16_SCALE = 32767;
 
@@ -390,7 +396,18 @@ export async function* generateAllPhrases(
               ),
             // Post-process once here, at cache-write time, so playback in
             // speak.ts skips the ~10-50ms FFT pipeline on every tap.
-            postProcess: async (audio) => postProcessAudio(audio, SAMPLE_RATE),
+            // `?nopost=true` URL flag skips post-processing entirely so
+            // raw worker audio can be A/B'd against post-processed audio —
+            // useful for tracking down which pipeline stage owns a given
+            // audible artifact. Cache version bumps to avoid mixing
+            // post-processed and raw audio in the same OPFS dir.
+            postProcess: async (audio) => {
+              const skipPost = typeof globalThis !== "undefined"
+                && globalThis.location?.search
+                && new URLSearchParams(globalThis.location.search).get("nopost") === "true";
+              if (skipPost) return audio;
+              return postProcessAudio(audio, SAMPLE_RATE);
+            },
             persist: async (p, audio) =>
               putCachedAudio(p, speakerData, audio, patientId),
           }),
