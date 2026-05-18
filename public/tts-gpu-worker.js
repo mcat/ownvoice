@@ -176,13 +176,6 @@ let profileEntries = [];
 // from `?padShape=N` URL param on the main thread.
 let padBoundary = 0;
 
-// Prefix-silence experiment: prepend N silence tokens to the start of
-// decoderTokens to absorb conditional_decoder's onset artifact (a "bzzt"
-// at speech start, confirmed model-side via raw-worker A/B). The output
-// audio for those N tokens is trimmed off the start. 0 = off. Set via
-// `?prefixSilence=N` URL param.
-let prefixSilenceTokens = 0;
-
 function quantile(arr, q) {
   if (arr.length === 0) return 0;
   const sorted = [...arr].sort((a, b) => a - b);
@@ -617,12 +610,11 @@ function sampleToken(logits, generatedTokens) {
   return nucleus[nucleus.length - 1][0];
 }
 
-async function handleInit(modelUrl, benchFlag, loadCangjie, memdiagFlag, padBoundaryArg, useGreedyArg, prefixSilenceArg) {
+async function handleInit(modelUrl, benchFlag, loadCangjie, memdiagFlag, padBoundaryArg, useGreedyArg) {
   const baseUrl = modelUrl.endsWith("/") ? modelUrl : modelUrl + "/";
   bench = benchFlag === true;
   memdiag = memdiagFlag === true;
   padBoundary = Number.isFinite(padBoundaryArg) && padBoundaryArg > 0 ? Math.floor(padBoundaryArg) : 0;
-  prefixSilenceTokens = Number.isFinite(prefixSilenceArg) && prefixSilenceArg > 0 ? Math.floor(prefixSilenceArg) : 0;
   // useGreedyArg is sticky-true: only false (explicit opt-in to
   // sampling) flips it. Keeps the prior default behavior when the
   // init message omits the field entirely.
@@ -632,7 +624,7 @@ async function handleInit(modelUrl, benchFlag, loadCangjie, memdiagFlag, padBoun
   // two Maps it builds in worker heap; cangjieNormalize then degrades
   // any Chinese input to passthrough (warned once).
   const shouldLoadCangjie = loadCangjie !== false;
-  console.log(`${LOG} Initializing WebGPU TTS in DedicatedWorker...${bench ? " (bench mode)" : ""}${shouldLoadCangjie ? "" : " (cangjie skipped)"}${padBoundary > 0 ? ` (pad decoder to *${padBoundary})` : ""}${USE_GREEDY ? "" : " (sampling LM)"}${prefixSilenceTokens > 0 ? ` (prefix ${prefixSilenceTokens} silence)` : ""}`);
+  console.log(`${LOG} Initializing WebGPU TTS in DedicatedWorker...${bench ? " (bench mode)" : ""}${shouldLoadCangjie ? "" : " (cangjie skipped)"}${padBoundary > 0 ? ` (pad decoder to *${padBoundary})` : ""}${USE_GREEDY ? "" : " (sampling LM)"}`);
 
   const t0 = performance.now();
 
@@ -1072,19 +1064,6 @@ async function handleSynthesize(text, speakerData, id, languageId, exaggeration 
   const promptTokens = Array.from(speakerData.promptToken);
   const decoderTokens = [...promptTokens, ...speechOnly, SILENCE_TOKEN, SILENCE_TOKEN, SILENCE_TOKEN];
 
-  // Prefix-silence experiment: prepend N silence tokens at the start of
-  // the decoder input. If the bzzt-at-onset is the vocoder's "cold
-  // start" artifact in its first frames, putting silence in those
-  // first frames absorbs the artifact; the prefix audio is then
-  // trimmed off the output. Predicted samples-per-token ratio is
-  // total_audio_length / decoderTokens.length; we'll compute the trim
-  // post-decode so the math handles whatever ratio the model actually
-  // emits.
-  const prefixCount = prefixSilenceTokens;
-  if (prefixCount > 0) {
-    decoderTokens.unshift(...new Array(prefixCount).fill(SILENCE_TOKEN));
-  }
-
   // Shape-padding experiment (Probe Remediation A, see
   // docs/probe-ort-shape-dispatch.md). Round `decoderTokens.length` up to
   // the next multiple of `padBoundary` to keep the decoder's input shape
@@ -1203,23 +1182,34 @@ async function handleSynthesize(text, speakerData, id, languageId, exaggeration 
 
   let audioData = new Float32Array(wav.data);
 
-  // Trim management: derive sample-per-token ratio, then apply both
-  // prefix-silence and trailing-pad trims as proportional cuts.
+  // If we padded the decoder input, the output audio includes audio
+  // corresponding to the extra silence tokens at the end. Trim it back
+  // to the duration the unpadded input would have produced. Ratio is
+  // (unpaddedDecLen - 3) / paddedDecLen — the `-3` excludes the natural
+  // 3 trailing silence tokens from the kept audio, not because they
+  // are bad but because the audio at the boundary between natural and
+  // pad silences shows a high-frequency buzz on Chatterbox Multilingual
+  // (empirically — the model wasn't trained on extended silence
+  // sequences, so the vocoder emits a tone during the pad region, and
+  // attention spreads that tone slightly back into the natural-silence
+  // region).
   //
-  // Layout of decoderTokens that produced this audio:
-  //   [prefix-silence (prefixCount)] [content (unpadded - prefixCount)] [trailing pad (paddedDecLen - unpadded)]
-  //
-  // The "content" range is what we want to keep. samples_per_token
-  // is constant for the Chatterbox vocoder, so we cut by proportion.
-  const totalSamples = audioData.length;
-  const contentStart = prefixCount > 0
-    ? Math.round(totalSamples * (prefixCount / paddedDecLen))
-    : 0;
-  const contentEnd = paddedDecLen > unpaddedDecLen
-    ? Math.round(totalSamples * (unpaddedDecLen / paddedDecLen))
-    : totalSamples;
-  if (contentStart > 0 || contentEnd < totalSamples) {
-    audioData = audioData.subarray(contentStart, Math.max(contentStart + 1, contentEnd));
+  // After the hard trim, apply a 30 ms linear fade-out so any residual
+  // boundary noise is attenuated rather than abruptly cut. speak.ts's
+  // pipeline applies its own 5 ms cosine fade later; this longer fade
+  // is the buzz-specific mitigation that ride on top.
+  if (padBoundary > 0 && paddedDecLen > unpaddedDecLen) {
+    // Simple proportional trim back to the unpadded duration. Earlier
+    // iterations of this code did `unpaddedDecLen - N` (N=3 then 30)
+    // plus a long fade-out, on the hypothesis that the "buzz at end"
+    // user-report was a pad-attention-spread artifact. FFT + listening
+    // tests on the raw worker output ruled that out: the buzz is a
+    // model-onset artifact in conditional_decoder, not pad-related,
+    // and lives at the START of audio, not the end. Reverted to the
+    // minimal trim that just matches duration. See PR #327 review and
+    // the audio-cache-v23 raw-worker comparison.
+    const trimmedSamples = Math.max(1, Math.round(audioData.length * (unpaddedDecLen / paddedDecLen)));
+    audioData = audioData.subarray(0, trimmedSamples);
   }
 
   if (bench) {
@@ -1258,7 +1248,7 @@ self.addEventListener("message", (e) => {
   if (!msg || !msg.type) return;
 
   if (msg.type === "init") {
-    handleInit(msg.modelUrl, msg.bench === true, msg.loadCangjie !== false, msg.memdiag === true, msg.padBoundary, msg.useGreedy, msg.prefixSilence).catch((err) => {
+    handleInit(msg.modelUrl, msg.bench === true, msg.loadCangjie !== false, msg.memdiag === true, msg.padBoundary, msg.useGreedy).catch((err) => {
       const message = err instanceof Error ? err.message : String(err);
       console.error(`${LOG} Init error:`, message);
       postMessage({ type: "error", message });

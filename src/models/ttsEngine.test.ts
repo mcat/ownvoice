@@ -155,7 +155,6 @@ describe("ttsEngine — initGPU", () => {
       memdiag: false,
       padBoundary: 0,
       useGreedy: true,
-      prefixSilence: 0,
     });
     expect(isGPUReady()).toBe(false);
 
