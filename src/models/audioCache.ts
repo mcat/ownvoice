@@ -109,7 +109,14 @@ import { pregenAudio } from "../audit/workflows/audioCachePregen";
 //            10 ms RMS" to "minimum RMS across all 10 ms windows" so
 //            the gate isn't fooled by speech in the first window after
 //            the trim.
-const CACHE_DIR = "audio-cache-v20";
+// v20 → v21: fixed the noise gate's stepped gain artifact at speech
+//            onset. The gate previously applied a CONSTANT gain across
+//            each 2 ms window, creating a 500 Hz step-modulation with
+//            harmonics audible as a "bzzt" right at the speech start
+//            (FFT confirmed peak at 2706 Hz = 5th-6th harmonic of
+//            500 Hz). Now the gain is linearly interpolated within
+//            each window so the gate's attack ramp is sample-smooth.
+const CACHE_DIR = "audio-cache-v21";
 const SAMPLE_RATE = 24000; // Chatterbox conditional decoder output rate (S3GEN_SR)
 const INT16_SCALE = 32767;
 

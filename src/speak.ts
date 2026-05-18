@@ -453,9 +453,23 @@ export function postProcessAudio(raw: Float32Array, sampleRate: number): Float32
       const winRms = Math.sqrt(winEnergy / (end - i));
 
       const target = winRms > gateThreshold ? 1 : 0;
+      const prevGain = gateGain;
       gateGain += (target - gateGain) * (target > gateGain ? attack : release);
 
-      for (let j = i; j < end; j++) audio[j] *= gateGain;
+      // Linearly interpolate gain across the window. Applying a CONSTANT
+      // gain per 2 ms block produced step discontinuities at every window
+      // boundary — i.e. a 500 Hz square-wave amplitude modulation
+      // superimposed on the speech, with harmonics at 1k, 1.5k, 2k, 2.5k,
+      // 2.7k Hz... User-audible as a "bzzt" right at speech onset, where
+      // the attack-rate steps are largest (0 → 0.3 → 0.51 → 0.66 → ...).
+      // FFT of a buggy cached file showed the artifact peak at 2706 Hz,
+      // exactly the 5th-6th harmonic of the 500 Hz step pattern.
+      const span = end - i;
+      for (let j = i; j < end; j++) {
+        const t = (j - i) / span;
+        const g = prevGain + (gateGain - prevGain) * t;
+        audio[j] *= g;
+      }
     }
   }
 
