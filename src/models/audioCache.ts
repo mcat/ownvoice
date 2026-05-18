@@ -131,7 +131,17 @@ import { pregenAudio } from "../audit/workflows/audioCachePregen";
 //            mixing them is wrong. Bumping here keeps any v22 audio
 //            (post-processed v22 pipeline) from being confused with
 //            v23 raw audio.
-const CACHE_DIR = "audio-cache-v23";
+// v23 → v24: REVERTED the v21 gate-smoothing and v22 denoise-quietest-
+//            frame "fixes". Both were technically correct improvements
+//            but the prior buggy behaviors were inadvertently masking a
+//            real model-side artifact in conditional_decoder's onset
+//            output (the "bzzt" — see docs/known-issue-onset-bzzt.md).
+//            Production users (audio rendered under v20 code) report
+//            clean playback. The fixes exposed an artifact the user
+//            base hadn't been hearing. Reverted to v20-equivalent
+//            post-processing math; cache version bumped to invalidate
+//            v22/v23 audio carrying the unmasked bzzt.
+const CACHE_DIR = "audio-cache-v24";
 const SAMPLE_RATE = 24000; // Chatterbox conditional decoder output rate (S3GEN_SR)
 const INT16_SCALE = 32767;
 
