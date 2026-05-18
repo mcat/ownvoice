@@ -147,10 +147,31 @@ async function main() {
     await uploadOne(key, local);
   }
 
-  // Models
+  // Models — skip any directory not in the active model-group set.
+  // LFM2 was previously part of the model stack (suggestions feature)
+  // but the featureset was removed; uploading the ~814 MB of LFM2
+  // weights is dead-weight in R2. The skip list also acts as a guard:
+  // if `public/models/<release>/` ever contains an unexpected dir
+  // (stale group, accidental hardlink, build artifact), we don't
+  // upload it.
+  const ACTIVE_GROUPS = new Set([
+    "chatterbox-multilingual",
+    "whisper-small",
+    "denoiser",
+  ]);
   const modelsDir = join(ROOT, "public/models");
-  const modelFiles = await walk(modelsDir);
-  console.log(`\nModel files (${modelFiles.length}):`);
+  const allModelFiles = await walk(modelsDir);
+  // The first path segment under a release dir is the group name —
+  // e.g. `2026-05-20/chatterbox-multilingual/conditional_decoder.onnx`.
+  const modelFiles = allModelFiles.filter((p) => {
+    const rel = relative(modelsDir, p);
+    const parts = rel.split(/[/\\]/);
+    // parts[0] = release date, parts[1] = group name
+    if (parts.length < 2) return false;
+    return ACTIVE_GROUPS.has(parts[1]);
+  });
+  const skipped = allModelFiles.length - modelFiles.length;
+  console.log(`\nModel files (${modelFiles.length}, ${skipped} skipped — non-active groups):`);
   for (const local of modelFiles) {
     const rel = relative(modelsDir, local);
     const size = (await stat(local)).size;
