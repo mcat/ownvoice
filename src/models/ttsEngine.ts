@@ -329,12 +329,23 @@ export function initGPU(modelUrl: string): Promise<boolean> {
       // (the prior reason for greedy), revert.
       const useGreedy =
         new URLSearchParams(globalThis.location?.search ?? "").get("sample") !== "true";
+      // `?prefixSilence=N` URL param prepends N silence tokens to the
+      // start of the decoder input. The output audio for the prefix
+      // is trimmed back off, so the user hears the same content but
+      // the conditional_decoder's onset artifact (the "bzzt") lands
+      // in the silence prefix where it gets cut. Experiment.
+      const prefixSilence = (() => {
+        const raw = new URLSearchParams(globalThis.location?.search ?? "").get("prefixSilence");
+        if (!raw) return 0;
+        const n = Number(raw);
+        return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
+      })();
       // Skip the Cangjie5 lookup table (~1.9 MB JSON + several MB of
       // Maps in worker heap) when no zh locale is in the session.
       // sessionNeedsCangjie defaults to true on uncertain state, so a
       // pre-hydration boot preserves the prior eager-load behavior.
       const loadCangjie = sessionNeedsCangjie();
-      worker.postMessage({ type: "init", modelUrl, bench, loadCangjie, memdiag, padBoundary, useGreedy });
+      worker.postMessage({ type: "init", modelUrl, bench, loadCangjie, memdiag, padBoundary, useGreedy, prefixSilence });
     } catch (err) {
       console.warn("[OwnVoice:TTS:GPU] Failed to create worker:", err);
       settle(false);
