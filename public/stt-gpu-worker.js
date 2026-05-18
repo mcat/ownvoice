@@ -76,17 +76,13 @@ let vocabulary = new Map();
 let specialTokenIds = new Set();
 let transcribing = false; // concurrency guard
 
-// Token IDs — populated from tokenizer.json (NOT hardcoded, varies by model)
+// Token IDs — populated from tokenizer.json (NOT hardcoded, varies by model).
+// English-only (whisper-small.en) — no language or transcribe tokens used.
 let TOKEN_EOT = -1;
 let TOKEN_SOT = -1;
-let TOKEN_EN = -1;
-let TOKEN_TRANSCRIBE = -1;
 let TOKEN_NOTIMESTAMPS = -1;
 let TOKEN_TIMESTAMP_BEGIN = -1;
 let TOKEN_NO_SPEECH = -1;
-
-// ISO-639-1 → Whisper language token ID (e.g. "en" → 50259). Populated at tokenizer load.
-const LANG_TO_TOKEN = new Map();
 
 // HF reference threshold; SOT-position softmax(no_speech) above this short-circuits to "".
 const NO_SPEECH_THRESHOLD = 0.6;
@@ -357,8 +353,6 @@ async function loadTokenizer(baseUrl) {
 
   TOKEN_EOT = contentToId.get("<|endoftext|>") ?? -1;
   TOKEN_SOT = contentToId.get("<|startoftranscript|>") ?? -1;
-  TOKEN_EN = contentToId.get("<|en|>") ?? -1;
-  TOKEN_TRANSCRIBE = contentToId.get("<|transcribe|>") ?? -1;
   TOKEN_NOTIMESTAMPS = contentToId.get("<|notimestamps|>") ?? -1;
   // Timestamps start right after <|notimestamps|>
   TOKEN_TIMESTAMP_BEGIN = TOKEN_NOTIMESTAMPS + 1;
@@ -369,17 +363,8 @@ async function loadTokenizer(baseUrl) {
     specialTokenIds.add(id);
   }
 
-  // Build language → token map. Whisper language tokens are <|xx|> or <|xxx|>
-  // with 2- or 3-char lowercase codes (en, es, haw, jw…). The 2-3-char regex
-  // filters out longer special tokens (transcribe, notimestamps, nospeech…).
-  LANG_TO_TOKEN.clear();
-  for (const tok of addedTokens) {
-    const m = tok.content.match(/^<\|([a-z]{2,3})\|>$/);
-    if (m) LANG_TO_TOKEN.set(m[1], tok.id);
-  }
-
   console.log(`${LOG} Tokenizer loaded: ${vocabulary.size} tokens, ${specialTokenIds.size} special`);
-  console.log(`${LOG} Token IDs: EOT=${TOKEN_EOT} SOT=${TOKEN_SOT} EN=${TOKEN_EN} TRANSCRIBE=${TOKEN_TRANSCRIBE} NOTIMESTAMPS=${TOKEN_NOTIMESTAMPS} TS_BEGIN=${TOKEN_TIMESTAMP_BEGIN}`);
+  console.log(`${LOG} Token IDs: EOT=${TOKEN_EOT} SOT=${TOKEN_SOT} NOTIMESTAMPS=${TOKEN_NOTIMESTAMPS} TS_BEGIN=${TOKEN_TIMESTAMP_BEGIN}`);
 }
 
 function decodeTokens(tokenIds) {
@@ -482,7 +467,7 @@ async function handleInit(modelUrl) {
   const warmHidden = warmEnc["last_hidden_state"];
   console.log(`${LOG} Encoder warm. Warming up decoder...`);
 
-  const warmIds = BigInt64Array.from([TOKEN_SOT, TOKEN_EN, TOKEN_TRANSCRIBE, TOKEN_NOTIMESTAMPS].map(BigInt));
+  const warmIds = BigInt64Array.from([TOKEN_SOT, TOKEN_NOTIMESTAMPS].map(BigInt));
   const warmIdsTensor = new ort.Tensor("int64", warmIds, [1, warmIds.length]);
   const warmCache = createEmptyKVCache();
   await dec.run({
@@ -532,7 +517,10 @@ async function handleTranscribe(audio, sampleRate, language = "en") {
   transcribing = true;
 
   try {
-    console.log(`${LOG} Transcribing ${(audio.length / sampleRate).toFixed(1)}s of audio (lang=${language})`);
+    if (language !== "en") {
+      console.warn(`${LOG} Requested language="${language}" but this is whisper-small.en; transcribing as English`);
+    }
+    console.log(`${LOG} Transcribing ${(audio.length / sampleRate).toFixed(1)}s of audio`);
 
     const audio16k = resampleTo16k(audio, sampleRate);
     const melFeatures = logMelSpectrogram(audio16k);
@@ -548,11 +536,8 @@ async function handleTranscribe(audio, sampleRate, language = "en") {
     }
     console.log(`${LOG} Encoder done. Hidden shape: [${encoderHidden.dims}]`);
 
-    const langToken = LANG_TO_TOKEN.get(language) ?? TOKEN_EN;
-    if (langToken === TOKEN_EN && language !== "en") {
-      console.warn(`${LOG} No language token for "${language}" in this checkpoint; falling back to English`);
-    }
-    const outputTokens = [TOKEN_SOT, langToken, TOKEN_TRANSCRIBE, TOKEN_NOTIMESTAMPS];
+    // .en prefix: <|startoftranscript|> <|notimestamps|>
+    const outputTokens = [TOKEN_SOT, TOKEN_NOTIMESTAMPS];
 
     console.log(`${LOG} Running decoder (autoregressive)...`);
 
