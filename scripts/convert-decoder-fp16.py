@@ -64,6 +64,16 @@ from onnxconverter_common.float16 import convert_float_to_float16
 # script blocks resamplers; the decoder's analogue is the STFT/ISTFT
 # synthesis path, the f0 upsampler, and the NSF harmonic-source
 # generator (m_source — see the module docstring for why).
+#
+# A v3 attempt on 2026-05-19 additionally blocked /down_blocks.*/,
+# /up_blocks.*/, /f0_predictor/ on the hypothesis that fp16 precision
+# at the U-Net's waveform-side ends was the residual buzz origin. The
+# worst-case 2-4 kHz onset ratio REGRESSED (1.73 → 4.77) — adding more
+# blocks made things numerically worse. Per Phase 4.5 of
+# superpowers:systematic-debugging, this confirms fp16 via static
+# block-list expansion is not the right pattern for this CFM vocoder.
+# The block list below stays at the v2 state (m_source) so the next
+# experimenter starts from the best known configuration.
 _DSP_SCOPE_RE = re.compile(r"^(/STFT$|/istft/|/f0_upsamp/|/m_source/)")
 
 # Ops that require all float inputs to share type parameter T. Identical

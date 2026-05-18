@@ -19,20 +19,18 @@ export const ORT_VERSION = "v1.25.1";
  * (yyyy-mm-dd) rather than a model-specific name — the release covers
  * the entire set of models (TTS + LLM + STT), not just one.
  *
- * 2026-05-17 shipped the fp16 conditional_decoder (#287/#318) — REVERTED
- * because the fp16 conversion produces an audible artifact at speech
- * onset that the mechanical smoke-test in #317 didn't catch.
- *
- * 2026-05-18 re-attempt: blocked /m_source/ (NSF harmonic-source) +
- * short-circuited fp16 Cast round-trips inside the blocked scope. CPU EP
- * mechanical drift dropped 44.6% → 9.9% vs fp32, but USER LISTEN-TEST
- * on extracted WebGPU EP cache audio (post-processed) STILL CONFIRMED
- * BUZZ. The /m_source/ blocking helped on quantitative metrics but did
- * not eliminate the audible artifact. Next bisection targets:
- * down_blocks.0, up_blocks.0, and the conv stacks they feed.
- *
- * Rolled back to 2026-04-29 (fp32 decoder, 540 MB) until the next
- * conversion attempt converges on clean audio.
+ * fp16 conditional_decoder is BLOCKED. Three attempts failed across
+ * 2026-05-17 (STFT/istft/f0_upsamp), 2026-05-18 (+m_source +
+ * Cast roundtrip removal), 2026-05-19 (+down_blocks/up_blocks/
+ * f0_predictor). v2 failed user listen-test directly; v3 had worst-case
+ * 2-4 kHz onset ratio that REGRESSED to 4.77 vs v2's 1.73 — adding more
+ * blocks made things worse, not better. Per superpowers:systematic-
+ * debugging Phase 4.5 (3+ failures on the same architectural pattern),
+ * fp16 conversion via static block-list expansion is not workable for
+ * this CFM vocoder. The buzz must live in the CFM flow integration
+ * steps (mid_blocks) where fp16 error compounds across ODE steps —
+ * blocking individual subgraphs doesn't address the iterative error
+ * accumulation.
  *
  * See docs/known-issue-onset-bzzt.md.
  */
