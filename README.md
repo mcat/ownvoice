@@ -86,6 +86,64 @@ calibration backstop test in
 `sample-voices/mark-voice.wav`) is the empirical anchor for the current
 mapping — if it fails, the algorithm is wrong, not the test.
 
+## Deploying assets to R2
+
+Large binaries (ONNX Runtime Web WASM + model weights) don't live in `dist/` — Cloudflare Pages has a 25 MiB per-file limit, and the postbuild stripper enforces it. Instead they're hosted in the Cloudflare R2 bucket `ownvoice-static` and proxied at runtime by `functions/ort/[[path]].ts` and `functions/models/[[path]].ts` so the service worker still sees same-origin `/ort/*` and `/models/*` URLs.
+
+### When to upload
+
+Upload whenever any of these change:
+
+- **`ORT_VERSION`** in `src/models/assetVersions.ts` — bumped with the `onnxruntime-web` npm dep
+- **`MODELS_RELEASE`** in `src/models/assetVersions.ts` — bumped when any model file changes
+- **Adding/replacing files under `public/models/<release>/<group>/`** — also run `npm run manifest:regen` and commit the manifest diff
+
+Bumping a constant in `assetVersions.ts` is the deploy trigger. The path layout under `public/` mirrors the R2 key layout, so dev, manifest, and prod all resolve to the same structure.
+
+### Steps
+
+```bash
+# 1. Populate local copies from npm + HuggingFace (gitignored, build inputs only).
+npm run assets:download
+
+# 2. Regenerate manifest if you touched anything under public/models/.
+npm run manifest:regen
+npm run manifest:check
+
+# 3. Export R2 credentials (one-time; see scripts/upload-r2-assets.mjs).
+export CLOUDFLARE_ACCOUNT_ID=...
+export R2_ACCESS_KEY_ID=...
+export R2_SECRET_ACCESS_KEY=...
+
+# 4. Upload. Idempotent — HEADs each key first and skips matching sizes.
+npm run assets:upload              # incremental
+npm run assets:upload -- --force   # re-upload everything
+```
+
+The upload script reads `ORT_VERSION` and `MODELS_RELEASE` straight from `src/models/assetVersions.ts` and writes to:
+
+- `ort/<ORT_VERSION>/*.wasm`
+- `models/<MODELS_RELEASE>/<group>/...` — only for **active model groups** (currently `chatterbox-multilingual`, `whisper-small`, `denoiser`). The `ACTIVE_GROUPS` filter in the upload script skips retired groups like `lfm2-1.2b-instruct` even if they exist locally.
+
+### Pruning old R2 objects
+
+`npm run assets:prune` removes any R2 object not referenced by `main` or any open PR branch, with a 24-hour grace window for in-flight uploads. It runs automatically on every successful production deploy and on a daily 04:17 UTC schedule (`.github/workflows/prune-r2.yml`); run it manually only when you need to reclaim space immediately.
+
+```bash
+npm run assets:prune:dry   # show what would be deleted
+npm run assets:prune       # actually delete
+```
+
+### Deploy order
+
+R2 assets are content-addressed by version, so old and new versions coexist:
+
+1. **Upload R2 first** (`npm run assets:upload`) — old Pages build keeps working because its `ORT_VERSION` / `MODELS_RELEASE` still resolve.
+2. **Then deploy Pages** — once the new bundle ships, it references the keys you just uploaded.
+3. Prune runs later on the next scheduled tick.
+
+Doing it in the other order risks a window where the new Pages bundle 404s on `/ort/*` or `/models/*`.
+
 ## Project Structure
 
 ```
