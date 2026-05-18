@@ -234,12 +234,48 @@ function spectralDenoise(audio: Float32Array, sampleRate: number): void {
   const re = new Float64Array(frameSize);
   const im = new Float64Array(frameSize);
 
-  // 1. Estimate noise magnitude spectrum (average over noise frames)
+  // 1. Estimate noise magnitude spectrum from the QUIETEST region of
+  //    the file. The original code used "the first 20 ms" on the
+  //    assumption that decoder output started with silence — but the
+  //    leading-silence trim above runs BEFORE this denoiser, so the
+  //    first frame is the speech ONSET, not silence. Using speech as a
+  //    noise reference made spectral subtraction interpret formants as
+  //    noise, then leave musical-noise residue at every frame's gain
+  //    boundary — audible as a tonal "bzzt" at speech onset (FFT peak
+  //    at 2706 Hz). Switching to the quietest-region estimate makes
+  //    the noise profile actually represent noise.
+  //
+  // First pass: compute per-frame energy, find the quietest noiseFrames
+  // worth of contiguous frames. Second pass: average their spectra.
+  const numFrames = Math.max(0, Math.floor((n - frameSize) / hop) + 1);
+  if (numFrames < noiseFrames) return;
+  const frameEnergy = new Float64Array(numFrames);
+  for (let f = 0; f < numFrames; f++) {
+    const off = f * hop;
+    let e = 0;
+    for (let i = 0; i < frameSize; i++) {
+      const s = audio[off + i];
+      e += s * s;
+    }
+    frameEnergy[f] = e;
+  }
+  // Smallest contiguous run of noiseFrames frames (sum of energies).
+  let runStart = 0;
+  let runEnergy = 0;
+  for (let f = 0; f < noiseFrames; f++) runEnergy += frameEnergy[f];
+  let bestRunEnergy = runEnergy;
+  let bestRunStart = 0;
+  for (let f = noiseFrames; f < numFrames; f++) {
+    runEnergy += frameEnergy[f] - frameEnergy[f - noiseFrames];
+    if (runEnergy < bestRunEnergy) {
+      bestRunEnergy = runEnergy;
+      bestRunStart = f - noiseFrames + 1;
+    }
+  }
   const noiseMag = new Float64Array(frameSize);
   let noiseCount = 0;
-  for (let f = 0; f < noiseFrames; f++) {
+  for (let f = bestRunStart; f < bestRunStart + noiseFrames; f++) {
     const off = f * hop;
-    if (off + frameSize > n) break;
     for (let i = 0; i < frameSize; i++) { re[i] = audio[off + i] * win[i]; im[i] = 0; }
     fft(re, im, false);
     for (let i = 0; i < frameSize; i++) noiseMag[i] += Math.sqrt(re[i] * re[i] + im[i] * im[i]);

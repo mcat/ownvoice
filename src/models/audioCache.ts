@@ -116,7 +116,16 @@ import { pregenAudio } from "../audit/workflows/audioCachePregen";
 //            (FFT confirmed peak at 2706 Hz = 5th-6th harmonic of
 //            500 Hz). Now the gain is linearly interpolated within
 //            each window so the gate's attack ramp is sample-smooth.
-const CACHE_DIR = "audio-cache-v21";
+// v21 → v22: fixed spectralDenoise using the first 20 ms as a noise
+//            reference — but step 2 of the pipeline removes leading
+//            silence first, so the "noise reference" was actually the
+//            start of speech. The denoiser then subtracted formants
+//            from every frame, leaving musical-noise residue at speech
+//            onset. v21's gate-smoothing reduced the buzz 3× but the
+//            denoise-misreference was the other half. Now noise is
+//            estimated from the quietest contiguous frames in the
+//            audio — i.e. an actual silent region.
+const CACHE_DIR = "audio-cache-v22";
 const SAMPLE_RATE = 24000; // Chatterbox conditional decoder output rate (S3GEN_SR)
 const INT16_SCALE = 32767;
 
