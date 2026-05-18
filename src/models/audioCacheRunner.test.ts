@@ -431,6 +431,37 @@ describe("audioCacheRunner.runPreGeneration", () => {
     expect(run.failedPhrases.length).toBeGreaterThan(0);
   });
 
+  it("does NOT flip status to 'done' when generateAllPhrases yields zero progress events", async () => {
+    // Regression for the production bug observed at www.ownvoice.icu/app
+    // after the v4 fp16 release: when GPU TTS init timed out and pre-gen
+    // ran against an unready synthesis path, generateAllPhrases took its
+    // "No TTS path ready, skipping pre-generation" early return — yielding
+    // zero events. The runner still called store.finish() unconditionally,
+    // which flipped the row to 'done' and the UI's VoiceCloneStatus
+    // rendered "Voice clone active — all N phrases ready in <name>'s voice"
+    // while the OPFS audio-cache was actually empty. Web Speech then
+    // played on every tap. The runner must leave the row in 'running' so
+    // the UI shows "Preparing 0/N" and waits for the next ready signal to
+    // re-kick.
+    vi.mocked(generateAllPhrases).mockImplementation(() =>
+      // Generator that yields nothing — the "skipped" early-return shape.
+      (async function* () {})(),
+    );
+
+    await runPreGeneration(BASE_CFG);
+
+    const run = useAudioCacheStore.getState().runs[PATIENT_KEY]!;
+    expect(run.status).toBe("running");
+    expect(run.current).toBe(0);
+    expect(run.failedPhrases).toEqual([]);
+    expect(recordStageMock).toHaveBeenCalledWith(
+      expect.stringMatching(/^pregen:patient:skipped$/),
+    );
+    expect(recordStageMock).not.toHaveBeenCalledWith(
+      expect.stringMatching(/^pregen:patient:done$/),
+    );
+  });
+
   it("a fresh call aborts the previous run", async () => {
     const signals: AbortSignal[] = [];
     vi.mocked(generateAllPhrases).mockImplementation(
