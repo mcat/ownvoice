@@ -19,13 +19,21 @@ export const ORT_VERSION = "v1.25.1";
  * (yyyy-mm-dd) rather than a model-specific name — the release covers
  * the entire set of models (TTS + LLM + STT), not just one.
  *
- * 2026-05-17 ships the fp16 conditional_decoder (#287). All other model
- * files are byte-identical to 2026-04-29; only the decoder weights
- * change (~534 MB → ~261 MB at fp32→fp16). The release is bumped
- * uniformly to keep `MODELS_RELEASE` / manifest baseUrls in lockstep,
- * matching the historical pattern from the fp16 encoder release.
+ * 2026-05-17 shipped the fp16 conditional_decoder (#287/#318) — REVERTED
+ * because the fp16 conversion produces an audible artifact at speech
+ * onset that the mechanical smoke-test in #317 didn't catch. The PR
+ * description claimed "fp32 and fp16 sound indistinguishable" based on
+ * a single rainbow-sentence A/B; user listen-tests across many cached
+ * phrases revealed a modulated 2-4 kHz "bzzt" at every utterance onset.
+ *
+ * Rolled back to 2026-04-29 (fp32 decoder, 540 MB) until either
+ *   (a) the conversion script can be improved to preserve the layers
+ *       responsible for the onset transient at fp32, or
+ *   (b) a different vocoder model is adopted.
+ *
+ * See docs/known-issue-onset-bzzt.md.
  */
-export const MODELS_RELEASE = "2026-05-17";
+export const MODELS_RELEASE = "2026-04-29";
 
 /** Asset path prefixes — used by upload script and Pages Functions. */
 export const ORT_ASSET_PREFIX = `ort/${ORT_VERSION}`;
