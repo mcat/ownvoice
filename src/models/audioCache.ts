@@ -109,7 +109,48 @@ import { pregenAudio } from "../audit/workflows/audioCachePregen";
 //            10 ms RMS" to "minimum RMS across all 10 ms windows" so
 //            the gate isn't fooled by speech in the first window after
 //            the trim.
-const CACHE_DIR = "audio-cache-v20";
+// v20 → v21: fixed the noise gate's stepped gain artifact at speech
+//            onset. The gate previously applied a CONSTANT gain across
+//            each 2 ms window, creating a 500 Hz step-modulation with
+//            harmonics audible as a "bzzt" right at the speech start
+//            (FFT confirmed peak at 2706 Hz = 5th-6th harmonic of
+//            500 Hz). Now the gain is linearly interpolated within
+//            each window so the gate's attack ramp is sample-smooth.
+// v21 → v22: fixed spectralDenoise using the first 20 ms as a noise
+//            reference — but step 2 of the pipeline removes leading
+//            silence first, so the "noise reference" was actually the
+//            start of speech. The denoiser then subtracted formants
+//            from every frame, leaving musical-noise residue at speech
+//            onset. v21's gate-smoothing reduced the buzz 3× but the
+//            denoise-misreference was the other half. Now noise is
+//            estimated from the quietest contiguous frames in the
+//            audio — i.e. an actual silent region.
+// v22 → v23: cache key bumped to keep `?nopost=true` raw-audio runs
+//            isolated from post-processed audio in the same OPFS dir.
+//            Both writes land in v23 but with different contents;
+//            mixing them is wrong. Bumping here keeps any v22 audio
+//            (post-processed v22 pipeline) from being confused with
+//            v23 raw audio.
+// v23 → v24: REVERTED the v21 gate-smoothing and v22 denoise-quietest-
+//            frame "fixes". I'd wrongly attributed the user-reported
+//            bzzt to those fixes unmasking a model artifact; the
+//            actual cause was the fp16 decoder (#287/#317/#318),
+//            since rolled back. See docs/known-issue-onset-bzzt.md.
+// v24 → v25: now that the fp16-decoder bzzt is gone (MODELS_RELEASE
+//            reverted to 2026-04-29 fp32), the v21 gate interpolation
+//            and v22 denoise quietest-frame fixes are re-applied.
+//            Both address objectively-real bugs (500 Hz step
+//            modulation in the gate; speech-as-noise-reference in
+//            the denoiser) that were below most listeners' perceptual
+//            threshold under fp32 but technically wrong. v25 forces
+//            re-render of any v24 audio that has the reverted
+//            post-processing baked in.
+// v25 → v26: re-reverted JUST the gate interpolation. User listen-test
+//            caught a plosive "puh" at speech onset on consonant-
+//            initial phrases ("No", "Dim the light", "Please repeat
+//            that") under the interpolated gate. Constant-per-window
+//            gain restored; denoise quietest-frame fix retained.
+const CACHE_DIR = "audio-cache-v26";
 const SAMPLE_RATE = 24000; // Chatterbox conditional decoder output rate (S3GEN_SR)
 const INT16_SCALE = 32767;
 
@@ -374,7 +415,18 @@ export async function* generateAllPhrases(
               ),
             // Post-process once here, at cache-write time, so playback in
             // speak.ts skips the ~10-50ms FFT pipeline on every tap.
-            postProcess: async (audio) => postProcessAudio(audio, SAMPLE_RATE),
+            // `?nopost=true` URL flag skips post-processing entirely so
+            // raw worker audio can be A/B'd against post-processed audio —
+            // useful for tracking down which pipeline stage owns a given
+            // audible artifact. Cache version bumps to avoid mixing
+            // post-processed and raw audio in the same OPFS dir.
+            postProcess: async (audio) => {
+              const skipPost = typeof globalThis !== "undefined"
+                && globalThis.location?.search
+                && new URLSearchParams(globalThis.location.search).get("nopost") === "true";
+              if (skipPost) return audio;
+              return postProcessAudio(audio, SAMPLE_RATE);
+            },
             persist: async (p, audio) =>
               putCachedAudio(p, speakerData, audio, patientId),
           }),

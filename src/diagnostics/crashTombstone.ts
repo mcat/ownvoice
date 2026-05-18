@@ -132,7 +132,25 @@ export function enableMemDiag(): void {
 }
 
 export function isMemDiagEnabled(): boolean {
-  return (globalThis as Record<string, unknown>)[FLAG_KEY] === true;
+  if ((globalThis as Record<string, unknown>)[FLAG_KEY] === true) return true;
+  // Fallback: check the URL param directly. The global flag is set by
+  // enableMemDiag() in main-app.tsx on every boot, but in Chrome dev
+  // sessions the global has been observed to come back undefined between
+  // main-app boot and the first call to isMemDiagEnabled (PR #327
+  // investigation — root cause not yet identified). Reading the URL
+  // directly makes the gate resilient: `?memdiag=true` survives anything
+  // that touches global state. Only valid in browser contexts (workers
+  // have self.location set to the worker script URL, not the parent
+  // page, so the URL check there gives the wrong answer — workers must
+  // continue to use the init-message flag).
+  try {
+    if (typeof window !== "undefined" && window.location?.search) {
+      return new URLSearchParams(window.location.search).get("memdiag") === "true";
+    }
+  } catch {
+    // window may not exist (worker, jsdom, etc.) — silent fallback.
+  }
+  return false;
 }
 
 let lastWriteAt = 0;

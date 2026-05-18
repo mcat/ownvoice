@@ -42,6 +42,7 @@ for (const e of entries) {
     ts: {},
     lmTokens: null,
     decTokens: null,
+    unpaddedDecTokens: null,
     queueSettleMs: null,
     profileN: null,
     profileTotalUs: null,
@@ -61,6 +62,8 @@ for (const e of entries) {
     s.ts.decoderStart = e.ts;
     const t = suffix.match(/decTokens=(\d+)/);
     if (t) s.decTokens = Number(t[1]);
+    const u = suffix.match(/unpaddedDecTokens=(\d+)/);
+    if (u) s.unpaddedDecTokens = Number(u[1]);
     const q = suffix.match(/queueSettleMs=(-?\d+)/);
     if (q) s.queueSettleMs = Number(q[1]);
   } else if (suffix === "decoder-done") s.ts.decoderDone = e.ts;
@@ -97,6 +100,7 @@ for (const s of synths.values()) {
     totalMs,
     lmTokens: s.lmTokens,
     decTokens: s.decTokens,
+    unpaddedDecTokens: s.unpaddedDecTokens,
     queueSettleMs: s.queueSettleMs,
     profileN: s.profileN,
     profileTotalUs: s.profileTotalUs,

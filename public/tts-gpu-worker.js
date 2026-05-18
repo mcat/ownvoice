@@ -95,7 +95,11 @@ const MIN_NEW_TOKENS = 10; // Don't allow STOP before this many speech tokens
 // gibberish for English; switching to greedy to match upstream.
 // If multilingual ALSO stutters with greedy, revert and investigate sampling
 // hyperparameters (top_p, top_k, temperature) for this specific model.
-const USE_GREEDY = true;
+//
+// Dynamic so tests can explore non-greedy without a rebuild. Set via
+// `?sample=true` URL param (passed through to worker init), which
+// flips this to false → sampleToken path is used.
+let USE_GREEDY = true;
 
 // Classifier-free guidance weight. Upstream multilingual defaults to 0.5
 // (mtl_tts.py:generate). Implementation: a SINGLE LM call with batch=2.
@@ -163,6 +167,14 @@ let memdiag = false;
 // decoder call so LM kernels don't pollute the buffer. See Probe 3b in
 // docs/bimodal-decoder-investigation.md.
 let profileEntries = [];
+
+// Shape-padding remediation: pad `decoderTokens.length` up to the next
+// multiple of `padBoundary` before submitting to the decoder. Goal: avoid
+// shape-dependent shader-selection slowdowns in ORT's MatMul packed path
+// (`matmul_packed_webgpu.ts:463-472` — see docs/probe-ort-shape-dispatch.md).
+// 0 = off (default). Set via init-message `padBoundary` field, forwarded
+// from `?padShape=N` URL param on the main thread.
+let padBoundary = 0;
 
 function quantile(arr, q) {
   if (arr.length === 0) return 0;
@@ -598,16 +610,21 @@ function sampleToken(logits, generatedTokens) {
   return nucleus[nucleus.length - 1][0];
 }
 
-async function handleInit(modelUrl, benchFlag, loadCangjie, memdiagFlag) {
+async function handleInit(modelUrl, benchFlag, loadCangjie, memdiagFlag, padBoundaryArg, useGreedyArg) {
   const baseUrl = modelUrl.endsWith("/") ? modelUrl : modelUrl + "/";
   bench = benchFlag === true;
   memdiag = memdiagFlag === true;
+  padBoundary = Number.isFinite(padBoundaryArg) && padBoundaryArg > 0 ? Math.floor(padBoundaryArg) : 0;
+  // useGreedyArg is sticky-true: only false (explicit opt-in to
+  // sampling) flips it. Keeps the prior default behavior when the
+  // init message omits the field entirely.
+  if (useGreedyArg === false) USE_GREEDY = false;
   // Caller may omit loadCangjie — default to true (preserves prior
   // behavior). Setting false skips the ~1.9 MB JSON download plus the
   // two Maps it builds in worker heap; cangjieNormalize then degrades
   // any Chinese input to passthrough (warned once).
   const shouldLoadCangjie = loadCangjie !== false;
-  console.log(`${LOG} Initializing WebGPU TTS in DedicatedWorker...${bench ? " (bench mode)" : ""}${shouldLoadCangjie ? "" : " (cangjie skipped)"}`);
+  console.log(`${LOG} Initializing WebGPU TTS in DedicatedWorker...${bench ? " (bench mode)" : ""}${shouldLoadCangjie ? "" : " (cangjie skipped)"}${padBoundary > 0 ? ` (pad decoder to *${padBoundary})` : ""}${USE_GREEDY ? "" : " (sampling LM)"}`);
 
   const t0 = performance.now();
 
@@ -1047,7 +1064,28 @@ async function handleSynthesize(text, speakerData, id, languageId, exaggeration 
   const promptTokens = Array.from(speakerData.promptToken);
   const decoderTokens = [...promptTokens, ...speechOnly, SILENCE_TOKEN, SILENCE_TOKEN, SILENCE_TOKEN];
 
-  console.log(`${LOG} Decoder input: ${decoderTokens.length} tokens (${promptTokens.length} prompt + ${speechOnly.length} speech + 3 silence)`);
+  // Shape-padding experiment (Probe Remediation A, see
+  // docs/probe-ort-shape-dispatch.md). Round `decoderTokens.length` up to
+  // the next multiple of `padBoundary` to keep the decoder's input shape
+  // in a small canonical set. Hypothesis: ORT's MatMul packed path
+  // (matmul_packed_webgpu.ts:463-472) makes shape-dependent shader
+  // selections (`isVec4`, `elementsPerThread`, workgroup-tail divergence)
+  // that some shapes hit fast and others don't. The cross-browser
+  // 326-fast-cohort finding hints alignment matters more than length.
+  // Pad with SILENCE_TOKEN (already used for the trailing 3 silences).
+  // After the decoder runs, audio is trimmed back to the original-length
+  // proportion so the output duration matches what an unpadded run would
+  // have produced.
+  const unpaddedDecLen = decoderTokens.length;
+  let paddedDecLen = unpaddedDecLen;
+  if (padBoundary > 0) {
+    paddedDecLen = Math.ceil(unpaddedDecLen / padBoundary) * padBoundary;
+    while (decoderTokens.length < paddedDecLen) {
+      decoderTokens.push(SILENCE_TOKEN);
+    }
+  }
+
+  console.log(`${LOG} Decoder input: ${decoderTokens.length} tokens (${promptTokens.length} prompt + ${speechOnly.length} speech + 3 silence${padBoundary > 0 ? ` + ${paddedDecLen - unpaddedDecLen} pad` : ""})`);
   // Decoder uses WASM variant with int64 inputs (not the WebGPU int32 variant)
   const speechTok = new ort.Tensor("int64", BigInt64Array.from(decoderTokens.map(BigInt)), [1, decoderTokens.length]);
   // Pass the cached Float32Arrays directly. ORT's WebGPU EP does not
@@ -1086,8 +1124,11 @@ async function handleSynthesize(text, speakerData, id, languageId, exaggeration 
   }
   // Decoder input length is the variable axis the ONNX session sees as
   // its `speech_tokens` shape. Carrying it on the stage label makes
-  // length-vs-time correlation a one-pass parse of the trail.
-  if (memdiag) postMessage({ type: "stage", label: `synth:gpu:${id}:decoder-start:decTokens=${decoderTokens.length}:queueSettleMs=${queueSettleMs}` });
+  // length-vs-time correlation a one-pass parse of the trail. When
+  // padding is on, both the padded and unpadded lengths are emitted so
+  // the analyzer can distinguish `decTokens` (what ORT sees) from the
+  // model's content length.
+  if (memdiag) postMessage({ type: "stage", label: `synth:gpu:${id}:decoder-start:decTokens=${decoderTokens.length}:unpaddedDecTokens=${unpaddedDecLen}:queueSettleMs=${queueSettleMs}` });
   // Toggle ORT per-op profiling on around the decoder run. Mode stays
   // "off" for the LM autoregressive loop so its kernels don't pollute the
   // buffer. The 326-fast-cohort finding (docs/bimodal-data/chrome-summary)
@@ -1139,7 +1180,37 @@ async function handleSynthesize(text, speakerData, id, languageId, exaggeration 
   const wav = decResult["waveform"] ?? decResult["wav"];
   if (!wav) throw new Error("Decoder missing output: " + Object.keys(decResult));
 
-  const audioData = new Float32Array(wav.data);
+  let audioData = new Float32Array(wav.data);
+
+  // If we padded the decoder input, the output audio includes audio
+  // corresponding to the extra silence tokens at the end. Trim it back
+  // to the duration the unpadded input would have produced. Ratio is
+  // (unpaddedDecLen - 3) / paddedDecLen — the `-3` excludes the natural
+  // 3 trailing silence tokens from the kept audio, not because they
+  // are bad but because the audio at the boundary between natural and
+  // pad silences shows a high-frequency buzz on Chatterbox Multilingual
+  // (empirically — the model wasn't trained on extended silence
+  // sequences, so the vocoder emits a tone during the pad region, and
+  // attention spreads that tone slightly back into the natural-silence
+  // region).
+  //
+  // After the hard trim, apply a 30 ms linear fade-out so any residual
+  // boundary noise is attenuated rather than abruptly cut. speak.ts's
+  // pipeline applies its own 5 ms cosine fade later; this longer fade
+  // is the buzz-specific mitigation that ride on top.
+  if (padBoundary > 0 && paddedDecLen > unpaddedDecLen) {
+    // Simple proportional trim back to the unpadded duration. Earlier
+    // iterations of this code did `unpaddedDecLen - N` (N=3 then 30)
+    // plus a long fade-out, on the hypothesis that the "buzz at end"
+    // user-report was a pad-attention-spread artifact. FFT + listening
+    // tests on the raw worker output ruled that out: the buzz is a
+    // model-onset artifact in conditional_decoder, not pad-related,
+    // and lives at the START of audio, not the end. Reverted to the
+    // minimal trim that just matches duration. See PR #327 review and
+    // the audio-cache-v23 raw-worker comparison.
+    const trimmedSamples = Math.max(1, Math.round(audioData.length * (unpaddedDecLen / paddedDecLen)));
+    audioData = audioData.subarray(0, trimmedSamples);
+  }
 
   if (bench) {
     const totalMs = performance.now() - tSynth0;
@@ -1177,7 +1248,7 @@ self.addEventListener("message", (e) => {
   if (!msg || !msg.type) return;
 
   if (msg.type === "init") {
-    handleInit(msg.modelUrl, msg.bench === true, msg.loadCangjie !== false, msg.memdiag === true).catch((err) => {
+    handleInit(msg.modelUrl, msg.bench === true, msg.loadCangjie !== false, msg.memdiag === true, msg.padBoundary, msg.useGreedy).catch((err) => {
       const message = err instanceof Error ? err.message : String(err);
       console.error(`${LOG} Init error:`, message);
       postMessage({ type: "error", message });
