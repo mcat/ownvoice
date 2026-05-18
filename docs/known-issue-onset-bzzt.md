@@ -2,17 +2,52 @@
 
 ## Resolution
 
-**Root cause: the fp16 `conditional_decoder` shipped in #287/#317/#318 introduced an audible artifact at speech onset.** The conversion script (`scripts/convert-decoder-fp16.py`) reduced precision in a way that produces a modulated 2-4 kHz "bzzt" with harmonics up through ~11 kHz at the start of every synthesized utterance.
+**Root cause: `convert_float_to_float16`'s output keeps both weights AND
+arithmetic at fp16.** The CFM ODE flow integration runs across 12
+`mid_blocks` and compounds fp16 precision error step by step — no
+amount of static block-list expansion stops the accumulation, because
+the flow itself runs through fp16 arithmetic.
 
-**Resolved by**: rolling `MODELS_RELEASE` back to `"2026-04-29"` (fp32 decoder, 540 MB).
+**Fix: fp16 weights / fp32 compute.** Quantize each
+Conv/MatMul/ConvTranspose/Gemm weight initializer to fp16 (the storage
+saving), then insert a `Cast(fp16→fp32)` node right before the
+consuming op, so every arithmetic operation, activation, and RNG draw
+runs at full fp32 precision. The output is mathematically near-identical
+to fp32 — only loss is fp16's ~3-digit precision on the weight values
+themselves, which lands well below perceptual threshold.
 
-## How the bug shipped
+**Implementation:** `scripts/convert-decoder-fp16-weights-only.py` (NEW
+in this fix). 683 weight initializers quantized; 683 Cast nodes
+inserted. Output size 275.7 MB (vs fp32 515.3 MB, 46.5% reduction).
+Mechanical drift vs fp32 dropped to 1.2% (compared to the failed v2
+block-list approach at 9.9% and v3 at 15.8%). User listen-test on
+WebGPU EP via the production post-processing pipeline confirmed clean
+onsets.
 
-PR #318's description claimed `"fp32 and fp16 sound indistinguishable"` based on a single rainbow-sentence A/B test ("The rainbow appears..."). That test is a held-vowel reading with smooth onsets — the bzzt is at speech ONSET, so a vowel-held sentence didn't surface it. The mechanical validation script `scripts/validate-fp16-decoder.mjs` checks for non-NaN, non-Inf, audio-typical magnitude, non-constant, and sample-count match — none of which catch perceptual onset artifacts.
+**Shipped as:** `MODELS_RELEASE = "2026-05-20"`.
 
-## Diagnostic chain
+## What didn't work (preserved for the next person)
 
-This took a long session to land. The diagnostic chain (preserved for the next person debugging audio):
+Three iterations on the same "expand the fp16 conversion block-list"
+pattern all failed:
+
+| Attempt | Block list addition | Result |
+|---|---|---|
+| 2026-05-17 (PR #318) | STFT, istft, f0_upsamp | buzzy (rolled back #327) |
+| 2026-05-18 v2 | +m_source +Cast roundtrip removal | mechanical drift 9.9%, user heard buzz |
+| 2026-05-19 v3 | +down_blocks, up_blocks, f0_predictor | worst-case 2-4 kHz onset ratio REGRESSED 1.73 → 4.77 |
+
+Per superpowers:systematic-debugging Phase 4.5 (3+ failures on the same
+architectural pattern = wrong pattern), this is the signal to question
+the pattern. The pattern was wrong: blocking specific subgraphs from
+fp16 conversion doesn't prevent fp16-error compounding across the CFM
+flow steps. The fix had to be "no fp16 arithmetic in the synthesis
+path at all," not "no fp16 in specific subgraphs."
+
+## Diagnostic chain from the original investigation
+
+This took a long session to land. The diagnostic chain (preserved for
+the next person debugging audio):
 
 | Hypothesis | Method | Result |
 |---|---|---|
@@ -22,28 +57,27 @@ This took a long session to land. The diagnostic chain (preserved for the next p
 | Vocoder "cold start" in first frames | `?prefixSilence=N` to absorb | Buzz persists, AND speech becomes unintelligible (model has positional prior on prompt) |
 | Gate gain stepping (500 Hz mod) | Fixed gate to interpolate gain | Reduced buzz 3× but didn't eliminate. Reverted (production listeners actually like the buggy gate's incidental HF roll-off) |
 | Denoise using speech as noise reference | Fixed denoise to use quietest frames | Made buzz LOUDER (uncovered the model artifact the buggy denoise had been masking). Reverted |
-| **fp16 decoder conversion** | Symlink fp32 bytes into 2026-05-17 path | **Buzz gone** ✓ |
+| fp16 decoder conversion (full fp16 arithmetic) | Symlink fp32 bytes into 2026-05-17 path | **Buzz gone** ✓ |
+| Block /m_source/ NSF harmonic source | v2 attempt | Buzz persisted (validator blind spot) |
+| Block /m_source/ + /down_blocks/ + /up_blocks/ | v3 attempt | Worse, not better — proved the pattern wrong |
+| **fp16 weights with fp32 compute** | v4 attempt — Cast(fp16→fp32) before each Conv/MatMul | **Buzz gone, ships as 2026-05-20** ✓ |
 
-## Path forward for fp16
+## Files (current)
 
-The fp16 conversion is a real memory win (-272 MB of retained heap). To re-attempt:
-
-1. Improve `scripts/convert-decoder-fp16.py` to preserve fp32 precision in layers responsible for the onset transient. Likely candidates: any layer near input embedding, attention layers in the first block, the first ConvTranspose.
-2. Replace the rainbow-sentence A/B with a phoneme-coverage suite: include words starting with /p/, /t/, /k/, /b/, /d/, /g/, /s/, /sh/, /a/, /i/, /u/, /m/, /n/, /r/, /l/, /w/. The bzzt may be more audible on plosive/sibilant onsets than on smooth vowel starts.
-3. Run side-by-side WAV comparisons with FFT on the first 200 ms of audio across many phrases — if any phoneme shows 2-4 kHz energy above the fp32 baseline, the conversion is still lossy.
-
-## Files
-
-- `scripts/convert-decoder-fp16.py` — conversion script (PR #317)
-- `scripts/validate-fp16-decoder.mjs` — mechanical smoke-test (PR #317) — needs perceptual-quality test added
-- `src/models/assetVersions.ts` — `MODELS_RELEASE` (currently reverted to `2026-04-29`)
+- `scripts/convert-decoder-fp16-weights-only.py` — the working approach
+- `scripts/convert-decoder-fp16.py` — the original block-list approach
+  (kept in tree but does not produce clean audio for this vocoder)
+- `scripts/perceptual-validate-fp16-decoder.py` — phoneme-onset gate; documented to have blind spots (see [[feedback_perceptual_validator_blind_spots]] in memory)
+- `scripts/validate-fp16-decoder.mjs` — mechanical smoke-test (graph integrity, magnitude sanity)
+- `src/models/assetVersions.ts` — `MODELS_RELEASE`
 
 ## Diagnostic infrastructure that helped
 
 Permanent additions from this session that can be reused for future audio investigations:
 
-- **FFT analysis scripts** in `/tmp/`: `find-buzz-event.py`, `buzz-in-speech.py`, `spectral-envelope.py`, `make-band-isolates.py`
+- **FFT analysis scripts** in `/tmp/`: `find-buzz-event.py`, `buzz-in-speech.py`, `spectral-envelope.py`, `make-band-isolates.py`, `compare-spectra.py`, `detect-onset-tone.py`
 - **`?nopost=true`** URL flag (audioCache.ts) — skip postProcessAudio at cache-write time to isolate the source of audible artifacts
 - **`?sample=true`** URL flag (tts-gpu-worker.js + ttsEngine.ts) — flip LM from greedy to sampling at runtime
 - **`?padShape=N`** URL flag (tts-gpu-worker.js + ttsEngine.ts) — pad decoder input to a multiple of N for shape-experiments (yielded the 4-10× decoder speedup)
 - **memdiag trail + analyzer** (PR #321/#323/#325/#326) — generic stage-event capture for any future timing/lifecycle investigation
+- **OPFS audio dump via dev-log POST** (used in this session) — write each cache file's bytes as hex chunks to `/__log`, reconstruct as WAV in shell. Reusable any time you need to grab live-synth audio out of a running browser.

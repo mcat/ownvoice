@@ -34,7 +34,7 @@ export const ORT_VERSION = "v1.25.1";
  *
  * See docs/known-issue-onset-bzzt.md.
  */
-export const MODELS_RELEASE = "2026-04-29";
+export const MODELS_RELEASE = "2026-05-20";
 
 /** Asset path prefixes — used by upload script and Pages Functions. */
 export const ORT_ASSET_PREFIX = `ort/${ORT_VERSION}`;
