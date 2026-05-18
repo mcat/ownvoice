@@ -95,7 +95,11 @@ const MIN_NEW_TOKENS = 10; // Don't allow STOP before this many speech tokens
 // gibberish for English; switching to greedy to match upstream.
 // If multilingual ALSO stutters with greedy, revert and investigate sampling
 // hyperparameters (top_p, top_k, temperature) for this specific model.
-const USE_GREEDY = true;
+//
+// Dynamic so tests can explore non-greedy without a rebuild. Set via
+// `?sample=true` URL param (passed through to worker init), which
+// flips this to false → sampleToken path is used.
+let USE_GREEDY = true;
 
 // Classifier-free guidance weight. Upstream multilingual defaults to 0.5
 // (mtl_tts.py:generate). Implementation: a SINGLE LM call with batch=2.
@@ -606,17 +610,21 @@ function sampleToken(logits, generatedTokens) {
   return nucleus[nucleus.length - 1][0];
 }
 
-async function handleInit(modelUrl, benchFlag, loadCangjie, memdiagFlag, padBoundaryArg) {
+async function handleInit(modelUrl, benchFlag, loadCangjie, memdiagFlag, padBoundaryArg, useGreedyArg) {
   const baseUrl = modelUrl.endsWith("/") ? modelUrl : modelUrl + "/";
   bench = benchFlag === true;
   memdiag = memdiagFlag === true;
   padBoundary = Number.isFinite(padBoundaryArg) && padBoundaryArg > 0 ? Math.floor(padBoundaryArg) : 0;
+  // useGreedyArg is sticky-true: only false (explicit opt-in to
+  // sampling) flips it. Keeps the prior default behavior when the
+  // init message omits the field entirely.
+  if (useGreedyArg === false) USE_GREEDY = false;
   // Caller may omit loadCangjie — default to true (preserves prior
   // behavior). Setting false skips the ~1.9 MB JSON download plus the
   // two Maps it builds in worker heap; cangjieNormalize then degrades
   // any Chinese input to passthrough (warned once).
   const shouldLoadCangjie = loadCangjie !== false;
-  console.log(`${LOG} Initializing WebGPU TTS in DedicatedWorker...${bench ? " (bench mode)" : ""}${shouldLoadCangjie ? "" : " (cangjie skipped)"}${padBoundary > 0 ? ` (pad decoder to *${padBoundary})` : ""}`);
+  console.log(`${LOG} Initializing WebGPU TTS in DedicatedWorker...${bench ? " (bench mode)" : ""}${shouldLoadCangjie ? "" : " (cangjie skipped)"}${padBoundary > 0 ? ` (pad decoder to *${padBoundary})` : ""}${USE_GREEDY ? "" : " (sampling LM)"}`);
 
   const t0 = performance.now();
 
@@ -1191,42 +1199,17 @@ async function handleSynthesize(text, speakerData, id, languageId, exaggeration 
   // pipeline applies its own 5 ms cosine fade later; this longer fade
   // is the buzz-specific mitigation that ride on top.
   if (padBoundary > 0 && paddedDecLen > unpaddedDecLen) {
-    // FFT analysis of a padded synth (q5un1jhp48l.raw, 1.468 s total):
-    //   - Speech ends naturally around t=1.237 s (low-band energy → 0)
-    //   - A constant ~6 kHz tone starts at t=1.248 s and runs to the end
-    //   - The buzz spans the last 220 ms (~53 tokens at 4.17 ms/token)
-    //
-    // So the attention-spread tone reaches ~50 tokens back from the
-    // audio end — much further than the 3 natural silence tokens or
-    // even the ~30 pad tokens. The original `unpadded/padded` cut and
-    // the earlier `unpadded - 3` cut both left ~150 ms of buzz in the
-    // kept audio. Two fixes together:
-    //
-    //   1. Trim back 30 tokens from `unpaddedDecLen` (≈ 125 ms in
-    //      output samples at the typical ratio). Excludes the bulk of
-    //      the buzz region while preserving the natural speech fade.
-    //   2. Apply a 200 ms cosine fade-out to whatever remains so any
-    //      residual tone is attenuated below audibility.
-    //
-    // For very short phrases this cut may bite into the speech tail
-    // by 50-80 ms — perceptually a slightly shorter ending, but the
-    // buzz disappears, which is the priority. If that loss is too
-    // aggressive in practice, the next dial is a smaller `padShape`
-    // bucket (16 instead of 32) to reduce attention spread.
-    const safeUnpadded = Math.max(1, unpaddedDecLen - 30);
-    const trimmedSamples = Math.max(1, Math.round(audioData.length * (safeUnpadded / paddedDecLen)));
+    // Simple proportional trim back to the unpadded duration. Earlier
+    // iterations of this code did `unpaddedDecLen - N` (N=3 then 30)
+    // plus a long fade-out, on the hypothesis that the "buzz at end"
+    // user-report was a pad-attention-spread artifact. FFT + listening
+    // tests on the raw worker output ruled that out: the buzz is a
+    // model-onset artifact in conditional_decoder, not pad-related,
+    // and lives at the START of audio, not the end. Reverted to the
+    // minimal trim that just matches duration. See PR #327 review and
+    // the audio-cache-v23 raw-worker comparison.
+    const trimmedSamples = Math.max(1, Math.round(audioData.length * (unpaddedDecLen / paddedDecLen)));
     audioData = audioData.subarray(0, trimmedSamples);
-    const fadeMs = 200;
-    const fadeSamples = Math.min(
-      Math.floor((SAMPLE_RATE * fadeMs) / 1000),
-      Math.floor(audioData.length / 2),
-    );
-    for (let i = 0; i < fadeSamples; i++) {
-      const idx = audioData.length - fadeSamples + i;
-      const t = i / fadeSamples;
-      const gain = 0.5 * (1 + Math.cos(Math.PI * t));
-      audioData[idx] *= gain;
-    }
   }
 
   if (bench) {
@@ -1265,7 +1248,7 @@ self.addEventListener("message", (e) => {
   if (!msg || !msg.type) return;
 
   if (msg.type === "init") {
-    handleInit(msg.modelUrl, msg.bench === true, msg.loadCangjie !== false, msg.memdiag === true, msg.padBoundary).catch((err) => {
+    handleInit(msg.modelUrl, msg.bench === true, msg.loadCangjie !== false, msg.memdiag === true, msg.padBoundary, msg.useGreedy).catch((err) => {
       const message = err instanceof Error ? err.message : String(err);
       console.error(`${LOG} Init error:`, message);
       postMessage({ type: "error", message });

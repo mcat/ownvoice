@@ -319,12 +319,22 @@ export function initGPU(modelUrl: string): Promise<boolean> {
         const n = Number(raw);
         return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
       })();
+      // `?sample=true` URL param flips the worker's LM decoding from
+      // greedy (argmax) to sampling (rep_penalty → temperature → top-k
+      // → top-p → nucleus). Default is greedy (matches upstream HF
+      // reference for multilingual). Experiment for the bzzt-at-onset
+      // investigation — different token sequences may produce smoother
+      // vocoder output. If audio sounds intelligible AND the buzz is
+      // gone, ship sampling as default. If audio degrades to gibberish
+      // (the prior reason for greedy), revert.
+      const useGreedy =
+        new URLSearchParams(globalThis.location?.search ?? "").get("sample") !== "true";
       // Skip the Cangjie5 lookup table (~1.9 MB JSON + several MB of
       // Maps in worker heap) when no zh locale is in the session.
       // sessionNeedsCangjie defaults to true on uncertain state, so a
       // pre-hydration boot preserves the prior eager-load behavior.
       const loadCangjie = sessionNeedsCangjie();
-      worker.postMessage({ type: "init", modelUrl, bench, loadCangjie, memdiag, padBoundary });
+      worker.postMessage({ type: "init", modelUrl, bench, loadCangjie, memdiag, padBoundary, useGreedy });
     } catch (err) {
       console.warn("[OwnVoice:TTS:GPU] Failed to create worker:", err);
       settle(false);
