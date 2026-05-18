@@ -26,6 +26,15 @@ DSP-flavored subgraphs that must stay fp32:
     ~3-digit precision around 200 Hz is barely enough but the upstream
     boundary is fp32 anyway.
 
+  * `/m_source/` — the NSF harmonic-source generator (231 nodes). The
+    inner chain `CumSum → Floor/Sub (phase wrapping) → Sin → MatMul →
+    Tanh` builds the harmonic basis. CumSum accumulates phase across
+    samples (24 kHz × seconds = tens of thousands of values); fp16 loses
+    integer precision above 2048, exactly the same constraint that blocks
+    the encoder's resampler chain. fp16 here produced the modulated
+    2-4 kHz onset buzz with harmonics through 11 kHz documented in
+    docs/known-issue-onset-bzzt.md.
+
 The conv stacks (`/f0_predictor/`, `/encoder/`, `/up_blocks/`, etc.) all
 convert cleanly to fp16. Inputs/outputs (speech_tokens int64,
 speaker_embeddings/features fp32, waveform fp32) stay fp32 via
@@ -53,8 +62,9 @@ from onnxconverter_common.float16 import convert_float_to_float16
 
 # Subgraphs that do signal-domain DSP and must stay fp32. The encoder's
 # script blocks resamplers; the decoder's analogue is the STFT/ISTFT
-# synthesis path plus the f0 upsampler.
-_DSP_SCOPE_RE = re.compile(r"^(/STFT$|/istft/|/f0_upsamp/)")
+# synthesis path, the f0 upsampler, and the NSF harmonic-source
+# generator (m_source — see the module docstring for why).
+_DSP_SCOPE_RE = re.compile(r"^(/STFT$|/istft/|/f0_upsamp/|/m_source/)")
 
 # Ops that require all float inputs to share type parameter T. Identical
 # list to the encoder script — these are ORT-wide constraints, not
@@ -154,6 +164,136 @@ def align_op_input_types(model: onnx.ModelProto) -> onnx.ModelProto:
     return onnx.shape_inference.infer_shapes(model, strict_mode=False)
 
 
+def short_circuit_blocked_cast_roundtrips(
+    model: onnx.ModelProto, scope_re: re.Pattern
+) -> onnx.ModelProto:
+    """
+    Remove fp16 round-trips inside a blocked subgraph.
+
+    `convert_float_to_float16`'s `node_block_list` mechanism inserts paired
+    `Cast(fp32→fp16)` after every blocked node and `Cast(fp16→fp32)` before
+    every blocked node, so each blocked op operates in fp32 but its
+    boundary tensors get downgraded. Between two ADJACENT blocked ops
+    inside the same scope, the round-trip
+    `blocked_A → Cast→fp16 → Cast→fp32 → blocked_B`
+    means fp32 → fp16 → fp32: the fp16 intermediate is precision-lossy
+    even though both ops are "blocked".
+
+    For the NSF harmonic-source generator (`/m_source/`), CumSum
+    accumulates phase across many samples; at 24 kHz that gets to tens
+    of thousands per second, well beyond fp16's 2 048 integer cap. A
+    fp16 round-trip on the phase value rounds it to multiples of 2 (or
+    worse), shifting the Sin downstream and producing the modulated
+    onset buzz described in docs/known-issue-onset-bzzt.md.
+
+    This pass finds those Cast pairs where BOTH ends are inside the
+    blocked scope and short-circuits them: consumer reads producer
+    directly, intermediate fp16 tensor disappears.
+
+    The pass is conservative: it only removes a fp16 intermediate
+    tensor when ALL its consumers are Cast(fp16→fp32) inside the
+    blocked scope. Anything else holding a reference (graph outputs,
+    branches that escape the scope) keeps the round-trip in place.
+    """
+    pass_idx = 0
+    total_removed = 0
+    total_rewires = 0
+    while True:
+        pass_idx += 1
+        producers: dict[str, onnx.NodeProto] = {}
+        consumers: dict[str, list[onnx.NodeProto]] = {}
+        for n in model.graph.node:
+            for out in n.output:
+                producers[out] = n
+            for inp in n.input:
+                consumers.setdefault(inp, []).append(n)
+
+        rewires: dict[str, str] = {}
+        removed: set[str] = set()
+
+        # Strategy: walk every Cast(fp16→fp32) inside scope. If its
+        # producer is itself a Cast(fp32→fp16) inside scope, the
+        # CONSUMING fp32 tensor (this node's output) is equivalent to
+        # the producer's input (the original fp32 source). Rewire and
+        # remove this consumer. The upstream Cast(fp32→fp16) is left
+        # in place — its OTHER consumers (Shape ops, branches that
+        # escape the scope) still need the fp16 form.
+        for n in model.graph.node:
+            if n.op_type != "Cast" or not scope_re.match(n.name):
+                continue
+            to_attr = next((a for a in n.attribute if a.name == "to"), None)
+            if to_attr is None or to_attr.i != TensorProto.FLOAT:
+                continue  # not Cast(*→fp32)
+
+            src_name = n.input[0]
+            src = producers.get(src_name)
+            if src is None or src.op_type != "Cast" or not scope_re.match(src.name):
+                continue
+            src_to = next((a for a in src.attribute if a.name == "to"), None)
+            if src_to is None or src_to.i != TensorProto.FLOAT16:
+                continue
+            # src is Cast(?→fp16); the chain is `[fp32_orig] → src → [fp16] → n → [fp32]`.
+            # Confirm src input is actually fp32 — otherwise the round-trip
+            # might have been (fp16→fp16) which makes no sense to short-circuit.
+            # (cheap shortcut: skip the type-check, downstream alignment pass will
+            # handle any mismatch; the value pre-cast is whatever the original
+            # producer made, and removing this Cast only avoids the fp16 hop)
+
+            fp32_orig = src.input[0]
+            rewires[n.output[0]] = fp32_orig
+            removed.add(n.name)
+
+        # Garbage-collect any Cast(fp32→fp16) whose consumers all just
+        # got short-circuited away. After this pass it's a dead node.
+        live_consumers: dict[str, int] = {}
+        for node in model.graph.node:
+            for inp in node.input:
+                live_consumers[inp] = live_consumers.get(inp, 0) + 1
+        for n in model.graph.node:
+            if n.op_type != "Cast" or not scope_re.match(n.name) or n.name in removed:
+                continue
+            to_attr = next((a for a in n.attribute if a.name == "to"), None)
+            if to_attr is None or to_attr.i != TensorProto.FLOAT16:
+                continue
+            # Count how many live (non-removed) consumers reference this Cast's output.
+            still_used = False
+            for c in consumers.get(n.output[0], []):
+                if c.name in removed:
+                    continue
+                still_used = True
+                break
+            graph_output = any(o.name == n.output[0] for o in model.graph.output)
+            if not still_used and not graph_output:
+                removed.add(n.name)
+
+        if not rewires and not removed:
+            print(f"  pass {pass_idx}: no fp16 round-trips in scope; done")
+            break
+
+        for node in model.graph.node:
+            for i, inp in enumerate(node.input):
+                if inp in rewires:
+                    node.input[i] = rewires[inp]
+        for out in model.graph.output:
+            if out.name in rewires:
+                out.name = rewires[out.name]
+
+        new_nodes = [n for n in model.graph.node if n.name not in removed]
+        del model.graph.node[:]
+        model.graph.node.extend(new_nodes)
+
+        total_removed += len(removed)
+        total_rewires += len(rewires)
+        print(f"  pass {pass_idx}: removed {len(removed)} Cast nodes, rewired {len(rewires)} edges")
+        if pass_idx >= 8:
+            print("  WARNING: hit fixed-point ceiling — some round-trips may remain")
+            break
+
+    print(f"  Short-circuit total: removed {total_removed} Cast nodes, {total_rewires} edges rewired")
+    del model.graph.value_info[:]
+    return onnx.shape_inference.infer_shapes(model, strict_mode=False)
+
+
 def convert(in_path: Path, out_path: Path) -> None:
     print(f"Loading fp32 model from {in_path}")
     model = onnx.load(str(in_path))
@@ -168,7 +308,7 @@ def convert(in_path: Path, out_path: Path) -> None:
     skip_node_names = [
         n.name for n in model.graph.node if _DSP_SCOPE_RE.match(n.name)
     ]
-    print(f"  Skipping {len(skip_node_names)} DSP nodes (STFT/ISTFT synthesis + f0 upsampler)")
+    print(f"  Skipping {len(skip_node_names)} DSP nodes (STFT/ISTFT synthesis + f0 upsampler + m_source)")
 
     print("Converting weights to fp16 (keep_io_types=True)")
     fp16_model = convert_float_to_float16(
@@ -179,6 +319,15 @@ def convert(in_path: Path, out_path: Path) -> None:
 
     del fp16_model.graph.value_info[:]
 
+    fp16_model = align_op_input_types(fp16_model)
+
+    print("Short-circuiting fp16 round-trips inside DSP scope")
+    fp16_model = short_circuit_blocked_cast_roundtrips(fp16_model, _DSP_SCOPE_RE)
+
+    # Re-run the type-T alignment pass: removing intermediate fp16 nodes
+    # may have surfaced new mixed-type edges on consumers that read from
+    # both the (now fp32) blocked scope and other fp16 paths.
+    print("Re-aligning op input types after short-circuit pass")
     fp16_model = align_op_input_types(fp16_model)
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
