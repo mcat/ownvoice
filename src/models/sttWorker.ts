@@ -9,7 +9,11 @@ import "../dev/logSink";
 // Verified by `grep '2026-05-12' dist/assets/*Worker-*.js` after build.
 (self as unknown as { __OV_BUILD__: string }).__OV_BUILD__ = "2026-05-12-require-corp";
 /**
- * STT Web Worker — Whisper small (onnx-community/whisper-small, q4 variant)
+ * STT Web Worker — Whisper small.en (onnx-community/whisper-small.en, q4 variant)
+ *
+ * English-only checkpoint. Decoder prefix is [SOT, NOTIMESTAMPS] — no
+ * language token, no <|transcribe|> token. The multilingual prefix
+ * would still produce English output here but wastes 2 decode steps.
  *
  * WASM-only fallback — the primary WebGPU path runs via sttEngine.ts
  * (plain JS worker in public/stt-gpu-worker.js, same pattern as TTS).
@@ -83,15 +87,10 @@ let specialTokenIds: Set<number> = new Set();
 /** Token IDs — populated from tokenizer.json (NOT hardcoded, varies by model) */
 let TOKEN_EOT = -1;
 let TOKEN_SOT = -1;
-let TOKEN_EN = -1;
-let TOKEN_TRANSCRIBE = -1;
 let TOKEN_NOTIMESTAMPS = -1;
 let TOKEN_TIMESTAMP_BEGIN = -1;
 /** Whisper's no-speech token. -1 if not in tokenizer (treats as feature unavailable). */
 let TOKEN_NO_SPEECH = -1;
-
-/** ISO-639-1 language code → Whisper language token ID. Populated from tokenizer.json. */
-const LANG_TO_TOKEN: Map<string, number> = new Map();
 
 /** Whisper's reference no-speech threshold; if SOT-position softmax(no_speech) exceeds this,
  * the chunk is treated as silence/non-speech and an empty transcript is returned. */
@@ -453,8 +452,6 @@ async function loadTokenizer(baseUrl: string): Promise<void> {
 
   TOKEN_EOT = contentToId.get("<|endoftext|>") ?? -1;
   TOKEN_SOT = contentToId.get("<|startoftranscript|>") ?? -1;
-  TOKEN_EN = contentToId.get("<|en|>") ?? -1;
-  TOKEN_TRANSCRIBE = contentToId.get("<|transcribe|>") ?? -1;
   TOKEN_NOTIMESTAMPS = contentToId.get("<|notimestamps|>") ?? -1;
   TOKEN_TIMESTAMP_BEGIN = TOKEN_NOTIMESTAMPS + 1;
   TOKEN_NO_SPEECH = contentToId.get("<|nospeech|>") ?? contentToId.get("<|nocaptions|>") ?? -1;
@@ -464,21 +461,11 @@ async function loadTokenizer(baseUrl: string): Promise<void> {
     specialTokenIds.add(id);
   }
 
-  // Build language → token map from added_tokens. Whisper language tokens are
-  // always <|xx|> or <|xxx|> with 2- or 3-char lowercase codes (en, es, haw, jw…).
-  // The 2-3-char regex deliberately filters out longer special tokens
-  // (<|transcribe|>, <|notimestamps|>, <|nospeech|>, etc.).
-  LANG_TO_TOKEN.clear();
-  for (const tok of addedTokens) {
-    const m = tok.content.match(/^<\|([a-z]{2,3})\|>$/);
-    if (m) LANG_TO_TOKEN.set(m[1], tok.id);
-  }
-
   console.log(
     `${LOG_PREFIX} Tokenizer loaded: ${vocabulary.size} tokens, ${specialTokenIds.size} special`,
   );
   console.log(
-    `${LOG_PREFIX} Token IDs: EOT=${TOKEN_EOT} SOT=${TOKEN_SOT} EN=${TOKEN_EN} TRANSCRIBE=${TOKEN_TRANSCRIBE} NOTIMESTAMPS=${TOKEN_NOTIMESTAMPS} TS_BEGIN=${TOKEN_TIMESTAMP_BEGIN}`,
+    `${LOG_PREFIX} Token IDs: EOT=${TOKEN_EOT} SOT=${TOKEN_SOT} NOTIMESTAMPS=${TOKEN_NOTIMESTAMPS} TS_BEGIN=${TOKEN_TIMESTAMP_BEGIN}`,
   );
 }
 
@@ -656,13 +643,15 @@ function softmaxProb(
 }
 
 /**
- * Transcribe audio using Whisper small (encoder-decoder pipeline).
+ * Transcribe audio using Whisper small.en (encoder-decoder pipeline).
+ *
+ * English-only checkpoint — the `language` parameter is accepted for
+ * back-compat with the message protocol but ignored. A non-"en" value
+ * is logged at warn level so callers can spot wiring bugs.
  *
  * @param audio       Mono PCM samples at any rate; resampled to 16 kHz internally.
  * @param sampleRate  Source rate of `audio`.
- * @param language    Optional ISO-639-1 code (e.g. "en", "es"). Selects the
- *                    Whisper language token in the prefix. Falls back to English
- *                    if the requested language has no token in this checkpoint.
+ * @param language    Ignored; retained for protocol compatibility.
  */
 async function handleTranscribe(
   audio: Float32Array,
@@ -673,8 +662,14 @@ async function handleTranscribe(
     throw new Error("Model not initialized");
   }
 
+  if (language !== "en") {
+    console.warn(
+      `${LOG_PREFIX} Requested language="${language}" but this is the English-only checkpoint; transcribing as English`,
+    );
+  }
+
   console.log(
-    `${LOG_PREFIX} Transcribing ${(audio.length / sampleRate).toFixed(1)}s of audio (lang=${language})`,
+    `${LOG_PREFIX} Transcribing ${(audio.length / sampleRate).toFixed(1)}s of audio`,
   );
 
   // Step 1: Resample to 16 kHz if needed
@@ -706,19 +701,9 @@ async function handleTranscribe(
   );
 
   // Step 4: Autoregressive decoding
-  // Start tokens: <|startoftranscript|> <|lang|> <|transcribe|> <|notimestamps|>
-  const langToken = LANG_TO_TOKEN.get(language) ?? TOKEN_EN;
-  if (langToken === TOKEN_EN && language !== "en") {
-    console.warn(
-      `${LOG_PREFIX} No language token for "${language}" in this checkpoint; falling back to English`,
-    );
-  }
-  const outputTokens: number[] = [
-    TOKEN_SOT,
-    langToken,
-    TOKEN_TRANSCRIBE,
-    TOKEN_NOTIMESTAMPS,
-  ];
+  // .en prefix: <|startoftranscript|> <|notimestamps|> — no language
+  // or transcribe token (English-only checkpoint).
+  const outputTokens: number[] = [TOKEN_SOT, TOKEN_NOTIMESTAMPS];
 
   // First decoder step: use_cache_branch = false, no KV cache
   let kvCache = createEmptyKVCache();

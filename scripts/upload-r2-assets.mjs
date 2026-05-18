@@ -156,7 +156,7 @@ async function main() {
   // upload it.
   const ACTIVE_GROUPS = new Set([
     "chatterbox-multilingual",
-    "whisper-small",
+    "whisper-small.en",
     "denoiser",
   ]);
   const modelsDir = join(ROOT, "public/models");

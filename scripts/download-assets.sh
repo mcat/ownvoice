@@ -126,12 +126,12 @@ fi
 echo "  Done: $(du -sh "$DIR" | cut -f1)"
 echo ""
 
-# ── Whisper small (STT, ~302 MB) ──
+# ── Whisper small.en (STT, English-only, ~302 MB) ──
 REPO="$HF/onnx-community/whisper-small.en/resolve/main"
-DIR="$BASE_DIR/whisper-small"
+DIR="$BASE_DIR/whisper-small.en"
 mkdir -p "$DIR"
 
-echo "==> Whisper small (STT)"
+echo "==> Whisper small.en (STT, English-only)"
 for f in tokenizer.json tokenizer_config.json preprocessor_config.json; do
   [ -f "$DIR/$f" ] && echo "  $f (cached)" || { echo "  $f"; curl -sL -o "$DIR/$f" "$REPO/$f"; }
 done

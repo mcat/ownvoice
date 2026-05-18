@@ -46,7 +46,7 @@ export const ORT_VERSION = "v1.25.1";
  * feedback_perceptual_validator_blind_spots, but the numeric
  * evidence puts ship probability high.
  */
-export const MODELS_RELEASE = "2026-05-22";
+export const MODELS_RELEASE = "2026-05-23";
 
 /** Asset path prefixes — used by upload script and Pages Functions. */
 export const ORT_ASSET_PREFIX = `ort/${ORT_VERSION}`;

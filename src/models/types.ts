@@ -182,6 +182,6 @@ export const CHATTERBOX_TOKENS = {
  */
 export const MODEL_URLS = {
   tts: `/${MODELS_ASSET_PREFIX}/chatterbox-multilingual/`,
-  stt: `/${MODELS_ASSET_PREFIX}/whisper-small/`,
+  stt: `/${MODELS_ASSET_PREFIX}/whisper-small.en/`,
   denoiser: `/${MODELS_ASSET_PREFIX}/denoiser/denoiser_model.onnx`,
 } as const;
