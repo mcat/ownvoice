@@ -260,29 +260,53 @@ export function App() {
     const initialCfg = cfgRef.current;
     if (!initialCfg) return;
     let cancelled = false;
-    // `started` makes tryRun idempotent across the many onProgress events
-    // the WASM download fires after the GPU path already became ready.
-    // Without this, each progress tick called runPreGeneration again, which
-    // aborts the in-flight run and restarts from phrase 0 — visible in
-    // production logs as the same phrase being synthesized 2–3× at boot.
-    let started = false;
+    // Re-run pre-gen only when the set of READY synthesis paths actually
+    // grows. The WASM download fires many onProgress events as bytes
+    // stream in; without state tracking, each tick called runPreGeneration
+    // again and the runner aborted the in-flight pass + restarted from
+    // phrase 0 (issue #79 — phrases synthesized 2–3× at boot).
+    //
+    // A boolean `started` solved that but introduced a second bug: when
+    // the GPU TTS init timed out (300s budget too tight for the v4
+    // release), the WASM fallback path tried to run pre-gen against a
+    // not-yet-ready synth, generateAllPhrases yielded zero events, and
+    // the row was left in a non-`done` state — but `started=true` made
+    // every later onGPUReady event a no-op, so the late-arriving GPU
+    // success could not rescue pre-gen.
+    //
+    // Tracking the (gpu, wasm) readiness PAIR fixes both: a duplicate
+    // event with the same readiness state short-circuits (no thrash),
+    // while a new path that became ready since the last attempt
+    // retriggers (recovers from a no-progress run).
+    let lastTriedWith: { gpu: boolean; wasm: boolean } | null = null;
     const mgr = getModelManager();
 
     function tryRun() {
-      if (started || cancelled || !cfgRef.current) return false;
+      if (cancelled || !cfgRef.current) return false;
       // Start as soon as EITHER TTS path is ready. The audio cache's
       // synthesizeBestAvailable prefers GPU and falls back to WASM —
       // the GPU path is typically ready minutes before the WASM worker
       // finishes downloading its ~1 GB of weights.
-      if (!isGPUReady() && !mgr.isReady("tts")) return false;
-      started = true;
+      const gpu = isGPUReady();
+      const wasm = mgr.isReady("tts");
+      if (!gpu && !wasm) return false;
+      // Idempotent on duplicate readiness: a stream of onProgress events
+      // with no readiness change leaves any in-flight run untouched.
+      if (lastTriedWith && lastTriedWith.gpu === gpu && lastTriedWith.wasm === wasm) {
+        return false;
+      }
+      lastTriedWith = { gpu, wasm };
       audioCacheRunner.runPreGeneration(cfgRef.current);
       return true;
     }
 
-    if (tryRun()) return;
+    if (tryRun()) {
+      // Even though we kicked off a run, keep listening — if a SECOND
+      // path becomes ready later (e.g. GPU finishes after the WASM
+      // fallback already started), we want to retrigger.
+    }
 
-    // Neither path is ready yet. Listen on both signals.
+    // Listen on both signals; tryRun's pair-comparison handles dedup.
     const unsubWasm = mgr.onProgress(() => { tryRun(); });
     const unsubGpu = onGPUReady(() => { tryRun(); });
     return () => {

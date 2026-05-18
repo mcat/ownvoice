@@ -530,6 +530,64 @@ describe("App", () => {
       capturedProgressCb!();
       expect(audioCacheRunner.runPreGeneration).toHaveBeenCalledTimes(1);
     });
+
+    it("re-triggers pre-gen when GPU TTS becomes ready AFTER an earlier WASM-only kickoff", () => {
+      // Regression for the v4 release production bug: GPU TTS init timed
+      // out (300s budget too tight; bumped to 600s in #333), App.tsx fell
+      // through to the WASM fallback path which eventually emitted "ready"
+      // and kicked off pre-gen, but at that moment generateAllPhrases
+      // raced against a still-loading WASM worker and skipped with zero
+      // progress — leaving an empty audio cache. Later, the GPU TTS
+      // worker finally succeeded (~55s past the cap) and fired its
+      // onGPUReady listener. The previous boolean `started=true` short-
+      // circuited the second tryRun, so pre-gen NEVER ran with GPU
+      // available and the user got Web Speech for every tap.
+      //
+      // Fix: track the (gpu, wasm) readiness PAIR. A second event that
+      // transitions us from (false,true) to (true,true) must retrigger.
+      let capturedGpuCb: (() => void) | null = null;
+      let capturedProgressCb: (() => void) | null = null;
+      onGPUReadyMock.mockImplementation((cb) => {
+        capturedGpuCb = cb;
+        return () => {};
+      });
+      mgrMock.onProgress.mockImplementation((cb) => {
+        capturedProgressCb = cb;
+        return () => {};
+      });
+
+      // Neither path is ready at render time.
+      useSettingsStore.setState({ _hasHydrated: true, cfg: makeCfg() });
+      render(<App />);
+      expect(audioCacheRunner.runPreGeneration).not.toHaveBeenCalled();
+
+      // WASM TTS becomes ready first (the production sequence after a
+      // GPU TTS timeout). Pre-gen kicks off with WASM-only.
+      mgrMock.isReady.mockReturnValue(true);
+      capturedProgressCb!();
+      expect(audioCacheRunner.runPreGeneration).toHaveBeenCalledTimes(1);
+
+      // Further onProgress events with WASM still ready (no state
+      // change) must NOT re-trigger.
+      capturedProgressCb!();
+      capturedProgressCb!();
+      expect(audioCacheRunner.runPreGeneration).toHaveBeenCalledTimes(1);
+
+      // GPU TTS finally finishes initializing — a new path joined the
+      // ready set, so pre-gen MUST re-trigger (the runner's
+      // currentController.abort() cancels the in-flight WASM-only run
+      // cleanly and starts a fresh GPU-aware pass that includes the
+      // pain matrix).
+      isGPUReadyMock.mockReturnValue(true);
+      capturedGpuCb!();
+      expect(audioCacheRunner.runPreGeneration).toHaveBeenCalledTimes(2);
+
+      // Once both paths are ready, further events with the same state
+      // must NOT thrash.
+      capturedProgressCb!();
+      capturedGpuCb!();
+      expect(audioCacheRunner.runPreGeneration).toHaveBeenCalledTimes(2);
+    });
   });
 
   describe("a11y assertions across patient surfaces", () => {
