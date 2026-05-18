@@ -239,16 +239,28 @@ export function initGPU(modelUrl: string): Promise<boolean> {
       // posting its synthesize message.
       installedSpeakerId = null;
 
-      // 300s budget for multilingual: worker loads ~913 MB across 4 ONNX
+      // 600s budget for multilingual: worker loads ~913 MB across 4 ONNX
       // sessions (vs Turbo's ~381 MB), and the 30-layer Llama LM has
       // significantly more WebGPU shaders to compile on first run than
-      // Turbo's 24-layer GPT-2. With the conditional_decoder also on
-      // WebGPU EP (rather than WASM-only), shader compilation grew —
-      // observed 187s cold-load on M5 iPad after the WebGPU-decoder
-      // switch, which tripped the previous 180s timeout despite the
-      // worker succeeding seconds later. Tighter budgets risk a
-      // false-negative WASM fallback before WebGPU has a chance to finish.
-      const INIT_TIMEOUT_MS = 300000;
+      // Turbo's 24-layer GPT-2.
+      //
+      // Budget bumped 300s → 600s after a production failure on the v4
+      // fp16-weights/fp32-compute decoder (2026-05-20 release): the v4
+      // conversion inserts 683 Cast(fp16→fp32) nodes — one before each
+      // Conv/MatMul/Gemm — and each new node grows the WebGPU shader-
+      // compile workload. Production observed:
+      //   "Loaded conditional_decoder (WebGPU) in 355.8s"
+      //   "All models loaded in 404.3s"
+      // — both well past the prior 300s timeout. The timeout's
+      // settle(false) put the engine on the "GPU TTS: unavailable"
+      // path, skipped pre-gen, and forced Web Speech fallback even
+      // though the worker successfully became ready ~55s later.
+      //
+      // Tighter budgets risk a false-negative WASM fallback before
+      // WebGPU has a chance to finish; the previous 300s value was a
+      // false-negative on v4. 600s gives ~2x headroom over the
+      // observed 404s worst case.
+      const INIT_TIMEOUT_MS = 600000;
       timeout = setTimeout(() => {
         console.warn(`[OwnVoice:TTS:GPU] Init timeout (${INIT_TIMEOUT_MS / 1000}s)`);
         settle(false);
