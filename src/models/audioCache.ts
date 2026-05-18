@@ -150,7 +150,15 @@ import { pregenAudio } from "../audit/workflows/audioCachePregen";
 //            initial phrases ("No", "Dim the light", "Please repeat
 //            that") under the interpolated gate. Constant-per-window
 //            gain restored; denoise quietest-frame fix retained.
-const CACHE_DIR = "audio-cache-v26";
+// v26 → v27: int8-weights conditional_decoder with p99.9 scale
+//            calibration (MODELS_RELEASE 2026-05-22). Same fp32-
+//            compute invariant as v26's fp16-weights — only weight
+//            storage differs. Produces different waveforms (int8
+//            quantization rounding + outlier clipping + RNG dispatch
+//            shift). Cache bump invalidates v26 fp16-decoder cached
+//            audio so the user listen-test doesn't hear a fp16/int8
+//            mix.
+const CACHE_DIR = "audio-cache-v27";
 const SAMPLE_RATE = 24000; // Chatterbox conditional decoder output rate (S3GEN_SR)
 const INT16_SCALE = 32767;
 
