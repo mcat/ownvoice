@@ -145,7 +145,12 @@ import { pregenAudio } from "../audit/workflows/audioCachePregen";
 //            threshold under fp32 but technically wrong. v25 forces
 //            re-render of any v24 audio that has the reverted
 //            post-processing baked in.
-const CACHE_DIR = "audio-cache-v25";
+// v25 → v26: re-reverted JUST the gate interpolation. User listen-test
+//            caught a plosive "puh" at speech onset on consonant-
+//            initial phrases ("No", "Dim the light", "Please repeat
+//            that") under the interpolated gate. Constant-per-window
+//            gain restored; denoise quietest-frame fix retained.
+const CACHE_DIR = "audio-cache-v26";
 const SAMPLE_RATE = 24000; // Chatterbox conditional decoder output rate (S3GEN_SR)
 const INT16_SCALE = 32767;
 

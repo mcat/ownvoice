@@ -475,6 +475,19 @@ export function postProcessAudio(raw: Float32Array, sampleRate: number): Float32
   const gateThreshold = noiseRms * 3;
 
   if (gateThreshold > 0.0001) {
+    // Per-window constant gain. A prior version applied linear gain
+    // interpolation across samples within each window to eliminate a
+    // 500 Hz step-modulation that the constant-per-window gain creates
+    // (visible in FFT as harmonics through 3 kHz). Mathematically more
+    // correct but PERCEPTUALLY worse: with interpolation, sample 0 of
+    // the audio has gain 0 and ramps up over 2 ms, whereas constant-
+    // per-window gives sample 0 immediate gain 0.3. For consonant/
+    // sibilant speech onsets (/n/, /d/, /r/) the silent-then-ramping
+    // start creates a plosive "puh" transient — user listen-test on
+    // "No", "Dim the light", "Please repeat that" confirmed it under
+    // the interpolated variant. The 500 Hz step modulation it removed
+    // is below most listeners' threshold under fp32 decoder output, so
+    // the trade-off favors keeping the constant-per-window gain.
     const windowLen = Math.floor(sampleRate * 0.002); // 2 ms analysis window
     let gateGain = 0; // starts closed
     const attack = 0.3;  // gate opens quickly
@@ -486,27 +499,9 @@ export function postProcessAudio(raw: Float32Array, sampleRate: number): Float32
       const winRms = Math.sqrt(winEnergy / (end - i));
 
       const target = winRms > gateThreshold ? 1 : 0;
-      const prevGain = gateGain;
       gateGain += (target - gateGain) * (target > gateGain ? attack : release);
 
-      // Linearly interpolate gain across the window. Applying a CONSTANT
-      // gain per 2 ms block produced step discontinuities at every window
-      // boundary — a 500 Hz square-wave amplitude modulation superimposed
-      // on the speech, with harmonics at 1k / 1.5k / 2k / 2.5k / 3k Hz...
-      // Visible in FFT analysis as a peak at 2706 Hz (the 5th-6th harmonic
-      // of 500 Hz). Inaudible to most listeners under fp32 decoder output
-      // but technically wrong; this fix produces a sample-smooth gate
-      // attack ramp.
-      //
-      // Previously reverted because we mis-attributed the fp16-decoder
-      // bzzt to the unmasking effect of this fix. Re-applied after #287
-      // rolled back to the fp32 decoder; the gate fix is now safe.
-      const span = end - i;
-      for (let j = i; j < end; j++) {
-        const t = (j - i) / span;
-        const g = prevGain + (gateGain - prevGain) * t;
-        audio[j] *= g;
-      }
+      for (let j = i; j < end; j++) audio[j] *= gateGain;
     }
   }
 
