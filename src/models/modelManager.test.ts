@@ -403,6 +403,29 @@ describe("ModelManager — WebGPU detection", () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     delete (navigator as any).gpu;
   });
+
+  it("executionProvider degrades to wasm after init when requestAdapter returns null", async () => {
+    // Matches the iPad Simulator profile: navigator.gpu API surface is
+    // present but no adapter is actually available. Pre-fix, this combo
+    // reported `EP: webgpu` from init's log line and from the getter,
+    // which then forced every worker into a try-webgpu-then-retract path.
+    Object.defineProperty(navigator, "gpu", {
+      value: { requestAdapter: async () => null },
+      configurable: true,
+      writable: true,
+    });
+
+    const mgr = getModelManager();
+    // Before init resolves, the getter still uses the API-surface heuristic.
+    expect(mgr.executionProvider).toBe("webgpu");
+    await mgr.init();
+    // After init, the probe result wins.
+    expect(mgr.executionProvider).toBe("wasm");
+    expect(mgr.hasWebGPU).toBe(true); // API surface unchanged
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    delete (navigator as any).gpu;
+  });
 });
 
 // =============================================================================

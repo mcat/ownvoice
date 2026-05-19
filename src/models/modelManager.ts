@@ -33,15 +33,29 @@ class ModelManager {
   };
   private listeners: Set<ProgressCallback> = new Set();
   private initialized = false;
+  // null = not yet probed; true/false = result of `requestAdapter()`.
+  // iPad Simulator and some Safari builds expose the `navigator.gpu` API
+  // surface but return null from `requestAdapter()`. Treating API presence
+  // as proof of availability ships a `EP: webgpu` log line and downstream
+  // worker init that then has to be retracted when sessions fail to
+  // create — see logs/dev.log on iPad Simulator for the cascade.
+  private webgpuAdapterAvailable: boolean | null = null;
 
-  /** Check if WebGPU is available */
+  /** Whether `navigator.gpu` API surface exists. This is necessary-but-not-
+   *  sufficient for WebGPU inference; consumers wanting "can I actually run
+   *  on the GPU" should read `executionProvider` after `init()` resolves. */
   get hasWebGPU(): boolean {
     return "gpu" in navigator;
   }
 
-  /** Get the best execution provider */
-  get executionProvider(): string {
-    return this.hasWebGPU ? "webgpu" : "wasm";
+  /** The best execution provider that's actually usable on this device.
+   *  Before `init()` resolves, falls back to the API-surface heuristic.
+   *  After init, reflects the result of `requestAdapter()`. */
+  get executionProvider(): "webgpu" | "wasm" {
+    if (this.webgpuAdapterAvailable === null) {
+      return this.hasWebGPU ? "webgpu" : "wasm";
+    }
+    return this.webgpuAdapterAvailable ? "webgpu" : "wasm";
   }
 
   /** Initialize the model manager and request persistent storage */
@@ -78,9 +92,11 @@ class ModelManager {
     try {
       const adapter = await navigator.gpu.requestAdapter();
       if (!adapter) {
+        this.webgpuAdapterAvailable = false;
         console.warn("[OwnVoice:WebGPU] requestAdapter returned null; degrading to WASM");
         return;
       }
+      this.webgpuAdapterAvailable = true;
       const info = (adapter as { info?: { vendor?: string; architecture?: string; device?: string; description?: string } }).info;
       const { limits } = adapter;
       // The WebGPU spec guarantees maxBufferSize >= 256 MB on any adapter
@@ -107,6 +123,7 @@ class ModelManager {
         );
       }
     } catch (err) {
+      this.webgpuAdapterAvailable = false;
       console.warn("[OwnVoice:WebGPU] adapter probe failed:", err);
     }
   }
