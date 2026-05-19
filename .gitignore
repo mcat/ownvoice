@@ -26,6 +26,9 @@ pnpm-debug.log*
 # logSinkPlugin in vite.config.ts. Truncated on every `npm run dev`.
 logs/
 
+# Local mkcert dev certs — generated per-machine, never commit
+certs/
+
 # Environment — never commit secrets
 .env
 .env.*.local

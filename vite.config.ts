@@ -1,7 +1,7 @@
 import { defineConfig, type Plugin } from "vite";
 import { resolve, extname, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { promises as fs, existsSync, mkdirSync, writeFileSync, appendFileSync } from "node:fs";
+import { promises as fs, existsSync, mkdirSync, writeFileSync, appendFileSync, readFileSync } from "node:fs";
 import preact from "@preact/preset-vite";
 import tailwindcss from "@tailwindcss/vite";
 
@@ -214,6 +214,13 @@ export default defineConfig({
   server: {
     port: 3000,
     open: true,
+    host: true,
+    https: existsSync(resolve(__dirname, "certs/dev-key.pem"))
+      ? {
+          key: readFileSync(resolve(__dirname, "certs/dev-key.pem")),
+          cert: readFileSync(resolve(__dirname, "certs/dev-cert.pem")),
+        }
+      : undefined,
     // COOP/COEP make `crossOriginIsolated` true, which is the prerequisite
     // for SharedArrayBuffer — and therefore for multi-threaded WASM in ORT.
     // The conditional decoder runs on single-threaded WASM by default and
