@@ -19,34 +19,22 @@ export const ORT_VERSION = "v1.25.1";
  * (yyyy-mm-dd) rather than a model-specific name — the release covers
  * the entire set of models (TTS + LLM + STT), not just one.
  *
- * 2026-05-22 candidate: int8-weights / fp32-compute conditional_decoder
- * with p99.9 scale calibration. Extends fp16-weights pattern from
- * 2026-05-20 (PR #331) using per-output-channel symmetric int8
- * (DequantizeLinear before each Conv/MatMul/Gemm). p99.9 outlier-
- * clipping calibration found empirically to be the sweet spot for
- * this decoder (3× lower mechanical drift vs max-abs; p99.5 and
- * p99.95 / p99.99 both regress). Disk 275.7 MB → 158.2 MB (43%
- * smaller than fp16, 69% smaller than fp32). Compute stays fp32.
+ * 2026-05-24: applied offline shape inference to conditional_decoder.onnx
+ * (scripts/add-shape-inference.py). The int8 quantization toolchain strips
+ * value_info (per-tensor shape annotations on every intermediate tensor) —
+ * without them ORT-Web's WebGPU EP runs full shape inference at
+ * session-create, adding ~60s of cold load on this 24,480-node decoder.
+ * Pre-computing offline drops decoder createSession from 137-188s (cold
+ * int8) to ~77s warm / ~85s cold projected, matching the fp32 baseline
+ * timing while keeping the 158 MB int8 weights. The .onnx file grows
+ * ~2 MB (4.9 → 6.8 MB); .onnx_data is byte-identical to 2026-05-23.
  *
- * Pre-listen-test diagnostic evidence (strongly supports clean):
- *   - No bzzt comb-filter signature: top onset peaks are speech
- *     formants (94-500 Hz), not the v2-fp16 bzzt's 500 Hz harmonic
- *     comb through 11 kHz.
- *   - Worst-case 2-4 kHz onset delta: +4.2 dB on plosive_d, at
- *     -27 dB below speech RMS — at perceptibility threshold in
- *     quiet listening, masked by typical environmental noise.
- *     Post-processing (denoise + gate + normalize) attenuates
- *     further.
- *   - Perceptual gate's 1/16 fail (plosive_d 3.6) is band-fraction
- *     of total spectral energy — a proportion measurement, not
- *     loudness. Other phrases show int8 QUIETER absolute in the
- *     band despite higher proportion ratios.
- *
- * Listen-test on production WebGPU EP is still the ship gate per
- * feedback_perceptual_validator_blind_spots, but the numeric
- * evidence puts ship probability high.
+ * 2026-05-23: int8-weights / fp32-compute conditional_decoder with p99.9
+ * scale calibration. Per-output-channel symmetric int8 (DequantizeLinear
+ * before each Conv/MatMul/Gemm). Disk 275.7 MB → 158.2 MB (43% smaller
+ * than fp16, 69% smaller than fp32). Compute stays fp32.
  */
-export const MODELS_RELEASE = "2026-05-23";
+export const MODELS_RELEASE = "2026-05-24";
 
 /** Asset path prefixes — used by upload script and Pages Functions. */
 export const ORT_ASSET_PREFIX = `ort/${ORT_VERSION}`;

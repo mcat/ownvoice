@@ -2,7 +2,7 @@
   "version": 1,
   "models": {
     "tts": {
-      "baseUrl": "/models/2026-05-23/chatterbox-multilingual/",
+      "baseUrl": "/models/2026-05-24/chatterbox-multilingual/",
       "files": [
         {
           "name": "speech_encoder.onnx",
@@ -36,7 +36,7 @@
         },
         {
           "name": "conditional_decoder.onnx",
-          "size": 4887734,
+          "size": 6762914,
           "magic": "onnx"
         },
         {
@@ -57,7 +57,7 @@
       ]
     },
     "stt": {
-      "baseUrl": "/models/2026-05-23/whisper-small.en/",
+      "baseUrl": "/models/2026-05-24/whisper-small.en/",
       "files": [
         {
           "name": "encoder_model_q4.onnx",
@@ -77,7 +77,7 @@
       ]
     },
     "denoiser": {
-      "baseUrl": "/models/2026-05-23/denoiser/",
+      "baseUrl": "/models/2026-05-24/denoiser/",
       "files": [
         {
           "name": "denoiser_model.onnx",

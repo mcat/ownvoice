@@ -63,6 +63,7 @@ from pathlib import Path
 
 import numpy as np
 import onnx
+import onnx.shape_inference
 from onnx import TensorProto, helper, numpy_helper
 
 WEIGHTED_OPS = {"Conv", "ConvTranspose", "MatMul", "Gemm"}
@@ -350,8 +351,18 @@ def convert(
     # Append the new initializers (scale, zero_point).
     model.graph.initializer.extend(new_initializers)
 
-    # Clear inferred value_info — shapes/types will be re-inferred at load.
+    # Re-run shape inference. The structural changes above (inserted DQL nodes,
+    # int8 weight initializers) invalidate the original value_info entries.
+    # Without value_info, ORT-Web's WebGPU EP must run full shape inference at
+    # session-create — adding ~60s of cold load on this 24,480-node decoder.
+    # Pre-computing them offline matches the fp32 baseline timing.
     del model.graph.value_info[:]
+    print("Re-running shape inference to populate value_info ...")
+    inferred = onnx.shape_inference.infer_shapes(
+        model, check_type=False, strict_mode=False, data_prop=True
+    )
+    print(f"  value_info entries: {len(inferred.graph.value_info)}")
+    model = inferred
 
     # Save with fresh external data.
     out_path.parent.mkdir(parents=True, exist_ok=True)
