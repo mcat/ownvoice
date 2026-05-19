@@ -154,6 +154,14 @@ export function App() {
     // GPU TTS shader-compile + decoder weights are the heavyweights and
     // wait until STT settles. The primer can write hundreds of MB to
     // OPFS, so it waits until both workers are out of init.
+    //
+    // WASM TTS is not eagerly booted in parallel here — it is a fallback
+    // (synth) and a cloning-time dependency (speech_encoder). VoiceCapture
+    // mounts during the Voice step of Setup and triggers bootTTSWasm()
+    // itself (idempotent), and voiceProcessor.ts kicks it when there's
+    // a pending blob. So the WASM TTS warmup happens at the time the user
+    // actually navigates to Voice — usually well before GPU TTS finishes
+    // its 150-190s decoder compile.
     (async () => {
       await bootSTT();
       await waitForModelSettled("stt");
