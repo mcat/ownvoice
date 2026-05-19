@@ -19,7 +19,7 @@ npm run test:watch     # Vitest in watch mode
 npm run test:coverage  # Vitest with coverage
 npm run manifest:regen # Refresh public/models-manifest.json from disk sizes
 npm run manifest:check # Verify manifest is in sync with disk (CI-safe)
-tail -f logs/dev.log   # Live browser-console mirror (JSON Lines, OTel LogRecord shape) — see "Debugging from the terminal"
+tail -f logs/dev.log   # Live browser-console mirror (Loguru format) — see "Debugging from the terminal"
 ```
 
 **After adding/replacing any file under `public/models/**`:** run `npm run manifest:regen` and commit the diff. The `manifestIntegrity` vitest covers drift automatically in CI.
@@ -94,13 +94,13 @@ Components use inline style objects with tokens from the `theme` module. This ke
 
 **When investigating any runtime bug — failed boot, worker error, unexpected console output — read `logs/dev.log` first.** It's the source of truth Claude can actually see; the DevTools console is invisible from here.
 
-`npm run dev` truncates `logs/dev.log` on each start and then appends every browser `console.log/info/warn/error/debug/dir` call, plus uncaught errors and unhandled rejections, from the main thread *and* from each bundled worker. Each line is **JSON Lines** shaped to match the OpenTelemetry `LogRecord` model:
+`npm run dev` truncates `logs/dev.log` on each start and then appends every browser `console.log/info/warn/error/debug/dir` call, plus uncaught errors and unhandled rejections, from the main thread *and* from each bundled worker. Each line is **Loguru-formatted** (one of IntelliJ's built-in log highlighters, recognized with zero per-developer setup):
 
-```json
-{"timestamp":"2026-05-19T17:33:30.935Z","severityText":"WARN","body":"[OwnVoice:WebGPU] requestAdapter returned null; degrading to WASM","attributes":{"origin":"main","tabId":"1arfvm2t"}}
+```
+2026-05-19 17:33:30.935 | WARN     | main:1arfvm2t | [OwnVoice:WebGPU] requestAdapter returned null; degrading to WASM
 ```
 
-Top-level keys: `timestamp` (ISO-8601), `severityText` (`LOG|INFO|WARN|ERROR|DEBUG|DIR|UNCAUGHT|UNHANDLEDREJECTION`), `body` (the formatted console message), `attributes.origin` (`main` or `worker:<name>`), `attributes.tabId` (per-tab id, missing on legacy workers). The shape is OTel-compatible so the file ingests straight into a Collector `filelog` receiver if needed.
+Fields, pipe-separated: local timestamp (`YYYY-MM-DD HH:mm:ss.SSS`, no timezone — matches your terminal's `date`), level (padded to 8 chars: `LOG|INFO|WARN|ERROR|DEBUG|DIR|UNCAUGHT|UNHANDLEDREJECTION`), `origin:tabId` (`main` or `worker:<name>` plus a per-tab id, omitted for the session-start marker), and the verbatim console message. Multi-line stack traces are flattened with `⏎` so every record stays on one line.
 
 Typical workflow:
 
@@ -108,18 +108,14 @@ Typical workflow:
 # In one terminal:
 npm run dev
 
-# In another (or via Claude's Read/Bash) — raw or pretty:
-tail -f logs/dev.log
-tail -f logs/dev.log | jq -r '"\(.timestamp) [\(.severityText)] [\(.attributes.origin)] \(.body)"'
-
-# Filter by severity or module (jq is exact; grep is fast):
-jq -c 'select(.severityText=="ERROR" or .severityText=="UNCAUGHT")' logs/dev.log
-jq -c 'select(.body | test("OwnVoice:TTS"))' logs/dev.log
-grep -F '"severityText":"ERROR"' logs/dev.log    # fast path
-grep -F 'OwnVoice:TTS' logs/dev.log              # fast path (matches body)
+# In another (or via Claude's Read/Bash):
+tail -f logs/dev.log                           # follow live
+grep -E "WARN |ERROR |UNCAUGHT" logs/dev.log   # surface non-info severities
+grep "OwnVoice:TTS" logs/dev.log               # filter by module prefix in body
+awk -F' \\| ' '$2 ~ /ERROR/' logs/dev.log      # field-aware filter on level column
 ```
 
-**IntelliJ highlighting:** Settings → Editor → Log Highlighting → custom format with `Message Start Pattern: ^\{` and `Time Format: yyyy-MM-dd'T'HH:mm:ss.SSSXXX`. The built-in severity patterns (`error`, `warn`, `info`) match the JSON `severityText` values.
+**IntelliJ:** open `logs/dev.log` — the editor recognizes Loguru automatically. Severity coloring (red ERROR, amber WARN, green INFO) and the scrollbar heatmap work out of the box; no custom format needed.
 
 **For iPad capture:** run `npm run dev -- --host`, point the iPad at `http://<laptop-ip>:3000/app/`, and the same file fills up with its logs. This is currently the only Claude-visible surface for iPad-Safari-only bugs (e.g. the unresolved boot race in PRs #254/#255/#257).
 

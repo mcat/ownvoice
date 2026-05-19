@@ -83,12 +83,17 @@ function serveOrtFromPublic(): Plugin {
  * the LAN (run `npm run dev -- --host` for the latter). Pairs with
  * `src/dev/logSink.ts`, which patches `console` on the browser side.
  *
- * Output is JSON Lines (one record per line), shaped to match the OTel
- * `LogRecord` data model — `timestamp`, `severityText`, `body`, and an
- * `attributes` bag holding `origin` and `tabId`. The shape lets the OTel
- * Collector's `filelog` receiver ingest the file directly if we ever
- * want to, and gives IntelliJ a structured format to highlight (see
- * CLAUDE.md "Debugging from the terminal" for the IDE pattern).
+ * Output is Loguru-style pipe-separated text, one record per line:
+ *
+ *   2026-05-19 17:45:23.789 | WARN     | main:1arfvm2t | <message>
+ *
+ * Fields, in order: local time (no T, no Z, millisecond precision), level
+ * padded to 8 chars, `origin:tabId` (tabId omitted for context-less
+ * records), and the verbatim message. Loguru is one of IntelliJ's built-in
+ * highlighters (see CLAUDE.md "Debugging from the terminal") so severity
+ * coloring and timestamp parsing work with zero per-developer setup. The
+ * format is also recognized by vector.dev, fluent-bit, and the OTel
+ * Collector's `filelog` receiver via the bundled `loguru` parser preset.
  *
  * The file is truncated on each server start so a tail reflects the
  * current session. Empty body / disk errors are swallowed — log capture
@@ -97,21 +102,49 @@ function serveOrtFromPublic(): Plugin {
 function logSinkPlugin(): Plugin {
   const logDir = resolve(__dirname, "logs");
   const logFile = resolve(logDir, "dev.log");
+
+  // Format a Date as Loguru's local-time string: "YYYY-MM-DD HH:mm:ss.SSS".
+  // ISO 8601 is `2026-05-19T17:45:23.789Z` (UTC, T separator); Loguru wants
+  // a space separator and millis without timezone. Use local components so
+  // the timestamps match what `date` prints in the same terminal — the
+  // alternative (UTC) makes correlating logs against `tail -f` timing harder
+  // for everyone west of UTC.
+  const formatLoguruTime = (d: Date): string => {
+    const pad = (n: number, w = 2) => String(n).padStart(w, "0");
+    return (
+      `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ` +
+      `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}.${pad(d.getMilliseconds(), 3)}`
+    );
+  };
+
+  // Loguru pads the level to width 8 so the pipe-separated columns line up
+  // in raw `tail -f`. WARN/INFO/DEBUG are 4-5 chars; ERROR/UNCAUGHT are 5-8.
+  // `padEnd(8)` matches loguru's `{level: <8}` exactly.
+  const formatLine = (
+    ts: Date,
+    level: string,
+    origin: string,
+    tabId: string | undefined,
+    message: string,
+  ): string => {
+    const ctx = tabId ? `${origin}:${tabId}` : origin;
+    // Sanitize the message: collapse newlines/CR so multi-line stack
+    // traces stay on one Loguru line. Pipes in JS error text (`a || b`)
+    // are left intact — the format is widely tolerated because the
+    // first three pipes are positional and any pipe after column 3 is
+    // body content. IntelliJ's Loguru regex anchors on the ^date so
+    // mid-line pipes don't confuse it.
+    const safe = message.replace(/[\r\n]+/g, " ⏎ ");
+    return `${formatLoguruTime(ts)} | ${level.toUpperCase().padEnd(8)} | ${ctx} | ${safe}\n`;
+  };
+
   return {
     name: "ownvoice-log-sink",
     apply: "serve",
     configureServer(server) {
       try {
         if (!existsSync(logDir)) mkdirSync(logDir, { recursive: true });
-        // Session marker is itself a LogRecord so the whole file is valid
-        // JSON Lines — no special-case parsing for the first line.
-        const sessionStart = JSON.stringify({
-          timestamp: new Date().toISOString(),
-          severityText: "INFO",
-          body: "session start",
-          attributes: { origin: "vite", event: "session_start" },
-        });
-        writeFileSync(logFile, sessionStart + "\n");
+        writeFileSync(logFile, formatLine(new Date(), "INFO", "vite", undefined, "session start"));
         server.config.logger.info(`  ➜  browser logs: ${logFile}`);
       } catch (err) {
         server.config.logger.warn(`[log-sink] init failed: ${(err as Error).message}`);
@@ -133,22 +166,15 @@ function logSinkPlugin(): Plugin {
               origin: string;
               tabId?: string;
             };
-            // OTel LogRecord shape. `attributes` is the bag for fields
-            // outside the spec'd top-level set — `origin` distinguishes
-            // main thread vs each worker; `tabId` distinguishes parallel
-            // tabs (useful when an iPad on the LAN posts alongside the
-            // local Safari). Both stay flat so jq selectors are short.
-            const record = {
-              timestamp: new Date(payload.ts).toISOString(),
-              severityText: payload.level.toUpperCase(),
-              body: payload.message,
-              attributes: {
-                origin: payload.origin,
-                ...(payload.tabId ? { tabId: payload.tabId } : {}),
-              },
-            };
+            const line = formatLine(
+              new Date(payload.ts),
+              payload.level,
+              payload.origin,
+              payload.tabId,
+              payload.message,
+            );
             try {
-              appendFileSync(logFile, JSON.stringify(record) + "\n");
+              appendFileSync(logFile, line);
             } catch {
               // EACCES / ENOSPC etc — don't take down Vite. Caller still
               // gets a 204 so the browser doesn't retry endlessly.
