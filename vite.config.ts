@@ -83,6 +83,13 @@ function serveOrtFromPublic(): Plugin {
  * the LAN (run `npm run dev -- --host` for the latter). Pairs with
  * `src/dev/logSink.ts`, which patches `console` on the browser side.
  *
+ * Output is JSON Lines (one record per line), shaped to match the OTel
+ * `LogRecord` data model — `timestamp`, `severityText`, `body`, and an
+ * `attributes` bag holding `origin` and `tabId`. The shape lets the OTel
+ * Collector's `filelog` receiver ingest the file directly if we ever
+ * want to, and gives IntelliJ a structured format to highlight (see
+ * CLAUDE.md "Debugging from the terminal" for the IDE pattern).
+ *
  * The file is truncated on each server start so a tail reflects the
  * current session. Empty body / disk errors are swallowed — log capture
  * must never break the dev server.
@@ -96,7 +103,15 @@ function logSinkPlugin(): Plugin {
     configureServer(server) {
       try {
         if (!existsSync(logDir)) mkdirSync(logDir, { recursive: true });
-        writeFileSync(logFile, `=== session start: ${new Date().toISOString()} ===\n`);
+        // Session marker is itself a LogRecord so the whole file is valid
+        // JSON Lines — no special-case parsing for the first line.
+        const sessionStart = JSON.stringify({
+          timestamp: new Date().toISOString(),
+          severityText: "INFO",
+          body: "session start",
+          attributes: { origin: "vite", event: "session_start" },
+        });
+        writeFileSync(logFile, sessionStart + "\n");
         server.config.logger.info(`  ➜  browser logs: ${logFile}`);
       } catch (err) {
         server.config.logger.warn(`[log-sink] init failed: ${(err as Error).message}`);
@@ -118,15 +133,22 @@ function logSinkPlugin(): Plugin {
               origin: string;
               tabId?: string;
             };
-            const iso = new Date(payload.ts).toISOString();
-            // Per-context tab-id tag sits between origin and message so that
-            // greps for `[main]` or `[worker:<name>]` keep working. Missing
-            // tabId stays absent (workers older than the field still
-            // append; they just look unattributed).
-            const tabTag = payload.tabId ? `[t:${payload.tabId}] ` : "";
-            const line = `${iso} [${payload.level.toUpperCase()}] [${payload.origin}] ${tabTag}${payload.message}\n`;
+            // OTel LogRecord shape. `attributes` is the bag for fields
+            // outside the spec'd top-level set — `origin` distinguishes
+            // main thread vs each worker; `tabId` distinguishes parallel
+            // tabs (useful when an iPad on the LAN posts alongside the
+            // local Safari). Both stay flat so jq selectors are short.
+            const record = {
+              timestamp: new Date(payload.ts).toISOString(),
+              severityText: payload.level.toUpperCase(),
+              body: payload.message,
+              attributes: {
+                origin: payload.origin,
+                ...(payload.tabId ? { tabId: payload.tabId } : {}),
+              },
+            };
             try {
-              appendFileSync(logFile, line);
+              appendFileSync(logFile, JSON.stringify(record) + "\n");
             } catch {
               // EACCES / ENOSPC etc — don't take down Vite. Caller still
               // gets a 204 so the browser doesn't retry endlessly.
