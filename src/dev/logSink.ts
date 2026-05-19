@@ -153,9 +153,19 @@ function installGlobalErrorHandlers(): void {
   target.addEventListener("error", (ev: Event) => {
     const e = ev as ErrorEvent;
     const loc = e.filename ? ` @ ${e.filename}:${e.lineno}:${e.colno}` : "";
+    // For cross-origin-tainted scripts WebKit sanitizes message/filename to
+    // "Script error." / "" — but `event.error` is sometimes still populated
+    // with the raw Error (and its stack). Append it when present so the
+    // line in dev.log is actionable instead of a black hole.
+    const err = (e as unknown as { error?: unknown }).error;
+    const errDetail = err instanceof Error
+      ? ` :: ${err.name}: ${err.message}${err.stack ? "\n" + err.stack : ""}`
+      : err !== undefined && err !== null
+        ? ` :: ${safeStringify(err)}`
+        : "";
     send({
       level: "uncaught",
-      message: `${e.message}${loc}`,
+      message: `${e.message}${loc}${errDetail}`,
       ts: Date.now(),
       origin: detectOrigin(),
       tabId: TAB_ID,
