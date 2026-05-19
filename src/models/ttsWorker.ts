@@ -156,7 +156,18 @@ async function createSession(
     opts.externalData = [{ path: dataFileName!, data: dataUrl }];
   }
 
-  return ort.InferenceSession.create(onnxUrl, opts);
+  // Mirror the GPU worker's timing instrumentation so any boot-time
+  // regression in the cloning path (speech_encoder load) shows up in
+  // logs/dev.log under [OwnVoice:TTS] alongside the GPU side.
+  const tStart = performance.now();
+  const sess = await ort.InferenceSession.create(onnxUrl, opts);
+  const elapsedSec = ((performance.now() - tStart) / 1000).toFixed(2);
+  console.log(
+    `${LOG} createSession ${onnxUrl.split("/").pop()} ` +
+    `ort-create=${elapsedSec}s ` +
+    `ep=${eps.join(",")}`,
+  );
+  return sess;
 }
 
 /**

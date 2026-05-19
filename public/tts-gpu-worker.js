@@ -195,7 +195,18 @@ async function createSession(url, hasExternalData = false, wasmOnly = false, ext
     const dataFileName = url.split("/").pop() + "_data";
     opts.externalData = [{ path: dataFileName, data: dataUrl }];
   }
-  return ort.InferenceSession.create(url, opts);
+  // Pass URL string (not pre-fetched ArrayBuffer) so ORT can use its
+  // own loading path which may have internal optimizations / caching.
+  // Time the full createSession call as one unit.
+  const t0 = performance.now();
+  const sess = await ort.InferenceSession.create(url, opts);
+  const elapsedSec = ((performance.now() - t0) / 1000).toFixed(2);
+  console.log(
+    `${LOG} createSession ${url.split("/").pop()}: ` +
+    `total=${elapsedSec}s ` +
+    `ep=${wasmOnly ? "wasm" : "webgpu+wasm"}`,
+  );
+  return sess;
 }
 
 /**
@@ -690,11 +701,34 @@ async function handleInit(modelUrl, benchFlag, loadCangjie, memdiagFlag, padBoun
     ),
   );
 
-  conditionalDecoderSession = await stage("conditional_decoder (WebGPU)", () =>
+  // PERF: graphOptimizationLevel="disabled" on the WebGPU EP.
+  //
+  // Empirical results on the int8/fp32-compute decoder (24,480 nodes,
+  // 546 DequantizeLinear ops) — see /tmp/dev.log experiment runs:
+  //   WebGPU + opt=all:      188.5s ort-create (baseline)
+  //   WebGPU + opt=basic:    157.5s ort-create (-31s)
+  //   WebGPU + opt=disabled: 151.6s ort-create (-37s) ← chosen
+  //
+  // opt=all fuses ops into wider patterns (e.g. MatMul+Bias+Add). Each
+  // unique fused-op shape produces a unique WGSL compile. opt=disabled
+  // leaves the raw graph — slightly more node dispatch overhead at
+  // runtime but fewer unique-shape shader compiles on cold load.
+  //
+  // Other paths investigated and rejected:
+  //   - WASM-only decoder (99s create, but ~14× slower per-synth)
+  //   - fp32 baseline decoder (74s create, but 3.3× larger weights)
+  //   - fp16-weights decoder (146s create, +118 MB on disk)
+  //   - Hybrid WASM-at-boot → WebGPU upgrade (hedges, doesn't fix root)
+  //   - ORT Python offline optimization (creates 7× more Dequant ops)
+  //   - Pre-fold DequantizeLinear offline (180s — slower than baseline
+  //     despite being structurally identical to fp32 baseline; hidden
+  //     sensitivity in ORT-Web WebGPU initializer serialization)
+  conditionalDecoderSession = await stage("conditional_decoder (WebGPU,opt=disabled)", () =>
     createSession(
       baseUrl + "conditional_decoder.onnx",
       true,
       false,
+      { graphOptimizationLevel: "disabled" },
     ),
   );
 
