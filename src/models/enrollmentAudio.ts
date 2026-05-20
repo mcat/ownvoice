@@ -9,7 +9,7 @@
  * Each helper is pure: returns a new Float32Array, never mutates input.
  */
 
-import { applyBiquad } from "../speak";
+import { applyBiquad } from "../audio/dsp";
 
 const HP_CUTOFF_HZ = 80;
 const SILENCE_TRIM_DBFS = -40;
