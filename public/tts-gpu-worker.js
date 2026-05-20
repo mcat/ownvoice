@@ -1,4 +1,4 @@
-// build: 2026-05-12-require-corp
+// build: 2026-05-20-relay-dynamic-import
 /**
  * WebGPU TTS Worker — Chatterbox Multilingual (23 languages) via ONNX Runtime WebGPU EP.
  *
@@ -39,8 +39,18 @@
 // must live at that same path. Update both this URL and the wasmPaths
 // string when bumping ORT_VERSION.
 import * as ort from "/ort/v1.25.1/ort.webgpu.min.mjs";
-import { installDevLogRelay } from "/__dev-log-relay.js";
-installDevLogRelay("worker:tts-gpu");
+
+// Dev-only log relay. Gated at the import site (not just inside the
+// function) because production `/__dev-log-relay.js` ships with no
+// COEP header — a static import in this worker's module graph would
+// be refused by `require-corp` and abort worker boot, falling the app
+// back to WASM TTS (losing the whole WebGPU perf win). The hostname
+// gate matches /__dev-log-relay.js's internal check exactly. See issue
+// surfaced in 2026-05-20 audit.
+if (self.location?.hostname === "localhost" || self.location?.hostname === "127.0.0.1") {
+  const { installDevLogRelay } = await import("/__dev-log-relay.js");
+  installDevLogRelay("worker:tts-gpu");
+}
 
 const LOG = "[OwnVoice:TTS:GPU]";
 const SAMPLE_RATE = 24000;
