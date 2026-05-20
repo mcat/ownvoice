@@ -80,7 +80,11 @@ describe("useThreadView", () => {
       });
     }
 
-    await waitFor(() => expect(result.current.length).toBe(10));
+    // Bumped from RTL's 1s default after CI flakes (#351). Ten async
+    // fake-indexeddb writes + their subscribe callbacks contend for the
+    // same event loop, and ubuntu-latest runners can blow past 1s under
+    // load even though the test passes in ~50 ms locally.
+    await waitFor(() => expect(result.current.length).toBe(10), { timeout: 5000 });
     expect(result.current.length).toBeLessThanOrEqual(THREAD_VIEW_CAP);
   });
 });
