@@ -28,7 +28,7 @@ vi.mock("./modelManager", () => ({
 // Mock postProcessAudio so tests can assert generateAllPhrases applies it
 // on the synthesis path before caching. Identity function keeps existing
 // round-trip tests unaffected (put/get goes direct, never through this).
-vi.mock("../speak", () => ({
+vi.mock("../audio/dsp", () => ({
   postProcessAudio: vi.fn((audio: Float32Array) => audio),
 }));
 
@@ -436,7 +436,7 @@ describe("audioCache — generateAllPhrases", () => {
     // surfaced by mutation testing. This test is the backstop: the
     // generator must route synthesized audio through postProcessAudio
     // (once, with the right sample rate) before handing it to the cache.
-    const { postProcessAudio } = await import("../speak");
+    const { postProcessAudio } = await import("../audio/dsp");
     const mockedPP = vi.mocked(postProcessAudio);
     mockedPP.mockClear();
 

@@ -1,6 +1,6 @@
 import { getModelManager } from "./modelManager";
 import { isGPUReady, synthesizeGPU } from "./ttsEngine";
-import { postProcessAudio } from "../speak";
+import { postProcessAudio } from "../audio/dsp";
 import { recordHash } from "../stores/patientIndex";
 import { ov } from "../audit/workflow";
 import { pregenAudio } from "../audit/workflows/audioCachePregen";
