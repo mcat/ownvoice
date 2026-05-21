@@ -63,7 +63,8 @@ export const useOfflineStore = create<OfflineState>((set) => ({
   lastVerifiedAt: null,
 
   setPrimerRunning: (v) => set({ primerRunning: v }),
-  setManifestTotalBytes: (bytes) => set({ manifestTotalBytes: bytes }),
+  setManifestTotalBytes: (bytes) =>
+    set((s) => (s.manifestTotalBytes === bytes ? s : { manifestTotalBytes: bytes })),
   beginPrimerRun: (expectedBytes) => set({ progress: {}, expectedBytes }),
   reportProgress: (model, file, loaded, total) =>
     set((s) => ({
