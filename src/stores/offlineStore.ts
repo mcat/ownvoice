@@ -26,12 +26,21 @@ interface OfflineState {
    * grow each time a new file begins downloading.
    */
   expectedBytes: number;
+  /**
+   * Per-model expected bytes from the loaded manifest. Published once by
+   * `verifyAllOnBoot` and persists for the session, independent of any
+   * primer run. Used to compute "X MB on device" against the verified
+   * subset so partial coverage reports honest bytes (the verified slice),
+   * not the full manifest total.
+   */
+  manifestModelBytes: Partial<Record<ModelId, number>>;
   /** Per-model verification results from the last check. */
   verified: Partial<Record<ModelId, ModelVerifyStatus>>;
   /** Last primer-complete timestamp (ms since epoch) or null. */
   lastVerifiedAt: number | null;
 
   setPrimerRunning(v: boolean): void;
+  setManifestModelBytes(bytes: Partial<Record<ModelId, number>>): void;
   /**
    * Snap the store to a fresh starting state for a new primer run: clear
    * stale per-file progress and publish the expected total. Does NOT change
@@ -49,10 +58,23 @@ export const useOfflineStore = create<OfflineState>((set) => ({
   primerRunning: false,
   progress: {},
   expectedBytes: 0,
+  manifestModelBytes: {},
   verified: {},
   lastVerifiedAt: null,
 
   setPrimerRunning: (v) => set({ primerRunning: v }),
+  setManifestModelBytes: (bytes) =>
+    set((s) => {
+      const cur = s.manifestModelBytes;
+      const keys = new Set([
+        ...(Object.keys(cur) as ModelId[]),
+        ...(Object.keys(bytes) as ModelId[]),
+      ]);
+      for (const k of keys) {
+        if (cur[k] !== bytes[k]) return { manifestModelBytes: bytes };
+      }
+      return s;
+    }),
   beginPrimerRun: (expectedBytes) => set({ progress: {}, expectedBytes }),
   reportProgress: (model, file, loaded, total) =>
     set((s) => ({
@@ -66,6 +88,7 @@ export const useOfflineStore = create<OfflineState>((set) => ({
       primerRunning: false,
       progress: {},
       expectedBytes: 0,
+      manifestModelBytes: {},
       verified: {},
       lastVerifiedAt: null,
     }),

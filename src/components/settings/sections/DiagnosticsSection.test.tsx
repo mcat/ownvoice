@@ -432,6 +432,44 @@ describe("DiagnosticsSection — storage rows", () => {
     expect(screen.getByText(/models not yet downloaded/i)).toBeTruthy();
   });
 
+  it("Row 1 shows manifest-bytes for returning user (models verified, no in-flight primer run)", () => {
+    // Returning user with models already in OPFS: verifyAllOnBoot publishes
+    // per-model sizes and marks every model verified, but `expectedBytes`
+    // stays 0 because no primer runs. Pre-fix this row falsely reported
+    // "Models not yet downloaded."
+    const store = useOfflineStore.getState();
+    store.setModelVerified("tts", "verified");
+    store.setModelVerified("stt", "verified");
+    store.setModelVerified("denoiser", "verified");
+    store.setManifestModelBytes({
+      tts: 500_000_000,
+      stt: 500_000_000,
+      denoiser: 500_000_000,
+    });
+    render(<DiagnosticsSection t={light} />);
+    expect(screen.getByText(/1\.40 GB on device/i)).toBeTruthy();
+    expect(screen.queryByText(/models not yet downloaded/i)).toBeNull();
+  });
+
+  it("Row 1 routes partial verification (some models missing) to warn — bytes reflect verified subset only", () => {
+    // 2 of 3 verified, 1 evicted by the browser: the row must not claim
+    // the full manifest total is "on device" — that would give a clinician
+    // false offline confidence right next to the "Storage not protected"
+    // warning. Show the warn glyph and only the verified-subset bytes.
+    const store = useOfflineStore.getState();
+    store.setModelVerified("tts", "verified");
+    store.setModelVerified("stt", "verified");
+    store.setModelVerified("denoiser", "not-primed");
+    store.setManifestModelBytes({
+      tts: 500_000_000,
+      stt: 500_000_000,
+      denoiser: 500_000_000,
+    });
+    render(<DiagnosticsSection t={light} />);
+    expect(screen.getByText(/953\.7 MB on device/i)).toBeTruthy();
+    expect(screen.queryByText(/1\.40 GB/)).toBeNull();
+  });
+
   // -------- Row 2: Storage protection --------
 
   it("Row 2 shows 'protected' copy when persisted=true and no Last-used line", async () => {

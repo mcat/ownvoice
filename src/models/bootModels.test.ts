@@ -52,6 +52,8 @@ vi.mock("./modelsManifest", () => ({
       tts: { baseUrl: "/models/tts/", files: [{ name: "a.onnx", size: 10, magic: "onnx" }] },
     },
   })),
+  totalBytes: (model: { files: { size: number }[] }) =>
+    model.files.reduce((sum, f) => sum + f.size, 0),
 }));
 
 interface MockWorker {
