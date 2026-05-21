@@ -9,6 +9,7 @@ import { verifyAllOnBoot } from "../../../models/bootModels";
 import { clearAudioCache } from "../../../models/audioCache";
 import * as audioCacheRunner from "../../../models/audioCacheRunner";
 import { useOfflineStore } from "../../../stores/offlineStore";
+import type { ModelId } from "../../../models/modelsManifest";
 import { useSettingsStore, useActivePatient } from "../../../stores/settingsStore";
 import { useAudioCacheStore } from "../../../stores/audioCacheStore";
 import { useStorageHealth } from "../../../hooks/useStorageHealth";
@@ -55,7 +56,7 @@ export function DiagnosticsSection({ t }: Props) {
   const primerRunning = useOfflineStore((s) => s.primerRunning);
   const progress = useOfflineStore((s) => s.progress);
   const expectedBytes = useOfflineStore((s) => s.expectedBytes);
-  const manifestTotalBytes = useOfflineStore((s) => s.manifestTotalBytes);
+  const manifestModelBytes = useOfflineStore((s) => s.manifestModelBytes);
   const verified = useOfflineStore((s) => s.verified);
   const lastVerifiedAt = useOfflineStore((s) => s.lastVerifiedAt);
   const markPrimerComplete = useOfflineStore((s) => s.markPrimerComplete);
@@ -219,33 +220,42 @@ export function DiagnosticsSection({ t }: Props) {
       ? Math.min(100, (loadedBytes / expectedBytes) * 100)
       : 0;
 
-  // "On device" if ANY model verified — even partial coverage means OPFS
-  // has bytes. `expectedBytes` (in-flight primer total) wins when a run is
-  // active; otherwise fall back to the manifest total so returning users
-  // see "X MB on device" instead of the stale "not yet downloaded" gate.
+  // Row state machine. `expectedBytes` is set only by an in-session primer
+  // run; `manifestModelBytes` is the persistent on-disk expectation
+  // published once by verifyAllOnBoot. Partial coverage (some verified,
+  // others missing or broken) routes through warn with the verified-subset
+  // bytes rather than the full manifest total — overstating what's on
+  // disk would give clinicians false offline confidence.
   const anyVerified = statuses.some((s) => s === "verified");
-  const onDeviceBytes = expectedBytes > 0 ? expectedBytes : manifestTotalBytes;
-  const modelsOnDevice = anyVerified || expectedBytes > 0;
+  const verifiedBytes = (Object.keys(verified) as ModelId[])
+    .filter((id) => verified[id] === "verified")
+    .reduce((sum, id) => sum + (manifestModelBytes[id] ?? 0), 0);
+  const allManifestBytes = Object.values(manifestModelBytes).reduce(
+    (sum, n) => sum + (n ?? 0),
+    0,
+  );
 
-  const modelsRow = !modelsOnDevice
-    ? {
-        text: resolvePhrase("ui.provider.settings.offline.models_not_yet_downloaded", caregiverLang),
-        glyph: "…",
-        color: t.muted,
-      }
-    : anyNeedsRetry
+  let rowState: "empty" | "broken" | "partial" | "ready";
+  if (anyNeedsRetry) rowState = "broken";
+  else if (anyVerified && !allVerified) rowState = "partial";
+  else if (!anyVerified && expectedBytes === 0) rowState = "empty";
+  else rowState = "ready";
+
+  const readyBytes = expectedBytes > 0 ? expectedBytes : allManifestBytes;
+  const onDeviceText = (bytes: number) =>
+    resolvePhrase("ui.provider.settings.offline.models_on_device", caregiverLang)
+      .replace("{bytes}", formatBytes(bytes));
+
+  const modelsRow =
+    rowState === "empty"
       ? {
-          text: resolvePhrase("ui.provider.settings.offline.models_on_device", caregiverLang)
-            .replace("{bytes}", formatBytes(onDeviceBytes)),
-          glyph: "⚠️",
-          color: warnColor,
+          text: resolvePhrase("ui.provider.settings.offline.models_not_yet_downloaded", caregiverLang),
+          glyph: "…",
+          color: t.muted,
         }
-      : {
-          text: resolvePhrase("ui.provider.settings.offline.models_on_device", caregiverLang)
-            .replace("{bytes}", formatBytes(onDeviceBytes)),
-          glyph: "✓",
-          color: t.text,
-        };
+      : rowState === "ready"
+        ? { text: onDeviceText(readyBytes), glyph: "✓", color: t.text }
+        : { text: onDeviceText(verifiedBytes), glyph: "⚠️", color: warnColor };
 
   return (
     <Section label={resolvePhrase("ui.provider.settings.offline.heading", caregiverLang)} t={t}>

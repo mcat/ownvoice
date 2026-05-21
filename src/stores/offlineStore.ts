@@ -27,20 +27,20 @@ interface OfflineState {
    */
   expectedBytes: number;
   /**
-   * Total bytes summed across all files in the loaded manifest, independent
-   * of any primer run. Populated by `verifyAllOnBoot` so the Diagnostics UI
-   * can show "X MB on device" for returning users whose models are already
-   * in OPFS — unlike `expectedBytes`, which only reflects in-flight primer
-   * runs and is 0 on cold boot.
+   * Per-model expected bytes from the loaded manifest. Published once by
+   * `verifyAllOnBoot` and persists for the session, independent of any
+   * primer run. Used to compute "X MB on device" against the verified
+   * subset so partial coverage reports honest bytes (the verified slice),
+   * not the full manifest total.
    */
-  manifestTotalBytes: number;
+  manifestModelBytes: Partial<Record<ModelId, number>>;
   /** Per-model verification results from the last check. */
   verified: Partial<Record<ModelId, ModelVerifyStatus>>;
   /** Last primer-complete timestamp (ms since epoch) or null. */
   lastVerifiedAt: number | null;
 
   setPrimerRunning(v: boolean): void;
-  setManifestTotalBytes(bytes: number): void;
+  setManifestModelBytes(bytes: Partial<Record<ModelId, number>>): void;
   /**
    * Snap the store to a fresh starting state for a new primer run: clear
    * stale per-file progress and publish the expected total. Does NOT change
@@ -58,13 +58,23 @@ export const useOfflineStore = create<OfflineState>((set) => ({
   primerRunning: false,
   progress: {},
   expectedBytes: 0,
-  manifestTotalBytes: 0,
+  manifestModelBytes: {},
   verified: {},
   lastVerifiedAt: null,
 
   setPrimerRunning: (v) => set({ primerRunning: v }),
-  setManifestTotalBytes: (bytes) =>
-    set((s) => (s.manifestTotalBytes === bytes ? s : { manifestTotalBytes: bytes })),
+  setManifestModelBytes: (bytes) =>
+    set((s) => {
+      const cur = s.manifestModelBytes;
+      const keys = new Set([
+        ...(Object.keys(cur) as ModelId[]),
+        ...(Object.keys(bytes) as ModelId[]),
+      ]);
+      for (const k of keys) {
+        if (cur[k] !== bytes[k]) return { manifestModelBytes: bytes };
+      }
+      return s;
+    }),
   beginPrimerRun: (expectedBytes) => set({ progress: {}, expectedBytes }),
   reportProgress: (model, file, loaded, total) =>
     set((s) => ({
@@ -78,7 +88,7 @@ export const useOfflineStore = create<OfflineState>((set) => ({
       primerRunning: false,
       progress: {},
       expectedBytes: 0,
-      manifestTotalBytes: 0,
+      manifestModelBytes: {},
       verified: {},
       lastVerifiedAt: null,
     }),
