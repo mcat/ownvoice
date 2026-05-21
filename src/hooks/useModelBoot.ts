@@ -37,6 +37,16 @@ import { recordStage } from "../diagnostics/crashTombstone";
 export function useModelBoot(): void {
   useEffect(() => {
     let cancelled = false;
+    // OPFS integrity check runs in parallel with worker boot — it only
+    // reads file sizes/magic bytes via navigator.storage, independent of
+    // any worker. Sequencing it after TTS settle (the prior shape) meant
+    // Diagnostics showed "not yet downloaded" for the entire ~150–190s
+    // GPU TTS shader-compile window on cold boot, and indefinitely on
+    // Safari when the WebKit access-control bug stalls worker init.
+    const verifyPromise = verifyAllOnBoot().catch((err) => {
+      console.warn("[OwnVoice] boot verify failed:", err);
+    });
+
     (async () => {
       await bootSTT();
       await waitForModelSettled("stt");
@@ -68,24 +78,20 @@ export function useModelBoot(): void {
         if (cancelled) return;
       }
 
-      // Run OPFS integrity check after workers settle, then auto-prime
-      // if needed. Without priming, the app still works on first boot
-      // (workers fetch via the SW → network), but the bytes don't
-      // persist in a way that survives storage-pressure eviction.
-      try {
-        await verifyAllOnBoot();
-        if (cancelled) return;
-        const verified = useOfflineStore.getState().verified;
-        const needsPriming = Object.values(verified).some(
-          (s) => s !== "verified",
+      // Auto-prime once the parallel verify finishes. By the time workers
+      // have settled, verify is virtually always done (OPFS reads are
+      // milliseconds); we still await to handle the cold-start edge case
+      // and to keep the decision linearized with the worker boot.
+      await verifyPromise;
+      if (cancelled) return;
+      const verified = useOfflineStore.getState().verified;
+      const needsPriming = Object.values(verified).some(
+        (s) => s !== "verified",
+      );
+      if (needsPriming) {
+        drivePrimer().catch((err) =>
+          console.warn("[OwnVoice] auto-prime failed:", err),
         );
-        if (needsPriming) {
-          drivePrimer().catch((err) =>
-            console.warn("[OwnVoice] auto-prime failed:", err),
-          );
-        }
-      } catch (err) {
-        console.warn("[OwnVoice] boot verify failed:", err);
       }
     })();
     // Resume any interrupted model downloads — fires on boot if partials

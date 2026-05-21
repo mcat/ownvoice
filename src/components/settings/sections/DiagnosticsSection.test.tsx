@@ -427,9 +427,25 @@ describe("DiagnosticsSection — storage rows", () => {
     expect(screen.getByText(/Voice & speech models: 1\.40 GB on device/i)).toBeTruthy();
   });
 
-  it("Row 1 shows 'not yet downloaded' fallback when expectedBytes is 0", () => {
+  it("Row 1 shows 'not yet downloaded' fallback while auto-verify is still pending", () => {
+    // The mount-time auto-verify hasn't resolved yet, so verified state
+    // is still empty — fallback should render.
+    verifyAllOnBootMock.mockImplementation(() => new Promise(() => {}));
     render(<DiagnosticsSection t={light} />);
     expect(screen.getByText(/models not yet downloaded/i)).toBeTruthy();
+  });
+
+  it("Diagnostics auto-fires verifyAllOnBoot on mount when verified state is empty", () => {
+    verifyAllOnBootMock.mockImplementation(() => new Promise(() => {}));
+    render(<DiagnosticsSection t={light} />);
+    expect(verifyAllOnBootMock).toHaveBeenCalled();
+  });
+
+  it("Diagnostics skips the auto-verify when verified state is already populated", () => {
+    useOfflineStore.getState().setModelVerified("tts", "verified");
+    verifyAllOnBootMock.mockClear();
+    render(<DiagnosticsSection t={light} />);
+    expect(verifyAllOnBootMock).not.toHaveBeenCalled();
   });
 
   it("Row 1 shows manifest-bytes for returning user (models verified, no in-flight primer run)", () => {
