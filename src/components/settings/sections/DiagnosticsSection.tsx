@@ -99,6 +99,25 @@ export function DiagnosticsSection({ t }: Props) {
   // Clean up timer on unmount
   useEffect(() => clearDismissTimer, [clearDismissTimer]);
 
+  // Auto-kick a fresh OPFS integrity check when the panel opens with no
+  // verification populated this session. Boot's verify runs in parallel
+  // with workers (see useModelBoot), but on Safari the WebKit
+  // access-control bug can stall workers indefinitely and starve the
+  // boot path — without this fallback the panel would render "not yet
+  // downloaded" despite the files being on disk. `verifyAllOnBoot` only
+  // reads OPFS file sizes/magic bytes, so re-running is cheap.
+  const autoVerifyRef = useRef(false);
+  useEffect(() => {
+    if (autoVerifyRef.current) return;
+    if (Object.keys(verified).length > 0) return;
+    if (verifying || primerRunning) return;
+    autoVerifyRef.current = true;
+    verifyAllOnBoot().catch((err) => {
+      console.warn("[OwnVoice] Diagnostics auto-verify failed:", err);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   /**
    * Wipe /models/ in OPFS so the next primer run hits the network for
    * every file. Workers keep their in-memory copies — inference doesn't
