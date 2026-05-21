@@ -1,6 +1,6 @@
 import { getModelManager } from "./modelManager";
 import { MODEL_URLS } from "./types";
-import { loadManifest, type ModelId } from "./modelsManifest";
+import { loadManifest, totalBytes, type ModelId } from "./modelsManifest";
 import { useOfflineStore } from "../stores/offlineStore";
 import { useSettingsStore } from "../stores/settingsStore";
 import { recordStage } from "../diagnostics/crashTombstone";
@@ -306,8 +306,13 @@ async function bootTTSWasmImpl(): Promise<void> {
 export async function verifyAllOnBoot(): Promise<void> {
   const mgr = getModelManager();
   const manifest = await loadManifest();
-  const setModelVerified = useOfflineStore.getState().setModelVerified;
+  const { setModelVerified, setManifestTotalBytes } = useOfflineStore.getState();
   const ids = Object.keys(manifest.models) as ModelId[];
+  // Publish the manifest total so Diagnostics can show "X MB on device" for
+  // returning users — `expectedBytes` only reflects in-flight primer runs.
+  setManifestTotalBytes(
+    ids.reduce((sum, id) => sum + totalBytes(manifest.models[id]), 0),
+  );
   await Promise.all(
     ids.map(async (id) => {
       const report = await mgr.verifyOPFSCache(id, manifest.models[id]);

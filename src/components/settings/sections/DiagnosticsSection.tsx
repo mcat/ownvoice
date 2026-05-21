@@ -55,6 +55,7 @@ export function DiagnosticsSection({ t }: Props) {
   const primerRunning = useOfflineStore((s) => s.primerRunning);
   const progress = useOfflineStore((s) => s.progress);
   const expectedBytes = useOfflineStore((s) => s.expectedBytes);
+  const manifestTotalBytes = useOfflineStore((s) => s.manifestTotalBytes);
   const verified = useOfflineStore((s) => s.verified);
   const lastVerifiedAt = useOfflineStore((s) => s.lastVerifiedAt);
   const markPrimerComplete = useOfflineStore((s) => s.markPrimerComplete);
@@ -218,26 +219,33 @@ export function DiagnosticsSection({ t }: Props) {
       ? Math.min(100, (loadedBytes / expectedBytes) * 100)
       : 0;
 
-  const modelsRow =
-    expectedBytes === 0
+  // "On device" if ANY model verified — even partial coverage means OPFS
+  // has bytes. `expectedBytes` (in-flight primer total) wins when a run is
+  // active; otherwise fall back to the manifest total so returning users
+  // see "X MB on device" instead of the stale "not yet downloaded" gate.
+  const anyVerified = statuses.some((s) => s === "verified");
+  const onDeviceBytes = expectedBytes > 0 ? expectedBytes : manifestTotalBytes;
+  const modelsOnDevice = anyVerified || expectedBytes > 0;
+
+  const modelsRow = !modelsOnDevice
+    ? {
+        text: resolvePhrase("ui.provider.settings.offline.models_not_yet_downloaded", caregiverLang),
+        glyph: "…",
+        color: t.muted,
+      }
+    : anyNeedsRetry
       ? {
-          text: resolvePhrase("ui.provider.settings.offline.models_not_yet_downloaded", caregiverLang),
-          glyph: "…",
-          color: t.muted,
+          text: resolvePhrase("ui.provider.settings.offline.models_on_device", caregiverLang)
+            .replace("{bytes}", formatBytes(onDeviceBytes)),
+          glyph: "⚠️",
+          color: warnColor,
         }
-      : anyNeedsRetry
-        ? {
-            text: resolvePhrase("ui.provider.settings.offline.models_on_device", caregiverLang)
-              .replace("{bytes}", formatBytes(expectedBytes)),
-            glyph: "⚠️",
-            color: warnColor,
-          }
-        : {
-            text: resolvePhrase("ui.provider.settings.offline.models_on_device", caregiverLang)
-              .replace("{bytes}", formatBytes(expectedBytes)),
-            glyph: "✓",
-            color: t.text,
-          };
+      : {
+          text: resolvePhrase("ui.provider.settings.offline.models_on_device", caregiverLang)
+            .replace("{bytes}", formatBytes(onDeviceBytes)),
+          glyph: "✓",
+          color: t.text,
+        };
 
   return (
     <Section label={resolvePhrase("ui.provider.settings.offline.heading", caregiverLang)} t={t}>

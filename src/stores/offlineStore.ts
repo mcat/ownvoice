@@ -26,12 +26,21 @@ interface OfflineState {
    * grow each time a new file begins downloading.
    */
   expectedBytes: number;
+  /**
+   * Total bytes summed across all files in the loaded manifest, independent
+   * of any primer run. Populated by `verifyAllOnBoot` so the Diagnostics UI
+   * can show "X MB on device" for returning users whose models are already
+   * in OPFS — unlike `expectedBytes`, which only reflects in-flight primer
+   * runs and is 0 on cold boot.
+   */
+  manifestTotalBytes: number;
   /** Per-model verification results from the last check. */
   verified: Partial<Record<ModelId, ModelVerifyStatus>>;
   /** Last primer-complete timestamp (ms since epoch) or null. */
   lastVerifiedAt: number | null;
 
   setPrimerRunning(v: boolean): void;
+  setManifestTotalBytes(bytes: number): void;
   /**
    * Snap the store to a fresh starting state for a new primer run: clear
    * stale per-file progress and publish the expected total. Does NOT change
@@ -49,10 +58,12 @@ export const useOfflineStore = create<OfflineState>((set) => ({
   primerRunning: false,
   progress: {},
   expectedBytes: 0,
+  manifestTotalBytes: 0,
   verified: {},
   lastVerifiedAt: null,
 
   setPrimerRunning: (v) => set({ primerRunning: v }),
+  setManifestTotalBytes: (bytes) => set({ manifestTotalBytes: bytes }),
   beginPrimerRun: (expectedBytes) => set({ progress: {}, expectedBytes }),
   reportProgress: (model, file, loaded, total) =>
     set((s) => ({
@@ -66,6 +77,7 @@ export const useOfflineStore = create<OfflineState>((set) => ({
       primerRunning: false,
       progress: {},
       expectedBytes: 0,
+      manifestTotalBytes: 0,
       verified: {},
       lastVerifiedAt: null,
     }),

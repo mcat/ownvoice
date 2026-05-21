@@ -432,6 +432,20 @@ describe("DiagnosticsSection — storage rows", () => {
     expect(screen.getByText(/models not yet downloaded/i)).toBeTruthy();
   });
 
+  it("Row 1 shows manifest-bytes for returning user (models verified, no in-flight primer run)", () => {
+    // Regression: a returning user has models in OPFS — verifyAllOnBoot
+    // sets `verified` and publishes `manifestTotalBytes`, but no primer
+    // runs this session so `expectedBytes` stays 0. Pre-fix, this row
+    // falsely reported "Models not yet downloaded."
+    useOfflineStore.getState().setModelVerified("tts", "verified");
+    useOfflineStore.getState().setModelVerified("stt", "verified");
+    useOfflineStore.getState().setModelVerified("denoiser", "verified");
+    useOfflineStore.setState({ manifestTotalBytes: 1_500_000_000 });
+    render(<DiagnosticsSection t={light} />);
+    expect(screen.getByText(/1\.40 GB on device/i)).toBeTruthy();
+    expect(screen.queryByText(/models not yet downloaded/i)).toBeNull();
+  });
+
   // -------- Row 2: Storage protection --------
 
   it("Row 2 shows 'protected' copy when persisted=true and no Last-used line", async () => {
