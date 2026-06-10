@@ -6,6 +6,7 @@ import { DiagnosticsSection } from "./DiagnosticsSection";
 import { useOfflineStore } from "../../../stores/offlineStore";
 import { useAudioCacheStore } from "../../../stores/audioCacheStore";
 import { useSettingsStore } from "../../../stores/settingsStore";
+import { useInteractionStore } from "../../../stores/interactionStore";
 import { light } from "../../../theme/tokens";
 import { makeTestCfg } from "../../../test/makeCfg";
 
@@ -513,7 +514,7 @@ describe("DiagnosticsSection — storage rows", () => {
       configurable: true,
       writable: true,
     });
-    useSettingsStore.setState({ lastInteractionAt: Date.now() });
+    useInteractionStore.setState({ lastInteractionAt: Date.now() });
     render(<DiagnosticsSection t={light} />);
     await waitFor(() => expect(screen.getByText(/Storage not protected/i)).toBeTruthy());
     expect(screen.getByText(/Last used: today/i)).toBeTruthy();
@@ -529,7 +530,7 @@ describe("DiagnosticsSection — storage rows", () => {
       configurable: true,
       writable: true,
     });
-    useSettingsStore.setState({
+    useInteractionStore.setState({
       lastInteractionAt: Date.now() - 3 * 24 * 60 * 60 * 1000,
     });
     render(<DiagnosticsSection t={light} />);

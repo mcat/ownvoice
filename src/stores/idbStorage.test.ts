@@ -111,4 +111,63 @@ describe("createDebouncedIDBStorage", () => {
     await storage.removeItem("remove-test");
     expect(await writer.getItem("remove-test")).toBeNull();
   });
+
+  it("settles every coalesced setItem promise when the final write lands", async () => {
+    // Zustand's persist awaits setItem; a superseded write whose promise
+    // never settles strands those awaiters forever (and any explicit
+    // "flush before navigating away" caller with them).
+    const storage = createDebouncedIDBStorage(300);
+    const reader = createIDBStorage();
+    const key = "coalesce-settle";
+
+    let firstSettled = false;
+    const first = storage
+      .setItem(key, "v1")
+      ?.then(() => { firstSettled = true; });
+    const second = storage.setItem(key, "v2");
+
+    vi.advanceTimersByTime(300);
+    await second;
+    await first;
+
+    expect(firstSettled).toBe(true);
+    expect(await reader.getItem(key)).toBe("v2");
+  });
+
+  it("settles (not hangs) and reports when the underlying IDB write fails", async () => {
+    // Quota-exceeded / blocked writes must not vanish: the patient's
+    // voice clone lives behind this write path. The promise must settle
+    // (zustand ignores rejections — an unsettled promise just leaks),
+    // and the failure must be reported.
+    const consoleErr = vi.spyOn(console, "error").mockImplementation(() => {});
+    const realIDB = globalThis.indexedDB;
+    const failingIDB = {
+      open() {
+        const req = {
+          error: new DOMException("quota", "QuotaExceededError"),
+          onsuccess: null as (() => void) | null,
+          onerror: null as (() => void) | null,
+          onupgradeneeded: null as (() => void) | null,
+        };
+        setTimeout(() => req.onerror?.(), 0);
+        return req;
+      },
+    };
+    vi.stubGlobal("indexedDB", failingIDB);
+
+    try {
+      const storage = createDebouncedIDBStorage(100);
+      const write = storage.setItem("doomed-key", "value");
+      vi.advanceTimersByTime(100);
+      await write; // must settle despite the failed write
+
+      expect(consoleErr).toHaveBeenCalledWith(
+        expect.stringContaining("[OwnVoice:Persist]"),
+        expect.anything(),
+      );
+    } finally {
+      vi.stubGlobal("indexedDB", realIDB);
+      consoleErr.mockRestore();
+    }
+  });
 });

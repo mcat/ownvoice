@@ -11,6 +11,7 @@ import * as audioCacheRunner from "../../../models/audioCacheRunner";
 import { useOfflineStore } from "../../../stores/offlineStore";
 import type { ModelId } from "../../../models/modelsManifest";
 import { useSettingsStore, useActivePatient } from "../../../stores/settingsStore";
+import { useInteractionStore } from "../../../stores/interactionStore";
 import { useAudioCacheStore } from "../../../stores/audioCacheStore";
 import { useStorageHealth } from "../../../hooks/useStorageHealth";
 import { EngineOutcomesPanel } from "../EngineOutcomesPanel";
@@ -64,7 +65,7 @@ export function DiagnosticsSection({ t }: Props) {
   const cfg = useSettingsStore((s) => s.cfg);
   const active = useActivePatient();
   const caregiverLang = useSettingsStore((s) => s.cfg?.caregiverLang ?? "en");
-  const lastInteractionAt = useSettingsStore((s) => s.lastInteractionAt);
+  const lastInteractionAt = useInteractionStore((s) => s.lastInteractionAt);
 
   const cacheRuns = useAudioCacheStore((s) => s.runs);
   const rebuildingCache = Object.values(cacheRuns).some(

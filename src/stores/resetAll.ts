@@ -1,4 +1,5 @@
 import { useSettingsStore } from "./settingsStore";
+import { useInteractionStore } from "./interactionStore";
 import { useUIStore } from "./uiStore";
 import { useOfflineStore } from "./offlineStore";
 import { clearIndex } from "./patientIndex";
@@ -27,7 +28,10 @@ export async function resetAll(): Promise<void> {
   audioCacheRunner.abort();
 
   // 1. Persistent storage (IndexedDB, OPFS)
-  clearAll();
+  // Awaited (was fire-and-forget): the kv store holds settings, the
+  // speaker vault, and the interaction timestamp — resetAll must not
+  // resolve while those rows are still being deleted.
+  await clearAll();
   await clearAudioCache();
   await clearIndex();
   getModelManager().clearAll();
@@ -42,6 +46,7 @@ export async function resetAll(): Promise<void> {
   useSettingsStore.getState().reset();
   useUIStore.getState().resetUI();
   useOfflineStore.getState().reset();
+  useInteractionStore.setState({ lastInteractionAt: null });
 
   // 3. localStorage
   localStorage.removeItem("ov-theme");

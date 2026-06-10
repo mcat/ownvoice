@@ -6,6 +6,7 @@ import { App } from "./App";
 import "./app.css";
 import { useUIStore } from "./stores/uiStore";
 import { useSettingsStore } from "./stores/settingsStore";
+import { useInteractionStore } from "./stores/interactionStore";
 import { themes, type ThemeName } from "./theme/tokens";
 import { startVoiceProcessor } from "./models/voiceProcessor";
 import { startWakeLock } from "./models/wakeLock";
@@ -273,10 +274,12 @@ installModelLifecycleCleanup();
 
 // Record any genuine user gesture as a "last interaction" for the
 // Diagnostics "Last used" line. recordInteraction() is internally
-// throttled to 60s so this is cheap even under rapid tapping.
+// throttled to 60s so this is cheap even under rapid tapping. Lives in
+// its own tiny store — recording a tap through settingsStore re-
+// serialized the multi-MB speaker embeddings on every throttle window.
 document.addEventListener(
   "pointerdown",
-  () => useSettingsStore.getState().recordInteraction(),
+  () => useInteractionStore.getState().recordInteraction(),
   { passive: true },
 );
 
