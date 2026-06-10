@@ -24,14 +24,16 @@ import "../dev/logSink";
  * Messages IN:
  *   { type: "init", modelUrl: string }         — Load runtime models (embed_tokens, language_model, conditional_decoder, tokenizer)
  *   { type: "embed", audio: Float32Array, sampleRate: number }  — Load speech_encoder, extract embedding, unload
- *   { type: "synthesize", text: string, speakerData: SpeakerData, languageId: string, exaggeration?: number }  — Generate speech
+ *   { type: "synthesize", text: string, speakerData: SpeakerData, languageId: string, exaggeration?: number, requestId?: number }  — Generate speech
  *
  * Messages OUT:
  *   { type: "ready" }
  *   { type: "progress", loaded: number, total: number }
  *   { type: "embedding", data: SpeakerData }     — All speech encoder outputs needed for synthesis
- *   { type: "audio", data: Float32Array, sampleRate: number }
- *   { type: "error", message: string }
+ *   { type: "audio", data: Float32Array, sampleRate: number, requestId?: number }
+ *   { type: "error", message: string, requestId?: number }
+ *     (requestId echoes the originating embed/synthesize request; absent on
+ *      unsolicited errors such as init/warmup failures)
  */
 
 // Use the WebGPU variant so the WebGPU execution provider is available.
@@ -525,6 +527,7 @@ async function handleSynthesize(
   speakerData: SpeakerData,
   languageId: string,
   exaggeration: number = 0.5,
+  requestId?: number,
 ): Promise<void> {
   if (!tokenizer || !prepareLanguageFn) throw new Error("Tokenizer not loaded");
 
@@ -787,7 +790,7 @@ async function handleSynthesize(
   }
 
   _postMessage(
-    { type: "audio", data: audioData, sampleRate: SAMPLE_RATE },
+    { type: "audio", data: audioData, sampleRate: SAMPLE_RATE, requestId },
     { transfer: [audioData.buffer as ArrayBuffer] },
   );
 }
@@ -822,7 +825,7 @@ self.addEventListener("message", async (e: MessageEvent) => {
         break;
 
       case "synthesize":
-        await handleSynthesize(msg.text, msg.speakerData, msg.languageId, msg.exaggeration);
+        await handleSynthesize(msg.text, msg.speakerData, msg.languageId, msg.exaggeration, msg.requestId);
         break;
 
       case "shutdown":
@@ -851,6 +854,13 @@ self.addEventListener("message", async (e: MessageEvent) => {
         "The app will use a standard voice instead.";
     }
 
-    _postMessage({ type: "error", message });
+    // Echo the request's id when it carried one (embed + synthesize) so
+    // listeners correlating by requestId see their own failure instead of
+    // either hanging until timeout or swallowing someone else's error.
+    if (msg.requestId !== undefined) {
+      _postMessage({ type: "error", message, requestId: msg.requestId });
+    } else {
+      _postMessage({ type: "error", message });
+    }
   }
 });
