@@ -62,13 +62,19 @@ describe("useThreadView", () => {
     // Smoke test that the cap path is wired correctly without trying to
     // synthesize 500+ records (which is fragile under fake-indexeddb
     // at the BUFFER_CAP boundary). The cap invariant itself is tested
-    // by capToWindow tests below; here we just verify the hook subscribes
-    // and accumulates new events without ever exceeding the cap.
+    // by capToWindow tests below.
+    //
+    // The events are deliberately logged IMMEDIATELY after renderHook —
+    // i.e. while the hook's async hash+cursor pass is still in flight.
+    // That is the exact window the hook used to drop live records in
+    // (the old subscribe filter needed the resolved hash), which made
+    // this test lose the race on loaded CI runners no matter the
+    // timeout (#351, #352). The hook now buffers pre-settle records and
+    // merges them after the initial pass, so this is deterministic for
+    // either race outcome.
     const hash = await patientIdHash("p3");
     setActivePatientHash(hash);
     const { result } = renderHook(() => useThreadView("p3"));
-    // Settle initial cursor pass.
-    await waitFor(() => expect(result.current.length).toBe(0));
 
     for (let i = 0; i < 10; i++) {
       log({
@@ -80,11 +86,16 @@ describe("useThreadView", () => {
       });
     }
 
-    // Bumped from RTL's 1s default after CI flakes (#351). Ten async
-    // fake-indexeddb writes + their subscribe callbacks contend for the
-    // same event loop, and ubuntu-latest runners can blow past 1s under
-    // load even though the test passes in ~50 ms locally.
     await waitFor(() => expect(result.current.length).toBe(10), { timeout: 5000 });
+    // All ten present exactly once, whichever path (pre-settle buffer vs
+    // IDB cursor) delivered each — length 10 + a 10-element text set
+    // proves no drops and no buffer/cursor duplicates. NOTE: positional
+    // order is deliberately not asserted: same-millisecond records get
+    // ULID-random tie-breaks in the by_patient_time index, so the cursor
+    // may interleave them (pre-existing reload-path behavior).
+    const texts = new Set(result.current.map((e) => e.text));
+    expect(texts.size).toBe(10);
+    for (let i = 0; i < 10; i++) expect(texts.has(`live-${i}`)).toBe(true);
     expect(result.current.length).toBeLessThanOrEqual(THREAD_VIEW_CAP);
   });
 });

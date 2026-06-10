@@ -86,6 +86,16 @@ export function useThreadView(
     let cancelled = false;
     let hash: string | null = null;
     const initial: ThreadEntry[] = [];
+    // Live records that arrive before the async hash+cursor pass settles.
+    // The subscribe callback can't filter without the hash, and silently
+    // dropping these lost real taps: a phrase tapped in the first ~100ms
+    // after a patient switch never appeared in the live thread (only
+    // after a reload, via the cursor). This was also the root cause of
+    // the CI-flaky live-subscribe test (#351) — on loaded runners the
+    // hash race lost and the test's events were dropped, so no timeout
+    // bump could ever fix it.
+    let initialApplied = false;
+    const pending: AuditRecord[] = [];
 
     void (async () => {
       hash = await patientIdHash(patientId);
@@ -110,15 +120,33 @@ export function useThreadView(
       });
       db.close();
       if (!cancelled) {
+        // Merge the cursor pass with anything the live feed delivered
+        // while it ran. A record can arrive through BOTH paths (logged
+        // pre-cursor, flushed to IDB in time for the cursor to see it) —
+        // dedup by record id, cursor copy wins.
+        const seen = new Set(initial.map((e) => e.id));
+        const livePrefix = pending
+          .filter((r) => r.patient_id_hash === hash && !seen.has(r.id))
+          .map((r) => recordToEntry(r, patientName));
+        initialApplied = true;
+        pending.length = 0;
         // Index is ascending by time, so the most recent entries sit at
         // the end — capToWindow slices from there.
-        setEntries(capToWindow(initial, THREAD_VIEW_CAP) as ThreadEntry[]);
+        setEntries(
+          capToWindow([...initial, ...livePrefix], THREAD_VIEW_CAP) as ThreadEntry[],
+        );
       }
     })();
 
     const unsub = subscribe((rec) => {
-      if (!hash || rec.patient_id_hash !== hash) return;
       if (!THREAD_VISIBLE.has(rec.name)) return;
+      if (!initialApplied) {
+        // Hash unknown / initial pass still merging — hold for the merge
+        // above (which filters by hash and dedups against the cursor).
+        pending.push(rec);
+        return;
+      }
+      if (rec.patient_id_hash !== hash) return;
       setEntries((prev) =>
         capToWindow(
           [...prev, recordToEntry(rec, patientName)],
