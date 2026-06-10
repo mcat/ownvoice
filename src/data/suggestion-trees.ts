@@ -1,10 +1,15 @@
 /** Structural shape used by suggestion helpers — accepts both legacy `Message`
- *  records and the new audit-derived `ThreadEntry`s. Only `from` and `text`
- *  are read; other fields differ between the two shapes (Message.time is a
- *  string, ThreadEntry.time is epoch ms) but aren't consumed here. */
+ *  records and the new audit-derived `ThreadEntry`s. Only `from`, `text`,
+ *  and the optional `key` are read; other fields differ between the two
+ *  shapes (Message.time is a string, ThreadEntry.time is epoch ms) but
+ *  aren't consumed here. */
 export interface SuggestionContextMessage {
   from: "patient" | "provider";
   text: string;
+  /** PhraseKey of the originating phrase tap, when known. Lets provider-
+   *  question triggers match exactly across locales instead of relying
+   *  on English substrings of the display text. */
+  key?: string;
 }
 type Message = SuggestionContextMessage;
 import { getSuggestionTree, getKeyedSuggestionTree, t } from "./phraseRegistry";
@@ -397,87 +402,125 @@ export async function getContextualSuggestions(
 
 import type { PhraseKey } from "./phraseRegistry";
 
-/** Shorthand: build a SuggestionItem from a PhraseKey. */
-function sk(key: PhraseKey): SuggestionItem {
-  return { text: t(key), key };
-}
-
 /** Wrap a plain string as a keyless SuggestionItem. */
 function sf(text: string): SuggestionItem {
   return { text };
 }
 
 /**
+ * Which contextual-response set a provider question maps to.
+ * Key-based matching is exact and locale-independent; the English
+ * substring checks below remain as a fallback for thread entries that
+ * predate key plumbing (or free-typed provider questions).
+ */
+type ProviderTriggerSet = "feeling" | "need" | "where_hurts" | "pain" | "comfort";
+
+const PROVIDER_KEY_TRIGGERS: Record<string, ProviderTriggerSet> = {
+  "provider.questions.feeling": "feeling",
+  "provider.questions.need": "need",
+  "provider.questions.where_hurts": "where_hurts",
+  "provider.questions.rate_pain": "pain",
+  "provider.questions.comfortable": "comfort",
+  "provider.questions.sleep": "comfort",
+};
+
+function providerTriggerSetFor(
+  msg: SuggestionContextMessage,
+): ProviderTriggerSet | null {
+  if (msg.key && PROVIDER_KEY_TRIGGERS[msg.key]) {
+    return PROVIDER_KEY_TRIGGERS[msg.key];
+  }
+  const q = msg.text.toLowerCase();
+  if (q.includes("how are you")) return "feeling";
+  if (q.includes("anything you need") || q.includes("is there anything")) return "need";
+  if (q.includes("where") && q.includes("hurt")) return "where_hurts";
+  if (q.includes("rate your pain") || q.includes("pain")) return "pain";
+  if (q.includes("comfortable") || q.includes("sleep")) return "comfort";
+  return null;
+}
+
+/**
  * Like `getContextualSuggestions` but each result carries an optional
- * PhraseKey for bilingual resolution.  Curated results (base tree,
- * context-aware, time-aware) carry keys; keyword/generic continuations
- * do not.
+ * PhraseKey for bilingual resolution, and curated text resolves in
+ * `locale` (the patient's language — these chips are patient-facing).
+ * Keyword/generic continuations stay keyless English: they extend
+ * English free-typed input and have no registry entries to localize.
  */
 export async function getKeyedContextualSuggestions(
   partialKey: string,
   recentMessages: readonly Message[],
   hour: number,
+  locale: string = "en",
 ): Promise<SuggestionItem[]> {
+  /** Build a SuggestionItem from a PhraseKey, resolved in `locale`. */
+  const ski = (key: PhraseKey): SuggestionItem => ({ text: t(key, locale), key });
+  /** Re-resolve a curated item's display text in `locale` (the lookup
+   *  tables are built once with en text at module load). */
+  const localize = (item: SuggestionItem): SuggestionItem =>
+    item.key ? { text: t(item.key, locale), key: item.key } : item;
+
   const keyed = KEYED_SUGGESTIONS[partialKey];
 
   // No partial input — generate context-aware starters
   if (partialKey === "") {
-    const starters = [...(KEYED_SUGGESTIONS[""] ?? [])];
+    const starters = (KEYED_SUGGESTIONS[""] ?? []).map(localize);
     const lastProviderMsg = [...recentMessages]
       .reverse()
       .find((m) => m.from === "provider");
 
-    if (lastProviderMsg) {
-      const q = lastProviderMsg.text.toLowerCase();
-      if (q.includes("how are you") || q.includes("how are you feeling"))
+    const triggerSet = lastProviderMsg ? providerTriggerSetFor(lastProviderMsg) : null;
+    switch (triggerSet) {
+      case "feeling":
         return [
-          sk("suggest.ctx.feeling.i_feel"), sk("suggest.ctx.feeling.i_am"),
-          sk("suggest.ctx.feeling.better"), sk("suggest.ctx.feeling.not_great"),
-          sk("suggest.ctx.feeling.pain"), sk("suggest.ctx.feeling.okay"),
-          sk("suggest.ctx.feeling.help"),
+          ski("suggest.ctx.feeling.i_feel"), ski("suggest.ctx.feeling.i_am"),
+          ski("suggest.ctx.feeling.better"), ski("suggest.ctx.feeling.not_great"),
+          ski("suggest.ctx.feeling.pain"), ski("suggest.ctx.feeling.okay"),
+          ski("suggest.ctx.feeling.help"),
         ];
-      if (q.includes("anything you need") || q.includes("is there anything"))
+      case "need":
         return [
-          sk("suggest.ctx.need.i_need"), sk("suggest.ctx.need.i_want"),
-          sk("suggest.ctx.need.fine"), sk("suggest.ctx.need.yes"),
-          sk("suggest.ctx.need.no"), sk("suggest.ctx.need.stay"),
+          ski("suggest.ctx.need.i_need"), ski("suggest.ctx.need.i_want"),
+          ski("suggest.ctx.need.fine"), ski("suggest.ctx.need.yes"),
+          ski("suggest.ctx.need.no"), ski("suggest.ctx.need.stay"),
         ];
-      if (q.includes("where") && q.includes("hurt"))
+      case "where_hurts":
         return [
-          sk("suggest.ctx.where_hurts.head"), sk("suggest.ctx.where_hurts.chest"),
-          sk("suggest.ctx.where_hurts.stomach"), sk("suggest.ctx.where_hurts.back"),
-          sk("suggest.ctx.where_hurts.left_arm"), sk("suggest.ctx.where_hurts.right_leg"),
-          sk("suggest.ctx.where_hurts.everywhere"),
+          ski("suggest.ctx.where_hurts.head"), ski("suggest.ctx.where_hurts.chest"),
+          ski("suggest.ctx.where_hurts.stomach"), ski("suggest.ctx.where_hurts.back"),
+          ski("suggest.ctx.where_hurts.left_arm"), ski("suggest.ctx.where_hurts.right_leg"),
+          ski("suggest.ctx.where_hurts.everywhere"),
         ];
-      if (q.includes("rate your pain") || q.includes("pain"))
+      case "pain":
         return [
-          sk("suggest.ctx.pain.very_bad"), sk("suggest.ctx.pain.worse"),
-          sk("suggest.ctx.pain.same"), sk("suggest.ctx.pain.little_better"),
-          sk("suggest.ctx.pain.need_relief"),
+          ski("suggest.ctx.pain.very_bad"), ski("suggest.ctx.pain.worse"),
+          ski("suggest.ctx.pain.same"), ski("suggest.ctx.pain.little_better"),
+          ski("suggest.ctx.pain.need_relief"),
         ];
-      if (q.includes("comfortable") || q.includes("sleep"))
+      case "comfort":
         return [
-          sk("suggest.ctx.comfort.comfortable"), sk("suggest.ctx.comfort.not_comfortable"),
-          sk("suggest.ctx.comfort.cant_sleep"), sk("suggest.ctx.comfort.cold"),
-          sk("suggest.ctx.comfort.hot"), sk("suggest.ctx.comfort.adjust_bed"),
+          ski("suggest.ctx.comfort.comfortable"), ski("suggest.ctx.comfort.not_comfortable"),
+          ski("suggest.ctx.comfort.cant_sleep"), ski("suggest.ctx.comfort.cold"),
+          ski("suggest.ctx.comfort.hot"), ski("suggest.ctx.comfort.adjust_bed"),
         ];
+      case null:
+        break;
     }
 
     // Time-aware reranking
     if (hour >= 20 || hour < 6) {
       return [
-        sk("suggest.ctx.night.cant_sleep"), sk("suggest.ctx.night.i_need"),
-        sk("suggest.ctx.night.pain"), sk("suggest.ctx.night.i_feel"),
-        sk("suggest.ctx.night.can_you"), sk("suggest.ctx.night.please"),
-        sk("suggest.ctx.night.i_am"), sk("suggest.ctx.night.when"),
+        ski("suggest.ctx.night.cant_sleep"), ski("suggest.ctx.night.i_need"),
+        ski("suggest.ctx.night.pain"), ski("suggest.ctx.night.i_feel"),
+        ski("suggest.ctx.night.can_you"), ski("suggest.ctx.night.please"),
+        ski("suggest.ctx.night.i_am"), ski("suggest.ctx.night.when"),
       ];
     }
     if (hour < 10) {
       return [
-        sk("suggest.ctx.morning.i_am"), sk("suggest.ctx.morning.i_need"),
-        sk("suggest.ctx.morning.i_feel"), sk("suggest.ctx.morning.doctor"),
-        sk("suggest.ctx.morning.i_want"), sk("suggest.ctx.morning.can_you"),
-        sk("suggest.ctx.morning.please"), sk("suggest.ctx.morning.tell_me"),
+        ski("suggest.ctx.morning.i_am"), ski("suggest.ctx.morning.i_need"),
+        ski("suggest.ctx.morning.i_feel"), ski("suggest.ctx.morning.doctor"),
+        ski("suggest.ctx.morning.i_want"), ski("suggest.ctx.morning.can_you"),
+        ski("suggest.ctx.morning.please"), ski("suggest.ctx.morning.tell_me"),
       ];
     }
     return starters;
@@ -486,7 +529,7 @@ export async function getKeyedContextualSuggestions(
   // Has base suggestions — return them (Layer 1 hit)
   if (keyed) {
     const recentTexts = recentMessages.map((m) => m.text.toLowerCase()).join(" ");
-    return [...keyed].sort((a, b) => {
+    return keyed.map(localize).sort((a, b) => {
       const aRelevance = recentTexts.includes(a.text.toLowerCase()) ? -1 : 0;
       const bRelevance = recentTexts.includes(b.text.toLowerCase()) ? -1 : 0;
       return aRelevance - bRelevance;

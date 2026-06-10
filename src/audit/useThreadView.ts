@@ -15,6 +15,10 @@ export interface ThreadEntry {
   icon?: string;
   time: number;
   label: string;
+  /** PhraseKey of the originating phrase tap (absent for free text).
+   *  Consumed by the suggestion trees to match provider questions
+   *  exactly across locales. */
+  key?: string;
 }
 
 const THREAD_VISIBLE: ReadonlySet<string> = new Set([
@@ -40,10 +44,14 @@ export function capToWindow<T>(entries: readonly T[], cap: number): readonly T[]
   return entries.length > cap ? entries.slice(-cap) : entries;
 }
 
-function recordToEntry(r: AuditRecord, patientName: string): ThreadEntry {
+/** Exported for direct unit testing — the live-subscribe hook around it
+ *  needs fake-indexeddb and has a history of CI flake (#351). */
+export function recordToEntry(r: AuditRecord, patientName: string): ThreadEntry {
   const actor = r.attributes[ATTR.ACTOR] as "patient" | "provider" | undefined;
   const from: "patient" | "provider" =
     actor === "provider" ? "provider" : "patient";
+  // SPEAK_TAP logs the key as "" for free text — normalize to undefined.
+  const phraseKey = r.attributes[ATTR.SPEECH_PHRASE_KEY] as string | undefined;
   return {
     id: r.id,
     from,
@@ -56,6 +64,7 @@ function recordToEntry(r: AuditRecord, patientName: string): ThreadEntry {
         ? ((r.attributes[ATTR.PROVIDER_NAME] as string | undefined) ??
           "Care Team")
         : patientName,
+    key: phraseKey || undefined,
   };
 }
 
