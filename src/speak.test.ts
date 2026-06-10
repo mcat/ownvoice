@@ -77,7 +77,7 @@ function installAudioContextMock() {
 
   const ctor = vi.fn(MockAudioContext);
   // setup.ts sets AudioContext with writable:true, so we can assign directly
-   
+
   (globalThis as any).AudioContext = ctor;
   return ctor;
 }
@@ -100,7 +100,7 @@ beforeEach(async () => {
 
   // Re-install speechSynthesis mock (vi.restoreAllMocks may undo it)
   // setup.ts defines it with writable:true, so we can assign directly
-   
+
   (globalThis as any).speechSynthesis = {
     speak: vi.fn(),
     cancel: vi.fn(),

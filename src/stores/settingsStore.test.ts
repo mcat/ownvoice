@@ -549,7 +549,7 @@ describe("settingsStore persist middleware wiring", () => {
     });
     // Access the persist options via the runtime API
     // (partialize is stored on the persist middleware's option object)
-     
+
     const persist = (useSettingsStore as any).persist;
     expect(persist).toBeDefined();
     const partialized = persist.getOptions().partialize(
@@ -565,7 +565,7 @@ describe("settingsStore persist middleware wiring", () => {
   });
 
   it("store exposes a non-null persist name 'ov-settings'", () => {
-     
+
     const persist = (useSettingsStore as any).persist;
     expect(persist.getOptions().name).toBe("ov-settings");
     expect(persist.getOptions().version).toBe(4);

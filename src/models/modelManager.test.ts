@@ -301,13 +301,13 @@ describe("ModelManager — WebGPU detection", () => {
     expect(mgr.executionProvider).toBe("webgpu");
 
     // cleanup
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     delete (navigator as any).gpu;
   });
 
   it("reports hasWebGPU = false when navigator.gpu is absent", () => {
     // ensure gpu is not present
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     delete (navigator as any).gpu;
 
     const mgr = getModelManager();
@@ -345,7 +345,7 @@ describe("ModelManager — WebGPU detection", () => {
     expect(logs.some((l) => l.includes("maxBufferSize=268435456"))).toBe(true);
 
     logSpy.mockRestore();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     delete (navigator as any).gpu;
   });
 
@@ -379,7 +379,7 @@ describe("ModelManager — WebGPU detection", () => {
     expect(warns.some((l) => l.includes("below the WebGPU-spec minimum"))).toBe(true);
 
     warnSpy.mockRestore();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     delete (navigator as any).gpu;
   });
 
@@ -400,7 +400,7 @@ describe("ModelManager — WebGPU detection", () => {
     expect(warns.some((l) => l.includes("requestAdapter returned null"))).toBe(true);
 
     warnSpy.mockRestore();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     delete (navigator as any).gpu;
   });
 
@@ -423,7 +423,7 @@ describe("ModelManager — WebGPU detection", () => {
     expect(mgr.executionProvider).toBe("wasm");
     expect(mgr.hasWebGPU).toBe(true); // API surface unchanged
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     delete (navigator as any).gpu;
   });
 });
