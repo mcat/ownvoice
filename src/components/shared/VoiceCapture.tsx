@@ -365,19 +365,38 @@ export function VoiceCapture({
     }
   }, [recording]);
 
-  // Release countdown timer + held stream on unmount so a mid-countdown
-  // unmount (e.g., patient reset, tab close) doesn't leave the mic active
-  // or fire callbacks after the component is gone.
+  // Release EVERYTHING the recording path may hold on unmount — countdown
+  // timer, held stream, live recorder, seconds interval, metering context.
+  // A mid-RECORDING unmount (patient reset, sheet close, navigation) used
+  // to leave the MediaRecorder armed and the mic indicator lit until the
+  // tab closed: the old cleanup only stopped tracks when the stream had
+  // not yet been handed to a recorder.
   useEffect(() => {
     return () => {
       if (countdownTimerRef.current) {
         clearTimeout(countdownTimerRef.current);
         countdownTimerRef.current = null;
       }
-      if (streamRef.current && !mediaRecorderRef.current) {
-        // Stream was held during countdown but never handed to the recorder.
+      clearInterval(timerRef.current);
+      const recorder = mediaRecorderRef.current;
+      if (recorder) {
+        // Detach handlers first: onstop would setState into an unmounted
+        // component and double-stop the tracks we stop directly below.
+        recorder.ondataavailable = null;
+        recorder.onstop = null;
+        try {
+          if (recorder.state !== "inactive") recorder.stop();
+        } catch { /* already stopped */ }
+        mediaRecorderRef.current = null;
+      }
+      if (streamRef.current) {
         streamRef.current.getTracks().forEach((t) => t.stop());
         streamRef.current = null;
+      }
+      if (analyserRef.current) {
+        cancelAnimationFrame(analyserRef.current.raf);
+        analyserRef.current.ctx.close();
+        analyserRef.current = null;
       }
       try { window.speechSynthesis?.cancel(); } catch { /* non-critical */ }
     };

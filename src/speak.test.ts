@@ -678,3 +678,100 @@ describe("setFallbackVoice", () => {
     expect(utterance?.voice).toBe(englishVoice);
   });
 });
+
+// =============================================================================
+// Playback resilience — "The patient always gets feedback. No silent failures."
+// =============================================================================
+describe("speak — playback resilience", () => {
+  const embedding = new Float32Array([0.1, 0.2, 0.3]);
+
+  function lastCtx() {
+    const results = audioCtxCtor.mock.results;
+    return results[results.length - 1]?.value;
+  }
+
+  it("falls through to Web Speech when hot-cache playback fails", async () => {
+    // 1) Successful cached play populates the in-memory hot cache.
+    mockGetCachedAudio.mockResolvedValue({
+      audio: new Float32Array([0.5, 0.4]),
+      sampleRate: 24000,
+    });
+    const p1 = speak("Hello", makeSpeaker({ embedding }));
+    await vi.advanceTimersByTimeAsync(0);
+    const ctx = lastCtx();
+    ctx.createBufferSource.mock.results[0]?.value?.onended?.();
+    await p1;
+
+    // 2) Break Web Audio playback (e.g. Safari refuses to resume the
+    //    context outside a user gesture) and arrange Web Speech success.
+    ctx.createBufferSource.mockImplementation(() => ({
+      connect: vi.fn(),
+      start: vi.fn(() => {
+        throw new Error("AudioContext broken");
+      }),
+      stop: vi.fn(),
+      onended: null,
+      buffer: null,
+    }));
+    (globalThis.speechSynthesis.speak as ReturnType<typeof vi.fn>).mockImplementation(
+      (utt: { onend?: (() => void) | null }) => {
+        queueMicrotask(() => utt.onend?.());
+      },
+    );
+
+    // 3) Second tap hits the hot cache, playback throws — the patient
+    //    must still hear SOMETHING (Web Speech tier), and speak() must
+    //    not reject into the void.
+    await speak("Hello", makeSpeaker({ embedding }));
+    expect(globalThis.speechSynthesis.speak).toHaveBeenCalledTimes(1);
+  });
+
+  it("stops the previous source when a new speak starts (no double audio)", async () => {
+    mockGetCachedAudio.mockResolvedValue({
+      audio: new Float32Array([0.5, 0.4]),
+      sampleRate: 24000,
+    });
+
+    const p1 = speak("One", makeSpeaker({ embedding }));
+    await vi.advanceTimersByTimeAsync(0);
+    const ctx = lastCtx();
+    const s1 = ctx.createBufferSource.mock.results[0]?.value;
+    expect(s1.start).toHaveBeenCalled();
+
+    // Second tap while the first clip is still sounding.
+    const p2 = speak("Two", makeSpeaker({ embedding }));
+    await vi.advanceTimersByTimeAsync(0);
+    const s2 = ctx.createBufferSource.mock.results[1]?.value;
+
+    // The previous source must be stopped — two voices talking over each
+    // other is the AAC equivalent of garbled speech.
+    expect(s1.stop).toHaveBeenCalled();
+    // Superseding must also settle the first speak() promise.
+    await p1;
+
+    s2?.onended?.();
+    await p2;
+  });
+
+  it("escalates to the confirmation tone when Web Speech wedges silently", async () => {
+    // Safari failure mode: utterance starts (speaking=true) but neither
+    // onend nor onerror ever fires. The promise used to stay pending
+    // forever — no tone, no telemetry.
+    mockGetCachedAudio.mockResolvedValue(null);
+    (globalThis as { speechSynthesis: { speaking: boolean } }).speechSynthesis.speaking = true;
+
+    const p = speak("Hello there", makeSpeaker({ embedding }));
+
+    // Past the 500ms didn't-start check (speaking=true so it no-ops),
+    // then past the length-scaled wedge deadline.
+    await vi.advanceTimersByTimeAsync(500);
+    await vi.advanceTimersByTimeAsync(20_000);
+
+    const ctx = lastCtx();
+    expect(ctx.createOscillator).toHaveBeenCalled();
+
+    // Tone resolves via its own timer.
+    await vi.advanceTimersByTimeAsync(500);
+    await p;
+  });
+});
