@@ -48,6 +48,7 @@ const es: LocaleStrings = {
   "needs.medical.nurse": "Necesito a la enfermera",
   "needs.medical.doctor": "Necesito al doctor",
   "needs.medical.call_light": "Necesito ayuda ahora mismo",
+  "ui.patient.help.label": "Ayuda",
 
   // ── Patient needs: People ──────────────────────────────────────
   "needs.people.family": "Quiero a mi familia",

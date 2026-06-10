@@ -43,7 +43,11 @@ function btnStyle(t: ThemeTokens, icon: string) {
 
 function labelStyle(t: ThemeTokens) {
   return {
-    fontSize: 11,
+    // 14px is the floor for this 64×64 icon+label header button; the
+    // full 18px patient-text floor doesn't fit the header. The Wishes
+    // entry is patient-direction — moving it to a patient surface with
+    // full-size text is tracked as a follow-up.
+    fontSize: 14,
     fontWeight: 600,
     color: t.sub,
     letterSpacing: 0.1,

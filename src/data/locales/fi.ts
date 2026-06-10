@@ -48,6 +48,7 @@ const fi: LocaleStrings = {
   "needs.medical.nurse": "Tarvitsen hoitajan",
   "needs.medical.doctor": "Tarvitsen lääkärin",
   "needs.medical.call_light": "Tarvitsen apua heti",
+  "ui.patient.help.label": "Apua",
 
   // ── Patient needs: People ──────────────────────────────────────
   "needs.people.family": "Haluan perheeni luokseni",

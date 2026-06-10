@@ -197,7 +197,7 @@ function menuStyle(isDark: boolean, t: ThemeTokens): JSX.CSSProperties {
 function itemStyle(
   disabled: boolean | undefined,
   color: string,
-  _isDark: boolean,
+  isDark: boolean,
 ): JSX.CSSProperties {
   return {
     display: "block",
@@ -207,13 +207,13 @@ function itemStyle(
     background: "transparent",
     border: "none",
     borderRadius: 8,
-    color,
+    // Disabled state via explicit color, never opacity (§4.2).
+    color: disabled ? (isDark ? "#8A8F98" : "#9AA1AB") : color,
     fontSize: 15,
     fontWeight: 500,
     fontFamily: "inherit",
     textAlign: "start" as const,
     cursor: disabled ? "not-allowed" : "pointer",
-    opacity: disabled ? 0.6 : 1,
   };
 }
 

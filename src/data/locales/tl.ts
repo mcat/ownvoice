@@ -48,6 +48,7 @@ const tl: LocaleStrings = {
   "needs.medical.nurse": "Kailangan ko ang nars",
   "needs.medical.doctor": "Kailangan ko ang doktor",
   "needs.medical.call_light": "Kailangan ko ng tulong ngayon",
+  "ui.patient.help.label": "Tulong",
 
   // ── Patient needs: People ──────────────────────────────────────
   "needs.people.family": "Gusto kong makita ang pamilya ko",

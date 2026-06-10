@@ -48,6 +48,7 @@ const ko: LocaleStrings = {
   "needs.medical.nurse": "간호사가 필요합니다",
   "needs.medical.doctor": "의사 선생님이 필요합니다",
   "needs.medical.call_light": "지금 도움이 필요합니다",
+  "ui.patient.help.label": "도와주세요",
 
   // ── Patient needs: People ──────────────────────────────────────
   "needs.people.family": "가족을 만나고 싶습니다",

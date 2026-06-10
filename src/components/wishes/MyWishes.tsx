@@ -349,11 +349,11 @@ export function MyWishes({
             border: `2px solid ${t.border}`,
             fontSize: 18,
             fontWeight: 600,
-            color: t.sub,
-            backgroundColor: t.card,
+            // Disabled state via explicit color, never opacity (§4.2).
+            color: currentIdx === 0 ? t.muted : t.sub,
+            backgroundColor: currentIdx === 0 ? t.activeBg : t.card,
             minHeight: 64,
             minWidth: 64,
-            opacity: currentIdx === 0 ? 0.4 : 1,
           }}
         >
           {resolvePhrase("ui.patient.wishes.back", patientLang)}
@@ -368,15 +368,20 @@ export function MyWishes({
             border: "none",
             fontSize: 18,
             fontWeight: 600,
-            color: "#fff",
+            // Disabled state via explicit color pair, never opacity (§4.2).
+            color:
+              selected.length > 0
+                ? "#fff"
+                : theme === "dark"
+                  ? "#9CA3AF"
+                  : "#6B7280",
             backgroundColor:
               selected.length > 0
                 ? blue
                 : theme === "dark"
                   ? "#374151"
-                  : "#D1D5DB",
+                  : "#E5E7EB",
             minHeight: 64,
-            opacity: selected.length === 0 ? 0.6 : 1,
           }}
         >
           {resolvePhrase("ui.patient.wishes.speak", patientLang)}

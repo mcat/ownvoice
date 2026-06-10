@@ -48,6 +48,7 @@ const sw: LocaleStrings = {
   "needs.medical.nurse": "Ninahitaji muuguzi",
   "needs.medical.doctor": "Ninahitaji daktari",
   "needs.medical.call_light": "Ninahitaji msaada sasa hivi",
+  "ui.patient.help.label": "Msaada",
 
   // ── Patient needs: People ──────────────────────────────────────
   "needs.people.family": "Nataka familia yangu",

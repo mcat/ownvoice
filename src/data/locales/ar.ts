@@ -48,6 +48,7 @@ const ar: LocaleStrings = {
   "needs.medical.nurse": "أحتاج الممرض",
   "needs.medical.doctor": "أحتاج الطبيب",
   "needs.medical.call_light": "أحتاج المساعدة الآن",
+  "ui.patient.help.label": "مساعدة",
 
   // ── Patient needs: People ──────────────────────────────────────
   "needs.people.family": "أريد عائلتي",

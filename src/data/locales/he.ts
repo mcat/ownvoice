@@ -55,6 +55,7 @@ const he: LocaleStrings = {
   "needs.medical.nurse": "אני צריך את האחות",
   "needs.medical.doctor": "אני צריך את הרופא",
   "needs.medical.call_light": "אני צריך עזרה עכשיו",
+  "ui.patient.help.label": "עזרה",
 
   // ── Patient needs: People ──────────────────────────────────────
   "needs.people.family": "אני רוצה את המשפחה שלי",
