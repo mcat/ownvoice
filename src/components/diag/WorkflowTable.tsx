@@ -69,7 +69,6 @@ export function WorkflowTable({ workflows }: WorkflowTableProps) {
     const cleanup = v._didMount();
     v._willUpdate();
     return () => { cleanup(); virtRef.current = null; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Sync count + size estimates when the workflow list or expand-state changes.

@@ -237,7 +237,6 @@ async function extractEmbedding(
 export const __test__extractEmbedding = extractEmbedding;
 
 export function VoiceCapture({
-  label,
   hasVoice,
   onCapture,
   onRemove,
@@ -483,7 +482,6 @@ export function VoiceCapture({
   useEffect(() => {
     registerRetryRef.current?.(() => retryEmbeddingRef.current?.());
     return () => registerRetryRef.current?.(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // --- Retry embedding extraction (when model loads after initial capture) ---

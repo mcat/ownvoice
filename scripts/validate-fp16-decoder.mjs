@@ -98,7 +98,7 @@ async function loadTokens(tokensFile) {
 }
 
 function audioStats(arr) {
-  let nan = 0, inf = 0, min = Infinity, max = -Infinity, sum = 0, absSum = 0, sqSum = 0;
+  let nan = 0, inf = 0, min = Infinity, max = -Infinity, absSum = 0, sqSum = 0;
   const n = arr.length;
   for (let i = 0; i < n; i++) {
     const v = arr[i];
@@ -106,7 +106,6 @@ function audioStats(arr) {
     if (!Number.isFinite(v)) { inf++; continue; }
     if (v < min) min = v;
     if (v > max) max = v;
-    sum += v;
     absSum += Math.abs(v);
     sqSum += v * v;
   }

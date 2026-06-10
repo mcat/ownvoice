@@ -36,7 +36,6 @@ export function MyWishes({
   t,
   theme,
   patientName,
-  locale = "en",
 }: MyWishesProps) {
   const cfg = useSettingsStore((s) => s.cfg);
   const patientLang = useActivePatient()?.patientLang ?? "en";

@@ -15,7 +15,7 @@ expect.extend({ toHaveNoViolations });
 // jsdom doesn't implement scrollIntoView
 Element.prototype.scrollIntoView = vi.fn();
 import { light } from "../theme/tokens";
-import type { Message, AppSettings } from "../types";
+import type { Message } from "../types";
 import { makeTestCfg } from "../test/makeCfg";
 
 // --- Mocks for store-connected components ---

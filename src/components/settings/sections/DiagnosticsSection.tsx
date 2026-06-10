@@ -116,7 +116,6 @@ export function DiagnosticsSection({ t }: Props) {
     verifyAllOnBoot().catch((err) => {
       console.warn("[OwnVoice] Diagnostics auto-verify failed:", err);
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /**

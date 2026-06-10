@@ -35,9 +35,13 @@ async function modelsAvailable(): Promise<boolean> {
 }
 
 describe("models-manifest.json integrity", () => {
-  it("matches the byte-sizes on disk (run `npm run manifest:regen` if this fails)", async () => {
+  it("matches the byte-sizes on disk (run `npm run manifest:regen` if this fails)", async (ctx) => {
     if (!(await modelsAvailable())) {
-      // Intentional skip — see comment above.
+      // Report as SKIPPED, not passed — a bare `return` made CI (which
+      // never has the gitignored model bundle) report this drift check
+      // green when it had asserted nothing. The drift check is only
+      // meaningful on dev machines that hold the model bundle.
+      ctx.skip();
       return;
     }
     const regenerated = formatManifest(await regenerateManifest(REPO_ROOT));

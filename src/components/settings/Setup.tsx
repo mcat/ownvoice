@@ -42,27 +42,6 @@ const ADD_PATIENT_STEP_KEYS: PhraseKey[] = [
 ];
 const ADD_PATIENT_STEP_COLORS = ["#2563EB", "#7C3AED", "#D97706"];
 
-function defaults(): AppSettings {
-  const now = Date.now();
-  const patient: Patient = {
-    id: crypto.randomUUID(),
-    name: "",
-    bed: "",
-    patientLang: "en",
-    hasVoice: false,
-    speakerData: null,
-    addedAt: now,
-    lastActiveAt: now,
-  };
-  return {
-    caregiverLang: "en",
-    pin: "",
-    providers: [],
-    patients: [patient],
-    activePatientId: patient.id,
-  };
-}
-
 interface SetupProps {
   /** Controls which Setup flow to show. "first-run" is the default full
    *  wizard; "add-patient" shows only the patient-specific steps. */
@@ -538,7 +517,6 @@ function StepPatient({
 /* ---------- Step 1: Voice Sample ---------- */
 
 function StepVoice({
-  patientName,
   patientVoice,
   speakerData,
   setPatientVoice,

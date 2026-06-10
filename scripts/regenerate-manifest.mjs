@@ -17,7 +17,6 @@ import path from "node:path";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const MANIFEST_PATH = path.join(REPO_ROOT, "public", "models-manifest.json");
-const PUBLIC_DIR = path.join(REPO_ROOT, "public");
 
 /**
  * Reads the committed manifest, re-stats each file, returns a new manifest

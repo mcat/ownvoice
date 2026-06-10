@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { useSettingsStore } from "./settingsStore";
 import { makeTestCfg } from "../test/makeCfg";
 import type { AppSettings, Patient } from "../types";
@@ -549,7 +549,7 @@ describe("settingsStore persist middleware wiring", () => {
     });
     // Access the persist options via the runtime API
     // (partialize is stored on the persist middleware's option object)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const persist = (useSettingsStore as any).persist;
     expect(persist).toBeDefined();
     const partialized = persist.getOptions().partialize(
@@ -565,7 +565,7 @@ describe("settingsStore persist middleware wiring", () => {
   });
 
   it("store exposes a non-null persist name 'ov-settings'", () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const persist = (useSettingsStore as any).persist;
     expect(persist.getOptions().name).toBe("ov-settings");
     expect(persist.getOptions().version).toBe(4);

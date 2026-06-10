@@ -178,7 +178,6 @@ export function VoiceCloneStatus({
     };
     // phraseCorpus is stable for the component's lifetime; cfg is captured
     // by reference and we deliberately do NOT re-fire on every cfg keystroke.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [run, speakerData, speakerKey, phraseCorpus]);
 
   const quality = speakerData?.quality;

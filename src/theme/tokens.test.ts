@@ -6,14 +6,14 @@ describe("light and dark theme tokens", () => {
   });
 
   it("all light token values are non-empty strings", () => {
-    for (const [key, value] of Object.entries(light)) {
+    for (const [, value] of Object.entries(light)) {
       expect(typeof value).toBe("string");
       expect(value.length).toBeGreaterThan(0);
     }
   });
 
   it("all dark token values are non-empty strings", () => {
-    for (const [key, value] of Object.entries(dark)) {
+    for (const [, value] of Object.entries(dark)) {
       expect(typeof value).toBe("string");
       expect(value.length).toBeGreaterThan(0);
     }

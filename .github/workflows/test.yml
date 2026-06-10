@@ -23,6 +23,8 @@ jobs:
           node-version-file: ".nvmrc"
           cache: "npm"
       - run: npm ci
+      - name: Lint (eslint + jsx-a11y)
+        run: npm run lint
       - name: Vitest
         run: npm test
       # `npm run build` = tsc --noEmit + vite build + strip-dist-large.
@@ -31,3 +33,7 @@ jobs:
       # are served from R2 via Pages Functions, so the build does not need them.
       - name: Build (typecheck + bundle)
         run: npm run build
+      # Pages Functions are excluded from the main tsconfig include — check
+      # them with their own project so serveR2/R2 typing breaks fail CI.
+      - name: Typecheck Pages Functions
+        run: npm run typecheck:functions

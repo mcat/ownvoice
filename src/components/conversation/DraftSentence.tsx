@@ -54,6 +54,9 @@ export function DraftSentence({
         role="textbox"
         aria-label={editAria}
         contentEditable
+        // contentEditable already makes this focusable; the explicit
+        // tabIndex states it for AT heuristics and jsx-a11y.
+        tabIndex={0}
         onBlur={commit}
         onKeyDown={(e) => {
           if (e.key === "Enter") {

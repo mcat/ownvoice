@@ -1,6 +1,5 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/preact";
 import { SentenceBuilder } from "./SentenceBuilder";
-import type { Token } from "./SentenceBuilder";
 import { light } from "../../theme/tokens";
 import type { SuggestionItem } from "../../data/phraseRegistry";
 

@@ -91,6 +91,10 @@ export function PhraseGrid({ phrases, onTap, t, ariaLabel }: PhraseGridProps) {
       ref={gridRef}
       role="grid"
       aria-label={ariaLabel}
+      // Programmatically focusable only: cells carry the sequential tab
+      // order by design (see file header); the container must still be
+      // focusable to satisfy the interactive `grid` role contract.
+      tabIndex={-1}
       onKeyDown={handleKeyDown}
       style={{
         display: "grid",

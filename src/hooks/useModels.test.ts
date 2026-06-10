@@ -321,7 +321,7 @@ describe("useModels", () => {
       vi.useFakeTimers();
       vi.setSystemTime(new Date(1_700_000_000_000));
 
-      const { result } = renderHook(() => useModels());
+      renderHook(() => useModels());
 
       // 100 KB/s rate → 200 MB remaining = 2000s → falls into the minutes branch
       act(() => {

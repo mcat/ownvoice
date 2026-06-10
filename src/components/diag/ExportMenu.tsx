@@ -80,6 +80,7 @@ export function ExportMenu({ role, onExport }: ExportMenuProps) {
             <li
               role="menuitem"
               key={it.label}
+              tabIndex={0}
               style={{
                 padding: "10px 12px",
                 cursor: "pointer",
@@ -93,7 +94,19 @@ export function ExportMenu({ role, onExport }: ExportMenuProps) {
               onMouseOut={(e) => {
                 (e.currentTarget as HTMLElement).style.background = "transparent";
               }}
+              onFocus={(e) => {
+                (e.currentTarget as HTMLElement).style.background = "var(--color-ov-active-bg)";
+              }}
+              onBlur={(e) => {
+                (e.currentTarget as HTMLElement).style.background = "transparent";
+              }}
               onClick={() => { onExport(it.request); setOpen(false); }}
+              onKeyDown={(e) => {
+                if (e.key !== "Enter" && e.key !== " ") return;
+                e.preventDefault();
+                onExport(it.request);
+                setOpen(false);
+              }}
             >
               {it.label}
             </li>

@@ -197,7 +197,7 @@ function menuStyle(isDark: boolean, t: ThemeTokens): JSX.CSSProperties {
 function itemStyle(
   disabled: boolean | undefined,
   color: string,
-  isDark: boolean,
+  _isDark: boolean,
 ): JSX.CSSProperties {
   return {
     display: "block",

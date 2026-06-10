@@ -24,12 +24,6 @@ const STEP_LABEL_KEYS: Record<Step, PhraseKey> = {
   descriptor: "pain.step.descriptor",
 };
 
-const STEP_HEADING_KEYS: Record<Step, PhraseKey> = {
-  severity: "ui.dual.pain.heading.severity",
-  location: "ui.dual.pain.heading.location",
-  descriptor: "ui.dual.pain.heading.descriptor",
-};
-
 export function PainFlow({ onSelect, t, theme }: PainFlowProps) {
   const [step, setStep] = useState<Step>("severity");
   const [severity, setSeverity] = useState<number | null>(null);

@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor, act } from "@testing-library/preact";
+import { render, screen, fireEvent, waitFor } from "@testing-library/preact";
 import { Setup } from "./Setup";
 import { ConfirmDialogHost } from "../shared/ConfirmDialog";
 import { useSettingsStore } from "../../stores/settingsStore";

@@ -137,7 +137,6 @@ export function BottomSheet({
           In Assistive Input Mode the backdrop does not dismiss, because a
           dwell-click cursor drifting across it would otherwise close the
           sheet by accident. */}
-      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
       <div
         data-testid="bottom-sheet-backdrop"
         aria-hidden="true"

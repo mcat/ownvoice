@@ -45,7 +45,6 @@ export function EventTable({ records, columns, rowHeight = DEFAULT_ROW_HEIGHT }:
     const cleanup = v._didMount();
     v._willUpdate();
     return () => { cleanup(); virtRef.current = null; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Apply count/rowHeight changes via setOptions instead of remount.

@@ -24,7 +24,6 @@ import en from "./locales/en";
 import type { PhraseKey, LocaleStrings } from "./locales/en";
 import type {
   Category,
-  SubCategory,
   Phrase,
   PainFace,
   PainDescriptor,
