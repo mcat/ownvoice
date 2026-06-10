@@ -23,6 +23,28 @@ export interface SpeakGlossOpts {
   icon?: string;
 }
 
+/**
+ * Fire-and-forget wrapper around speak(). A rejected speak() promise
+ * must never escape a tap handler as an unhandled rejection — that is a
+ * patient tapping a phrase and hearing nothing, invisibly. Log it to the
+ * console (dev log sink) and the audit trail (ActivityLog) instead.
+ */
+function speakSafely(text: string, speaker: Speaker): void {
+  void Promise.resolve(speak(text, speaker)).catch((err: unknown) => {
+    console.error("[OwnVoice:Speak] speech pathway rejected", err);
+    log({
+      name: EVENT.SPEAK_ERROR,
+      severity: "ERROR",
+      attributes: {
+        [ATTR.ACTOR]: speaker.type,
+        [ATTR.ERROR_TYPE]: (err as Error)?.name ?? "Error",
+        [ATTR.ERROR_MESSAGE]: (err as Error)?.message ?? String(err),
+        [ATTR.SPEECH_TEXT]: text,
+      },
+    });
+  });
+}
+
 export function useSpeakActions() {
   const cfg = useSettingsStore((s) => s.cfg);
   const active = useActivePatient();
@@ -65,7 +87,7 @@ export function useSpeakActions() {
         },
       });
       setSpeaking({ text, from: "patient", gloss });
-      speak(gloss ?? text, speaker);
+      speakSafely(gloss ?? text, speaker);
     },
     [cfg, active, setSpeaking],
   );
@@ -100,7 +122,7 @@ export function useSpeakActions() {
         },
       });
       setSpeaking({ text, from: "provider", gloss });
-      speak(gloss ?? text, speaker);
+      speakSafely(gloss ?? text, speaker);
     },
     [cfg, active, activeProv, setSpeaking],
   );
@@ -162,7 +184,7 @@ export function useSpeakActions() {
         lang,
       };
       setSpeaking({ text, from });
-      speak(text, speaker);
+      speakSafely(text, speaker);
     },
     [cfg, active, activeProv, setSpeaking],
   );

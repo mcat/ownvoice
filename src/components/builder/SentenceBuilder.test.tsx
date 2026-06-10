@@ -1,6 +1,5 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/preact";
 import { SentenceBuilder } from "./SentenceBuilder";
-import type { Token } from "./SentenceBuilder";
 import { light } from "../../theme/tokens";
 import type { SuggestionItem } from "../../data/phraseRegistry";
 
@@ -371,5 +370,29 @@ describe("SentenceBuilder — expressive emoji", () => {
 
     const [, opts] = onSend.mock.calls[0];
     expect(opts?.icon).toBe("🛏️");
+  });
+});
+
+describe("SentenceBuilder — patient-facing touch targets (≥64px)", () => {
+  // CLAUDE.md / DESIGN_GUIDELINES §3.1: patient-facing buttons are 64×64
+  // minimum. Undo/clear/Speak are tapped by patients composing sentences.
+  const onSend = vi.fn();
+
+  it("undo and clear controls meet the 64px floor", () => {
+    render(<SentenceBuilder {...baseProps} onSend={onSend} />);
+    const input = screen.getByRole("textbox", { name: "Your message" });
+    fireEvent.input(input, { target: { value: "water" } });
+
+    for (const name of ["Undo last word", "Clear message"]) {
+      const btn = screen.getByRole("button", { name });
+      expect(parseInt(btn.style.width, 10), name).toBeGreaterThanOrEqual(64);
+      expect(parseInt(btn.style.height, 10), name).toBeGreaterThanOrEqual(64);
+    }
+  });
+
+  it("the Speak button meets the 64px height floor", () => {
+    render(<SentenceBuilder {...baseProps} onSend={onSend} />);
+    const speakBtn = screen.getByText("Speak");
+    expect(parseInt(speakBtn.style.minHeight, 10)).toBeGreaterThanOrEqual(64);
   });
 });

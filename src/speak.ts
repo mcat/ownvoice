@@ -169,6 +169,32 @@ async function getAudioContext(): Promise<AudioContext> {
 }
 
 /**
+ * The currently-sounding BufferSourceNode, if any. Tracked so a new
+ * speak() can stop it first — without this, two rapid taps both play
+ * through the shared AudioContext and the patient's voice talks over
+ * itself (the Speaking overlay's duration is an estimate, so it can
+ * clear while audio is still sounding).
+ */
+let activePlayback: { source: AudioBufferSourceNode; settle: () => void } | null = null;
+
+/**
+ * Stop whatever cached clip is currently sounding (latest tap wins).
+ * Also settles the superseded playback's promise so its speak() call
+ * completes instead of waiting on an onended that may fire late.
+ */
+function stopActivePlayback(): void {
+  if (!activePlayback) return;
+  const { source, settle } = activePlayback;
+  activePlayback = null;
+  try {
+    source.stop();
+  } catch {
+    // Already stopped / never started — nothing is sounding.
+  }
+  settle();
+}
+
+/**
  * Play PCM audio data through Web Audio API.
  *
  * The audio passed in is assumed to be already post-processed — cached
@@ -183,16 +209,28 @@ async function playAudioBuffer(
   sampleRate: number,
 ): Promise<void> {
   const ctx = await getAudioContext();
+  stopActivePlayback();
 
   const buffer = ctx.createBuffer(1, audio.length, sampleRate);
   buffer.getChannelData(0).set(audio);
 
   return new Promise<void>((resolve) => {
     const source = ctx.createBufferSource();
+    let settled = false;
+    const settle = () => {
+      if (settled) return;
+      settled = true;
+      if (activePlayback?.source === source) activePlayback = null;
+      resolve();
+    };
     source.buffer = buffer;
     source.connect(ctx.destination);
-    source.onended = () => resolve();
+    source.onended = settle;
+    // A throw from start() (broken/suspended context) rejects this
+    // promise via the executor — callers treat that as a tier failure
+    // and fall through. activePlayback is only set on success.
     source.start();
+    activePlayback = { source, settle };
   });
 }
 
@@ -262,9 +300,11 @@ async function tryWebSpeech(text: string, lang?: string): Promise<boolean> {
     // stops but neither onend nor onerror fires. A pause/resume heartbeat
     // every 100ms keeps the engine alive.
     let keepalive: ReturnType<typeof setInterval> | null = null;
+    let wedgeTimer: ReturnType<typeof setTimeout> | null = null;
 
     function cleanup() {
       if (keepalive) { clearInterval(keepalive); keepalive = null; }
+      if (wedgeTimer) { clearTimeout(wedgeTimer); wedgeTimer = null; }
     }
 
     utterance.onstart = () => {
@@ -306,6 +346,24 @@ async function tryWebSpeech(text: string, lang?: string): Promise<boolean> {
         resolve(false);
       }
     }, 500);
+
+    // Hard deadline for the Safari wedge: the utterance starts (so the
+    // 500ms check above passes) but the engine then freezes mid-utterance
+    // with `speaking` stuck true and neither onend nor onerror ever
+    // firing — without this, the promise stays pending forever and the
+    // patient gets neither speech nor the tone tier. The budget scales
+    // with text length (~200ms/char is far slower than any real speech
+    // rate at rate=0.9) so long phrases are never cut off mid-sentence.
+    wedgeTimer = setTimeout(() => {
+      if (!resolved) {
+        console.warn(
+          "[OwnVoice:TTS] Web Speech never completed — escalating to next tier",
+        );
+        cleanup();
+        resolved = true;
+        resolve(false);
+      }
+    }, 10_000 + text.length * 200);
   });
 }
 
@@ -336,6 +394,11 @@ export async function speak(
   // Note: SPEAK_TAP is emitted by useSpeakActions (the tap origin owns the
   // tap event); this function only emits engine-outcome events.
 
+  // Latest tap wins: silence any clip still sounding from a previous
+  // tap before this one produces audio through ANY tier (a Web Speech
+  // utterance would otherwise talk over lingering cached audio).
+  stopActivePlayback();
+
   // Priority 0a: in-memory hot cache. Sub-ms, no awaits. Populated by
   // priority 0b after the first OPFS read of each phrase.
   if (speaker.embedding) {
@@ -351,8 +414,24 @@ export async function speak(
         },
       });
       emitOutcome("memory", text, speaker);
-      await playAudioBuffer(hot.audio, hot.sampleRate);
-      return;
+      try {
+        await playAudioBuffer(hot.audio, hot.sampleRate);
+        return;
+      } catch (err) {
+        // Playback failure (e.g. Safari refusing to resume the context
+        // outside a fresh user gesture) must not end the tap silently —
+        // log it and fall through to the OPFS / Web Speech / tone tiers.
+        log({
+          name: EVENT.SPEAK_ERROR,
+          severity: "ERROR",
+          attributes: {
+            [ATTR.ACTOR]: speaker.type,
+            [ATTR.ERROR_TYPE]: (err as Error)?.name ?? "Error",
+            [ATTR.ERROR_MESSAGE]: (err as Error)?.message ?? String(err),
+            [ATTR.SPEECH_TEXT]: text,
+          },
+        });
+      }
     }
 
     // Priority 0b: pre-generated cached audio in OPFS. Slow first hit;
@@ -425,7 +504,13 @@ export async function speak(
     },
   });
   emitOutcome("tone", text, speaker);
-  await playConfirmationTone();
+  try {
+    await playConfirmationTone();
+  } catch (err) {
+    // Last tier — nothing further to escalate to, but a rejection here
+    // must not escape speak() as an unhandled rejection.
+    console.error("[OwnVoice:Speak] confirmation tone failed", err);
+  }
 }
 
 /**

@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { createDebouncedIDBStorage } from "./idbStorage";
 import { f32Replacer, f32Reviver } from "./persistTypedArrays";
+import { backupSpeakerData, deleteSpeakerBackup, readSpeakerBackup } from "./speakerVault";
 import { isValidQualityResult } from "../models/voiceQuality";
 import type { AppSettings, Patient, Provider } from "../types";
 import { log } from "../audit/logger";
@@ -16,7 +17,6 @@ import { setActivePatientHash } from "../audit/session";
 // lag; only the disk write is batched.
 const PERSIST_DEBOUNCE_MS = 300;
 const STORE_VERSION = 4;
-const INTERACTION_THROTTLE_MS = 60_000;
 
 interface SettingsPersistedState {
   cfg: AppSettings | null;
@@ -24,10 +24,6 @@ interface SettingsPersistedState {
    *  Kept on the persisted shape for migration compatibility; set to null
    *  after migration and on v2 writes. */
   speakerData: unknown | null;
-  /** Wall-clock ms of the last user interaction. Throttled writes via
-   *  `recordInteraction()`. Null until the first interaction (seeded to
-   *  Date.now() on first hydration so "Last used" reads honestly). */
-  lastInteractionAt: number | null;
 }
 
 interface SettingsState extends SettingsPersistedState {
@@ -37,7 +33,6 @@ interface SettingsState extends SettingsPersistedState {
   setSpeakerData: (data: unknown) => void;
   setHasHydrated: (v: boolean) => void;
   reset: () => void;
-  recordInteraction: () => void;
 
   // Multi-patient actions
   addPatient: (data: Omit<Patient, "id" | "addedAt" | "lastActiveAt">) => Patient;
@@ -93,7 +88,6 @@ export const useSettingsStore = create<SettingsState>()(
     (set, get) => ({
       cfg: null,
       speakerData: null,
-      lastInteractionAt: null,
       _hasHydrated: false,
 
       setCfg: (cfg) => set({ cfg }),
@@ -101,24 +95,7 @@ export const useSettingsStore = create<SettingsState>()(
         set((s) => (s.cfg ? { cfg: { ...s.cfg, ...partial } } : {})),
       setSpeakerData: (speakerData) => set({ speakerData }),
       setHasHydrated: (v) => set({ _hasHydrated: v }),
-      reset: () =>
-        set({ cfg: null, speakerData: null, lastInteractionAt: null }),
-
-      recordInteraction: () => {
-        const { lastInteractionAt } = get();
-        const now = Date.now();
-        // `lastInteractionAt <= now` guards a future timestamp from clock skew
-        // (NTP backward jump, manual clock change) — otherwise the action
-        // would no-op forever until wall-clock catches up.
-        if (
-          lastInteractionAt != null &&
-          lastInteractionAt <= now &&
-          now - lastInteractionAt < INTERACTION_THROTTLE_MS
-        ) {
-          return;
-        }
-        set({ lastInteractionAt: now });
-      },
+      reset: () => set({ cfg: null, speakerData: null }),
 
       addPatient: (data) => {
         const now = Date.now();
@@ -176,6 +153,9 @@ export const useSettingsStore = create<SettingsState>()(
             patients: s.cfg.patients.filter((p) => p.id !== id),
           },
         });
+        // Best-effort vault cleanup — the redundant clone copy must not
+        // outlive the patient record (discharge = data minimization).
+        void deleteSpeakerBackup(id);
         log({ name: EVENT.SETTINGS_PATIENT_REMOVE });
       },
 
@@ -194,6 +174,12 @@ export const useSettingsStore = create<SettingsState>()(
             ),
           },
         });
+        // Redundant copy of the voice clone — survives a corrupt/torn
+        // ov-settings write (see speakerVault.ts). Fire-and-forget;
+        // backupSpeakerData never throws.
+        if (partial.speakerData) {
+          void backupSpeakerData(id, partial.speakerData);
+        }
       },
 
       updateActivePatient: (partial) => {
@@ -263,7 +249,7 @@ export const useSettingsStore = create<SettingsState>()(
       ),
       migrate: (persisted, fromVersion): SettingsPersistedState => {
         const typed = persisted as SettingsPersistedState | null;
-        if (!typed) return { cfg: null, speakerData: null, lastInteractionAt: null };
+        if (!typed) return { cfg: null, speakerData: null };
 
         // v0 → v1: add caregiverLang (from previous migration)
         let cfg = typed.cfg;
@@ -339,37 +325,82 @@ export const useSettingsStore = create<SettingsState>()(
         return {
           cfg,
           speakerData,
-          lastInteractionAt: typed.lastInteractionAt ?? null,
         };
       },
       partialize: (s): SettingsPersistedState => ({
         cfg: s.cfg,
         speakerData: s.speakerData,
-        lastInteractionAt: s.lastInteractionAt,
       }),
       onRehydrateStorage: () => {
         // Return the post-hydration callback.
         // IMPORTANT: Do NOT reference useSettingsStore here — it's not
         // initialized yet (we're inside create()). Use the `state` param
         // or defer with queueMicrotask.
-        return (state) => {
-          // Seed lastInteractionAt via setState (not in-place mutation) so
-          // the persist middleware observes the change and writes it to IDB.
-          // Deferred to a microtask to run after hydration completes — an
-          // in-hydration setState would be a no-op for the persist write.
-          if (state && state.lastInteractionAt == null) {
-            queueMicrotask(() => {
-              useSettingsStore.setState({ lastInteractionAt: Date.now() });
-            });
-          }
+        return () => {
           queueMicrotask(() => {
             useSettingsStore.setState({ _hasHydrated: true });
+          });
+          // After hydration settles, re-attach any vaulted voice clone a
+          // hasVoice patient has lost (corrupt/torn settings write).
+          queueMicrotask(() => {
+            void restoreMissingSpeakerData().catch((err) => {
+              console.error("[OwnVoice:Persist] speaker vault restore failed", err);
+            });
           });
         };
       },
     },
   ),
 );
+
+/**
+ * Re-attach vaulted speakerData to any patient who has `hasVoice: true`
+ * but no embedding — the recovery half of the speaker vault. Runs after
+ * every hydration; a healthy store makes this a cheap no-op (no
+ * candidates). Returns the number of patients restored.
+ *
+ * Era safety: readSpeakerBackup returns null for rows from a different
+ * embedding era, so migrations that intentionally cleared embeddings
+ * (encoder swaps set hasVoice=false anyway) can never be undone here.
+ */
+export async function restoreMissingSpeakerData(): Promise<number> {
+  const s = useSettingsStore.getState();
+  if (!s.cfg) return 0;
+  const candidates = s.cfg.patients.filter((p) => p.hasVoice && !p.speakerData);
+  let restored = 0;
+  for (const candidate of candidates) {
+    const data = await readSpeakerBackup(candidate.id);
+    if (!data) continue;
+    useSettingsStore.setState((st) => {
+      if (!st.cfg) return st;
+      return {
+        cfg: {
+          ...st.cfg,
+          patients: st.cfg.patients.map((p) =>
+            p.id === candidate.id && !p.speakerData
+              ? { ...p, speakerData: data }
+              : p,
+          ),
+        },
+      };
+    });
+    restored++;
+    console.warn(
+      `[OwnVoice:Persist] restored speakerData for patient ${candidate.id} from the vault`,
+    );
+    try {
+      const hash = await patientIdHash(candidate.id);
+      log({
+        name: EVENT.SPEAKER_VAULT_RESTORE,
+        severity: "WARN",
+        attributes: { [ATTR.PATIENT_ID_HASH]: hash },
+      });
+    } catch {
+      // Audit unavailable — console.warn above already fired.
+    }
+  }
+  return restored;
+}
 
 /** Hook: returns the currently-active Patient, or null if none. */
 export function useActivePatient(): Patient | null {

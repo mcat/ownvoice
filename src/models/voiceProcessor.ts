@@ -1,4 +1,5 @@
 import { useSettingsStore } from "../stores/settingsStore";
+import { backupSpeakerData } from "../stores/speakerVault";
 import { getModelManager } from "./modelManager";
 import { bootTTSWasm } from "./bootModels";
 import { decodeAudioFromBase64 } from "./audioDecode";
@@ -39,6 +40,9 @@ export function startVoiceProcessor(opts: ProcessorOptions = {}): () => void {
       );
       return { ...s, cfg: { ...s.cfg, patients } };
     });
+    // Redundant copy of the freshly-extracted clone — survives a corrupt
+    // or torn ov-settings write (see stores/speakerVault.ts). Never throws.
+    void backupSpeakerData(patientId, data);
   }
 
   async function tick() {

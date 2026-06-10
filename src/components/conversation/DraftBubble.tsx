@@ -74,11 +74,13 @@ export function DraftBubble({
       ))}
       {transcribing && (
         <div
+          // Patient-visible thread surface: ≥18px, never italic
+          // (DESIGN_GUIDELINES §4.1 — italics are a legibility hazard
+          // under opioid-blurred vision).
           style={{
-            fontSize: 11,
+            fontSize: 18,
             color: t.muted,
             marginTop: 8,
-            fontStyle: "italic",
           }}
           aria-live="polite"
         >

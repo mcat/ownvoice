@@ -57,6 +57,30 @@ export const colors = {
 export { z } from "./z";
 export type { ZToken } from "./z";
 
+/**
+ * Pain tile BORDER ramp, per theme — same indigo family as painColors,
+ * luminance-compressed so every step meets WCAG 1.4.11's 3:1 non-text
+ * floor against that theme's card background (the 3px border is the only
+ * boundary between a tile and the card). painColors itself stays the
+ * shared fill/badge ramp; at its extremes it falls below 3:1 (light end
+ * vs white, dark end vs #1C1C1E), which is exactly the range a patient
+ * most needs to discriminate.
+ *
+ * Verified ratios (see tokens.test.ts, which recomputes them):
+ *   light: 3.16:1 (index 0) … 11.91:1 (index 10) vs #FFFFFF
+ *   dark:  11.41:1 (index 0) … 3.24:1 (index 10) vs #1C1C1E
+ */
+export const painBorderColors = {
+  light: [
+    "#7C87F6", "#757CED", "#6D70E5", "#6665DC", "#5F5AD4", "#584FCB",
+    "#5043C2", "#4938BA", "#422DB1", "#3A21A9", "#3316A0",
+  ],
+  dark: [
+    "#C7D2FE", "#BDC6FA", "#B2BAF6", "#A8AFF3", "#9DA3EF", "#9397EB",
+    "#888BE7", "#7E7FE3", "#7374E0", "#6968DC", "#5E5CD8",
+  ],
+} as const;
+
 /** Pain scale indigo ramp — colorblind-safe, single-hue intensity */
 export const painColors = [
   "#C7D2FE", // 0

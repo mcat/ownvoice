@@ -79,7 +79,10 @@
 # SW or direct to CF.
 /models-manifest.json
   Cross-Origin-Resource-Policy: same-origin
-/manifest.webmanifest
+# NOTE: the PWA manifest ships as /manifest.json (see app/index.html's
+# <link rel="manifest">) — an earlier revision of this rule targeted the
+# conventional-but-nonexistent /manifest.webmanifest path.
+/manifest.json
   Cross-Origin-Resource-Policy: same-origin
 /icons/*
   Cross-Origin-Resource-Policy: same-origin

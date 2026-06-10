@@ -23,6 +23,14 @@ export const EVENT = {
   SETTINGS_LANG_CHANGE:      "settings.lang.change",
   SETTINGS_PROVIDER_ADD:     "settings.provider.add",
 
+  /** A debounced IndexedDB settings write failed (quota exceeded, blocked
+   *  upgrade, broken IDB). In-memory state is ahead of disk until a later
+   *  write succeeds — a reload before then loses the delta. */
+  PERSIST_ERROR:           "persist.error",
+  /** A patient's speakerData was re-attached from the speaker vault after
+   *  going missing from the settings blob (corrupt/torn write recovery). */
+  SPEAKER_VAULT_RESTORE:   "speaker_vault.restore",
+
   AUDIT_EXPORT:            "audit.export",
   AUDIT_RETENTION_SWEEP:   "audit.retention.sweep",
   AUDIT_BUFFER_OVERFLOW:   "audit.buffer_overflow",

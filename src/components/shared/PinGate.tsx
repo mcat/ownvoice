@@ -131,7 +131,9 @@ export function PinGate({ pin, onSuccess, onClose, t, theme }: PinGateProps) {
                 width: 16,
                 height: 16,
                 borderRadius: 8,
-                // Empty state: 3:1 non-text contrast against card for WCAG 1.4.11.
+                // Empty state: solid tokens (never opacity-blended, §4.2)
+                // holding 3:1 non-text contrast against the card —
+                // #8A8F98 is 5.2:1 on #1C1C1E, #767C87 is 4.2:1 on #FFFFFF.
                 background:
                   i < entry.length
                     ? error
@@ -140,8 +142,8 @@ export function PinGate({ pin, onSuccess, onClose, t, theme }: PinGateProps) {
                         ? "#60A5FA"
                         : "#2563EB"
                     : isDark
-                      ? "rgba(255,255,255,0.32)"
-                      : "rgba(0,0,0,0.28)",
+                      ? "#8A8F98"
+                      : "#767C87",
                 transition: "background 0.15s",
               }}
             />

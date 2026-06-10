@@ -4,7 +4,7 @@ import { Btn } from "../shared/Btn";
 import { getEmojiFPS, getPainDescriptors, getBodyRegions, composePainSentence, t as resolvePhrase } from "../../data/phraseRegistry";
 import type { PhraseKey } from "../../data/phraseRegistry";
 import { DualLocaleText } from "../shared/DualLocaleText";
-import { painColors } from "../../theme/tokens";
+import { painBorderColors } from "../../theme/tokens";
 import { useSettingsStore, useActivePatient } from "../../stores/settingsStore";
 import type { ThemeTokens, ThemeName } from "../../theme/tokens";
 
@@ -22,12 +22,6 @@ const STEP_LABEL_KEYS: Record<Step, PhraseKey> = {
   severity: "pain.step.severity",
   location: "pain.step.location",
   descriptor: "pain.step.descriptor",
-};
-
-const STEP_HEADING_KEYS: Record<Step, PhraseKey> = {
-  severity: "ui.dual.pain.heading.severity",
-  location: "ui.dual.pain.heading.location",
-  descriptor: "ui.dual.pain.heading.descriptor",
 };
 
 export function PainFlow({ onSelect, t, theme }: PainFlowProps) {
@@ -261,7 +255,10 @@ export function PainFlow({ onSelect, t, theme }: PainFlowProps) {
                 justifyContent: "center",
                 minWidth: 80,
                 background: isHovered ? hoverBg : t.card,
-                border: `3px solid ${painColors[face.n]}`,
+                // Border ramp is per-theme (painBorderColors) so every
+                // step holds 3:1 against the card — the shared fill ramp
+                // fails WCAG 1.4.11 at its extremes (see theme/tokens.ts).
+                border: `3px solid ${painBorderColors[theme][face.n]}`,
                 borderRadius: 16,
                 padding: "10px 8px",
                 cursor: "pointer",

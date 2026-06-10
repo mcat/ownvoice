@@ -13,13 +13,15 @@
  * change) into a clean 416 instead of a 500.
  */
 
-interface ParsedRange {
+export interface ParsedRange {
   start: number;
   end: number;
   length: number;
 }
 
-function parseRangeHeader(
+/** Exported for tests — every branch maps to a real client state (resume
+ *  offset, suffix probe, stale marker past EOF, malformed header). */
+export function parseRangeHeader(
   header: string,
   size: number,
 ): ParsedRange | "unsatisfiable" | null {

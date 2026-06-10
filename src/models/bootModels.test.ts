@@ -79,6 +79,10 @@ vi.stubGlobal("Worker", FakeWorker);
 beforeEach(async () => {
   vi.clearAllMocks();
   createdWorkers.length = 0;
+  // mockReset (not just clearAllMocks) — clearAllMocks does NOT drop queued
+  // mockReturnValueOnce values, so an unconsumed once-value from one test
+  // would override the default below and leak into the next test.
+  mockIsReady.mockReset();
   mockIsReady.mockReturnValue(false);
   // Default to "not hydrated yet" — matches the prior-art assumption
   // baked into the existing eager-warmup tests, so they keep passing.
@@ -338,7 +342,6 @@ describe("bootModels — eager warmup", () => {
 
     const ttsWorker = createdWorkers[0];
     ttsWorker.onmessage?.({ data: { type: "ready" } });
-    mockIsReady.mockReturnValueOnce(true);
     ttsWorker.onmessage?.({
       data: { type: "error", message: "wasm broken", phase: "warmup" },
     });
@@ -525,5 +528,49 @@ describe("everyPatientIsResolved", () => {
     });
     const { everyPatientIsResolved } = await import("./bootModels");
     expect(everyPatientIsResolved()).toBe(false);
+  });
+});
+
+describe("WASM worker onerror handling", () => {
+  // A worker that dies during module load (script fetch failure, OOM,
+  // syntax error in a bad deploy) never posts a message — onerror is the
+  // only signal. Without a handler the model sits in "idle" forever and
+  // the UI shows no recovery affordance.
+
+  it("marks stt as error when the STT WASM worker fails before ready", async () => {
+    const { bootModels } = await import("./bootModels");
+    await bootModels();
+    const sttWorker = createdWorkers[1];
+    expect(sttWorker.onerror).toBeTruthy();
+    sttWorker.onerror?.({ message: "Load failed" });
+    expect(mockSetError).toHaveBeenCalledWith("stt", expect.stringContaining("Load failed"));
+  });
+
+  it("does not flip a ready stt model to error on a late worker error", async () => {
+    const { bootModels } = await import("./bootModels");
+    await bootModels();
+    const sttWorker = createdWorkers[1];
+    sttWorker.onmessage?.({ data: { type: "ready" } });
+    mockIsReady.mockReturnValue(true);
+    sttWorker.onerror?.({ message: "late hiccup" });
+    expect(mockSetError).not.toHaveBeenCalled();
+  });
+
+  it("marks tts as error when the TTS WASM worker fails before ready", async () => {
+    const { bootModels } = await import("./bootModels");
+    await bootModels();
+    const ttsWorker = createdWorkers[0];
+    expect(ttsWorker.onerror).toBeTruthy();
+    ttsWorker.onerror?.({ message: "Load failed" });
+    expect(mockSetError).toHaveBeenCalledWith("tts", expect.stringContaining("Load failed"));
+  });
+
+  it("does not flip an initialized tts model to error on a late worker error", async () => {
+    const { bootModels } = await import("./bootModels");
+    await bootModels();
+    const ttsWorker = createdWorkers[0];
+    ttsWorker.onmessage?.({ data: { type: "ready" } });
+    ttsWorker.onerror?.({ message: "late hiccup" });
+    expect(mockSetError).not.toHaveBeenCalled();
   });
 });

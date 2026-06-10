@@ -12,7 +12,7 @@
 //
 // Cache name bumps on every shipped SW change. Old caches are cleaned on activate.
 
-const CACHE_NAME = "ownvoice-v18";
+const CACHE_NAME = "ownvoice-v19";
 const SHELL_ASSETS = ["/app/", "/app/index.html"];
 
 // Vite-bundled WASM-fallback workers + the unbundled GPU workers. Both
@@ -22,8 +22,11 @@ const SHELL_ASSETS = ["/app/", "/app/index.html"];
 //   /stt-gpu-worker.js
 //   /assets/sttWorker-<hash>.js
 //   /assets/ttsWorker-<hash>.js
+//   /assets/denoiserWorker-<hash>.js
+// Guarded by src/__tests__/swWorkerBypass.test.ts — add new bundled
+// worker entries BOTH here and there.
 const WORKER_SCRIPT_PATTERN =
-  /^\/(?:(?:stt|tts)-gpu-worker\.js|assets\/(?:stt|tts)Worker-[A-Za-z0-9_-]+\.js)$/;
+  /^\/(?:(?:stt|tts)-gpu-worker\.js|assets\/(?:stt|tts|denoiser)Worker-[A-Za-z0-9_-]+\.js)$/;
 
 /**
  * Headers required to make `crossOriginIsolated === true`, which is the

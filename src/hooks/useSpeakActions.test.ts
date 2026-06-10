@@ -723,4 +723,29 @@ describe("useSpeakActions", () => {
       }));
     });
   });
+
+  describe("speak rejection handling", () => {
+    it("catches a rejected speak() and logs SPEAK_ERROR instead of unhandled-rejecting", async () => {
+      useSettingsStore.setState({ cfg: DEFAULT_CFG, _hasHydrated: true });
+      const consoleErr = vi.spyOn(console, "error").mockImplementation(() => {});
+      vi.mocked(speak).mockRejectedValueOnce(new Error("playback exploded"));
+
+      const { result } = renderHook(() => useSpeakActions());
+      act(() => {
+        result.current.speakAsPatient("Water please");
+      });
+      // Flush the rejection through the catch handler.
+      await act(async () => {
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+
+      expect(consoleErr).toHaveBeenCalled();
+      const errorEvents = logSpy.mock.calls.filter(
+        (c) => (c[0] as { name?: string })?.name === EVENT.SPEAK_ERROR,
+      );
+      expect(errorEvents.length).toBeGreaterThan(0);
+      consoleErr.mockRestore();
+    });
+  });
 });

@@ -638,3 +638,86 @@ describe("VoiceCapture — registerRetry remains stable across parent re-renders
     expect(retryRef.current).toBeNull();
   });
 });
+
+describe("VoiceCapture — mic lifecycle on unmount", () => {
+  const onCapture = vi.fn();
+  const onRemove = vi.fn();
+
+  class FakeMediaRecorder {
+    static instances: FakeMediaRecorder[] = [];
+    state: "inactive" | "recording" = "inactive";
+    ondataavailable: ((e: { data: { size: number } }) => void) | null = null;
+    onstop: (() => void) | null = null;
+    start = vi.fn(() => {
+      this.state = "recording";
+    });
+    stop = vi.fn(() => {
+      this.state = "inactive";
+      this.onstop?.();
+    });
+    constructor(public stream: unknown) {
+      FakeMediaRecorder.instances.push(this);
+    }
+  }
+
+  beforeEach(() => {
+    onCapture.mockClear();
+    onRemove.mockClear();
+    FakeMediaRecorder.instances = [];
+    vi.stubGlobal("MediaRecorder", FakeMediaRecorder);
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+  });
+
+  it("stops the recorder and mic tracks when unmounted mid-recording", async () => {
+    // A patient reset / navigation / sheet close mid-recording must not
+    // leave the mic indicator lit with a recorder still armed.
+    const trackStop = vi.fn();
+    const fakeStream = {
+      getTracks: () => [{ stop: trackStop }],
+    } as unknown as MediaStream;
+    navigator.mediaDevices.getUserMedia = vi.fn().mockResolvedValue(fakeStream);
+
+    const { unmount } = render(
+      <VoiceCapture
+        label="Patient"
+        hasVoice={false}
+        onCapture={onCapture}
+        onRemove={onRemove}
+      />,
+    );
+
+    fireEvent.click(screen.getByText("Record"));
+    // getUserMedia microtask, then walk the coached countdown 1s at a
+    // time until the "go" beat constructs the MediaRecorder. Advancing
+    // in one big jump would also blow through RECORD_DURATION and let
+    // the auto-stop fire — the bug only shows while still recording.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    for (let i = 0; i < 60 && FakeMediaRecorder.instances.length === 0; i++) {
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1_000);
+      });
+    }
+
+    expect(FakeMediaRecorder.instances).toHaveLength(1);
+    const recorder = FakeMediaRecorder.instances[0];
+    expect(recorder.start).toHaveBeenCalled();
+
+    // 2s into the 15s budget — definitely still recording.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2_000);
+    });
+    expect(recorder.stop).not.toHaveBeenCalled();
+
+    unmount();
+
+    expect(recorder.stop).toHaveBeenCalled();
+    expect(trackStop).toHaveBeenCalled();
+  });
+});

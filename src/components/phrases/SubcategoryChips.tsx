@@ -67,9 +67,12 @@ export function SubcategoryChips({
               border: active
                 ? `1px solid ${t.border}`
                 : "1px solid transparent",
-              borderRadius: 10,
-              padding: "8px 16px",
-              fontSize: 14,
+              borderRadius: 12,
+              // Patient-facing selection chrome: 64px target floor + 18px
+              // text (DESIGN_GUIDELINES §3.1/§4.1).
+              padding: "16px 20px",
+              minHeight: 64,
+              fontSize: 18,
               fontWeight: active ? 700 : 500,
               whiteSpace: "nowrap",
               boxShadow: active

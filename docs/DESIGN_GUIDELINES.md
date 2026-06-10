@@ -118,7 +118,6 @@ Healthcare-specific accessibility guidance recommends touch targets of at least 
 - **Bottom tab bar** is the primary navigation. This is the most reachable area of the screen for a patient holding a tablet on their lap or on a bedside tray. Top-of-screen navigation requires shoulder elevation, which is exhausting and may be impossible for post-intubation patients.
 - **Maximum two taps to any phrase.** Tab → phrase. For subcategories (e.g., I Need → Medical → "I need my medication"), this extends to three taps, which is the absolute maximum depth.
 - **No hamburger menus, no hidden navigation.** Everything patient-facing must be visible. The patient cannot be expected to discover features. Recognition over recall is a core usability heuristic[^12], and it applies with amplified force to cognitively impaired users.
-- **Persistent emergency phrase.** A persistent, always-visible "I need help" button accessible from every screen. This is the AAC equivalent of a nurse call button and should never be more than one tap away. This follows the no-dead-ends principle: regardless of where the patient is in the app, help is one tap away.
 
 ---
 

@@ -149,15 +149,17 @@ export function SentenceBuilder({ onSend, t, theme, messages }: SentenceBuilderP
   const blue = theme === "dark" ? "#60A5FA" : "#2563EB";
   const noSuggestions = shownSuggestions.length === 0 && hasText;
 
+  // Patient-facing controls: 64px floor (DESIGN_GUIDELINES §3.1).
   const smallBtnStyle = {
-    width: 40, height: 40, borderRadius: 8, border: `1px solid ${t.border}`,
-    background: t.activeBg, color: t.text, fontSize: 18,
+    width: 64, height: 64, borderRadius: 12, border: `1px solid ${t.border}`,
+    background: t.activeBg, color: t.text, fontSize: 24,
     display: "flex", alignItems: "center", justifyContent: "center", padding: 0,
   } as const;
 
   const pillStyle = {
-    padding: "10px 16px", fontSize: 16, fontWeight: 500, color: t.text,
-    background: t.card, border: `1px solid ${t.border}`, borderRadius: 10, lineHeight: 1.3,
+    padding: "12px 20px", fontSize: 18, fontWeight: 500, color: t.text,
+    background: t.card, border: `1px solid ${t.border}`, borderRadius: 12,
+    lineHeight: 1.3, minHeight: 64,
   } as const;
 
   return (
@@ -241,7 +243,7 @@ export function SentenceBuilder({ onSend, t, theme, messages }: SentenceBuilderP
         width: "100%", padding: "14px 20px", fontSize: 18, fontWeight: 700,
         color: hasText ? "#FFFFFF" : t.muted, background: hasText ? blue : t.activeBg,
         border: hasText ? "none" : `1px solid ${t.border}`, borderRadius: 12,
-        minHeight: 48, transition: "background 0.15s ease, color 0.15s ease",
+        minHeight: 64, transition: "background 0.15s ease, color 0.15s ease",
       }}>
         {resolvePhrase("ui.patient.builder.speak", patientLang)}
       </Btn>

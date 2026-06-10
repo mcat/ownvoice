@@ -14,17 +14,19 @@ OwnVoice is an in-patient AAC (Augmentative and Alternative Communication) web a
 npm run dev            # Start Vite dev server at http://localhost:3000 (auto-opens browser)
 npm run build          # Type-check then production build → dist/
 npm run preview        # Preview production build locally
+npm run lint           # ESLint (typescript-eslint + jsx-a11y); runs in CI
+npm run typecheck:functions # Typecheck Cloudflare Pages Functions (own tsconfig); runs in CI
 npm test               # Run Vitest once
 npm run test:watch     # Vitest in watch mode
 npm run test:coverage  # Vitest with coverage
 npm run manifest:regen # Refresh public/models-manifest.json from disk sizes
-npm run manifest:check # Verify manifest is in sync with disk (CI-safe)
+npm run manifest:check # Verify manifest is in sync with disk (needs model bundle on disk)
 tail -f logs/dev.log   # Live browser-console mirror (Loguru format) — see "Debugging from the terminal"
 ```
 
-**After adding/replacing any file under `public/models/**`:** run `npm run manifest:regen` and commit the diff. The `manifestIntegrity` vitest covers drift automatically in CI.
+**After adding/replacing any file under `public/models/**`:** run `npm run manifest:regen` and commit the diff. The `manifestIntegrity` vitest covers drift on any machine that has the model bundle; in CI (no bundle — it's gitignored) the test reports as *skipped*, so the drift check is a local/dev-machine responsibility.
 
-Stack: TypeScript + Preact + Vite + Vitest. ESLint with `typescript-eslint` and `eslint-plugin-jsx-a11y`.
+Stack: TypeScript + Preact + Vite + Vitest. ESLint flat config (`eslint.config.js`) with `typescript-eslint` and `eslint-plugin-jsx-a11y`.
 
 ## Architecture
 

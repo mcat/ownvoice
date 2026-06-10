@@ -425,21 +425,6 @@ function createEmptyKVCache() {
   return feeds;
 }
 
-function extractKVCache(results) {
-  const feeds = {};
-  for (let i = 0; i < NUM_DECODER_LAYERS; i++) {
-    for (const attnType of ["decoder", "encoder"]) {
-      for (const kvType of ["key", "value"]) {
-        const outputName = `present.${i}.${attnType}.${kvType}`;
-        const inputName = `past_key_values.${i}.${attnType}.${kvType}`;
-        const tensor = results[outputName];
-        if (tensor) feeds[inputName] = tensor;
-      }
-    }
-  }
-  return feeds;
-}
-
 // ─── Init with warmup ──────────────────────────────────────────────
 
 async function handleInit(modelUrl) {

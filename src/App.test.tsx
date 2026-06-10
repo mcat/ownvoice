@@ -252,7 +252,7 @@ describe("App", () => {
   it("returns null for unknown tab with no matching cat", () => {
     useSettingsStore.setState({ _hasHydrated: true, cfg: makeCfg() });
     useUIStore.setState({ tab: "nonexistent" });
-    const { container } = render(<App />);
+    render(<App />);
     // Should still render header and tab bar, but no phrase content
     expect(screen.getByRole("navigation", { name: "Primary" })).toBeInTheDocument();
     // No phrase grid content

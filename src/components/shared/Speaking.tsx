@@ -128,7 +128,9 @@ export function Speaking({
             class="font-sans"
             style={{
               fontSize: 13,
-              color: "rgba(245,245,245,0.7)",
+              // Solid token, not opacity-blended (§4.2). 8.0:1 / 5.4:1
+              // against the speakBg gradient ends (#1E293B / #334155).
+              color: "#BCC1C8",
               letterSpacing: 1.5,
               textTransform: "uppercase",
               lineHeight: 1,
@@ -172,7 +174,8 @@ export function Speaking({
                   style={{
                     fontSize: 14,
                     fontWeight: 400,
-                    color: "rgba(245,245,245,0.7)",
+                    // Solid token, not opacity-blended (§4.2) — see subLabel.
+                    color: "#BCC1C8",
                     lineHeight: 1.3,
                     marginTop: 2,
                     whiteSpace: "nowrap",

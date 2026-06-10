@@ -357,10 +357,6 @@ function Section({
   );
 }
 
-function labelStyle(t: ThemeTokens): JSX.CSSProperties {
-  return { display: "block", fontSize: 14, fontWeight: 600, color: t.sub, marginBottom: 6 };
-}
-
 function inputStyle(t: ThemeTokens, isDark: boolean): JSX.CSSProperties {
   return {
     width: "100%", padding: "12px 14px", borderRadius: 10,
