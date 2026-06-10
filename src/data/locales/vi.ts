@@ -48,7 +48,6 @@ const vi: LocaleStrings = {
   "needs.medical.nurse": "Tôi cần y tá",
   "needs.medical.doctor": "Tôi cần bác sĩ",
   "needs.medical.call_light": "Tôi cần giúp đỡ ngay",
-  "ui.patient.help.label": "Giúp đỡ",
 
   // ── Patient needs: People ──────────────────────────────────────
   "needs.people.family": "Tôi muốn gặp gia đình",

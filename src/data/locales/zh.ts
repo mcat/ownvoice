@@ -48,7 +48,6 @@ const zh: LocaleStrings = {
   "needs.medical.nurse": "我需要护士",
   "needs.medical.doctor": "我需要医生",
   "needs.medical.call_light": "我现在就需要帮助",
-  "ui.patient.help.label": "帮助",
 
   // ── Patient needs: People ──────────────────────────────────────
   "needs.people.family": "我想见家人",

@@ -48,7 +48,6 @@ const ru: LocaleStrings = {
   "needs.medical.nurse": "Мне нужна медсестра",
   "needs.medical.doctor": "Мне нужен врач",
   "needs.medical.call_light": "Мне срочно нужна помощь",
-  "ui.patient.help.label": "Помощь",
 
   // ── Patient needs: People ──────────────────────────────────────
   "needs.people.family": "Я хочу видеть семью",

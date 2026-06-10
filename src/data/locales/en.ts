@@ -44,7 +44,6 @@ const en = {
   "needs.medical.nurse": "I need the nurse",
   "needs.medical.doctor": "I need the doctor",
   "needs.medical.call_light": "I need help right now",
-  "ui.patient.help.label": "Help",
 
   // ── Patient needs: People ──────────────────────────────────────
   "needs.people.family": "I want my family",

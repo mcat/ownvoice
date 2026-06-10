@@ -48,7 +48,6 @@ const ms: LocaleStrings = {
   "needs.medical.nurse": "Saya perlukan jururawat",
   "needs.medical.doctor": "Saya perlukan doktor",
   "needs.medical.call_light": "Saya perlukan bantuan sekarang juga",
-  "ui.patient.help.label": "Tolong",
 
   // ── Patient needs: People ──────────────────────────────────────
   "needs.people.family": "Saya mahu keluarga saya",

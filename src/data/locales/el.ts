@@ -56,7 +56,6 @@ const el: LocaleStrings = {
   "needs.medical.nurse": "Χρειάζομαι τη νοσοκόμα",
   "needs.medical.doctor": "Χρειάζομαι τον γιατρό",
   "needs.medical.call_light": "Χρειάζομαι βοήθεια αμέσως",
-  "ui.patient.help.label": "Βοήθεια",
 
   // ── Patient needs: People ──────────────────────────────────────
   "needs.people.family": "Θέλω την οικογένειά μου",

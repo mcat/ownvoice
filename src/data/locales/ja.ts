@@ -48,7 +48,6 @@ const ja: LocaleStrings = {
   "needs.medical.nurse": "看護師さんを呼んでください",
   "needs.medical.doctor": "医師を呼んでください",
   "needs.medical.call_light": "今すぐ助けてください",
-  "ui.patient.help.label": "助けて",
 
   // ── Patient needs: People ──────────────────────────────────────
   "needs.people.family": "家族に会いたいです",

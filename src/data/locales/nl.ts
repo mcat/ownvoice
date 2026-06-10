@@ -48,7 +48,6 @@ const nl: LocaleStrings = {
   "needs.medical.nurse": "Ik heb de verpleegkundige nodig",
   "needs.medical.doctor": "Ik heb de dokter nodig",
   "needs.medical.call_light": "Ik heb nu hulp nodig",
-  "ui.patient.help.label": "Help",
 
   // ── Patient needs: People ──────────────────────────────────────
   "needs.people.family": "Ik wil mijn familie",

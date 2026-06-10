@@ -31,7 +31,6 @@ import { ResetSheet } from "./components/settings/ResetSheet";
 import { PatientsScreen } from "./components/patients/PatientsScreen";
 import { PatientEditSheet } from "./components/patient/PatientEditSheet";
 import { PinGate } from "./components/shared/PinGate";
-import { HelpButton } from "./components/shared/HelpButton";
 import { ConfirmDialogHost } from "./components/shared/ConfirmDialog";
 import { StaffSessionTimer } from "./components/shared/StaffSessionTimer";
 import { ResumePromptBanner } from "./components/diag/ResumePromptBanner";
@@ -441,11 +440,6 @@ export function App() {
       </main>
 
       <TabBar />
-
-      {/* Persistent emergency phrase — visible on every screen, one tap
-          (DESIGN_GUIDELINES §3.4). Speaks through the same patient
-          pathway as any phrase tile. */}
-      <HelpButton onTap={speakAsPatient} patientLang={patientLang} t={t} />
 
       {/* Overlays */}
       {speaking && (

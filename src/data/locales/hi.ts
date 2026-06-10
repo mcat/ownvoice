@@ -48,7 +48,6 @@ const hi: LocaleStrings = {
   "needs.medical.nurse": "मुझे नर्स चाहिए",
   "needs.medical.doctor": "मुझे डॉक्टर चाहिए",
   "needs.medical.call_light": "मुझे अभी मदद चाहिए",
-  "ui.patient.help.label": "मदद",
 
   // ── Patient needs: People ──────────────────────────────────────
   "needs.people.family": "मुझे अपना परिवार चाहिए",

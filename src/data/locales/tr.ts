@@ -48,7 +48,6 @@ const tr: LocaleStrings = {
   "needs.medical.nurse": "Hemşireye ihtiyacım var",
   "needs.medical.doctor": "Doktora ihtiyacım var",
   "needs.medical.call_light": "Şu anda yardıma ihtiyacım var",
-  "ui.patient.help.label": "Yardım",
 
   // ── Patient needs: People ──────────────────────────────────────
   "needs.people.family": "Ailemi istiyorum",
