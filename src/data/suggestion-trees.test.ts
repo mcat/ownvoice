@@ -1,4 +1,6 @@
-import { getContextualSuggestions } from "./suggestion-trees";
+import { getContextualSuggestions, getKeyedContextualSuggestions } from "./suggestion-trees";
+import type { SuggestionContextMessage } from "./suggestion-trees";
+import { t as tt } from "./phraseRegistry";
 import type { Message } from "../types";
 
 const msg = (from: "patient" | "provider", text: string): Message => ({
@@ -196,5 +198,48 @@ describe("getContextualSuggestions — keyword patterns", () => {
   it("falls through to generic for phrases with no keyword matches", async () => {
     const result = await getContextualSuggestions("xyzzy nonsense", [], 12);
     expect(result.length).toBeGreaterThan(0);
+  });
+});
+
+describe("getKeyedContextualSuggestions — locale + key-based matching", () => {
+  it("resolves curated suggestion text in the requested locale", async () => {
+    const result = await getKeyedContextualSuggestions("", [], 23, "es");
+    expect(result[0]).toEqual(
+      expect.objectContaining({
+        key: "suggest.ctx.night.cant_sleep",
+        text: "No puedo dormir",
+      }),
+    );
+  });
+
+  it("matches a provider question by phrase key regardless of display language", async () => {
+    // Thread text is whatever language the provider phrase displayed in —
+    // the trigger must key off the PhraseKey, not English substrings.
+    const messages: SuggestionContextMessage[] = [
+      { from: "provider", text: "¿Cómo te sientes?", key: "provider.questions.feeling" },
+    ];
+    const result = await getKeyedContextualSuggestions("", messages, 12, "es");
+    expect(result.map((r) => r.key)).toContain("suggest.ctx.feeling.i_feel");
+    expect(
+      result.find((r) => r.key === "suggest.ctx.feeling.i_feel")?.text,
+    ).toBe("Me siento");
+  });
+
+  it("still matches provider questions by en text when no key is present", async () => {
+    const messages: SuggestionContextMessage[] = [
+      { from: "provider", text: "How are you feeling?" },
+    ];
+    const result = await getKeyedContextualSuggestions("", messages, 12);
+    expect(result.map((r) => r.key)).toContain("suggest.ctx.feeling.i_feel");
+  });
+
+  it("localizes Layer-1 curated completions for keyed lookups", async () => {
+    const result = await getKeyedContextualSuggestions("i need", [], 12, "es");
+    expect(result.length).toBeGreaterThan(0);
+    for (const item of result) {
+      if (item.key) {
+        expect(item.text).toBe(tt(item.key, "es"));
+      }
+    }
   });
 });

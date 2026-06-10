@@ -77,7 +77,9 @@ function setupFetchMocks() {
             .fn()
             .mockResolvedValueOnce({
               done: false,
-              value: new Uint8Array([1, 2, 3]),
+              // First byte 0x08 — the worker validates the ONNX magic
+              // before handing bytes to InferenceSession.create.
+              value: new Uint8Array([0x08, 2, 3]),
             })
             .mockResolvedValueOnce({ done: true }),
         }),
@@ -313,7 +315,7 @@ describe("sttWorker — message protocol", () => {
           getReader: () => ({
             read: vi
               .fn()
-              .mockResolvedValueOnce({ done: false, value: new Uint8Array([1, 2, 3]) })
+              .mockResolvedValueOnce({ done: false, value: new Uint8Array([0x08, 2, 3]) })
               .mockResolvedValueOnce({ done: true }),
           }),
         },
@@ -382,6 +384,90 @@ describe("sttWorker — message protocol", () => {
     expect(mockPostMessage).toHaveBeenCalledWith({ type: "transcript", text: "" });
     expect(decoderRun).toHaveBeenCalledTimes(1);
   }, 30_000);
+});
+
+describe("sttWorker — init hardening", () => {
+  // Unlike the OPFS-primed TTS path, this worker downloads its model
+  // bytes itself: it needs its own captive-portal protection (an HTML
+  // body fed to InferenceSession.create surfaces as an opaque
+  // deserialize error) and must not hold encoder+decoder buffers
+  // (~300 MB combined) simultaneously on the platform whose OOM kills
+  // are silent.
+
+  function modelResponse(firstByte: number) {
+    return {
+      ok: true,
+      headers: { get: () => "100" },
+      body: {
+        getReader: () => ({
+          read: vi
+            .fn()
+            .mockResolvedValueOnce({
+              done: false,
+              value: new Uint8Array([firstByte, 2, 3]),
+            })
+            .mockResolvedValueOnce({ done: true }),
+        }),
+      },
+    };
+  }
+
+  it("rejects an HTML payload before creating any session (captive portal)", async () => {
+    mockFetch.mockImplementation(async (url: string) => {
+      if (url.includes("tokenizer.json")) {
+        return { ok: true, json: async () => ({ model: { vocab: {} }, added_tokens: [] }) };
+      }
+      // "<" — an HTML login page instead of model bytes.
+      return modelResponse("<".charCodeAt(0));
+    });
+    mockSessionCreate.mockResolvedValue({ run: vi.fn(), inputNames: [], outputNames: [] });
+
+    vi.resetModules();
+    await import("./sttWorker");
+    const handler = getHandler();
+
+    await handler({ data: { type: "init", modelUrl: "/models/stt/" } } as MessageEvent);
+
+    expect(mockSessionCreate).not.toHaveBeenCalled();
+    expect(mockPostMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "error",
+        message: expect.stringContaining("encoder"),
+      }),
+    );
+    expect(mockPostMessage).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: "ready" }),
+    );
+  });
+
+  it("creates the encoder session before downloading the decoder (peak-memory cap)", async () => {
+    const order: string[] = [];
+    mockFetch.mockImplementation(async (url: string) => {
+      if (url.includes("tokenizer.json")) {
+        return { ok: true, json: async () => ({ model: { vocab: {} }, added_tokens: [] }) };
+      }
+      order.push(url.includes("encoder") ? "dl:encoder" : "dl:decoder");
+      return modelResponse(0x08);
+    });
+    mockSessionCreate.mockImplementation(async () => {
+      order.push("create");
+      return { run: vi.fn(), inputNames: [], outputNames: [] };
+    });
+
+    vi.resetModules();
+    await import("./sttWorker");
+    const handler = getHandler();
+
+    await handler({ data: { type: "init", modelUrl: "/models/stt/" } } as MessageEvent);
+
+    const firstCreate = order.indexOf("create");
+    const decoderDl = order.indexOf("dl:decoder");
+    expect(firstCreate).toBeGreaterThanOrEqual(0);
+    expect(decoderDl).toBeGreaterThanOrEqual(0);
+    // Sequential contract: hand the encoder's ~66 MB buffer to ORT (and
+    // let it become collectable) before the decoder's ~233 MB lands.
+    expect(firstCreate).toBeLessThan(decoderDl);
+  });
 });
 
 describe("sttWorker — warmup", () => {

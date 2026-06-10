@@ -1048,6 +1048,16 @@ async function handleSynthesize(text, speakerData, id, languageId, exaggeration 
       : sampleToken(lastTokenLogits, generatedTokens);
 
     if (maxIdx === STOP_SPEECH_TOKEN) {
+      // Hand the FINAL step's present.* outputs to priorGpuKV before
+      // breaking — the normal hand-off at the bottom of the loop is
+      // skipped by this break, and gpu-buffer tensors are not GC'd, so
+      // every STOP-terminated synth (i.e. nearly all of them) leaked
+      // NUM_LAYERS×2 GPU buffers. The finally below disposes them.
+      for (const [key, value] of Object.entries(lmResult)) {
+        if (key.startsWith("present.") && value?.location === "gpu-buffer") {
+          priorGpuKV.push(value);
+        }
+      }
       console.log(`${LOG} Stopped at token ${step + 1}`);
       break;
     }

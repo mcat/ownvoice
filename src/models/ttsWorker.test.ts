@@ -311,6 +311,92 @@ describe("ttsWorker — message protocol", () => {
     );
   });
 
+  it("echoes the synthesize requestId on the audio response", async () => {
+    setupFetchMocks();
+
+    const embedTokensRun = vi.fn().mockResolvedValue({
+      inputs_embeds: { data: new Float32Array(4), dims: [1, 2, 2] },
+    });
+    const STOP_SPEECH_TOKEN = 6562;
+    const languageModelRun = vi.fn().mockResolvedValue({
+      logits: {
+        data: (() => {
+          const data = new Float32Array(7000);
+          data[STOP_SPEECH_TOKEN] = 100.0;
+          return data;
+        })(),
+        dims: [1, 1, 7000],
+      },
+    });
+    const conditionalDecoderRun = vi.fn().mockResolvedValue({
+      wav: { data: new Float32Array([0.1, -0.1]), dims: [1, 2] },
+    });
+    let createCallIdx = 0;
+    mockSessionCreate.mockImplementation(async () => {
+      const idx = createCallIdx++;
+      if (idx === 0) return { run: embedTokensRun, release: vi.fn() };
+      if (idx === 1) return { run: languageModelRun, release: vi.fn() };
+      return { run: conditionalDecoderRun, release: vi.fn() };
+    });
+
+    vi.resetModules();
+    await import("./ttsWorker");
+    const handler = getMessageHandler();
+    await handler({ data: { type: "init", modelUrl: "/models/tts/" } } as MessageEvent);
+    mockPostMessage.mockClear();
+
+    const speakerData = {
+      condEmb: new Float32Array([0.5, 0.5]),
+      condEmbShape: [1, 1, 2],
+      promptToken: [1],
+      promptTokenShape: [1, 1],
+      speakerEmbeddings: new Float32Array([0.3]),
+      speakerEmbeddingsShape: [1, 1],
+      speakerFeatures: new Float32Array([0.2]),
+      speakerFeaturesShape: [1, 1],
+    };
+
+    await handler({
+      data: { type: "synthesize", text: "Hello", speakerData, languageId: "en", requestId: 42 },
+    } as unknown as MessageEvent);
+
+    // The audio response must carry the request's id — pre-gen and embed
+    // share this worker, and unkeyed responses used to resolve whichever
+    // listener happened to be attached.
+    expect(mockPostMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "audio", requestId: 42 }),
+      expect.anything(),
+    );
+  });
+
+  it("echoes the synthesize requestId on a failure error", async () => {
+    vi.resetModules();
+    setupFetchMocks();
+    mockSessionCreate.mockResolvedValue(makeMockSession());
+    await import("./ttsWorker");
+    const handler = getMessageHandler();
+
+    const speakerData = {
+      condEmb: new Float32Array([0.5]),
+      condEmbShape: [1, 1, 1],
+      promptToken: [1],
+      promptTokenShape: [1, 1],
+      speakerEmbeddings: new Float32Array([0.3]),
+      speakerEmbeddingsShape: [1, 1],
+      speakerFeatures: new Float32Array([0.2]),
+      speakerFeaturesShape: [1, 1],
+    };
+
+    // synthesize without init → handleSynthesize throws → global catch.
+    await handler({
+      data: { type: "synthesize", text: "Hello", speakerData, languageId: "en", requestId: 7 },
+    } as unknown as MessageEvent);
+
+    expect(mockPostMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "error", requestId: 7 }),
+    );
+  });
+
   it("responds with 'error' for unknown message types", async () => {
     vi.resetModules();
     setupFetchMocks();

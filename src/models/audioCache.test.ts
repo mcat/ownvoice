@@ -16,6 +16,17 @@ const mockWorker = {
   addEventListener: vi.fn(),
   removeEventListener: vi.fn(),
 };
+
+/** Echo helper for fake worker responses: the keyed protocol requires
+ *  audio/error responses to carry the requestId of the synthesize
+ *  message they answer (listener registration happens before
+ *  postMessage, so read it inside the deferred dispatch). */
+function lastSynthRequestId(): number | undefined {
+  const sent = mockWorker.postMessage.mock.calls.at(-1)?.[0] as
+    | { requestId?: number }
+    | undefined;
+  return sent?.requestId;
+}
 const mockModelManager = {
   isReady: vi.fn(() => false),
   // Explicit return type so mockReturnValue(workerLikeObject) type-checks.
@@ -411,7 +422,7 @@ describe("audioCache — generateAllPhrases", () => {
       (_event: string, handler: (e: MessageEvent) => void) => {
         setTimeout(() => {
           handler({
-            data: { type: "audio", data: new Float32Array([0.1, -0.1]) },
+            data: { type: "audio", data: new Float32Array([0.1, -0.1]), requestId: lastSynthRequestId() },
           } as unknown as MessageEvent);
         }, 5);
       },
@@ -428,6 +439,47 @@ describe("audioCache — generateAllPhrases", () => {
     expect(results[0]).toEqual({ phrase: "Hello", current: 1, total: 2 });
     // Second yield: "Goodbye" was generated via worker
     expect(results[1]).toEqual({ phrase: "Goodbye", current: 2, total: 2 });
+  });
+
+  it("keys each synthesize request and ignores unrelated unkeyed errors", async () => {
+    // The WASM worker is shared (pre-gen + embed + warmup). Before the
+    // protocol was keyed, ANY error broadcast — e.g. a warmup failure —
+    // rejected whatever synth happened to be in flight and burned a retry.
+    mockModelManager.isReady.mockReturnValue(true);
+    mockModelManager.getWorker.mockReturnValue(mockWorker);
+
+    mockWorker.addEventListener.mockImplementation(
+      (_event: string, handler: (e: MessageEvent) => void) => {
+        setTimeout(() => {
+          // Unrelated, unsolicited failure first (no requestId)…
+          handler({
+            data: { type: "error", message: "warmup exploded" },
+          } as unknown as MessageEvent);
+          // …then the keyed audio for the actual request.
+          const sent = mockWorker.postMessage.mock.calls.at(-1)?.[0] as
+            | { requestId?: number }
+            | undefined;
+          handler({
+            data: {
+              type: "audio",
+              data: new Float32Array([0.1, -0.1]),
+              requestId: sent?.requestId,
+            },
+          } as unknown as MessageEvent);
+        }, 5);
+      },
+    );
+
+    const gen = generateAllPhrases(["Hello"], EMBEDDING);
+    const results: unknown[] = [];
+    for await (const item of gen) results.push(item);
+
+    expect(mockWorker.postMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "synthesize", requestId: expect.any(Number) }),
+    );
+    // One attempt suffices: the unkeyed error must NOT consume a retry.
+    expect(mockWorker.postMessage).toHaveBeenCalledTimes(1);
+    expect(results).toHaveLength(1);
   });
 
   it("applies postProcessAudio before caching synthesized audio", async () => {
@@ -447,7 +499,7 @@ describe("audioCache — generateAllPhrases", () => {
       (_event: string, handler: (e: MessageEvent) => void) => {
         setTimeout(() => {
           handler({
-            data: { type: "audio", data: synthAudio },
+            data: { type: "audio", data: synthAudio, requestId: lastSynthRequestId() },
           } as unknown as MessageEvent);
         }, 1);
       },
@@ -487,11 +539,11 @@ describe("audioCache — generateAllPhrases", () => {
         setTimeout(() => {
           if (pendingText === "Fail phrase") {
             handler({
-              data: { type: "error", message: "synthesis failed" },
+              data: { type: "error", message: "synthesis failed", requestId: lastSynthRequestId() },
             } as unknown as MessageEvent);
           } else {
             handler({
-              data: { type: "audio", data: new Float32Array([0.2]) },
+              data: { type: "audio", data: new Float32Array([0.2]), requestId: lastSynthRequestId() },
             } as unknown as MessageEvent);
           }
         }, 1);
@@ -579,9 +631,9 @@ describe("audioCache — generateAllPhrases retries", () => {
         attempts++;
         setTimeout(() => {
           if (attempts < 3) {
-            handler({ data: { type: "error", message: "flake" } } as unknown as MessageEvent);
+            handler({ data: { type: "error", message: "flake", requestId: lastSynthRequestId() } } as unknown as MessageEvent);
           } else {
-            handler({ data: { type: "audio", data: new Float32Array([0.1]) } } as unknown as MessageEvent);
+            handler({ data: { type: "audio", data: new Float32Array([0.1]), requestId: lastSynthRequestId() } } as unknown as MessageEvent);
           }
         }, 1);
       },
@@ -602,7 +654,7 @@ describe("audioCache — generateAllPhrases retries", () => {
       (_event: string, handler: (e: MessageEvent) => void) => {
         attempts++;
         setTimeout(() => {
-          handler({ data: { type: "error", message: "nope" } } as unknown as MessageEvent);
+          handler({ data: { type: "error", message: "nope", requestId: lastSynthRequestId() } } as unknown as MessageEvent);
         }, 1);
       },
     );
@@ -634,7 +686,7 @@ describe("audioCache — generateAllPhrases failed flag", () => {
       (_event: string, handler: (e: MessageEvent) => void) => {
         setTimeout(() => {
           handler({
-            data: { type: "error", message: "bad" },
+            data: { type: "error", message: "bad", requestId: lastSynthRequestId() },
           } as unknown as MessageEvent);
         }, 5);
       },
@@ -846,7 +898,7 @@ describe("audioCache — retryFailed", () => {
       (_event: string, handler: (e: MessageEvent) => void) => {
         setTimeout(() => {
           handler({
-            data: { type: "audio", data: new Float32Array([0.1]) },
+            data: { type: "audio", data: new Float32Array([0.1]), requestId: lastSynthRequestId() },
           } as unknown as MessageEvent);
         }, 2);
       },

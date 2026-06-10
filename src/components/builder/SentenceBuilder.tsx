@@ -66,18 +66,20 @@ export function SentenceBuilder({ onSend, t, theme, messages }: SentenceBuilderP
   const hasText = displaySentence.length > 0;
   const shownSuggestions = suggestions.slice(0, 8);
 
-  // Fetch curated/keyword suggestions
+  // Fetch curated/keyword suggestions. Lookup stays English-keyed (see
+  // comment above); patientLang resolves the DISPLAY text of curated
+  // results so a Spanish patient sees Spanish chips.
   useEffect(() => {
     const id = ++requestIdRef.current;
     let cancelled = false;
     setLoadingSuggestions(true);
-    getKeyedContextualSuggestions(key, messages, hour).then((results) => {
+    getKeyedContextualSuggestions(key, messages, hour, patientLang).then((results) => {
       if (cancelled || requestIdRef.current !== id) return;
       setSuggestions(results);
       setLoadingSuggestions(false);
     });
     return () => { cancelled = true; };
-  }, [key, messages, hour]);
+  }, [key, messages, hour, patientLang]);
 
   /** Flush pendingFree into a token and return the new tokens array. */
   function flushPending(): Token[] {

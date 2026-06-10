@@ -37,6 +37,7 @@ import * as ort from "onnxruntime-web";
 import { linearResample } from "./resample";
 import { configureOrtWasmEnv } from "./workerOrtEnv";
 import { streamWithProgress } from "./workerStreamingFetch";
+import { checkFirstByteMagic, bytesToHex } from "./contentValidator";
 
 configureOrtWasmEnv();
 
@@ -506,6 +507,23 @@ async function downloadModel(
     const msg = err instanceof Error ? err.message : String(err);
     throw new Error(`${msg} for ${label}`);
   }
+
+  // Captive-portal / SPA-fallback protection. This worker downloads its
+  // own bytes (unlike the OPFS-primed paths that go through
+  // resumableDownload), so without this check an HTML login page reaches
+  // InferenceSession.create and surfaces as an opaque deserialize error.
+  const head = new Uint8Array(bytes, 0, Math.min(16, bytes.byteLength));
+  const magicProblem =
+    bytes.byteLength === 0
+      ? "empty response body"
+      : checkFirstByteMagic("onnx", head[0]);
+  if (magicProblem) {
+    throw new Error(
+      `${label} payload failed validation: ${magicProblem} ` +
+        `(first bytes ${bytesToHex(head)}) — captive portal or SPA fallback?`,
+    );
+  }
+
   console.log(
     `${LOG_PREFIX} ${label} download complete (${(bytes.byteLength / 1e6).toFixed(1)} MB)`,
   );
@@ -522,12 +540,15 @@ async function handleInit(modelUrl: string): Promise<void> {
   // Ensure trailing slash
   const baseUrl = modelUrl.endsWith("/") ? modelUrl : modelUrl + "/";
 
-  // Load tokenizer in parallel with model downloads
-  const [encoderData, decoderData] = await Promise.all([
-    downloadModel(`${baseUrl}encoder_model_q4.onnx`, "encoder"),
-    downloadModel(`${baseUrl}decoder_model_merged_q4.onnx`, "decoder"),
-    loadTokenizer(baseUrl),
-  ]);
+  // Tokenizer first (small), then encoder, then decoder — STRICTLY
+  // sequentially. The old Promise.all held both raw ArrayBuffers
+  // (~66 MB + ~233 MB) in JS heap at once, and each session create then
+  // copied into the ORT WASM heap on top — a transient ~2× peak on the
+  // platform whose renderer-OOM kills are silent (see
+  // project_safari_memory_apis). Scoping each buffer lets it become
+  // collectable before the next download lands, capping the peak at
+  // max(file) + its session copy instead of sum(files) + copies.
+  await loadTokenizer(baseUrl);
 
   // WASM-only — WebGPU path is handled by stt-gpu-worker.js
   console.log(`${LOG_PREFIX} Creating sessions with EP: wasm`);
@@ -537,9 +558,16 @@ async function handleInit(modelUrl: string): Promise<void> {
     logSeverityLevel: 3,
   };
 
-  // Create sessions sequentially (WebGPU EP requires it; WASM is fine either way)
-  const enc = await ort.InferenceSession.create(encoderData, sessionOpts);
-  const dec = await ort.InferenceSession.create(decoderData, sessionOpts);
+  let enc: ort.InferenceSession;
+  {
+    const encoderData = await downloadModel(`${baseUrl}encoder_model_q4.onnx`, "encoder");
+    enc = await ort.InferenceSession.create(encoderData, sessionOpts);
+  }
+  let dec: ort.InferenceSession;
+  {
+    const decoderData = await downloadModel(`${baseUrl}decoder_model_merged_q4.onnx`, "decoder");
+    dec = await ort.InferenceSession.create(decoderData, sessionOpts);
+  }
 
   encoderSession = enc;
   decoderSession = dec;

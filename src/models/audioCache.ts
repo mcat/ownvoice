@@ -569,6 +569,12 @@ async function synthesizeBestAvailable(
   return synthesizeOne(worker, phrase, speakerData, signal, languageId);
 }
 
+/** Monotonic id for synthesize requests so responses can be correlated.
+ *  The WASM worker is shared (pre-gen, embed, warmup) — without keying,
+ *  any unsolicited error broadcast rejected whichever synth was in
+ *  flight, and a late response could resolve the wrong caller. */
+let nextSynthRequestId = 1;
+
 function synthesizeOne(
   worker: Worker,
   phrase: string,
@@ -577,6 +583,8 @@ function synthesizeOne(
   languageId: string = "en",
 ): Promise<Float32Array> {
   return new Promise<Float32Array>((resolve, reject) => {
+    const requestId = nextSynthRequestId++;
+
     // 180s per-phrase timeout — matches the speak.ts live-synth timeout.
     // WASM Chatterbox on desktop can take 30–90s per phrase (autoregressive
     // generation through all 24 transformer layers). First call is worst
@@ -588,6 +596,9 @@ function synthesizeOne(
     );
 
     const handler = (e: MessageEvent) => {
+      // Only this request's responses; unkeyed broadcasts (init/warmup
+      // failures) and other requests' responses are not ours to settle.
+      if (e.data.requestId !== requestId) return;
       if (e.data.type === "audio") {
         finish(resolve, e.data.data);
       } else if (e.data.type === "error") {
@@ -618,6 +629,7 @@ function synthesizeOne(
       speakerData,
       languageId,
       exaggeration: 0.5,
+      requestId,
     });
   });
 }

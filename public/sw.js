@@ -12,7 +12,7 @@
 //
 // Cache name bumps on every shipped SW change. Old caches are cleaned on activate.
 
-const CACHE_NAME = "ownvoice-v19";
+const CACHE_NAME = "ownvoice-v20";
 const SHELL_ASSETS = ["/app/", "/app/index.html"];
 
 // Vite-bundled WASM-fallback workers + the unbundled GPU workers. Both
@@ -63,11 +63,23 @@ function withIsolationHeaders(response) {
   });
 }
 
+// NO skipWaiting / clients.claim: the new worker waits until every
+// controlled page has closed before activating. Force-activating used to
+// delete the previous CACHE_NAME's entries underneath a LIVE page — its
+// lazy chunks and re-fetched assets (hashed filenames change per deploy)
+// then 404'd mid-session, exactly the mid-shift breakage an offline-first
+// clinical app cannot absorb. The cost is that updates apply on the next
+// cold open of the app instead of immediately — acceptable: a clinician's
+// iPad naturally power-cycles the PWA between shifts.
+//
+// First-visit nuance of dropping claim(): the page that registers the SW
+// isn't controlled until its next navigation. That's behaviorally
+// identical here — on a first visit OPFS is unprimed, so /models/* falls
+// through to the network with or without the SW in the middle.
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(SHELL_ASSETS)),
   );
-  self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {
@@ -76,8 +88,7 @@ self.addEventListener("activate", (event) => {
       .keys()
       .then((keys) =>
         Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))),
-      )
-      .then(() => self.clients.claim()),
+      ),
   );
 });
 
