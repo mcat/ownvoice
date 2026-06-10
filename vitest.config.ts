@@ -14,7 +14,11 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: ["./src/__tests__/setup.ts"],
-    include: ["src/**/*.test.{ts,tsx}"],
+    include: [
+      "src/**/*.test.{ts,tsx}",
+      "scripts/**/*.test.mjs",
+      "functions/**/*.test.ts",
+    ],
     pool: "forks",
     maxForks: 4,
     server: {
