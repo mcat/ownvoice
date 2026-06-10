@@ -158,6 +158,17 @@ function bootSTTWasm(): void {
       }
     };
 
+    // A worker that dies during module load never posts a message —
+    // onerror is the only signal. WASM is the last STT tier, so there is
+    // nothing to fall back to: surface the failure instead of leaving the
+    // model in "idle" forever with no recovery affordance.
+    sttWorker.onerror = (e) => {
+      console.warn("[OwnVoice] STT WASM worker error:", e.message);
+      if (!mgr.isReady("stt")) {
+        mgr.setError("stt", e.message || "STT worker failed to start");
+      }
+    };
+
     sttWorker.postMessage({ type: "init", modelUrl: MODEL_URLS.stt });
   } catch (err) {
     console.warn("[OwnVoice] Failed to create STT WASM worker:", err);
@@ -282,6 +293,16 @@ async function bootTTSWasmImpl(): Promise<void> {
           // retries; the speak() pathway falls back to Web Speech.
           console.error(`[OwnVoice:TTS] ${e.data.phase ?? "synthesis"} error: ${e.data.message}`);
         }
+      }
+    };
+
+    // Same rationale as the STT WASM onerror above: a module-load death
+    // never reaches onmessage. Only flag pre-init failures — post-init
+    // synthesis errors arrive as keyed "error" messages handled above.
+    ttsWorker.onerror = (e) => {
+      console.warn("[OwnVoice] TTS WASM worker error:", e.message);
+      if (!ttsInitDone) {
+        mgr.setError("tts", e.message || "TTS worker failed to start");
       }
     };
 
