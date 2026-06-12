@@ -8,7 +8,7 @@
 
 ## 1. Abstract
 
-This document describes the research plan for a clinical validation study of OwnVoice, a Progressive Web Application that provides augmentative and alternative communication (AAC) for ICU patients without functional speech, using on-device voice cloning, a validated emoji pain scale, contextual sentence building powered by on-device language models, and structured goals-of-care conversations based on the Serious Illness Conversation Guide (SICG). The study is a prospective, mixed-methods clinical trial conducted in a single-center ICU. The primary aim is to evaluate whether OwnVoice reduces patient-reported communication difficulty compared to standard-of-care communication methods. Secondary aims assess the impact of voice cloning on patient identity and emotional wellbeing, the feasibility and clinical utility of tablet-based SICG conversations with patients without functional speech, on-device inference latency and reliability in the clinical environment, and nursing workflow integration.
+This document describes the research plan for a clinical validation study of OwnVoice, a Progressive Web Application that provides augmentative and alternative communication (AAC) for ICU patients without functional speech, using on-device voice cloning, a validated emoji pain scale, flexible sentence building from a clinically grounded phrase library, and structured goals-of-care conversations based on the Serious Illness Conversation Guide (SICG). The study is a prospective, mixed-methods clinical trial conducted in a single-center ICU. The primary aim is to evaluate whether OwnVoice reduces patient-reported communication difficulty compared to standard-of-care communication methods. Secondary aims assess the impact of voice cloning on patient identity and emotional wellbeing, the feasibility and clinical utility of tablet-based SICG conversations with patients without functional speech, on-device inference latency and reliability in the clinical environment, and nursing workflow integration.
 
 ---
 
@@ -18,7 +18,7 @@ This document describes the research plan for a clinical validation study of Own
 
 Approximately 33% of hospitalized patients meet AAC candidacy criteria from endotracheal intubation, tracheostomy, or neurological impairment (Zubow & Hurtig, 2013); within the ICU specifically, Freeman-Sanderson et al. (2019) observed that roughly one-third of the ICU caseload experienced communication difficulty across 232 occupied bed-days at a tertiary Australian hospital. Staff reported difficulty communicating with patients on 35% of bed-days, with an inability to communicate at all in 49% of those, and although alternate communication modes were in use, they were not offered to all suitable patients (Freeman-Sanderson et al., 2019). The candidacy figure is higher in the specific population OwnVoice serves: 53.9% of mechanically ventilated patients meet basic communication criteria — awake, alert, and responsive — for at least one 12-hour nursing shift while on MV ≥ 2 consecutive days (Happ et al., 2015). Communication difficulty predicts psychoemotional distress, fear, and anger in mechanically ventilated patients (Khalaila et al., 2011), and in observed usual care more than one-third of nurse–patient communication exchanges about pain were unsuccessful (Happ et al., 2011).
 
-Existing tablet-based AAC tools for the ICU (VidaTalk, CommuniCare, YoDoc) are essentially static phrase boards: pre-translated content played back in a generic synthetic or pre-recorded voice (Dind, Starr, & Arora, 2021). The preclinical comparison of nine iPad-based ICU communication apps in *Indian Journal of Critical Care Medicine* (Dind et al., 2021) confirms that none of the three offer voice cloning, on-device language models for contextual sentence suggestion, or neural speech-to-text. They do not address four gaps OwnVoice targets: (1) speech in the patient's own voice via zero-shot voice cloning, (2) AI-assisted sentence construction from limited reference content, (3) structured goals-of-care conversations using the SICG framework, and (4) on-device neural inference that eliminates cloud dependency, BAA negotiation, and PHI egress in the first place.
+Existing tablet-based AAC tools for the ICU (VidaTalk, CommuniCare, YoDoc) are essentially static phrase boards: pre-translated content played back in a generic synthetic or pre-recorded voice (Dind, Starr, & Arora, 2021). The preclinical comparison of nine iPad-based ICU communication apps in *Indian Journal of Critical Care Medicine* (Dind et al., 2021) confirms that none of the three offer voice cloning or on-device neural speech-to-text. They do not address three gaps OwnVoice targets: (1) speech in the patient's own voice via zero-shot voice cloning, (2) structured goals-of-care conversations using the SICG framework, and (3) on-device neural inference that eliminates cloud dependency, BAA negotiation, and PHI egress in the first place.
 
 ### 2.2 Voice Cloning and Patient Identity
 
@@ -32,7 +32,7 @@ The Serious Illness Conversation Guide (SICG) from Ariadne Labs has demonstrated
 
 ### 2.4 On-Device Inference
 
-OwnVoice runs entirely on-device using WebGPU-accelerated neural inference (ONNX Runtime Web). This eliminates cloud dependency, ensures HIPAA compliance by design, and enables offline operation. The technical feasibility of running multiple quantized models (TTS, sentence suggestion LLM, speech-to-text) simultaneously on consumer tablet hardware in a clinical setting has not been validated.
+OwnVoice runs entirely on-device using WebGPU-accelerated neural inference (ONNX Runtime Web). This eliminates cloud dependency, ensures HIPAA compliance by design, and enables offline operation. The technical feasibility of running multiple quantized models (TTS, speech-to-text, and a speech-enhancement denoiser used during voice enrollment) simultaneously on consumer tablet hardware in a clinical setting has not been validated.
 
 ---
 
@@ -383,7 +383,7 @@ This study would contribute:
 
 1. **First clinical evidence** for voice cloning in AAC for critically ill patients, including its impact on patient identity, emotional wellbeing, and family experience.
 2. **First application** of the Serious Illness Conversation Guide with ICU patients who cannot speak, via AAC technology, with feasibility and effectiveness data.
-3. **Technical validation** of multi-model on-device neural inference (TTS + LLM + STT) running simultaneously on consumer tablet hardware in a clinical environment.
+3. **Technical validation** of multi-model on-device neural inference (TTS + STT + speech-enhancement denoiser) running simultaneously on consumer tablet hardware in a clinical environment.
 4. **Open-source validated instruments** for measuring voice identity preservation and communication satisfaction in ICU populations without functional speech.
 5. **Design guidelines** for AAC applications in acute care, informed by codesign with patients, families, and clinicians.
 
