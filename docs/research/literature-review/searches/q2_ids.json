@@ -1,0 +1,1 @@
+{"header":{"type":"esearch","version":"0.3"},"esearchresult":{"count":"3","retmax":"3","retstart":"0","idlist":["34127362","39546958","34866819"],"translationset":[],"querytranslation":"\"VidaTalk\"[Title/Abstract] OR (Happ[Author] AND \"tablet\"[Title/Abstract] AND \"intensive care\"[Title/Abstract])","errorlist":{"phrasesnotfound":["NCT02921776"],"fieldsnotfound":[]}}}
