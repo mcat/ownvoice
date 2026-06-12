@@ -2,11 +2,16 @@ import { homepageTheme as t } from "../theme";
 
 /**
  * §1 — The problem. Four stat cards backed by citations: AAC candidacy
- * (Zubow & Hurtig 2013; Happ et al. 2014), AAC delivery
+ * hospital-wide (Zubow & Hurtig 2013) and in MV ICU patients
+ * (Happ et al. 2015), communication breakdown at the bedside
  * (Freeman-Sanderson et al. 2019), and staff impact
  * (IJssennagger et al. 2018).
  *
- * Each citation links to the canonical DOI (Crossref-verified).
+ * Each citation links to the canonical DOI (Crossref-verified), and each
+ * stat was checked against the source abstract (2026-06-12 audit):
+ * Zubow & Hurtig studied *hospitalized* patients (not ICU-only);
+ * Happ: 1440/2671 = 53.9%; Freeman-Sanderson: staff-reported difficulty
+ * on 35% of bed-days, inability in 49% of those; IJssennagger: "over 75%".
  */
 export function TheProblem() {
   return (
@@ -49,19 +54,19 @@ export function TheProblem() {
         >
           <StatCard
             stat="~33%"
-            text="of ICU patients meet AAC candidacy criteria"
+            text="of hospitalized patients meet AAC candidacy criteria"
             cite="Zubow & Hurtig, 2013"
             doi="10.1044/aac22.2.79"
           />
           <StatCard
             stat="54%"
             text="of mechanically ventilated ICU patients are awake and alert enough to use AAC"
-            cite="Happ et al., 2014"
+            cite="Happ et al., 2015"
             doi="10.1016/j.hrtlng.2014.08.010"
           />
           <StatCard
-            stat="11%"
-            text="of stay involves any alternative communication"
+            stat="35%"
+            text="of ICU bed-days involve staff-reported difficulty communicating with patients — on half of those days, no communication is possible at all"
             cite="Freeman-Sanderson et al., 2019"
             doi="10.1016/j.aucc.2018.09.002"
           />

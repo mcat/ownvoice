@@ -60,9 +60,10 @@ export function CommercialOpportunity() {
             generic synthesized voices, English-focused, with strong CMS
             reimbursement but weak hospital adoption.{" "}
             <strong>Software AAC apps for ICU</strong> (VidaTalk, CommuniCare,
-            YoDoc) are tablet apps with phrase libraries, no FDA registration,
-            no voice cloning, no on-device language model or speech-to-text,
-            and limited multilingual support.
+            YoDoc) are tablet apps with phrase libraries &mdash; several
+            multilingual &mdash; but with no FDA registration, no voice
+            cloning, and no on-device speech-to-text. None can speak in the
+            patient&rsquo;s own voice.
           </p>
           <p style={{ marginTop: 12, marginBottom: 0 }}>
             OwnVoice differentiates on four dimensions uncontested by either

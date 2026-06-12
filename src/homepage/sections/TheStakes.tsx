@@ -3,11 +3,12 @@ import { homepageTheme as t } from "../theme";
 
 /**
  * §2 — The stakes. What's actually at stake at the bedside when AAC
- * doesn't work — grounded in the SPEACS catalog of failed communication
- * categories (Happ et al., 2011: pain, physical needs, emotional state,
- * care-plan questions) and Carroll's lived-experience finding (Carroll,
- * 2007). Each outcome card pairs a SPEACS content category that fails
- * without AAC with the outcome AAC delivers.
+ * doesn't work — grounded in the SPEACS usual-care observation study
+ * (Happ et al., 2011: 37.7% of pain communications unsuccessful, 40% of
+ * sessions rated somewhat-to-extremely difficult, assistive materials
+ * essentially unused), the psychoemotional-distress evidence (Khalaila
+ * et al., 2011), the AAC-intervention scoping review (LaValley et al.,
+ * 2024), and Carroll's lived-experience finding (Carroll, 2007).
  *
  * Sits between TheProblem (what's wrong) and TheSystem (what we built):
  * problem → why fixing it matters → how we fix it → how we'll prove it.
@@ -54,10 +55,11 @@ export function TheStakes() {
           }}
         >
           Families are usually unprepared for a loved one&rsquo;s loss of voice and end up
-          guessing at lip movements across the rails. The SPEACS program catalogued what
-          specifically goes un-said in those gaps: pain reports, basic physical needs
-          (water, repositioning, bathroom), emotional state, and questions about the care
-          plan{" "}
+          guessing at lip movements across the rails. When the SPEACS team video-recorded
+          usual care between nurses and nonspeaking ICU patients, the gaps were specific:
+          more than a third of communication exchanges about pain failed, patients rated
+          40% of their sessions somewhat to extremely difficult, and assistive
+          communication materials went almost entirely unused{" "}
           <CiteLink href="https://doi.org/10.4037/ajcc2011433">
             (Happ et al., 2011)
           </CiteLink>
@@ -77,31 +79,28 @@ export function TheStakes() {
           }}
         >
           <Outcome title="Emotional state, not just physical symptoms">
-            Communication failure is itself a primary driver of psycho-emotional distress
-            in mechanically ventilated patients{" "}
+            Communication difficulty is itself a predictor of psycho-emotional distress,
+            fear, and anger in mechanically ventilated patients{" "}
             <CiteLink href="https://doi.org/10.4037/ajcc2011989">
               (Khalaila et al., 2011)
             </CiteLink>
-            , and emotional expression is one of the four SPEACS-catalogued bedside needs
-            most often left un-said{" "}
-            <CiteLink href="https://doi.org/10.4037/ajcc2011433">
-              (Happ et al., 2011)
-            </CiteLink>
-            . Visual-interface AAC reliably reduces that distress once in place{" "}
+            . Across available studies, visual-interface AAC interventions show measurable
+            treatment effects on patient anxiety and comfort &mdash; though high-quality
+            trials remain scarce{" "}
             <CiteLink href="https://doi.org/10.1044/2024_AJSLP-23-00310">
               (LaValley et al., 2024)
             </CiteLink>
             .
           </Outcome>
-          <Outcome title="The bedside specifics — pain, water, repositioning">
-            SPEACS ranked these as the bedside needs most likely to go un-spoken without a
-            working tool, alongside basic toileting and comfort requests{" "}
+          <Outcome title="Pain, reported instead of inferred">
+            In video-recorded usual care, more than one-third (37.7%) of nurse&ndash;patient
+            communication exchanges about pain were unsuccessful{" "}
             <CiteLink href="https://doi.org/10.4037/ajcc2011433">
               (Happ et al., 2011)
             </CiteLink>
             . Without an interface, staff infer; with one, patients report &mdash; and
-            symptom self-reporting accuracy is among the most reliably documented outcomes
-            of AAC interventions in critical care{" "}
+            symptom self-reporting is among the outcome domains where AAC interventions
+            show demonstrable treatment effects{" "}
             <CiteLink href="https://doi.org/10.1044/2024_AJSLP-23-00310">
               (LaValley et al., 2024)
             </CiteLink>
@@ -113,8 +112,8 @@ export function TheStakes() {
             <CiteLink href="https://doi.org/10.1177/1049732307307334">
               (Carroll, 2007)
             </CiteLink>
-            , and &ldquo;questions about the care plan&rdquo; is one of the four SPEACS
-            categories of failed bedside communication{" "}
+            , and patients rated 40% of their communication sessions with nurses as
+            somewhat to extremely difficult{" "}
             <CiteLink href="https://doi.org/10.4037/ajcc2011433">
               (Happ et al., 2011)
             </CiteLink>

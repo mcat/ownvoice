@@ -16,7 +16,7 @@ This document describes the research plan for a clinical validation study of Own
 
 ### 2.1 Communication Failure in the ICU
 
-Approximately 33% of hospitalized patients meet AAC candidacy criteria from endotracheal intubation, tracheostomy, or neurological impairment (Zubow & Hurtig, 2013); within the ICU specifically, Freeman-Sanderson et al. (2019) observed that roughly one-third of the ICU caseload experienced communication difficulty across 232 occupied bed-days at a tertiary Australian hospital. Despite this prevalence, patients used alternative communication modes during only 11% of their ICU time, and staff reported difficulty communicating with patients on 35% of bed-days, with inability to communicate in 49% of those (Freeman-Sanderson et al., 2019). The candidacy figure is higher in the specific population OwnVoice serves: 53.9% of mechanically ventilated patients meet basic communication criteria — awake, alert, and responsive — for at least one 12-hour nursing shift while on MV ≥ 2 consecutive days (Happ et al., 2014). Communication failure is associated with increased anxiety, depression, delirium, longer ICU stays, and adverse events (Happ et al., 2011).
+Approximately 33% of hospitalized patients meet AAC candidacy criteria from endotracheal intubation, tracheostomy, or neurological impairment (Zubow & Hurtig, 2013); within the ICU specifically, Freeman-Sanderson et al. (2019) observed that roughly one-third of the ICU caseload experienced communication difficulty across 232 occupied bed-days at a tertiary Australian hospital. Staff reported difficulty communicating with patients on 35% of bed-days, with an inability to communicate at all in 49% of those, and although alternate communication modes were in use, they were not offered to all suitable patients (Freeman-Sanderson et al., 2019). The candidacy figure is higher in the specific population OwnVoice serves: 53.9% of mechanically ventilated patients meet basic communication criteria — awake, alert, and responsive — for at least one 12-hour nursing shift while on MV ≥ 2 consecutive days (Happ et al., 2015). Communication difficulty predicts psychoemotional distress, fear, and anger in mechanically ventilated patients (Khalaila et al., 2011), and in observed usual care more than one-third of nurse–patient communication exchanges about pain were unsuccessful (Happ et al., 2011).
 
 Existing tablet-based AAC tools for the ICU (VidaTalk, CommuniCare, YoDoc) are essentially static phrase boards: pre-translated content played back in a generic synthetic or pre-recorded voice (Dind, Starr, & Arora, 2021). The preclinical comparison of nine iPad-based ICU communication apps in *Indian Journal of Critical Care Medicine* (Dind et al., 2021) confirms that none of the three offer voice cloning, on-device language models for contextual sentence suggestion, or neural speech-to-text. They do not address four gaps OwnVoice targets: (1) speech in the patient's own voice via zero-shot voice cloning, (2) AI-assisted sentence construction from limited reference content, (3) structured goals-of-care conversations using the SICG framework, and (4) on-device neural inference that eliminates cloud dependency, BAA negotiation, and PHI egress in the first place.
 
@@ -426,7 +426,7 @@ This study would contribute:
 
 ## 16. References
 
-Bernacki, R., et al. (2019). Effect of a Serious Illness Communication Program on surrogate decision-making. JAMA Internal Medicine, 179(10), 1334–1341.
+Bernacki, R., Paladino, J., Neville, B. A., et al. (2019). Effect of the Serious Illness Care Program in outpatient oncology: A cluster randomized clinical trial. JAMA Internal Medicine, 179(6), 751–759. https://doi.org/10.1001/jamainternmed.2019.0077
 
 Braun, V., & Clarke, V. (2019). Reflecting on reflexive thematic analysis. Qualitative Research in Sport, Exercise and Health, 11(4), 589–597.
 
@@ -438,15 +438,17 @@ Freeman-Sanderson, A., Morris, K., & Elkins, M. (2019). Characteristics of patie
 
 Happ, M. B., et al. (2011). Nurse-patient communication interactions in the ICU. American Journal of Critical Care, 20(2), e28–e40.
 
-Happ, M. B., et al. (2014). Effect of a multi-level intervention on nurse-patient communication in the ICU: Results of the SPEACS-2 trial. Heart & Lung, 43(2), 89–98.
+Happ, M. B., et al. (2014). Effect of a multi-level intervention on nurse-patient communication in the ICU: Results of the SPEACS trial. Heart & Lung, 43(2), 89–98.
+
+Happ, M. B., Seaman, J. B., Nilsen, M. L., et al. (2015). The number of mechanically ventilated ICU patients meeting communication criteria. Heart & Lung, 44(1), 45–49. https://doi.org/10.1016/j.hrtlng.2014.08.010
 
 Khalaila, R., et al. (2011). Communication difficulties and psychoemotional distress in patients receiving mechanical ventilation. American Journal of Critical Care, 20(6), 470–479.
 
 Li, L., et al. (2023). Development of the Emoji Faces Pain Scale and its validation on mobile devices in adult surgery patients. Journal of Medical Internet Research, 25, e41189.
 
-Paladino, J., et al. (2019). Patient and clinician experience of a serious illness conversation guide. Annals of Internal Medicine, 170(10), 681–688.
+Paladino, J., Bernacki, R., Neville, B. A., et al. (2019). Evaluating an intervention to improve communication between oncology clinicians and patients with life-limiting cancer: A cluster randomized clinical trial of the Serious Illness Care Program. JAMA Oncology, 5(6), 801–809. https://doi.org/10.1001/jamaoncol.2019.0292
 
-Zubow, L., & Hurtig, R. (2013). A demographic study of AAC/AT needs in a large university hospital. Perspectives on Augmentative and Alternative Communication, 22(2), 79–86.
+Zubow, L., & Hurtig, R. (2013). A demographic study of AAC/AT needs in hospitalized patients. Perspectives on Augmentative and Alternative Communication, 22(2), 79–90. https://doi.org/10.1044/aac22.2.79
 
 ---
 

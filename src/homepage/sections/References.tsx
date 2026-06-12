@@ -37,7 +37,7 @@ export function References() {
     },
     {
       text:
-        "Happ, M. B., Seaman, J. B., Nilsen, M. L., et al. (2014). The number of mechanically ventilated ICU patients meeting communication criteria. Heart & Lung, 44(1), 45–49.",
+        "Happ, M. B., Seaman, J. B., Nilsen, M. L., et al. (2015). The number of mechanically ventilated ICU patients meeting communication criteria. Heart & Lung, 44(1), 45–49.",
       doi: "10.1016/j.hrtlng.2014.08.010",
     },
     {
@@ -57,7 +57,7 @@ export function References() {
     },
     {
       text:
-        "LaValley, M., Chavers-Edgar, T., Wu, M., Schlosser, R., & Koul, R. (2024). Augmentative and Alternative Communication Interventions in Critical and Acute Care With Mechanically Ventilated and Tracheostomy Patients: A Scoping Review. American Journal of Speech-Language Pathology. Advance online publication.",
+        "LaValley, M., Chavers-Edgar, T., Wu, M., Schlosser, R., & Koul, R. (2024). Augmentative and Alternative Communication Interventions in Critical and Acute Care With Mechanically Ventilated and Tracheostomy Patients: A Scoping Review. American Journal of Speech-Language Pathology, 33(5), 2667–2686.",
       doi: "10.1044/2024_AJSLP-23-00310",
     },
     {
