@@ -369,7 +369,7 @@ These are deliberately left open because answering them prematurely without the 
 - **HCPCS E2500–E2511** — Medicare/Medicaid billing codes for SGDs
 - **MGB Innovation** — Mass General Brigham's commercialization arm (formerly Partners Innovation)
 - **iHub** — MGB Innovation's digital-health incubator program
-- **CSRI** — Communication Satisfaction Rating Instrument (Happ et al., 2014)
+- **ECS** — Ease of Communication Scale (Happ et al., 2004, 2014; patient-reported primary outcome in `ownvoice-research-plan.md`)
 - **VIS** — Voice Identity Scale (custom instrument proposed in `ownvoice-research-plan.md`)
 
 Adjacent project documents:

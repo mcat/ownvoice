@@ -99,9 +99,9 @@ Research that shaped the phrase library, communication categories, and emotional
 
 > Happ, M. B., Garrett, K., Thomas, D. D., et al. (2011). Nurse-Patient Communication Interactions in the Intensive Care Unit. *American Journal of Critical Care*, 20(2), e28–e40. [doi.org/10.4037/ajcc2011433](https://doi.org/10.4037/ajcc2011433)
 >
-> Happ, M. B., Garrett, K., Tate, J., et al. (2014). Effect of a multi-level intervention on nurse-patient communication in the intensive care unit: Results of the SPEACS-2 trial. *Heart & Lung*, 43(2), 89–98. [doi.org/10.1016/j.hrtlng.2013.11.010](https://doi.org/10.1016/j.hrtlng.2013.11.010)
+> Happ, M. B., Garrett, K. L., Tate, J. A., et al. (2014). Effect of a multi-level intervention on nurse-patient communication in the intensive care unit: Results of the SPEACS trial. *Heart & Lung*, 43(2), 89–98. [doi.org/10.1016/j.hrtlng.2013.11.010](https://doi.org/10.1016/j.hrtlng.2013.11.010)
 
-**Finding:** SPEACS-2 identified frequency categories of nurse-patient ICU communication: pain reporting, physical needs (water, repositioning, bathroom), emotional expression, and questions about care plans. Tool limitations frequently caused communication attempts to fail. The study developed the Communication Satisfaction Rating Instrument (CSRI) for ICU patients without functional speech.
+**Finding:** In video-recorded usual care (2011 study), nurses initiated 86.2% of exchanges; communication was generally (>70%) successful, but more than one-third (37.7%) of exchanges about pain failed, patients rated 40% of sessions somewhat to extremely difficult, and assistive communication materials were essentially unused. The SPEACS trial (2014) showed that nurse communication-skills training plus AAC materials and speech-language pathologist consultation increased AAC use (p = .002), improved successful communication about pain (p = .03), and reduced patient-rated communication difficulty (p < .01). Patients self-rated communication ease with the Ease of Communication Scale (ECS).
 
 **Where it's applied:**
 
@@ -111,7 +111,7 @@ Research that shaped the phrase library, communication categories, and emotional
 | "I Need" subcategories: Comfort, Medical, People | `src/data/phraseRegistry.ts:77-110` — maps to physical needs from SPEACS-2 |
 | Two-way conversation model with provider responses | `src/components/provider/ProviderPanel.tsx` — structured provider responses |
 | Conversation thread preserves exchange history across shifts | `src/stores/conversationStore.ts` — IndexedDB-backed persistent store |
-| CSRI planned as primary outcome measure | `docs/ownvoice-research-plan.md:149` |
+| ECS planned as primary outcome measure | `docs/ownvoice-research-plan.md:149` |
 
 ---
 
@@ -132,7 +132,7 @@ Research that shaped the phrase library, communication categories, and emotional
 
 ### AAC Candidacy Among Mechanically Ventilated Patients
 
-> Happ, M. B., Seaman, J. B., Nilsen, M. L., Sciulli, A., Tate, J. A., Saul, M., & Barnato, A. E. (2014). The number of mechanically ventilated ICU patients meeting communication criteria. *Heart & Lung*, 44(1), 45–49. [doi.org/10.1016/j.hrtlng.2014.08.010](https://doi.org/10.1016/j.hrtlng.2014.08.010)
+> Happ, M. B., Seaman, J. B., Nilsen, M. L., Sciulli, A., Tate, J. A., Saul, M., & Barnato, A. E. (2015). The number of mechanically ventilated ICU patients meeting communication criteria. *Heart & Lung*, 44(1), 45–49. [doi.org/10.1016/j.hrtlng.2014.08.010](https://doi.org/10.1016/j.hrtlng.2014.08.010)
 
 **Finding:** Across 6 ICUs in 2 hospitals, 1,440 of 2,671 mechanically ventilated patients (53.9%) met basic communication criteria — defined as awake, alert, and responsive to verbal communication for at least one 12-hour nursing shift while receiving MV ≥ 2 consecutive days. The proportion ranged from 40.8% in the neurological ICU to 70.0% in the trauma ICU. This is the strongest population-specific candidacy estimate for the patient group OwnVoice serves.
 
@@ -165,9 +165,9 @@ Research that shaped the phrase library, communication categories, and emotional
 
 ### Recent Scoping Review of AAC Interventions in MV/Trach Patients
 
-> LaValley, M., Chavers-Edgar, T., Wu, M., Schlosser, R., & Koul, R. (2024). Augmentative and Alternative Communication Interventions in Critical and Acute Care With Mechanically Ventilated and Tracheostomy Patients: A Scoping Review. *American Journal of Speech-Language Pathology*. Advance online publication. [doi.org/10.1044/2024_AJSLP-23-00310](https://doi.org/10.1044/2024_AJSLP-23-00310)
+> LaValley, M., Chavers-Edgar, T., Wu, M., Schlosser, R., & Koul, R. (2024). Augmentative and Alternative Communication Interventions in Critical and Acute Care With Mechanically Ventilated and Tracheostomy Patients: A Scoping Review. *American Journal of Speech-Language Pathology*, 33(5), 2667–2686. [doi.org/10.1044/2024_AJSLP-23-00310](https://doi.org/10.1044/2024_AJSLP-23-00310)
 
-**Finding:** Maps the AAC intervention literature for mechanically ventilated and tracheostomy patients in critical and acute care. Reports small-to-large treatment effect sizes for high-tech and no-tech visual-interface interventions, and for systematic nurse-training interventions, with patient outcomes spanning anxiety reduction, communication satisfaction, comfort, accurate symptom self-reporting, and changes in nursing practice. Concludes that high-quality AAC intervention research in this population remains scarce — most evidence is small-N, observational, or single-site.
+**Finding:** Maps the AAC intervention literature for mechanically ventilated and tracheostomy patients in critical and acute care. Reports small-to-large treatment effect sizes for high-tech and no-tech visual-interface interventions, and for systematic nurse-training interventions, with patient outcomes spanning anxiety reduction, communication satisfaction, comfort, symptom self-reporting, and changes in nursing practice. Concludes that high-quality AAC intervention research in this population remains scarce — most evidence is small-N, observational, or single-site.
 
 **Where it's applied:**
 
@@ -256,7 +256,7 @@ Research that shaped the phrase library, communication categories, and emotional
 
 > Freeman-Sanderson, A., Morris, K., & Elkins, M. (2019). Characteristics of patient communication and prevalence of communication difficulty in the intensive care unit: An observational study. *Australian Critical Care*, 32(5), 373–377. [doi.org/10.1016/j.aucc.2018.09.002](https://doi.org/10.1016/j.aucc.2018.09.002)
 
-**Finding:** Summarizes the persistent challenges of ICU patient communication: tool limitations, nurse workflow constraints, and the gap between patient communication needs and available AAC solutions.
+**Finding:** A ten-weekday multidisciplinary ward audit (87 patients, 232 occupied bed-days) in a 30-bed Australian tertiary ICU. Staff reported difficulty communicating with patients on 35% of bed-days, and on 49% of those days communication was not possible at all; altered cognition was present on 11% of bed-days. Alternate communication modes (gesture most common) were reported but not used with all suitable patients. Patients from non-English-speaking backgrounds made up 14% of the cohort.
 
 **Where it's applied:** Informs the overall product rationale documented in `docs/PRD.md:17-28` — the "Problem" section.
 

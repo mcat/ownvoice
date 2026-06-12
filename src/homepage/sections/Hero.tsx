@@ -1,9 +1,13 @@
 import { homepageTheme as t } from "../theme";
 
 /**
- * Problem-led hero. Opens with the citation-grounded ICU stat from
- * Zubow & Hurtig 2013 / Freeman-Sanderson 2019. Three CTAs: demo, real
- * setup, research plan. The dark-slate background contrasts against the
+ * Problem-led hero. Opens with two citation-grounded ICU stats:
+ * 53.9% of mechanically ventilated patients meet basic communication
+ * criteria — awake, alert, responsive (Happ et al., 2015,
+ * doi:10.1016/j.hrtlng.2014.08.010), and staff report difficulty
+ * communicating on 35% of ICU bed-days (Freeman-Sanderson et al., 2019,
+ * doi:10.1016/j.aucc.2018.09.002). Three CTAs: demo, real setup,
+ * research plan. The dark-slate background contrasts against the
  * lighter sections below.
  */
 export function Hero() {
@@ -36,7 +40,8 @@ export function Hero() {
             maxWidth: 720,
           }}
         >
-          Roughly 33% of ICU patients can&rsquo;t speak. They use AAC only 11% of the time.
+          Half of ventilated ICU patients are awake, alert &mdash; and unable to speak.
+          On a third of ICU days, staff struggle to communicate with them.
         </h1>
         <p
           style={{

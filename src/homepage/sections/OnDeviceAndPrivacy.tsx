@@ -45,7 +45,7 @@ export function OnDeviceAndPrivacy() {
             maxWidth: t.bodyMaxWidth,
           }}
         >
-          All inference &mdash; voice cloning, sentence suggestion, speech-to-text &mdash;
+          All inference &mdash; voice cloning and speech-to-text &mdash;
           runs in the browser via WebGPU and ONNX Runtime Web. Voice samples and patient
           data stay on-device only. The app is a URL: no App Store install, no cloud, no
           MDM dependency. A nurse opens it, types a name, and hands the iPad to a patient.
