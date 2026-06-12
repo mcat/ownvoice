@@ -1,0 +1,1944 @@
+1. Crit Care. 2016 Oct 19;20(1):333. doi: 10.1186/s13054-016-1483-2.
+
+Communicating with conscious and mechanically ventilated critically ill 
+patients: a systematic review.
+
+Ten Hoorn S(1)(2), Elbers PW(1)(2), Girbes AR(1)(2), Tuinman PR(3)(4).
+
+Author information:
+(1)Department of Intensive Care Medicine and Research VUmc Intensive Care 
+(REVIVE), VU University Medical Center Amsterdam, Room ZH-7D-166, De Boelelaan 
+1117, PO Box 7057, Amsterdam, 1007 MB, The Netherlands.
+(2)Institute for Cardiovascular Research VU (ICaR-VU), VU University Medical 
+Center Amsterdam, Amsterdam, The Netherlands.
+(3)Department of Intensive Care Medicine and Research VUmc Intensive Care 
+(REVIVE), VU University Medical Center Amsterdam, Room ZH-7D-166, De Boelelaan 
+1117, PO Box 7057, Amsterdam, 1007 MB, The Netherlands. p.tuinman@vumc.nl.
+(4)Institute for Cardiovascular Research VU (ICaR-VU), VU University Medical 
+Center Amsterdam, Amsterdam, The Netherlands. p.tuinman@vumc.nl.
+
+Comment in
+    Crit Care. 2017 Jan 10;21(1):6. doi: 10.1186/s13054-016-1588-7.
+    Crit Care. 2017 Jan 10;21(1):7. doi: 10.1186/s13054-016-1587-8.
+
+BACKGROUND: Ventilator-dependent patients in the ICU often experience 
+difficulties with one of the most basic human functions, namely communication, 
+due to intubation. Although various assistive communication tools exist, these 
+are infrequently used in ICU patients. We summarized the current evidence on 
+communication methods with mechanically ventilated patients in the ICU. 
+Secondly, we developed an algorithm for communication with these patients based 
+on current evidence.
+METHODS: We performed a systematic review. PubMed, Embase, Cochrane, Cinahl, 
+PsychInfo, and Web of Science databases were systematically searched to November 
+2015. Studies that reported a communication intervention with conscious 
+nonverbal mechanically ventilated patients in the ICU aged 18 years or older 
+were included. The methodological quality was assessed using the Quality 
+Assessment Tool.
+RESULTS: The search yielded 9883 publications, of which 31 articles, 
+representing 29 different studies, fulfilled the inclusion criteria. The overall 
+methodological quality varied from poor to moderate. We identified four 
+communication intervention types: (1) communication boards were studied in three 
+studies-they improved communication and increased patient satisfaction, but they 
+can be time-consuming and limit the ability to produce novel utterances; (2) two 
+types of specialized talking tracheostomy tubes were assessed in eight 
+studies-audible voicing was achieved in the majority of patients (range 
+74-100 %), but more studies are needed to facilitate safe and effective use; (3) 
+an electrolarynx improved communication in seven studies-its effectiveness was 
+mainly demonstrated with tracheostomized patients; and (4) "high-tech" 
+augmentative and alternative communication (AAC) devices in nine studies with 
+diverse computerized AAC devices proved to be beneficial communication 
+methods-two studies investigated multiple AAC interventions, and different 
+control devices (e.g., touch-sensitive or eye/blink detection) can be used to 
+ensure that physical limitations do not prevent use of the devices. We developed 
+an algorithm for the assessment and selection of a communication intervention 
+with nonverbal and conscious mechanically intubated patients in the ICU.
+CONCLUSIONS: Although evidence is limited, results suggest that most 
+communication methods may be effective in improving patient-healthcare 
+professional communication with mechanically ventilated patients. A combination 
+of methods is advised. We developed an algorithm to standardize the approach for 
+selection of communication techniques.
+
+DOI: 10.1186/s13054-016-1483-2
+PMCID: PMC5070186
+PMID: 27756433 [Indexed for MEDLINE]
+
+
+2. Cochrane Database Syst Rev. 2021 Oct 12;10(10):CD013379. doi: 
+10.1002/14651858.CD013379.pub2.
+
+Interventions to enable communication for adult patients requiring an artificial 
+airway with or without mechanical ventilator support.
+
+Rose L(1), Sutt AL(2)(3), Amaral AC(4), Fergusson DA(5), Smith OM(6), Dale 
+CM(7).
+
+Author information:
+(1)Florence Nightingale Faculty of Nursing, Midwifery and Palliative Care, 
+King's College London, London, UK.
+(2)Critical Care Research Group, The Prince Charles Hospital, Brisbane, 
+Australia.
+(3)School of Clinical Medicine, The University of Queensland, Brisbane, 
+Australia.
+(4)Sunnybrook Health Sciences Centre, Toronto, Canada.
+(5)Clinical Epidemiology Program, Ottawa Hospital Research Institute, Ottawa, 
+Canada.
+(6)Critical Care, St Michael's Hospital, Toronto, Canada.
+(7)Lawrence S. Bloomberg Faculty of Nursing, University of Toronto, Toronto, 
+Canada.
+
+Update of
+    doi: 10.1002/14651858.CD013379.
+
+BACKGROUND: Inability to communicate in a manner that can be understood causes 
+extreme distress for people requiring an artificial airway and has implications 
+for care quality and patient safety. Options for aided communication include 
+non-vocal, speech-generating, and voice-enabling aids.
+OBJECTIVES: To assess effectiveness of communication aids for people requiring 
+an artificial airway (endotracheal or tracheostomy tube), defined as the 
+proportion of people able to: use a non-vocal communication aid to communicate 
+at least one symptom, need, or preference; or use a voice-enabling communication 
+aid to phonate to produce at least one intelligible word. To assess time to 
+communication/phonation; perceptions of communication; communication 
+quality/success; quality of life; psychological distress; length of stay and 
+costs; and adverse events.
+SEARCH METHODS: We searched the Cochrane Library (Wiley version), MEDLINE 
+(OvidSP), Embase (OvidSP), three other databases, and grey literature from 
+inception to 30 July 2020.
+SELECTION CRITERIA: We included randomised controlled trials (RCTs), quasi-RCTs, 
+cluster-RCTs, controlled non-randomised parallel group, and before-after studies 
+evaluating communication aids used in adults with an artificial airway.
+DATA COLLECTION AND ANALYSIS: We used standard methodological procedures 
+recommended by Cochrane. Two review authors independently performed data 
+extraction and assessment of risk of bias.
+MAIN RESULTS: We included 11 studies (1931 participants) conducted in intensive 
+care units (ICUs). Eight evaluated non-vocal communication aids and three 
+voice-enabling aids. Usual care was the comparator for all. For six studies, 
+this comprised no aid; usual care in the remaining five studies comprised use of 
+various communication aids. Overall, our confidence in results regarding 
+effectiveness of communication interventions was very low due to imprecision, 
+measurement heterogeneity, inconsistency in results, and most studies at high or 
+unclear risk of bias across multiple domains. No non-vocal aid studies reported 
+our primary outcome. We are uncertain of the effects of early use of a 
+voice-enabling aid compared to routine use on ability to phonate at least one 
+intelligible word (risk ratio (RR) 3.03, 95% confidence interval (CI) 0.18 to 
+50.08; 2 studies; very low-certainty evidence). Compared to usual care without 
+aids, we are uncertain about effects of a non-vocal aid (communication board) on 
+patient satisfaction (standardised mean difference (SMD) 2.92, 95% CI 1.52 to 
+4.33; 4 studies; very low-certainty evidence). No studies of non-vocal aids 
+reported quality of life. Low-certainty evidence from two studies suggests early 
+use of a voice-enabling aid may have no effect on quality of life (MD 2.27, 95% 
+CI -7.21 to 11.75). Conceptual differences in measures of psychological distress 
+precluded data pooling; however, intervention arm participants reported less 
+distress suggesting there might be benefit, but our certainty in the evidence is 
+very low. Low-certainty evidence suggest voice-enabling aids have little or no 
+effect on ICU length of stay; we were unable to determine effects of non-vocal 
+aids. Three studies reported different adverse events (physical restraint use, 
+bleeding following tracheostomy, and respiratory parameters indicating 
+respiratory decompensation). Adverse event rates were similar between arms in 
+all three studies. However, uncertainty remains as to any harm associated with 
+communication aids.
+AUTHORS' CONCLUSIONS: Due to a lack of high-quality studies, imprecision, 
+inconsistency of results, and measurement heterogeneity,  the evidence provides 
+insufficient information to guide practice as to which communication aid is more 
+appropriate and when to use them. Understanding effectiveness of communication 
+aids would benefit from development of a core outcome measurement set.
+
+Copyright © 2021 The Cochrane Collaboration. Published by John Wiley & Sons, 
+Ltd.
+
+DOI: 10.1002/14651858.CD013379.pub2
+PMCID: PMC8507432
+PMID: 34637143 [Indexed for MEDLINE]
+
+Conflict of interest statement: LR: none. AS: none. AA: none. DF: none. OS: 
+none. CD: none.
+
+
+3. Intensive Crit Care Nurs. 2017 Oct;42:88-96. doi: 10.1016/j.iccn.2017.03.003. 
+Epub 2017 Mar 29.
+
+Which alternative communication methods are effective for voiceless patients in 
+Intensive Care Units? A systematic review.
+
+Carruthers H(1), Astin F(2), Munro W(3).
+
+Author information:
+(1)School of Health Science, University of Salford, Salford, UK. Electronic 
+address: H.Carruthers@salford.ac.uk.
+(2)School of Human and Health Sciences, University of Huddersfield, Calderdale 
+and Huddersfield NHS Trust, Huddersfield, UK. Electronic address: 
+F.Astin@hud.ac.uk.
+(3)School of Health Science, University of Salford, Salford, UK. Electronic 
+address: W.Munro@salford.ac.uk.
+
+OBJECTIVE: To assess the effectiveness of Augmentative and Alternative 
+Communication (AAC) strategies to enable people who are temporarily voiceless 
+due to medical intervention, to communicate.
+METHODS: A systematic review informed by a protocol published on an 
+international register. Ten databases were searched from January 2004 to January 
+2017. Included studies assessed the effect of using AAC strategies on patient 
+related outcomes and barriers to their use. All included studies were quality 
+appraised. Due to the heterogeneity of interventions and outcome measures 
+findings were narratively reviewed.
+RESULTS: Twelve studies met the inclusion criteria and were included in the 
+review reporting outcomes from 1981 patient and 454 health professional 
+participants. The quality of included studies were moderate to weak. AAC 
+communication strategies increased the number of communication interactions, 
+improved patient satisfaction with communication and reduced communication 
+difficulties. Barriers to usage were device characteristics, the clinical 
+condition of the patient, lack of timeliness in communication and staff 
+constraints.
+CONCLUSIONS: There is preliminary, but inconsistent evidence that AAC strategies 
+are effective in improving patient satisfaction with communication and reducing 
+difficulties in communication. A lack of comparable studies precluded the 
+identification of the most effective AAC strategy.
+
+Copyright © 2017 Elsevier Ltd. All rights reserved.
+
+DOI: 10.1016/j.iccn.2017.03.003
+PMID: 28365174 [Indexed for MEDLINE]
+
+
+4. Intensive Crit Care Nurs. 2021 Apr;63:102948. doi: 10.1016/j.iccn.2020.102948.
+ Epub 2020 Nov 7.
+
+A systematic review on voiceless patients' willingness to adopt high-technology 
+augmentative and alternative communication in intensive care units.
+
+Ju XX(1), Yang J(2), Liu XX(3).
+
+Author information:
+(1)School of Nursing, Shanghai Jiao Tong University, Shanghai 200025, China. 
+Electronic address: 957780821@qq.com.
+(2)School of Nursing, Shanghai Jiao Tong University, Shanghai 200025, China. 
+Electronic address: 3224781268@qq.com.
+(3)Shanghai Chest Hospital, Shanghai Jiao Tong University, Shanghai 200030, 
+China. Electronic address: lxx1018@hotmail.com.
+
+Comment in
+    Intensive Crit Care Nurs. 2021 Apr;63:102955. doi: 
+10.1016/j.iccn.2020.102955.
+
+OBJECTIVE: To systematically evaluate the acceptability of high-technology 
+augmentative and alternative communication (high-tech AAC) among ICU patients 
+who are voiceless guided by the technology acceptance model (TAM).
+METHODS: We searched the Cochrane Library, EMBASE, PubMed, CINAHL, PsycINFO, Web 
+of Science, SinoMed, China National Knowledge Infrastructure (CNKI), China 
+Science and Technology Journal Database and Wanfang Database from database 
+inception to September 2019. Studies that examined conscious nonverbal ICU 
+patients with high-tech AAC intervention were included. Two reviewers 
+independently collected and evaluated all the studies. The methodological 
+quality was assessed by using the Joanna Briggs Institute critical appraisal 
+tool.
+RESULTS: Eighteen studies with a total of 914 patients met the inclusion 
+criteria, and the quality of the studies varied from low to moderate. Based on 
+the TAM, ICU voiceless patients perceived that high-tech AAC was useful, was 
+easy to use, decreased communication difficulties, reduced negative emotions, 
+and improved symptom identification and management. Patients maintained a 
+positive attitude and were willing to continue to use high-tech AAC.
+CONCLUSIONS: Although the existing evidence is limited, voiceless patients 
+regard high-tech AAC devices as a useful, reliable, and acceptable alternative 
+communication choice in the ICU. Multicenter, large-sample, and high-quality 
+studies are highly recommended in the future.
+
+Copyright © 2020 Elsevier Ltd. All rights reserved.
+
+DOI: 10.1016/j.iccn.2020.102948
+PMID: 33168384 [Indexed for MEDLINE]
+
+
+5. Minerva Anestesiol. 2025 Jun;91(6):573-581. doi:
+10.23736/S0375-9393.25.18851-2.
+
+"Giving voice" to the voiceless: a systematic review of communication aids for 
+ventilated patients in intensive care units.
+
+Cabrini L(1)(2), Spinazza G(1), Bazzotti C(3), Cavallari R(1), Baiardo Redaelli 
+M(1)(2), Grossi AA(4)(5).
+
+Author information:
+(1)General and Neurosurgical Intensive Care Units, Ospedale di Circolo, ASST 
+Sette Laghi, Varese, Italy.
+(2)Department of Biotechnologies and Life Sciences, University of Insubria, 
+Varese, Italy.
+(3)Department of Physical Medicine and Rehabilitation, Ospedale di Circolo, ASST 
+Sette Laghi, Varese, Italy.
+(4)Department of Human Sciences, Innovation and Territory, University of 
+Insubria, Varese, Italy - aa.grossi@uninsubria.it.
+(5)Center for Clinical Ethics, Department of Biotechnologies and Life Sciences, 
+University of Insubria, Varese, Italy.
+
+INTRODUCTION: Communication is of utmost importance for every patient, 
+especially for those who are critically ill. Intensive care unit (ICU) patients, 
+who require an artificial endotracheal airway are "voiceless," and the inability 
+to communicate becomes a stressful experience for patients, families and 
+caregivers. Nowadays, several communication aids are available, and scope of 
+this review is to provide an updated and comprehensive understanding of such 
+tools for ventilated ICU patients, identify the most effective options, and 
+evaluate their impact on patient outcomes, healthcare delivery, and 
+patient-provider communication.
+EVIDENCE ACQUISITION: A systematic literature search was conducted in PubMed, 
+covering studies between 2000 to August 2024. Studies were included if they 
+involved adult voiceless patients in ICUs, utilized any communication aids, and 
+reported outcomes related to communication effectiveness, usability, 
+satisfaction, or clinical.
+EVIDENCE SYNTHESIS: Out of 1699 initial results, 42 studies met the inclusion 
+criteria and were included in the analysis. No single communication aid was 
+identified as universally adequate for all patients. The effectiveness of 
+communication tools is highly dependent on individual patient capabilities, 
+necessitating a personalized approach. High-tech tools offered significant 
+benefits but faced challenges related to technical issues and training 
+requirements. Low-tech aids were easier to implement but sometimes inadequate 
+for patients with more complex needs.
+CONCLUSIONS: This systematic review describes the effectiveness and limitations 
+of various communication aids for ventilated ICU patients. Currently, no single 
+tool emerged as superior, rather individualized approaches to select and 
+implement appropriate communication aids are the best strategy for facilitating 
+communication in this population.
+
+DOI: 10.23736/S0375-9393.25.18851-2
+PMID: 40693480 [Indexed for MEDLINE]
+
+
+6. Aust Crit Care. 2025 Jan;38(1):101061. doi: 10.1016/j.aucc.2024.04.006. Epub 
+2024 Jun 12.
+
+Effectiveness, experience, and usability of low-technology augmentative and 
+alternative communication in intensive care: A mixed-methods systematic review.
+
+Alodan HA(1), Sutt AL(2), Hill R(3), Alsadhan J(4), Cross JL(3).
+
+Author information:
+(1)Faculty of Medicine and Health Sciences, University of East Anglia, Norwich, 
+Norfolk, UK; College of Applied Medical Sciences, King Saud bin Abdulaziz 
+University for Health Sciences, Riyadh, Saudi Arabia; King Abdullah 
+International Medical Research Center, Riyadh, Saudi Arabia. Electronic address: 
+H.alodan@uea.ac.uk.
+(2)Institute of Molecular Bioscience, University of Queensland, Brisbane, 
+Australia; Critical Care Research Group, The Prince Charles Hospital, Brisbane, 
+Australia; The Royal London Hospital, Barts Health NHS Trust, London, UK.
+(3)Faculty of Medicine and Health Sciences, University of East Anglia, Norwich, 
+Norfolk, UK.
+(4)College of Applied Medical Sciences, King Saud University, Riyadh, Saudi 
+Arabia.
+
+BACKGROUND: Patients in the intensive care unit (ICU) are commonly on mechanical 
+ventilation, either through endotracheal intubation or tracheostomy, which 
+usually leaves them nonverbal. Low-technology augmentative and alternative 
+communication (AAC) strategies are simple and effective ways to enhance 
+communication between patients and their communication partners but are 
+underutilised.
+AIM: The aim of this study was to systematically review current evidence 
+regarding the effectiveness, experience of use, and usability of low-technology 
+AAC with nonverbal patients and their communication partners in the ICU.
+METHODS: This review included quantitative, qualitative, and mixed-methods 
+studies of adult ICU patients aged 18 or older who were nonverbal due to 
+mechanical ventilation and their communication partners. Studies using 
+low-technology AAC, such as communication boards and pen and paper, were 
+included. Six databases were searched, and the review was conducted according to 
+Preferred Reporting Items for Systematic Reviews and Meta-Analyses (PRISMA) 
+guidelines. A convergent segregated approach was used for data synthesis.
+RESULTS: Thirty-two studies were included. Low-technology AAC improved patient 
+satisfaction, facilitated communication, and met patients' physical and 
+psychological needs. Communication boards with mixed content (e.g., pictures, 
+words, and letters) were preferred but were used less frequently than unaided 
+strategies due to patients' medical status, tool availability, and staff 
+attitudes. Boards should be user-friendly, tailored, include pen/paper, and 
+introduced preoperation to increase patient's comfort when using them 
+postoperatively.
+CONCLUSION: Existing evidence support low-technology AAC's efficacy in meeting 
+patients' needs. Better usability hinges on proper implementation and addressing 
+challenges. Further research is crucial for refining communication-board design, 
+ensuring both user-friendliness and sophistication to cater to ICU patients' 
+diverse needs.
+REGISTRATION: The review protocol was registered in the International 
+Prospective Register of Systematic Reviews, with registration number 
+CRD42022331566.
+
+Copyright © 2024 Australian College of Critical Care Nurses Ltd. Published by 
+Elsevier Ltd. All rights reserved.
+
+DOI: 10.1016/j.aucc.2024.04.006
+PMID: 38866691 [Indexed for MEDLINE]
+
+
+7. Am J Speech Lang Pathol. 2019 Aug 9;28(3):1335-1355. doi: 
+10.1044/2019_AJSLP-19-0001. Epub 2019 Jul 11.
+
+The Feasibility, Utility, and Safety of Communication Interventions With 
+Mechanically Ventilated Intensive Care Unit Patients: A Systematic Review.
+
+Zaga CJ(1)(2)(3), Berney S(4)(5), Vogel AP(2)(6)(7).
+
+Author information:
+(1)Speech Pathology Department, Austin Health, Melbourne, Australia.
+(2)Centre for Neuroscience of Speech, The University of Melbourne, Australia.
+(3)Tracheostomy Review and Management Service, Austin Health, Melbourne, 
+Australia.
+(4)Department of Physiotherapy, Austin Health, Melbourne, Australia.
+(5)Department of Physiotherapy, School of Health Sciences, The University of 
+Melbourne, Australia.
+(6)Department of Neurodegeneration, Hertie Institute for Clinical Brain 
+Research, Tübingen Germany.
+(7)Redenlab, Melbourne, Australia.
+
+Purpose The aim of this study was to conduct a systematic review of the 
+literature relating to the feasibility, utility, and safety of augmentative and 
+alternative communication (AAC) interventions and tracheostomy-related 
+communication interventions with mechanically ventilated adult patients in the 
+intensive care unit (ICU). Method MEDLINE, Embase, and PsycINFO databases were 
+searched for relevant articles. Studies were included if (a) they were performed 
+in the ICU, (b) they involved participants > 18 years of age, (c) > 85% of 
+participants were mechanically ventilated, and (d) they reported on content that 
+related to the feasibility and/or utility and/or safety of AAC intervention 
+and/or tracheostomy-related communication intervention. Studies were extracted 
+according to the Preferred Reporting Items for Systematic Reviews and 
+Meta-Analyses (PRISMA) guidelines. The levels of evidence for included studies 
+were assessed using the Grading of Recommendations, Assessment, Development and 
+Evaluation (GRADE) guidelines. Results Forty-eight studies met the inclusion 
+criteria. Different communication interventions relating to intubated and 
+tracheostomized mechanically ventilated patients were reviewed, including (a) 
+communication boards, (b) electrolarynx, (c) high-technology AAC devices, (d) 
+tracheostomy tubes with communication-enabling features, (e) one-way valve in 
+line with the ventilator, (f) ventilator-adjusted leak speech, (g) ventilator 
+adjustments and one-way valve, and (h) multiple interventions. Forty-seven of 48 
+studies examined the feasibility and utility of the interventions. Sixteen 
+studies examined the safety of the interventions. The included studies were 
+composed of randomized controlled trials (n = 2), quasi-experimental studies (n 
+= 7), cohort studies (n = 8), case-control (n = 1), case series (n = 23), and 
+case reports (n = 7). The levels of evidence varied and ranged from high (n = 
+2), moderate (n = 7), low (n = 9), and very low (n = 30). Conclusions There is 
+developing evidence that communication interventions with mechanically 
+ventilated ICU patients are feasible, have utility, and are safe. Further 
+research is warranted to guide speech pathologist-directed intervention to 
+improve patient outcomes and the patient experience in the ICU.
+
+DOI: 10.1044/2019_AJSLP-19-0001
+PMID: 31296037 [Indexed for MEDLINE]
+
+
+8. Nurs Crit Care. 2026 Jan;31(1):e70303. doi: 10.1111/nicc.70303.
+
+Eye-Tracking in Communication Use for Mechanically Ventilated ICU Patients: A 
+Scoping Review.
+
+Jin H(1), Jing M(2), Xu X(1), Zhao Y(3), Zhu Y(3), Li J(3), Li L(4).
+
+Author information:
+(1)School of Nursing and Health, Zhengzhou University, Zhengzhou, People's 
+Republic of China.
+(2)Center Intensive Care Unit, Henan Provincial People's Hospital, Zhengzhou, 
+People's Republic of China.
+(3)School of Nursing and Health, Henan University, Kaifeng, People's Republic of 
+China.
+(4)Department of Nursing, Henan Provincial People's Hospital, Zhengzhou, 
+People's Republic of China.
+
+BACKGROUND: Communication with mechanically ventilated patients is a major 
+challenge in the intensive care unit (ICU). Ineffective communication may lead 
+to heightened negative emotions in patients and increase potential safety risks. 
+Eye-tracking devices mainly use optical recording methods to capture the dynamic 
+trajectory of eye movements and gaze positions, thus realising the interaction 
+between the brain and external information. Although eye-tracking devices show 
+promise for facilitating communication, they are only used in a few ICUs.
+AIM: This paper presents a scoping review of the application of eye-tracking 
+technology in communication with mechanically ventilated patients in the ICU. 
+The objective is to identify its current applications and characteristics, as 
+well as provide direction for future research in this field.
+STUDY DESIGN: A systematic literature search was conducted across PubMed, Web of 
+Science, Embase, Cochrane Library and Scopus databases, covering records from 
+the inception of each database up to 23 January 2025. The included literature 
+was summarised and analysed.
+RESULTS: A total of 11 papers were included. The use of eye-tracking technology 
+in ICU mechanical ventilation communication mainly included communication of the 
+content of needs and symptom assessment. The main outcome indicators were 
+communication feasibility, satisfaction, psychosocial status and somatic 
+symptoms.
+CONCLUSIONS: Eye-tracking devices are effective in facilitating communication 
+about basic needs and in supporting symptom assessment among mechanically 
+ventilated patients in the ICU. These devices enable personalised non-verbal 
+communication and provide a more objective approach to symptom evaluation. 
+Future research should focus on enhancing device functionality and conducting 
+multicentre, large-sample randomised controlled trials to further explore and 
+validate their role in ICU patient care.
+RELEVANCE TO CLINICAL PRACTICE: Effective communication with mechanically 
+ventilated patients is essential in the ICU. The use of eye-tracking devices can 
+improve communication efficiency and patient safety. ICU nurses should receive 
+training in communication strategies and the practical use of such devices to 
+optimise patient care.
+
+© 2025 British Association of Critical Care Nurses.
+
+DOI: 10.1111/nicc.70303
+PMID: 41405374 [Indexed for MEDLINE]
+
+
+9. Heart Lung. 2014 Mar-Apr;43(2):89-98. doi: 10.1016/j.hrtlng.2013.11.010. Epub 
+2014 Feb 1.
+
+Effect of a multi-level intervention on nurse-patient communication in the 
+intensive care unit: results of the SPEACS trial.
+
+Happ MB(1), Garrett KL(2), Tate JA(3), DiVirgilio D(3), Houze MP(3), Demirci 
+JR(4), George E(5), Sereika SM(3).
+
+Author information:
+(1)University of Pittsburgh School of Nursing, Pittsburgh, PA, USA; University 
+of Pittsburgh Department of Critical Care Medicine, Pittsburgh, PA, USA; The 
+Ohio State University College of Nursing. Electronic address: happ.3@osu.edu.
+(2)Alternative Communication, LLC.
+(3)University of Pittsburgh School of Nursing, Pittsburgh, PA, USA.
+(4)University of Pittsburgh School of Nursing, Pittsburgh, PA, USA; University 
+of Pittsburgh School of Medicine/Children's Hospital of Pittsburgh General 
+Academic Pediatrics, USA.
+(5)University of Pittsburgh Medical Center, Department of Nursing, USA.
+
+OBJECTIVE: To test the impact of two levels of intervention on communication 
+frequency, quality, success, and ease between nurses and intubated intensive 
+care unit (ICU) patients.
+DESIGN: Quasi-experimental, 3-phase sequential cohort study: (1) usual care, (2) 
+basic communication skills training (BCST) for nurses, (3) additional training 
+in augmentative and alternative communication devices and speech language 
+pathologist consultation (AAC + SLP). Trained observers rated four 3-min 
+video-recordings for each nurse-patient dyad for communication frequency, 
+quality and success. Patients self-rated communication ease.
+SETTING: Two ICUs in a university-affiliated medical center.
+PARTICIPANTS: 89 intubated patients awake, responsive and unable to speak and 30 
+ICU nurses.
+MAIN RESULTS: Communication frequency (mean number of communication acts within 
+a communication exchange) and positive nurse communication behaviors increased 
+significantly in one ICU only. Percentage of successful communication exchanges 
+about pain were greater for the two intervention groups than the usual 
+care/control group across both ICUs (p = .03) with more successful sessions 
+about pain and other symptoms in the AAC + SLP group (p = .07). Patients in the 
+AAC + SLP intervention group used significantly more AAC methods (p = .002) and 
+rated communication at high difficulty less often (p < .01).
+CONCLUSIONS: This study provides support for the feasibility, utility and 
+efficacy of a multi-level communication skills training, materials and SLP 
+consultation intervention in the ICU.
+
+Copyright © 2014 Elsevier Inc. All rights reserved.
+
+DOI: 10.1016/j.hrtlng.2013.11.010
+PMCID: PMC4053558
+PMID: 24495519 [Indexed for MEDLINE]
+
+
+10. J Healthc Qual. 2020 Jan/Feb;42(1):e1-e9. doi: 10.1097/JHQ.0000000000000163.
+
+Improving Nonvocal Critical Care Patients' Ease of Communication Using a 
+Modified SPEACS-2 Program.
+
+Trotta RL, Hermann RM, Polomano RC, Happ MB.
+
+OBJECTIVE: To evaluate the feasibility and impact of implementing the "study of 
+patient-nurse effectiveness with assisted communication strategies-2" 
+(SPEACS-2); a program to facilitate communication with nonvocal patients.
+STUDY DESIGN: The plan-do-study-act quality improvement methodology guided the 
+implementation of a modified SPEACS-2 program within a pre and posttest design. 
+The Ease of Communication Scale (ECS) measured patients' communication 
+difficulty, and care processes measured the program's success.
+STUDY POPULATION: Nurses (N = 385) across 5 intensive care units were trained in 
+SPEACS-2. We assessed 354 nonvocal patients (aged 18-95 years) requiring 
+continued mechanical ventilation after withdrawal of heavy sedation. Patients 
+were evaluated over one 2-week preintervention (n = 163) and two 3-week 
+postintervention periods (n = 128; n = 63). A subsample of intervention patients 
+(n = 204) completed the ECS.
+RESULTS: Ease of Communication Scale scores improved significantly (p = .027) 
+from baseline (mean 25.86 ± 12.2, n = 71) to postintervention period 2 (21.22 ± 
+12.2, n = 63). Nurses' use of communication techniques and compliance with 
+communication plans of care incrementally increased after training.
+CONCLUSIONS: Implementing SPEACS-2 demonstrated positive changes in patients' 
+ease of communication and feasibility of incorporating evidence-based 
+communication strategies into practice.
+
+DOI: 10.1097/JHQ.0000000000000163
+PMID: 30648998 [Indexed for MEDLINE]
+
+
+11. Crit Care Med. 2016 Jun;44(6):1075-81. doi: 10.1097/CCM.0000000000001610.
+
+Return of Voice for Ventilated Tracheostomy Patients in ICU: A Randomized 
+Controlled Trial of Early-Targeted Intervention.
+
+Freeman-Sanderson AL(1), Togher L, Elkins MR, Phipps PR.
+
+Author information:
+(1)1Department of Speech Pathology, Royal Prince Alfred Hospital, Sydney, NSW, 
+Australia. 2Department of Speech Pathology, Faculty of Health Sciences, 
+University of Sydney, Sydney, Australia. 3National Health and Medical Research 
+Council Centre of Research Excellence in Brain Recovery, Sydney, NSW, Australia. 
+4Sydney Medical School, Faculty of Medicine, University of Sydney, Sydney, 
+Australia. 5Department of Intensive Care, Royal Prince Alfred Hospital, Sydney, 
+NSW, Australia.
+
+Comment in
+    Crit Care Med. 2016 Jun;44(6):1234-5. doi: 10.1097/CCM.0000000000001749.
+    Crit Care Med. 2016 Nov;44(11):e1146-e1147. doi: 
+10.1097/CCM.0000000000001991.
+    Crit Care Med. 2016 Nov;44(11):e1147. doi: 10.1097/CCM.0000000000002036.
+    Crit Care Med. 2017 Jan;45(1):e118-e119. doi: 10.1097/CCM.0000000000002142.
+
+OBJECTIVES: A cuffed tracheostomy tube facilitates prolonged mechanical 
+ventilation and weaning but usually leads to prolonged voicelessness, which can 
+be one of the most negative experiences of hospitalization. No randomized trials 
+have examined the effects of targeted early communication intervention for the 
+restoration of voice in ventilated tracheostomy patients in the ICU.
+DESIGN: A prospective randomized clinical trial.
+SETTING: The trial was conducted in the ICU of an urban tertiary level hospital.
+PATIENTS: Thirty adult participants enrolled, with 15 randomly allocated to the 
+intervention and control groups.
+INTERVENTIONS: The early intervention group received early cuff deflation and 
+insertion of an in-line speaking valve during mechanical ventilation. The 
+control group received standard cuff deflation and a speaking valve during 
+self-ventilation. A speech-language pathologist provided all treatments.
+MEASUREMENTS AND MAIN RESULTS: The primary outcome measure was time from 
+tracheostomy insertion to phonation. Early intervention significantly hastened 
+return to phonation (median difference = 11 d; hazard ratio = 3.66; 95% CI, 
+1.54-8.68) with no significant effect on duration of tracheostomy cannulation 
+(hazard ratio = 1.40; 95% CI, 0.65-3.03), duration of mechanical ventilation in 
+days from tracheostomy insertion (hazard ratio = 1.19; 95% CI, 0.58-2.51), 
+length of stay in ICU (hazard ratio = 1.16; 95% CI, 0.54-2.52), or time to 
+return to oral intake (hazard ratio = 2.35; 95% CI, 0.79-6.98). Adverse events 
+were low and equal in both groups. There was no significant change in measures 
+of quality of life.
+CONCLUSIONS: Focused early intervention for communication during mechanical 
+ventilation allows the restoration of phonation significantly sooner than 
+standard treatment, with no increase in complications in a small patient cohort. 
+Although these results are favorable, further research is needed to determine 
+whether the effects on any of the secondary outcomes are statistically 
+significant and clinically important.
+
+DOI: 10.1097/CCM.0000000000001610
+PMID: 26855430 [Indexed for MEDLINE]
+
+
+12. Iran J Nurs Midwifery Res. 2018 Sep-Oct;23(5):358-362. doi: 
+10.4103/ijnmr.IJNMR_68_17.
+
+The Effect of Using Communication Boards on Ease of Communication and Anxiety in 
+Mechanically Ventilated Conscious Patients Admitted to Intensive Care Units.
+
+Hosseini SR(1), Valizad-Hasanloei MA(2), Feizi A(3).
+
+Author information:
+(1)Department of Anesthetic and Operative Room, School of Allied Medical 
+Sciences, Urmia University Of Medical Sciences, Urmia, Iran.
+(2)Department of Anesthesiology and Critical Care, Urmia University of Medical 
+Sciences, Urmia, Iran.
+(3)Department of Nursing, Education Developing Center, Urmia University of 
+Medical Sciences, Urmia, Iran.
+
+BACKGROUND: Using mechanical ventilation devices has unique advantages for the 
+patient; however, it can also cause various problems. This study aimed to 
+determine the effect of using communication boards on the ease of communication 
+and anxiety in mechanically ventilated conscious patients admitted to intensive 
+care units (ICUs).
+MATERIALS AND METHODS: In this quasi-experimental study, 30 conscious patients 
+undergoing mechanical ventilation were enrolled using consecutive sampling 
+method and assigned to experimental (n = 15) and control (n = 15) groups. The 
+control group included patients receiving primary communication methods, whereas 
+the experimental group included patients who used the communication board for 
+communication. The Hospital Anxiety and Depression Scale (HADS) and Ease of 
+Communication Scale (ECS) were completed for both groups. Data were analyzed 
+using descriptive-inferential statistics.
+RESULTS: Communication scores of the patients indicated that there was no 
+significant difference between the control and experimental groups before the 
+intervention (z = -1.77; p = 0.070). However, after the intervention, there was 
+a significant difference in communication scores between the two groups (z = 
+-4.69; p = 0.001). The anxiety scale scores showed a significant difference 
+between the control and experimental groups after the intervention, and 
+patients' anxiety had significantly decreased in the experimental group (z = 
+-2.98; p = 0.003).
+CONCLUSIONS: The results showed that the use of the communication board is 
+possible in mechanically ventilated conscious patients and may contribute to 
+ease of communication and decrease patients' anxiety during mechanical 
+ventilation.
+
+DOI: 10.4103/ijnmr.IJNMR_68_17
+PMCID: PMC6111665
+PMID: 30186340
+
+Conflict of interest statement: Nothing to declare.
+
+
+13. Iran J Nurs Midwifery Res. 2022 May 23;27(3):198-203. doi: 
+10.4103/ijnmr.ijnmr_82_21. eCollection 2022 May-Jun.
+
+Evaluating the Use of Communication Board on Cortisol Level and Physiological 
+Parameters in Mechanically Ventilated Patients.
+
+Divani A(1), Manookian A(1), Haghani S(2), Meidani M(3), Navidhamidi M(1).
+
+Author information:
+(1)Department of Medical-Surgical Nursing and Basic Sciences, School of Nursing 
+and Midwifery, Tehran University of Medical Sciences, Tehran, Iran.
+(2)Department of Biostatistics, Iran University of Medical Sciences, Tehran, 
+Iran.
+(3)Department of Infectious Diseases and Tropical Medicine, Imam-Khomeini 
+Hospital Complex, Tehran University of Medical Sciences, Tehran, Iran.
+
+BACKGROUND: Mechanically ventilated patients experience a high level of anxiety 
+due to their therapeutic condition. Anxiety is one of the strongest emotions 
+that patients under mechanical ventilation experience due to their inability to 
+communicate with others. The aim of this study was to investigate the effect of 
+using a communication board on these patients' by assessing serum cortisol level 
+and vital signs.
+MATERIALS AND METHODS: This randomized clinical trial study was conducted in 
+2020. This study included 60 ventilated patients, who had been randomly assigned 
+into two intervention and control groups. After blood sampling and evaluation of 
+cortisol and physiological parameters, patients in the control group received 
+routine communication by nurses, whereas those in the intervention group 
+received communication using a communication board. Subsequently, the serum 
+cortisol level and physiological parameters were measured again.
+RESULTS: No significant difference was observed between the two groups in terms 
+of demographic characteristics. There was a significant difference in blood 
+cortisol levels before and after in the intervention group (t 29 = 15.52, p < 
+0.001). After the intervention, the intervention group's systolic blood pressure 
+(t 58 = -3.78, p < 0.001), diastolic blood pressure (t 58 = -3.79, p < 0.001), 
+and heart rate (t 58 = -2.09, p = 0.041) were significantly lower than the 
+control group.
+CONCLUSIONS: Communication through a communication board in mechanically 
+ventilated patients leads to decreased cortisol levels and physiological 
+parameters. It is recommended to do more studies about communication boards' 
+content and use this tool for more prolonged periods.
+
+Copyright: © 2022 Iranian Journal of Nursing and Midwifery Research.
+
+DOI: 10.4103/ijnmr.ijnmr_82_21
+PMCID: PMC9552588
+PMID: 36237952
+
+Conflict of interest statement: Nothing to declare.
+
+
+14. Int J Appl Basic Med Res. 2024 Oct-Dec;14(4):284-289. doi: 
+10.4103/ijabmr.ijabmr_351_24. Epub 2024 Nov 1.
+
+Effectiveness of Communication Board on Level of Satisfaction among Mechanically 
+Ventilated Patients at Intensive Care Unit in a Tertiary Hospital.
+
+Sidhu S(1), Kaur K(1), Kaur A(1), Charan GS(1), Kaur M(1).
+
+Author information:
+(1)Department of Nursing, SGRD College of Nursing, SGRD University of Health 
+Sciences, Amritsar, Punjab, India.
+
+INTRODUCTION: Critical care nurses are crucial in managing critical patients, 
+facing challenges with advanced technology, alarms, ventilators, and multiple 
+laboratory investigations. They must effectively communicate and manage patients 
+on mechanical ventilation (MV), a lifesaving intervention for those needing 
+oxygenation and ventilation support to ensure patient satisfaction.
+MATERIALS AND METHODS: The study employed a quasi-experimental design with 80 
+mechanically ventilated patients selected through purposive sampling. Data were 
+collected using demographic and clinical pro forma and a predesigned four-point 
+Likert satisfaction scale comprised 14 items. The intervention group utilized a 
+communication board, while the conventional group received routine care. The aim 
+was to evaluate satisfaction levels in both groups, followed by a posttest on 
+the 5th day using the same instrument.
+RESULTS: The pretest revealed mean satisfaction scores of 32.47 ± 6.48 and 33.95 
+± 6.41 for the intervention and conventional groups, respectively, with a mean 
+difference of 1.47, considered statistically nonsignificant (t 78 = 1.023, P = 
+0.310). Conversely, posttest scores showed 37.85 ± 8.23 and 34.32 ± 6.18 for the 
+intervention and conventional groups, respectively, with a mean difference of 
+3.53, indicating statistical significance (t 78 = 2.164, P = 0.034). Hence, the 
+communication board intervention significantly enhanced satisfaction scores 
+among mechanically ventilated patients, underscoring its positive impact on 
+nursing care in terms of patients' satisfaction.
+CONCLUSION: Effective communication is crucial in intensive care unit patient 
+care, especially for those unable to speak due to MV. Utilizing communication 
+boards significantly enhances patient satisfaction, highlighting the need for 
+ongoing innovation in critical care nursing.
+
+Copyright: © 2024 International Journal of Applied and Basic Medical Research.
+
+DOI: 10.4103/ijabmr.ijabmr_351_24
+PMCID: PMC11691107
+PMID: 39749165
+
+Conflict of interest statement: There are no conflicts of interest.
+
+
+15. Intensive Care Med. 2018 May;44(5):676-677. doi: 10.1007/s00134-018-5093-0.
+Epub  2018 Mar 3.
+
+Eye-tracking and speech-generating technology to improve communication with 
+intubated intensive care unit patients: initial experience.
+
+Bodet-Contentin L(1), Gadrez P(2), Ehrmann S(2).
+
+Author information:
+(1)Medecine Intensive Réanimation, CHRU de Tours, 2 boulevard Tonnellé, 37044, 
+Tours Cedex 09, France. laetitia.contentin@univ-tours.fr.
+(2)Medecine Intensive Réanimation, CHRU de Tours, 2 boulevard Tonnellé, 37044, 
+Tours Cedex 09, France.
+
+DOI: 10.1007/s00134-018-5093-0
+PMID: 29502253 [Indexed for MEDLINE]
+
+
+16. Minerva Anestesiol. 2022 Sep;88(9):690-697. doi:
+10.23736/S0375-9393.22.16275-9.  Epub 2022 May 13.
+
+Eye tracking communication with intubated critically ill patients: a 
+proof-of-concept multicenter pilot study.
+
+Bodet-Contentin L(1)(2), Szymkowicz E(3), Delpierre E(4), Chartier D(5), Gadrez 
+P(5), Muller G(6), Renault A(6), Ehrmann S(5)(7)(8).
+
+Author information:
+(1)Intensive Care Unit, CHRU Tours, Tours, France - 
+laetitia.bodet@univ-tours.fr.
+(2)INSERM, SPHERE, UMR1246, University of Tours and Nantes, Tours, France - 
+laetitia.bodet@univ-tours.fr.
+(3)Intensive Care Unit, Charleroi Hospital, Charleroi, Belgium.
+(4)Intensive Care Unit, Marne la Vallée Hospital, Marne la Vallée, France.
+(5)Intensive Care Unit, CHRU Tours, Tours, France.
+(6)Intensive Care Unit, CHR Orléans, Orléans, France.
+(7)CIC INSERM 1415, Intensive Care Unit, CHRU Tours, Tours, France.
+(8)INSERM, Research Center for Respiratory Diseases (U1100), University of 
+Tours, Tours, France.
+
+BACKGROUND: Communication is essential to establish patient-caregivers 
+relationship in the intensive care unit. Intubated patients are not able to 
+speak because the tracheal tube prevents vocalization. Use of communication 
+tools such as eye tracking device could improve communication with intubated 
+patients. The objective of this feasibility pilot study was to demonstrate that 
+an eye tracking device specifically developed for the intensive care could be 
+used easily by awake intubated patient with a very short training time.
+METHODS: This prospective multicenter study was conducted in four intensive care 
+units. We included awake adult intubated patients. The device used included an 
+eye-tracking infrared detection and a communication interface specifically 
+developed.
+RESULTS: A total of 151 patients were included: the median age of patients was 
+66 years (56-72) and 97 (64%) were male, 97 patients (64%) succeed totally 
+(installation; calibration, succeed to select all three icons), 124 (82%) 
+succeed to select at least one icon, and 111 (74%) succeed to point to at least 
+two icons. The main reasons for failure to use the device were: difficulties to 
+open or to keep the eyes open, difficulties to installing the device occurred, 
+and patient fatigue.
+CONCLUSIONS: This study shows that the use of an eye tracking technology device 
+specifically designed for the intensive care setting, with a short training is 
+easy to use for intubated patient. Patients, relatives and caregivers showed 
+high satisfaction.
+
+DOI: 10.23736/S0375-9393.22.16275-9
+PMID: 35546732 [Indexed for MEDLINE]
+
+
+17. J Crit Care. 2023 Dec;78:154351. doi: 10.1016/j.jcrc.2023.154351. Epub 2023
+Jun  21.
+
+The EyeControl-Med device, an alternative tool for communication in ventilated 
+critically ill patients: A pilot study examining communication capabilities and 
+delirium.
+
+Itai Bendavid I(1), Assi S(2), Sasson N(2), Statlender L(3), Hellerman M(3), 
+Fishman G(3), Singer P(3), Kagan I(3).
+
+Author information:
+(1)Department of General Intensive Care and Institute for Nutrition Research, 
+Rabin Medical Center, Beilinson Hospital, Petah Tikva, Israel. Electronic 
+address: itbd@walla.com.
+(2)Department of speech, language, swallowing, hearing & communication 
+disorders, Rabin Medical Center, Beilinson Hospital, Petah Tikva, Israel.
+(3)Department of General Intensive Care and Institute for Nutrition Research, 
+Rabin Medical Center, Beilinson Hospital, Petah Tikva, Israel.
+
+INTRODUCTION: Communication with ventilated patients in the Intensive care unit 
+(ICU) is challenging. This may lead to anxiety and frustration, potentially 
+contributing to the development of delirium. Various technologies, such as 
+eye-tracking devices, have been employed to facilitate communication with 
+varying grades of success. The EyeControl-Med device is a novel technology that 
+delivers audio content and allows patients to interact by eye movements and 
+could potentially allow for better communication in this setting. The aim of 
+this exploratory concept study was to assess communication capabilities and 
+delirium incidence using the EyeControl-Med device in critically ill patients 
+unable to generate speech.
+MATERIAL AND METHODS: A single-arm pilot study of patients in a mixed ICU. 
+Patients were approached for consent if they were invasively ventilated and/or 
+tracheotomized, hence unable to generate speech, but had no severe cognitive or 
+sensory impairment that could prevent proper usage. Patients underwent at least 
+3 sessions with the EyeControl-Med device administered by a speech-language 
+pathologist. Communication and consciousness were assessed using the Loewenstein 
+Communication Scale (LCS) tool during the first and last sessions. Delirium was 
+assessed using a computerized CAM-ICU questionnaire.
+RESULTS: 15 patients were included, 40% of whom were diagnosed with COVID-19. 
+All patients completed three to seven usage sessions. The mean LCS score 
+improved by 19.3 points (p < 0.0001), with each of its five components showing 
+significant improvements as well. The mean number of errors on the CAM-ICU 
+questionnaire decreased from 6.5 to 2.5 (p = 0.0006), indicating a lower 
+incidence of delirium. No adverse effects were observed.
+CONCLUSION: The EyeControl-Med device may facilitate communication and reduce 
+the manifestations and duration of delirium in ventilated critically ill 
+patients. Controlled studies are required to establish this effect.
+
+Copyright © 2023 Elsevier Inc. All rights reserved.
+
+DOI: 10.1016/j.jcrc.2023.154351
+PMID: 37348187 [Indexed for MEDLINE]
+
+Conflict of interest statement: Declaration of Competing Interest The study was 
+conducted with funding from EyeControl, Tel Aviv, Israel. The authors report no 
+conflicts of interest.
+
+
+18. Artif Organs. 2022 Mar;46(3):439-450. doi: 10.1111/aor.14082. Epub 2021 Oct
+18.
+
+Approach to the basic needs in patients on invasive ventilation using 
+eye-tracking devices for non-verbal communication.
+
+Ull C(1), Hamsen U(1), Weckwerth C(2), Schildhauer TA(1), Gaschler R(2), Waydhas 
+C(1)(3), Jansen O(1).
+
+Author information:
+(1)Department of General and Trauma Surgery, BG University Hospital 
+Bergmannsheil, Ruhr-University Bochum, Bochum, Germany.
+(2)Faculty of Psychology, FernUniversität of Hagen, Hagen, Germany.
+(3)Medical Faculty, University Duisburg-Essen, Essen, Germany.
+
+PURPOSE: To analyze the feasibility of eye-tracking (ET) devices as a 
+communicative approach to the basic needs (BN) of intensive care unit (ICU) and 
+invasively ventilated nonverbal patients.
+METHODS: Prospective, monocentric, and observational study including all 
+patients without delirium, with an endotracheal tube or tracheostomy tube, with 
+a history of invasive ventilation for more than 48 h, and inadequate nonverbal 
+communication skills. The investigation was performed with commercially 
+available ET devices (Tobii Dynavox I-15+) to express BN of ICU patients 
+following a standardized 30-item yes-or-no questionnaire.
+RESULTS: A total of 64 patients with a mean age of 58.6 years were included. The 
+main diagnoses for ICU admission were major trauma (43.6%), sepsis (21.8%), and 
+acute abdomen (15.6%). Pain during repositioning (69%), thirst (69%), sleep 
+disorders (66%), fatigue (64%), and anxiety regarding the lifelong need for 
+assistance (64%) were the main problems reported by the patients. However, most 
+of the patients described expectations of health improvement (78%), good family 
+support (66%), and an improvement in quality of life due to the use of ET 
+devices (67%).
+CONCLUSION: The use of ET in selected ICU patients with impaired communication 
+is feasible, allowing them to express their BN. Apart from knowing the patients' 
+individual BN, the results of our BN questionnaire may provide guidance for 
+improvement measures in the care of patients in the ICU who are unable to speak. 
+We believe that ET is useful for inquiring about and expressing BN and, 
+therefore, may be capable of improving patient-medical team interactions and 
+patient satisfaction.
+
+© 2021 The Authors. Artificial Organs published by International Center for 
+Artificial Organ and Transplantation (ICAOT) and Wiley Periodicals LLC.
+
+DOI: 10.1111/aor.14082
+PMID: 34637156 [Indexed for MEDLINE]
+
+
+19. Surgery. 2016 Mar;159(3):938-44. doi: 10.1016/j.surg.2015.08.012. Epub 2015
+Sep  8.
+
+A pilot study of eye-tracking devices in intensive care.
+
+Garry J(1), Casey K(2), Cole TK(2), Regensburg A(2), McElroy C(2), Schneider 
+E(3), Efron D(4), Chi A(4).
+
+Author information:
+(1)Stony Brook University School of Medicine, Stony Brook, NY. Electronic 
+address: Jonah.garry@stonybrookmedicine.edu.
+(2)Department of Physical Medicine and Rehabilitation, The Johns Hopkins 
+Hospital, Baltimore, MD.
+(3)The Johns Hopkins University School of Medicine, Baltimore, MD.
+(4)Division of Acute Care Surgery and Adult Trauma Surgery, Department of 
+Surgery, The Johns Hopkins Hospital, Baltimore, MD.
+
+Comment in
+    Surgery. 2016 Mar;159(3):945-6. doi: 10.1016/j.surg.2015.09.005.
+
+BACKGROUND: Eye-tracking devices have been suggested as a means of improving 
+communication and psychosocial status among patients in the intensive care unit 
+(ICU). This study was undertaken to explore the psychosocial impact and 
+communication effects of eye-tracking devices in the ICU.
+METHODS: A convenience sample of patients in the medical ICU, surgical ICU, and 
+neurosciences critical care unit were enrolled prospectively. Patients 
+participated in 5 guided sessions of 45 minutes each with the eye-tracking 
+computer. After completion of the sessions, the Psychosocial Impact of Assistive 
+Devices Scale (PIADS) was used to evaluate the device from the patient's 
+perspective.
+RESULTS: All patients who participated in the study were able to communicate 
+basic needs to nursing staff and family. Delirium as assessed by the Confusion 
+Assessment Method for the Intensive Care Unit was present in 4 patients at 
+recruitment and none after training. The device's overall psychosocial impact 
+ranged from neutral (-0.29) to strongly positive (2.76). Compared with the 
+absence of intervention (0 = no change), patients exposed to eye-tracking 
+computers demonstrated a positive mean overall impact score (PIADS = 1.30; P = 
+.004). This finding was present in mean scores for each PIADS domain: competence 
+= 1.26, adaptability = 1.60, and self-esteem = 1.02 (all P < .01).
+CONCLUSION: There is a population of patients in the ICU whose psychosocial 
+status, delirium, and communication ability may be enhanced by eye-tracking 
+devices. These 3 outcomes are intertwined with ICU patient outcomes and 
+indirectly suggest that eye-tracking devices might improve outcomes. A more 
+in-depth exploration of the population to be targeted, the device's limitations, 
+and the benefits of eye-tracking devices in the ICU is warranted.
+
+Copyright © 2016 Elsevier Inc. All rights reserved.
+
+DOI: 10.1016/j.surg.2015.08.012
+PMID: 26361099 [Indexed for MEDLINE]
+
+
+20. Intensive Crit Care Nurs. 2024 Feb;80:103562. doi:
+10.1016/j.iccn.2023.103562.  Epub 2023 Oct 21.
+
+Comparison of communication interfaces for mechanically ventilated patients in 
+intensive care.
+
+Szymkowicz E(1), Bodet-Contentin L(2), Marechal Y(3), Ehrmann S(4).
+
+Author information:
+(1)GIGA Consciousness, Coma Science Group, University of Liège, Belgium. 
+Electronic address: emilie.szymkowicz@uliege.be.
+(2)Médecine Intensive Réanimation, INSERM CIC 1415, CRICS-TriGGERSep Network, 
+CHRU de Tours and methodS in Patient-centered outcomes and health ResEarch 
+(SPHERE), INSERM UMR 1246, Université de Tours, France.
+(3)Unité de soins intensifs, CHU Hôpital Civil Marie Curie, Charleroi, Belgium.
+(4)Médecine Intensive Réanimation, INSERM CIC 1415, CRICS-TriGGERSep F-CRIN 
+Research Network, CHRU de Tours and Centre d'Étude des Pathologies Respiratoires 
+(CEPR), INSERM UMR 1100, Université de Tours, France.
+
+OBJECTIVES: This study aimed to compare the use of a conventional low-tech 
+communication board and a high-tech eye tracking device to improve communication 
+effectiveness of mechanically ventilated patients in intensive care.
+DESIGN: A prospective randomized crossover was conducted with a mixed method 
+approach (quantitative primary method and qualitative complementary method) to 
+compare the two technologically opposed communication interfaces.
+SETTING: The mechanically ventilated patients were recruited from the general 
+intensive care unit of the Marie Curie Civil Hospital (Charleroi University 
+Hospital, Belgium).
+MAIN OUTCOME MEASURES: The communication exchanges were assessed through 
+effectiveness indicators covering the quantity of messages transmitted, success 
+rate, patient satisfaction, communication content and difficulties of use.
+RESULTS: The sample consisted of 44 mechanically ventilated patients, covering 
+88 communication exchanges. The intervention effects on the quantity of messages 
+transmitted (two median messages per exchange for the board versus four median 
+messages per exchange for the eye tracking, p < 0.0001), success rate (80 % for 
+the board versus 100 % for the eye tracking, p < 0.05) and patient satisfaction 
+(66 % "not satisfied", 32 % "satisfied" and 2 % "dissatisfied" for the board 
+versus 52 % "satisfied" and 48 % "very satisfied" for the eye tracking, 
+p < 0.0001) were significant. The communication content covered eight themes for 
+the board compared to nine themes for the eye tracking and the use difficulties 
+included four categories for the board as well as for the eye tracking.
+CONCLUSION: The eye tracking device may further improve communication 
+effectiveness of mechanically ventilated patients compared to the conventional 
+communication board, both quantitatively and qualitatively.
+IMPLICATIONS FOR CLINICAL PRACTICE: The implementation of high-tech 
+communication devices based on eye tracking in intensive care practice can 
+significantly contribute to patient-centered care by improving communication of 
+mechanically ventilated patients.
+
+Copyright © 2023 Elsevier Ltd. All rights reserved.
+
+DOI: 10.1016/j.iccn.2023.103562
+PMID: 37871352 [Indexed for MEDLINE]
+
+Conflict of interest statement: Declaration of Competing Interest The authors 
+declare that they have no known competing financial interests or personal 
+relationships that could have appeared to influence the work reported in this 
+paper.
+
+
+21. Appl Nurs Res. 2006 Nov;19(4):182-90. doi: 10.1016/j.apnr.2005.09.006.
+
+Communication boards in critical care: patients' views.
+
+Patak L(1), Gawlinski A, Fung NI, Doering L, Berg J, Henneman EA.
+
+Author information:
+(1)Cardiothoracic Intensive Care Unit, UCLA Medical Center, Los Angeles, CA, 
+USA.
+
+BACKGROUND: Some patients receiving mechanical ventilation experience an 
+intensified need to communicate while their ability to do so is compromised as 
+the endotracheal tube prevents speech. Although the use of a communication board 
+to enhance communication with such patients has been suggested, few descriptive 
+or empirical studies have addressed the content and format of these devices or 
+of patients' perspectives on decreasing frustration with communication.
+OBJECTIVES: The objectives of this study were: (1) to identify the perceived 
+level of frustration of patients receiving mechanical ventilation while they 
+attempt to communicate; (2) to determine patients' perceived level of 
+frustration if a communication board had been used; and (3) to describe 
+patients' perceptions of the appropriate content and format of a communication 
+board.
+METHODS: Twenty-nine critically ill patients who were extubated within the past 
+72 hours were included in this descriptive study. Subjects participated in a 20- 
+to 60-minute audiotaped interview consisting of questions about their perceived 
+level of frustration when communicating with and without a communication board 
+and their thoughts about the appropriate content and format of a board. 
+Transcripts were analyzed by questions for meaning and overall themes.
+RESULTS: Sixty-two percent (n = 18) of patients reported a high level of 
+frustration in communicating their needs while receiving mechanical ventilation. 
+Patients judged that their perceived level of frustration in communicating their 
+needs would have been significantly lower (P < .001) if a communication board 
+had been offered (29.8%) than if not (75.8%). Most patients (69%; n = 20) 
+perceived that a communication board would have been helpful, and they also 
+identified specific characteristics and content for a communication board. A 
+communication board may be an effective intervention for decreasing patients' 
+frustration and facilitating communication.
+CONCLUSIONS: Most patients receiving mechanical ventilation experienced a 
+moderate to a high level of frustration when communicating their needs. In this 
+study, a communication board, if used patiently during mechanical ventilation, 
+has been shown to alleviate frustration with communication. Patients have 
+specific ideas about what terms and ideograms are useful for a communication 
+board. Further research is needed to test the effects of a communication board 
+and other methods of facilitating communication on outcomes such as satisfaction 
+and anxiety of patients, adequate and appropriate management of pain, and length 
+of mechanical ventilation time and hospital stay.
+
+DOI: 10.1016/j.apnr.2005.09.006
+PMID: 17098155 [Indexed for MEDLINE]
+
+
+22. Heart Lung. 2004 Sep-Oct;33(5):308-20. doi: 10.1016/j.hrtlng.2004.02.002.
+
+Patients' reports of health care practitioner interventions that are related to 
+communication during mechanical ventilation.
+
+Patak L(1), Gawlinski A, Fung NI, Doering L, Berg J.
+
+Author information:
+(1)University of California, Los Angeles, CA 90095, USA.
+
+BACKGROUND: The literature supports nursing interventions to maximize 
+communication in mechanically ventilated patients, yet limited research exists 
+on patients' perceptions of the helpfulness of health care practitioner 
+interventions to enhance communication. In addition, the level of frustration 
+experienced by these patients has not been reported. Thus, further research is 
+necessary to examine patients' perspectives of the helpfulness of health care 
+practitioner interventions that enhance communication of the mechanically 
+ventilated patient.
+OBJECTIVES: This study describes the level of frustration experienced by 
+mechanically ventilated patients and ascertains the helpfulness of methods used 
+by health care practitioners to meet the communication needs of the mechanically 
+ventilated patient.
+METHODS: A total of 29 critically ill patients, extubated within the last 72 
+hours, were included in this descriptive study using qualitative and 
+quantitative methods. Subjects participated in an average 30-minute audiotaped 
+interview session consisting of questions pertinent to their perceived level of 
+frustration in communicating and the interventions practitioners used to meet 
+their communication needs. Transcripts were analyzed by question and for overall 
+themes.
+RESULTS: It was found that 62% of patients (n = 18) reported a high level of 
+frustration in communicating their needs while being mechanically ventilated. 
+There was no significant difference between the duration of intubation and the 
+level of frustration (Spearman r =.109, P =.573) or between the diagnosis and 
+the level of frustration (P =.932). Patients who received anxiolytics (n = 23, 
+79% of the sample) had a lower level of frustration (mean 3.26) than those who 
+did not receive anxiolytics (n = 6, 21% of the sample, mean 4.33). This 
+difference trended toward significance (P =.084). Patients cited health care 
+practitioner behaviors, characteristics, and attributes that both facilitated 
+communication (kind, informative, and physically present at the bedside) and 
+impeded their ability to communicate (mechanical, inattentive, and "absent" from 
+the bedside). Patients reported problems and stresses associated with 
+communication difficulties that can be alleviated by the health care 
+practitioner.
+CONCLUSIONS: Mechanically ventilated patients experience a high level of 
+frustration when communicating their needs, and health care providers have a 
+significant impact on the mechanically ventilated patient's experience. Further 
+research is needed to explore and measure methods of facilitating communication 
+that increase patient satisfaction, reduce patient anxiety, and obtain optimal 
+pain management.
+
+DOI: 10.1016/j.hrtlng.2004.02.002
+PMID: 15454910 [Indexed for MEDLINE]
+
+
+23. Heart Lung. 1988 May;17(3):281-9.
+
+Comparison of two types of communication methods used after cardiac surgery with 
+patients with endotracheal tubes.
+
+Stovsky B(1), Rudy E, Dragonette P.
+
+Author information:
+(1)Cardiac Health Improvement and Rehabilitation Program, Cleveland Clinic 
+Foundation, OH.
+
+In this study we compared two types of communication techniques (planned and 
+unplanned) for effectiveness in communication in the early postoperative 
+intubation period with patients who had cardiac surgery. In this 
+quasi-experimental study we used a sample of 40 patients undergoing open heart 
+surgery who participated in preoperative teaching. The control group (n = 20) 
+relied on the experience and creativity of the nurse to provide a method of 
+postoperative communication. The experimental group (n = 20) was introduced to a 
+communication board before surgery and used the board during the postoperative 
+intubation period. Each patient completed an open-ended patient interview, a 
+patient satisfaction questionnaire, and a visual analogue scale to assess 
+satisfaction with communication after discharge from the intensive care unit. An 
+independent t test indicated that a planned method of communication does 
+significantly increase patient satisfaction in the early postoperative 
+intubation period (t = 2.09, p = 0.05, n = 35). Content analyses of the patient 
+interviews further supported this finding. Validity of the patient satisfaction 
+questionnaire was supported by a high correlation (r = 0.70) with results from 
+the visual analogue scale. Nurse satisfaction with communication during 
+intubation was analyzed by use of a nurse satisfaction questionnaire and 
+open-ended questions that were completed by the nurse after caring for the 
+patients in this study. A dependent t test (t = 1.25, not significant, n = 20) 
+and content analysis indicated that planned communication did not increase nurse 
+satisfaction; however, it did add to the repertoire of methods that nurses 
+currently use in trying to communicate with their patients.
+
+PMID: 2966780 [Indexed for MEDLINE]
+
+
+24. Rehabil Nurs. 2015 Jul-Aug;40(4):235-42. doi: 10.1002/rnj.186. Epub 2014 Nov
+25.
+
+Evaluation of Speak for Myself with Patients Who Are Voiceless.
+
+Koszalinski RS(1), Tappen RM(1), Viggiano D(2).
+
+Author information:
+(1)Christine E. Lynn College of Nursing, Florida Atlantic University, Boca 
+Raton, FL, USA.
+(2)Department of Music Engineering, School of Music, University of Miami, Miami, 
+FL, USA.
+
+PURPOSE: To describe the creation and initial feasibility study of a new 
+computer application to improve communication with people who cannot communicate 
+by customary means during their hospitalization.
+DESIGN: This was a mixed-methods, quasi-experimental design.
+METHODS: This exploratory feasibility study obtained data about the experiences 
+of 20 intensive care patients in three South Florida hospitals who were unable 
+to speak due to mechanical obstruction.
+FINDINGS: Study participants (20), who ranged in age from 45 to 91 years 
+(M=67.4, SD=12.88) and between -1 to +1 (SD=-0.15) on the Richmond Agitation 
+Sedation Scale, used Speak for Myself from 4 to 16 hours with a mean of 8.86 
+(SD=2.12). Ninety-five percent of the participants stated that Speak for Myself 
+was helpful for communication.
+CONCLUSIONS: Speak for Myself was helpful to patients who used it. This was a 
+small study (n=20). It warrants further investigation.
+CLINICAL RELEVANCE: Patients who are unable to communicate their needs through 
+conventional methods still want to make their preferences and needs known. Speak 
+for Myself is a new application that facilitates ensuring the patient's voice is 
+heard.
+
+© 2014 Association of Rehabilitation Nurses.
+
+DOI: 10.1002/rnj.186
+PMID: 25424980 [Indexed for MEDLINE]
+
+
+25. Comput Inform Nurs. 2020 Apr;38(4):183-189. doi:
+10.1097/CIN.0000000000000597.
+
+The Use of Communication Technology to Affect Patient Outcomes in the Intensive 
+Care Unit.
+
+Koszalinski RS(1), Heidel RE, Hutson SP, Li X, Palmer TG, McCarthy J, Hollibush 
+T, Massoli J, Simmons A, Jagirdar N, Velur Rajashekaran P.
+
+Author information:
+(1)Author Affiliations: College of Nursing (Dr Koszalinski, Mr Hollibush, and Mr 
+Massoli), Graduate Programs (Dr Hutson), and Department of Industrial and 
+Systems Engineering, J.D. Tickle College of Engineering (Dr Li, Mr Jagirdar, and 
+Mr Velur Rajashekaran), University of Tennessee, Knoxville; Department of 
+Surgery, Division of Biostatistics, University of Tennessee Medical Center 
+Graduate School of Medicine, Knoxville (Dr Heidel); University of Tennessee 
+Medical Center, Knoxville (Ms Palmer); and Department of Audiology and Speech 
+Pathology, University of Tennessee Health Science Center, Knoxville (Dr McCarthy 
+and Ms Simmons).
+
+Effective two-way patient-provider communication is challenging and is even more 
+difficult when patients are communication vulnerable. The results of being 
+unheard and unacknowledged can contribute to negative feelings and may manifest 
+as symptoms of anxiety and depression. Researchers explored symptoms of anxiety 
+and depression when using a team-developed, patient-centered, and nurse-led 
+intervention called Speak for Myself-Voice (formerly published as Speak for 
+Myself) in five intensive care units at a Magnet status, university-affiliated 
+medical center in East Tennessee. This was an equivalent control group design. 
+The data were analyzed with a mixed-effect analysis of variance (between and 
+within groups) with repeated measures to see if the treatment group changed 
+differently than the control group across time (48 hours). This study report 
+adds information about anxiety and depression in patients who are communication 
+vulnerable and using communication technology.
+
+DOI: 10.1097/CIN.0000000000000597
+PMID: 32068538 [Indexed for MEDLINE]
+
+
+26. Augment Altern Commun. 2016 Dec;32(4):261-271. doi: 
+10.1080/07434618.2016.1235610. Epub 2016 Nov 20.
+
+Communication aid requirements of intensive care unit patients with transient 
+speech loss.
+
+Mobasheri MH(1), King D(2), Judge S(3), Arshad F(4), Larsen M(4), Safarfashandi 
+Z(4), Shah H(4), Trepekli A(4), Trikha S(4), Xylas D(4), Brett SJ(1), Darzi 
+A(2).
+
+Author information:
+(1)a Department of Surgery & Cancer , Imperial College London , UK.
+(2)b Institute of Global Health Innovation, Imperial College London , UK.
+(3)c Barnsley Assistive Technology Team, Barnsley Hospital NHS Foundation Trust 
+, Barnsley , UK.
+(4)d Faculty of Medicine , Imperial College London , UK.
+
+Alert and transiently nonvocal intensive care unit (ICU) patients are dependent 
+on augmentative and alternative communication (AAC). Unfortunately, the 
+literature demonstrates that existent AAC devices have not been widely adopted, 
+and unaided methods are often the primary modalities used despite being 
+insufficient, and frustrating. We present the results of a qualitative 
+semi-structured interview study with 8 ex-ICU patients, 4 ICU patient relatives, 
+and 6 ICU staff, exploring their AAC needs and requirements. Participants 
+identified important AAC hardware, software, and content requirements. Salient 
+factors impacting on AAC adoption in the ICU setting were also highlighted and 
+included the need for staff training and bedside patient assessment. Based on 
+the study results, we propose a series of recommendations regarding the design 
+and implementation of future AAC tools specifically targeted at this group.
+
+DOI: 10.1080/07434618.2016.1235610
+PMID: 27868434 [Indexed for MEDLINE]
+
+
+27. Augment Altern Commun. 2021 Dec;37(4):261-273. doi: 
+10.1080/07434618.2021.2016958. Epub 2022 Jan 13.
+
+Development of a Manually Operated Communication System (MOCS) for patients in 
+intensive care units.
+
+Goldberg MA(1), Hochberg LR(2)(3)(4), Carpenter D(5)(6), Walz JM(7).
+
+Author information:
+(1)MD/PhD Program, University of Massachusetts Chan Medical School, Worcester, 
+MA, USA.
+(2)Carney Institute for Brain Science and School of Engineering, Brown 
+University, Providence, RI, USA.
+(3)Center for Neurotechnology and Neurorecovery, Department of Neurology, 
+Massachusetts General Hospital, Harvard Medical School, Cambridge, MA, USA.
+(4)Rehabilitation R&D Service, US Department of Veterans Affairs, VA RR&D Center 
+for Neurorestoration and Neurotechnology, Providence, RI, USA.
+(5)Graduate School of Nursing, University of Massachusetts Chan Medical School, 
+Worcester, MA, USA.
+(6)Surgical/Trauma Critical Care, Guthrie Robert Packer Hospital, Sayre, PA, 
+USA.
+(7)Department of Anesthesiology & Perioperative Medicine, University of 
+Massachusetts Chan Medical School, Worcester, MA, USA.
+
+Nonvocal alert patients in the intensive care unit (ICU) setting often struggle 
+to communicate due to inaccessible or unavailable tools for augmentative and 
+alternative communication. Innovation of a hand-operated non-touchscreen 
+communication system for nonvocal ICU patients was guided by design concepts 
+including speech output, simplicity, and flexibility. A novel communication 
+tool, the Manually Operated Communication System (MOCS), was developed for use 
+in intensive care settings with patients unable to speak. MOCS is a 
+speech-output technology designed for patients with manual dexterity impairments 
+preventing legible writing. MOCS may have the potential to improve communication 
+for nonvocal patients with limited manual dexterity.
+
+DOI: 10.1080/07434618.2021.2016958
+PMID: 35023431 [Indexed for MEDLINE]
+
+
+28. Augment Altern Commun. 2021 Dec;37(4):241-250. doi: 
+10.1080/07434618.2021.2021554. Epub 2022 Jan 8.
+
+The BCH message banking process™, voice banking, and double-dipping™.
+
+Costello J(1), Smith M(2).
+
+Author information:
+(1)Augmentative Communication Program and Jay S. Fishman ALS Augmentative 
+Communication Program, Boston Children's Hospital, Adjunct Faculty Boston 
+University, Boston, MA, USA.
+(2)Department of Clinical Speech and Language Studies, Trinity College Dublin, 
+Dublin, Ireland.
+
+Significant advances have been made in interventions to maintain communication 
+and personhood for individuals with neurodegenerative conditions. One innovation 
+is Message Banking, a clinical approach first developed at Boston Children's 
+Hospital (BCH). This paper outlines the Message Banking process as implemented 
+at BCH, which includes the option of "Double Dipping," where banked messages are 
+mined to develop personalized synthesized voices. More than a decade of 
+experience has led to the evolution of six core principles underpinning the BCH 
+process, resulting in a structured introduction of the associated concepts and 
+practices with people with amyotrophic lateral sclerosis (ALS) and their 
+families. These principles highlight the importance of assigning ownership and 
+control of the process to individuals with ALS and their families, ensuring that 
+as a tool it is empowering and offers hope. Changes have been driven by feedback 
+from individuals who have participated in the BCH process over many years. The 
+success of the process has recently been extended through partnerships that 
+allow the recorded messages to be used to develop individual personalized 
+synthetic voices to complement banked messages. While the process of banking 
+messages is technically relatively simple, the full value of the process should 
+be underpinned by the values and principles outlined in this tutorial.
+
+DOI: 10.1080/07434618.2021.2021554
+PMID: 35000518 [Indexed for MEDLINE]
+
+
+29. Augment Altern Commun. 2014 Sep;30(3):226-36. doi:
+10.3109/07434618.2014.924026.  Epub 2014 Jul 15.
+
+Towards personalized speech synthesis for augmentative and alternative 
+communication.
+
+Mills T(1), Bunnell HT, Patel R.
+
+Author information:
+(1)Department of Speech Language Pathology and Audiology, Northeastern 
+University , Boston, MA , USA.
+
+Text-to-speech options on augmentative and alternative communication (AAC) 
+devices are limited. Often, several individuals in a group setting use the same 
+synthetic voice. This lack of customization may limit technology adoption and 
+social integration. This paper describes our efforts to generate personalized 
+synthesis for users with profoundly limited speech motor control. Existing voice 
+banking and voice conversion techniques rely on recordings of clearly 
+articulated speech from the target talker, which cannot be obtained from this 
+population. Our VocaliD approach extracts prosodic properties from the target 
+talker's source function and applies these features to a surrogate talker's 
+database, generating a synthetic voice with the vocal identity of the target 
+talker and the clarity of the surrogate talker. Promising intelligibility 
+results suggest areas of further development for improved personalization.
+
+DOI: 10.3109/07434618.2014.924026
+PMID: 25025818 [Indexed for MEDLINE]
+
+
+30. Int J Lang Commun Disord. 2021 Jan;56(1):116-129. doi:
+10.1111/1460-6984.12588.  Epub 2020 Dec 22.
+
+Voice banking for people living with motor neurone disease: Views and 
+expectations.
+
+Cave R(1), Bloch S(1).
+
+Author information:
+(1)Language and Cognition, University College London, London, UK.
+
+BACKGROUND: More than 80% of people living with MND (plwMND) develop 
+difficulties with their speech, affecting communication, self-identity and 
+quality of life. Most plwMND eventually use an augmentative and alternative 
+communication device (AAC) to communicate. Some AAC devices provide a 
+synthesized voice for speech, however these voices are often viewed as 
+impersonal and a factor in AAC acceptance. Voice banking creates an 
+approximation of the person's own voice that can be used in AAC and is argued to 
+go some way to preserve a person's identity when natural voice is lost, but 
+there has been little supporting research.
+AIMS: To understand what plwMND consider when deciding whether or not to bank 
+their voice, what their expectations are, and the expectations of significant 
+communication partners.
+METHODS: Semi-structured interviews were undertaken with plwMND who had either 
+decided to bank their voice or had decided not to. Thematic analysis was used to 
+provide a qualitative analysis of the data.
+PROCEDURES: Participants were an opportunistic sample of plwMND within England 
+recruited via an open advert distributed by the MND Association (MNDA).
+OUTCOMES AND RESULTS: Twelve plwMND were interviewed with nine significant 
+others. Nine participants had decided to bank their voice and three decided not 
+to. The data suggest 'preserving identity' is the overarching motivation in 
+decision making for voice banking. Participants who decided to voice bank 
+considered it would help to maintain their identity and preserve their social 
+and work networks. Participants deciding not to bank their voice highlighted it 
+could not replace their natural voice or preserve their identity. However, few 
+in either group showed an awareness of how a voice bank is used in AAC, and how 
+communication using AAC is significantly different to natural speech.
+CONCLUSIONS AND IMPLICATIONS: This research is the first study of its kind to 
+examine the considerations for decision making around voice banking for plwMND. 
+Preserving identity is central to decision making when considering whether or 
+not to voice bank. However, the reality of using AAC and voice banking for 
+communication is poorly understood. Professionals have a role to provide plwMND 
+with more information about voice banking in the wider context of using AAC for 
+communication. It may be that the process of voice banking itself is seen as a 
+positive act for plwMND, independent of how it is used later. Further research 
+with associated professionals and stakeholders is indicated. What this paper 
+adds What is already known on this subject Voice banking creates an 
+approximation of the person.s own voice that can be used in AAC, and is argued 
+to go some way to preserve a person's identity when natural voice is lost. There 
+is significant and growing interest in voice banking from the MND community, but 
+there has been little supporting research. What this study adds This research is 
+the first study of its kind to examine decision making surrounding voice 
+banking. It shows how preserving identity is critically important in how people 
+deal with a diagnosis of MND. For those choosing to voice bank, it is seen as an 
+effective way of preserving their identity, a way of 'fighting back' and giving 
+a positive psychological benefit. Those deciding against voice banking do not 
+believe it could maintain their identity and cannot bring back the natural voice 
+they once had. Clinical implications of this study The reality of using AAC and 
+voice banking for communication may be poorly understood. It would be helpful 
+for professionals to provide information about voice banking as part of a wider 
+discussion about the range of options for communication as the condition 
+progresses. It is important that this includes the opportunity to listen to a 
+voice bank to support understanding of how it is used in a communication device, 
+and how different it sounds to natural speech.
+
+© 2020 Royal College of Speech and Language Therapists.
+
+DOI: 10.1111/1460-6984.12588
+PMID: 33350040 [Indexed for MEDLINE]
+
+
+31. Augment Altern Commun. 2024 Mar;40(1):31-45. doi:
+10.1080/07434618.2023.2262032.  Epub 2023 Oct 4.
+
+A large-scale comparison of two voice synthesis techniques on intelligibility, 
+naturalness, preferences, and attitudes toward voices banked by individuals with 
+amyotrophic lateral sclerosis.
+
+Hyppa-Martin J(1), Lilley J(2), Chen M(3), Friese J(1), Schmidt C(1), Bunnell 
+HT(2).
+
+Author information:
+(1)Department of Communication Sciences and Disorders, University of Minnesota 
+Duluth, Duluth, MN, USA.
+(2)Nemours Children's Health, Wilmington, DE, USA.
+(3)National Institute of Education, Nanyang Technological University, Singapore, 
+Singapore.
+
+Amyotrophic lateral sclerosis (ALS) commonly results in the inability to produce 
+natural speech, making speech-generating devices (SGDs) important. Historically, 
+synthetic voices generated by SGDs were neither unique, nor age- or 
+dialect-appropriate, which depersonalized SGD use. Voices generated by SGDs can 
+now be customized via voice banking and should ideally sound uniquely like the 
+individual's natural speech, be intelligible, and elicit positive reactions from 
+communication partners. This large-scale 2 x 2 mixed between- and 
+within-participants design examined perceptions of 831 adult listeners regarding 
+custom synthetic voices created for two individuals diagnosed with ALS via two 
+synthesis systems in common clinical use (waveform concatenation and statistical 
+parametric synthesis). The study explored relationships among synthesis system, 
+dysarthria severity, synthetic speech intelligibility, naturalness, and 
+preferences, and also provided a preliminary examination of attitudes regarding 
+the custom synthetic voices. Synthetic voices generated via statistical 
+parametric synthesis trained on deep neural networks were more intelligible, 
+natural, and preferred than voices produced via waveform concatenation, and were 
+associated with more positive attitudes. The custom synthetic voice created from 
+moderately dysarthric speech was more intelligible than the voice created from 
+mildly dysarthric speech. Clinical implications and factors that may have 
+contributed to the relative intelligibilities are discussed.
+
+DOI: 10.1080/07434618.2023.2262032
+PMID: 37791834 [Indexed for MEDLINE]
+
+
+32. Sci Rep. 2025 Jan 8;15(1):1361. doi: 10.1038/s41598-024-84728-y.
+
+Artificial intelligence empowered voice generation for amyotrophic lateral 
+sclerosis patients.
+
+Regondi S(1)(2), Donvito G(3), Frontoni E(3)(4), Kostovic M(3), Minazzi F(5), 
+Bratières S(5), Filosto M(6)(7), Pugliese R(8).
+
+Author information:
+(1)NeMO Lab, ASST GOM Niguarda Cà Granda Hospital, Milan, Italy. 
+stefano.regondi@nemolab.it.
+(2)NEuroMuscular Omnicenter (NEMO), Fondazione Serena Onlus, Milan, Italy. 
+stefano.regondi@nemolab.it.
+(3)NeMO Lab, ASST GOM Niguarda Cà Granda Hospital, Milan, Italy.
+(4)VRAI Lab, SPOCRI Department, University of Macerata, Macerata, Italy.
+(5)Translated, Rome, Italy.
+(6)NEuroMuscular Omnicenter (NEMO), Fondazione Serena Onlus, Milan, Italy.
+(7)Department of Clinical and Experimental Science, University of Brescia, 
+Brescia, Italy.
+(8)NeMO Lab, ASST GOM Niguarda Cà Granda Hospital, Milan, Italy. 
+raffaele.pugliese@nemolab.it.
+
+Amyotrophic Lateral Sclerosis (ALS) is a neurodegenerative disease that can 
+result in a progressive loss of speech due to bulbar dysfunction, which can have 
+significant negative impact on the patient's mental well-being. Alternative 
+Augmentative Communication (AAC) strategies based on synthetic voices have been 
+shown to assist patients in maintaining communication and improving their 
+Quality of Life (QoL). However, such synthetic voices are often perceived as 
+impersonal and fail to capture the unique voice and identity of the patient. To 
+tackle this issue, combining voice banking (VB) and artificial intelligence (AI) 
+has emerged as a more natural communication strategy, enabling individuals to 
+preserve their voice for use with AAC devices as needed. This involves recording 
+speech samples to generate a synthetic voice closely resembling the individual's 
+own. Despite the increasing interest in VB, there's a lack of clear strategies 
+for its effective implementation in rapidly progressing diseases like ALS. 
+Additionally, the perceptual quality of VB on patients with preserved speech, 
+especially when offered early in the disease, remains poorly understood. In 
+light of these challenges, this study aims to assess the effectiveness and the 
+perceptual impact of AI-generated voices on ALS patients with preserved speech, 
+utilizing a personalized voice synthesis system based on machine learning. The 
+AI-generated patient-specific voice is achieved through voice recording, 
+followed by fine-tuning using a Generative Adversarial Network for Efficient and 
+High Fidelity Speech Synthesis (HiFi-GAN), resulting in a model capable of 
+producing speech highly similar to the patient's own voice, with exceptional 
+expressive and audio quality. By addressing these aspects, this study intends to 
+offer valuable insights into the potential benefits and challenges of combining 
+VB with AI voices to enhance communication support for ALS patients.
+
+© 2025. The Author(s).
+
+DOI: 10.1038/s41598-024-84728-y
+PMCID: PMC11711320
+PMID: 39779800 [Indexed for MEDLINE]
+
+Conflict of interest statement: Declarations. Competing interests: The authors 
+declare no competing interests. Ethics approval and consent to participate: The 
+study followed the principles outlined in the World Medical Association 
+Declaration of Helsinki received approval from Territorial Ethics Committee 
+Lombardia 6, I.R.C.C.S. Policlinico “San Matteo” of Pavia (project number 
+0003700/24). Informed consent was obtained from all participants following a 
+thorough explanation of the study’s objective and methodology.
+
+
+33. BMJ Open. 2026 Mar 4;16(3):e101227. doi: 10.1136/bmjopen-2025-101227.
+
+Speech-to-Speech Voice-Cloning Care (SVCC) for improving ICU-acquired anxiety 
+for critically ill patients in a tertiary hospital in Beijing, China: protocol 
+of a randomised, controlled trial.
+
+Li M(1), Yang Y(2), Hao J(1), Xue Y(2), Weng D(1)(3), Jiang H(4), Song W(1), 
+Yang Y(5), Long Y(6).
+
+Author information:
+(1)Beijing Engineering Research Center of Mixed Reality and Advanced Display, 
+School of Optics and Photonics, Beijing Institute of Technology, Beijing, China.
+(2)Department of Critical Care Medicine, State Key Laboratory of Complex Severe 
+and Rare Diseases, Peking Union Medical College Hospital, Peking Union Medical 
+College & Chinese Academy of Medical Sciences, Beijing, China.
+(3)Zhengzhou Academy of Intelligent Technology, Beijing Institute of Technology, 
+Zhengzhou, Henan, China.
+(4)ICT Cluster, Singapore Institute of Technology, Singapore.
+(5)Changsha Medical College, Changsha, Hunan, China.
+(6)Department of Critical Care Medicine, State Key Laboratory of Complex Severe 
+and Rare Diseases, Peking Union Medical College Hospital, Peking Union Medical 
+College & Chinese Academy of Medical Sciences, Beijing, China 
+iculong_yun@163.com.
+
+INTRODUCTION: Intensive care unit (ICU) visiting restrictions in hospitals, 
+implemented due to infection control and other factors, limited contact between 
+patients and family members, affecting patients' well-being and clinical 
+outcomes. With the evolution of voice-cloning based on artificial intelligence 
+(AI) technology, it has become possible for health providers to communicate with 
+critically ill patients using highly similar synthetic voices of their loved 
+ones during ICU care. This current randomised, controlled trial will explore the 
+effect of voice-cloning care on improving mental health outcomes for critically 
+ill patients, with ICU-acquired anxiety as the primary indicator.
+METHODS AND ANALYSIS: This study will enrol 234 adult ICU patients, who are 
+expected to require mechanical ventilation for over 24 hours and an ICU stay 
+exceeding 72 hours. Participants will be randomly assigned to two groups. The 
+control group will receive standardised communication as part of usual ICU care, 
+while the intervention group will receive Speech-to-Speech Voice-Cloning Care 
+(SVCC) in addition to standard ICU care. The SVCC interventions involve nurses 
+using a participant's family member's cloned voice to deliver pre-set 
+communication scripts during awakening, soothing and preparation for 
+endotracheal tube removal. The primary outcome is expected to lead to 
+improvements in ICU-acquired anxiety for the intervention group, measured by the 
+Hospital Anxiety and Depression Scale. Secondary outcomes include ICU-acquired 
+depression, the incidence of delirium, the mean duration of mechanical 
+ventilation and the average length of ICU stay.
+ETHICS AND DISSEMINATION: This protocol was approved by the Ethics Committee of 
+Peking Union Medical College Hospital (Approval Number: K-6842). The protocol 
+version number is 1.2 and the version date is 8 October 2024. Study findings 
+will be disseminated through peer-reviewed publications and presentations at 
+national and international conferences.
+TRIAL REGISTRATION NUMBER: ClinicalTrials.gov, ID: NCT06743321.
+
+© Author(s) (or their employer(s)) 2026. Re-use permitted under CC BY-NC. No 
+commercial re-use. See rights and permissions. Published by BMJ Group.
+
+DOI: 10.1136/bmjopen-2025-101227
+PMCID: PMC12970082
+PMID: 41781048
+
+Conflict of interest statement: Competing interests: None declared.
+
+
+34. J Med Internet Res. 2026 Mar 19;28:e81387. doi: 10.2196/81387.
+
+Effectiveness of Al-Assisted Patient Health Education Using Voice Cloning and 
+ChatGPT: Prospective Randomized Controlled Trial.
+
+Sun Y(1)(2), Xu S(1), Jin H(1), Han X(1), Jin K(1), Zhang Y(1), Ma X(1), Wei 
+H(3), Ma M(4).
+
+Author information:
+(1)Department of Thoracic Surgery, The First Hospital of Lanzhou University, 
+Donggang West Road 1#, Lanzhou, 730000, China.
+(2)School of Nursing, Lanzhou University, Lanzhou, China.
+(3)Outpatient Department, The First Hospital of Lanzhou University, Lanzhou, 
+China.
+(4)Gansu International Science and Technology Cooperation Base for Development 
+and Application of Thoracic Surgery Key Technologies, The First Clinical Medical 
+College of Lanzhou University, Department of Thoracic Surgery, The First 
+Hospital of Lanzhou University, Donggang West Road 1#, Lanzhou, 730000, China, 
+86 13639325950.
+
+BACKGROUND: Traditional patient education often lacks personalization and 
+engagement, potentially limiting knowledge acquisition and treatment adherence. 
+Advances in artificial intelligence (AI), including voice cloning technology and 
+large language models (eg, ChatGPT), offer new opportunities to deliver 
+personalized, scalable, interactive health education. However, evidence 
+regarding the comparative effectiveness of different AI-based voice cloning 
+strategies and reliability of automated AI evaluation tools remains limited.
+OBJECTIVE: This study aims to evaluate the effectiveness of AI-assisted patient 
+education integrating voice cloning and ChatGPT, compare physician voice cloning 
+with patient self-voice cloning, and assess the reliability of ChatGPT as an 
+automated evaluation tool for education outcomes.
+METHODS: In this prospective, 3-arm, parallel-group randomized controlled trial, 
+180 hospitalized patients requiring standardized health education were recruited 
+from a tertiary hospital. Inclusion criteria were age ≥18 years, clear diagnosis 
+requiring health education, clear consciousness, and voluntary participation 
+with informed consent. Exclusion criteria were severe hearing impairment, severe 
+cognitive impairment, expected hospitalization <3 days, or prior participation 
+in similar studies. Using a computer-generated random sequence, participants 
+were randomly assigned (1:1:1) to receive traditional education (control), 
+AI-assisted education using physician voice cloning, or AI-assisted education 
+using patient self-voice cloning, each with identical educational content of 
+equal duration. The primary outcome was education content compliance, evaluated 
+using ChatGPT-4 with validated prompts and verified by expert review. Secondary 
+outcomes included knowledge retention, education satisfaction, treatment 
+adherence, quality of life, and psychological status. Outcome assessors and data 
+analysts, but not participants, were blinded to group allocation.
+RESULTS: Of 180 randomized participants, 174 (96.7%) completed the trial. Both 
+AI-assisted groups had significantly higher mean education content compliance 
+scores immediately posteducation than the control group (physician voice: 86.7, 
+SD 7.3; self-voice: 92.5, SD 6.8; control: 73.2, SD 8.5; P<.001). The patient 
+self-voice group showed superior predischarge knowledge retention, higher 
+education satisfaction, and greater treatment adherence than the other groups 
+(all P≤.02). At the 1-month follow-up, the self-voice group maintained improved 
+adherence (Cohen d=0.74) and had significantly lower anxiety and depression 
+scores (all P≤.02) and improved SF-36 quality-of-life domains. ChatGPT-based 
+evaluations demonstrated high reliability (weighted κ=0.87, 95% CI 0.82-0.91).
+CONCLUSIONS: The innovative patient education model integrating AI voice cloning 
+and ChatGPT is distinct from previous studies primarily relying on standard 
+text-to-speech or professionally recorded content. Using patients' own cloned 
+voices for health education delivery leveraged the self-reference effect to 
+enhance learning outcomes. Compared with research using clinician-narrated 
+content, this study highlights that self-voice education produces superior 
+outcomes across multiple domains including compliance, satisfaction, and 
+psychological well-being. These findings establish a theoretical and practical 
+framework for personalized AI-driven patient education. In real-world clinical 
+settings, this approach offers a scalable, cost-effective solution to enhance 
+patient engagement, particularly valuable in resource-limited environments where 
+individualized education is challenging to deliver.
+
+© Yan Sun, Shangqing Xu, Hongying Jin, Xiaoyan Han, Kangqi Jin, Yimei Zhang, 
+Xiaoli Ma, Huaping Wei, Minjie Ma. Originally published in the Journal of 
+Medical Internet Research (https://www.jmir.org).
+
+DOI: 10.2196/81387
+PMCID: PMC13002165
+PMID: 41855493 [Indexed for MEDLINE]
+
+Conflict of interest statement: Conflicts of Interest: None declared.
+
+
+35. J Voice. 2025 Nov 10:S0892-1997(25)00438-2. doi:
+10.1016/j.jvoice.2025.10.018.  Online ahead of print.
+
+Exploring Voice Banking as an Alternative Augmentative Communication Strategy 
+for Individuals with Dysphonia, Aphonia, and Dysarthria: A Scoping Review.
+
+Pu S(1), Sawyer A(2), Levinson C(3), Putrino D(2), Kirke DN(4).
+
+Author information:
+(1)Department of Otolaryngology - Head and Neck Surgery, Icahn School of 
+Medicine at Mount Sinai, New York, New York. Electronic address: 
+serena.pu@mountsinai.org.
+(2)Department of Rehabilitation and Human Performance, Icahn School of Medicine 
+at Mount Sinai, New York, New York.
+(3)Levy Library, Icahn School of Medicine at Mount Sinai.
+(4)Department of Otolaryngology - Head and Neck Surgery, Icahn School of 
+Medicine at Mount Sinai, New York, New York.
+
+OBJECTIVES: This scoping review sought to: (i) review studies involving people 
+diagnosed with dysphonia, aphonia, and dysarthria who have used voice banking 
+technology in a hospital or community setting, and (ii) understand the scope of 
+research surrounding existing voice banking technology and software in the 
+clinical setting.
+METHODS: This scoping review was conducted according to the preferred reporting 
+items for systematic reviews and meta-analyses extension for scoping reviews. An 
+electronic search of databases, including Ovid MEDLINE(R), Embase (Ovid), APA 
+PsycINFO (Ovid), and CINAHL was conducted. Title, abstract, and full text 
+screening were completed using Covidence (Veritas Health Innovation, Melbourne, 
+Australia) by two reviewers.
+RESULTS: After deduplication, 1336 studies underwent title and abstract 
+screening. Of these, the full texts of 65 studies were reviewed, and 23 were 
+included. Three distinct topics were identified in the search: (i) message 
+banking, in which discrete messages or phrases are recorded for later use, 
+without the ability to create novel phrases outside of those previously 
+recorded; (ii) voice banking, in which all the necessary phonemes in the target 
+language are captured, with the goal of generating a personalized synthetic 
+voice that can generate novel phrases; (iii) and voice conversion or voice 
+reconstruction, in which pathologic voices or speech are "converted" into a 
+personalized synthetic voices.
+DISCUSSION AND CONCLUSION: This scoping review summarized the evidence for voice 
+banking technology use in people diagnosed with dysphonia and dysarthria and 
+sought to understand the research landscape of existing types of voice banking 
+technology and software use in a clinical setting. The included papers were 
+highly heterogeneous in terms of the population and type (research vs clinical 
+program vs review/other). There is a pressing need for the publication of 
+clinical programs and models facilitating the adoption of voice banking, 
+especially within populations affected by conditions such as amyotrophic lateral 
+sclerosis and laryngectomy, to address existing gaps and foster broader 
+implementation and accessibility.
+
+Copyright © 2025 The Voice Foundation. Published by Elsevier Inc. All rights 
+reserved.
+
+DOI: 10.1016/j.jvoice.2025.10.018
+PMID: 41219095
+
+Conflict of interest statement: Declaration of Competing Interest The authors 
+declare that they have no known competing financial interests or personal 
+relationships that could have appeared to influence the work reported in this 
+paper.
+
+
+36. Augment Altern Commun. 2023 Dec;39(4):208-218. doi: 
+10.1080/07434618.2023.2181213. Epub 2023 Mar 27.
+
+Voice banking to support individuals who use speech-generating devices: 
+development and evaluation of Singaporean-accented English synthetic voices and 
+a Singapore Colloquial English recording inventory.
+
+Chen M(1), Hyppa-Martin J(2), Bunnell HT(3), Lilley J(3), Foo C(4), Tan HW(4), 
+Lim WS(4).
+
+Author information:
+(1)National Institute of Education, Nanyang Technological University, Singapore.
+(2)Department of Communication Sciences and Disorders, University of Minnesota 
+Duluth, Duluth, MN, USA.
+(3)Nemours Biomedical Research, Wilmington, DE, USA.
+(4)College of Humanities, Arts, and Social Sciences, Nanyang Technological 
+University, Singapore.
+
+Voice banking involves recording an inventory of sentences produced via natural 
+speech. The recordings are used to create a synthetic text-to-speech voice that 
+can be installed on speech-generating devices. This study highlights a minimally 
+researched, clinically relevant issue surrounding the development and evaluation 
+of Singaporean-accented English synthetic voices that were created using readily 
+available voice banking software and hardware. Processes used to create seven 
+unique synthetic voices that produce Singaporean-accented English, and the 
+development of a custom Singaporean Colloquial English (SCE) recording 
+inventory, are reviewed. The perspectives of adults who spoke SCE and banked 
+their voices for this project are summarized and were generally positive. 
+Finally, 100 adults familiar with SCE participated in an experiment that 
+evaluated the intelligibility and naturalness of the Singaporean-accented 
+synthetic voices, as well as the effect of the SCE custom inventory on listener 
+preferences. The addition of the custom SCE inventory did not affect 
+intelligibility or naturalness of the synthetic speech, and listeners tended to 
+prefer the voice created with the SCE inventory when the stimulus was an SCE 
+passage. The procedures used in this project may be helpful for interventionists 
+who wish to create synthetic voices with accents that are not commercially 
+available.
+
+DOI: 10.1080/07434618.2023.2181213
+PMID: 36971387 [Indexed for MEDLINE]
+
+
+37. Syst Rev. 2019 Dec 6;8(1):311. doi: 10.1186/s13643-019-1232-0.
+
+Barriers to and facilitators for use of augmentative and alternative 
+communication and voice restorative devices in the adult intensive care unit: a 
+scoping review protocol.
+
+Istanboulian L(1), Rose L(2), Yunusova Y(3), Gorospe F(4), Dale C(4).
+
+Author information:
+(1)Lawrence S. Bloomberg Faculty of Nursing, University of Toronto, 155 College 
+Street, Suite 130, Toronto, ON, M5T 1P8, Canada. Laura.Istanboulian@utoronto.ca.
+(2)Florence Nightingale Faculty of Nursing, Midwifery and Palliative Care, 
+King's College, 57 Waterloo Rd, Lambeth, London, SE1 8WA, UK.
+(3)Department of Speech and Language Pathology, University of Toronto, 160-500 
+University Ave., Toronto, ON, M5G 1 V7, Canada.
+(4)Lawrence S. Bloomberg Faculty of Nursing, University of Toronto, 155 College 
+Street, Suite 130, Toronto, ON, M5T 1P8, Canada.
+
+BACKGROUND: Mechanically ventilated patients in the intensive care unit (ICU) 
+experience profound communication impairment, placing them at risk for poor 
+physical and psychological outcomes. Patient communication strategies such as 
+augmentative and alternative communication (AAC) and voice restorative devices 
+are recommended to facilitate communication. These strategies, however, are 
+inconsistently adopted in ICU practice signaling utilization barriers. Our 
+objective is to map and synthesize the current evidence-base for 
+stakeholder-reported barriers and facilitators to patient communication strategy 
+utilization for adults with an advanced airway in the ICU.
+METHODS AND ANALYSIS: We will use Arskey and O'Malley's recommended methods to 
+conduct a scoping review using a rapid review framework to streamline the 
+process. A single reviewer will conduct a search and an initial screen of titles 
+and abstracts from five electronic databases (MEDLINE, EMBASE, the Cochrane 
+Library, Cumulative Index to Nursing and Allied Health Literature [CINAHL], and 
+PsychInfo) from 1990 to present to identify English language peer-reviewed 
+studies. Subsequently, two reviewers will independently screen a shorter list of 
+studies for inclusion. We will also search the reference lists of eligible 
+studies. Two reviewers will independently extract study characteristics, 
+communication strategy, and stakeholder reported barriers and facilitators. We 
+will code and categorize the extracted barriers and facilitators according to 
+the Theoretical Domains Framework (TDF), an integrative framework of behavior 
+change.
+DISCUSSION: To our knowledge, this will be the first scoping review to map and 
+synthesize reported barriers and facilitators to communication strategy 
+utilization in the adult ICU using a theoretical framework. The results of this 
+scoping review will help to identify trends and gaps in the current 
+evidence-base and support recommendations for improving patient-centered 
+practice, policy, and research related to successfully establishing ICU patient 
+communication.
+
+DOI: 10.1186/s13643-019-1232-0
+PMCID: PMC6896663
+PMID: 31810494 [Indexed for MEDLINE]
+
+Conflict of interest statement: The authors declare that they have no competing 
+interests.
+
+
+38. AACN Clin Issues. 2001 May;12(2):247-58. doi:
+10.1097/00044067-200105000-00008.
+
+Communicating with mechanically ventilated patients: state of the science.
+
+Happ MB(1).
+
+Author information:
+(1)Department of Acute and Tertiary Care, School of Nursing, University of 
+Pittsburgh, Pittsburgh, Pennsylvania, USA. mhapp@pitt.edu
+
+The literature clearly establishes the problems and difficulties of loss of 
+speech among mechanically ventilated patients in the intensive care unit. 
+Critical care nurses typically receive little or no training in the 
+interpretation of nonvocal communication or in the assessment and application of 
+augmentative communication methods. This article presents an integrative review 
+of the research and related literature on communication with adult patients in 
+critical care settings. Clinical issues and technological advancements in 
+assistive and augmentative communication applicable to critical care are 
+discussed and a new research agenda is proposed.
+
+DOI: 10.1097/00044067-200105000-00008
+PMID: 11759552 [Indexed for MEDLINE]
+
+
+39. Heart Lung. 2017 Jul-Aug;46(4):239-245. doi: 10.1016/j.hrtlng.2017.04.002.
+Epub  2017 May 6.
+
+Symptom assessment in non-vocal or cognitively impaired ICU patients: 
+Implications for practice and future research.
+
+Choi J(1), Campbell ML(2), Gélinas C(3), Happ MB(4), Tate J(4), Chlan L(5).
+
+Author information:
+(1)University of Pittsburgh School of Nursing, Pittsburgh, PA, USA. Electronic 
+address: jic11@pitt.edu.
+(2)Wayne State University College of Nursing, Detroit, MI, USA.
+(3)McGill University Ingram School of Nursing, Montreal, Quebec, Canada.
+(4)The Ohio State University College of Nursing, Columbus, OH, USA.
+(5)Mayo Clinic, Rochester, MN, USA.
+
+BACKGROUND: Symptom assessment in critically ill patients is challenging because 
+many cannot provide a self-report.
+OBJECTIVES: To describe the state of the science on symptom communication and 
+the assessment of selected physical symptoms in non-vocal ICU patients.
+METHODS: This paper summarizes a 2014 American Thoracic Society Annual 
+International Conference symposium presenting current evidence on symptom 
+communication, delirium, and the assessment of common physical symptoms (i.e., 
+dyspnea, pain, weakness, and fatigue) experienced by non-vocal ICU patients.
+RESULTS: Symptom assessment begins with accurate assessment, which includes an 
+evaluation of delirium, and assistance in symptom communication. Simple 
+self-report measures (e.g., 0-10 numeric rating scale), observational measures 
+(e.g., Respiratory Distress Observation Scale and Critical-Care Pain Observation 
+Tool), or objective measures (e.g., manual muscle testing and hand dynamometry) 
+have demonstrated utility among this population.
+CONCLUSION: Optimizing symptom assessment with valid and reliable instruments 
+with minimum patient burden is necessary to advance clinical practice and 
+research in this field.
+
+Copyright © 2017. Published by Elsevier Inc.
+
+DOI: 10.1016/j.hrtlng.2017.04.002
+PMID: 28487184 [Indexed for MEDLINE]

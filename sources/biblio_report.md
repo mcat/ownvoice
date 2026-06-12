@@ -24,7 +24,7 @@ Each downloaded PDF is hosted locally; the PMID/PMCID/DOI links go to NCBI / DOI
 
 - [broyles-2012-use-of-augmentative-and-alternative-communication.pdf](../docs/research/aac/broyles-2012-use-of-augmentative-and-alternative-communication.pdf) — **Broyles 2012**. Use of augmentative and alternative communication strategies by family members in the intensive care unit  
   [PMID 22381993](https://pubmed.ncbi.nlm.nih.gov/22381993/) · [PMC3607206](https://pmc.ncbi.nlm.nih.gov/articles/PMC3607206/)
-- [shin-2021-vidatalk-patient-communication-application-opene.pdf](../docs/research/aac/shin-2021-vidatalk-patient-communication-application-opene.pdf) — **Shin 2021**. VidaTalk™ patient communication application “opened up” communication between nonvocal ICU patients and their family  
+- [shin-2021-vidatalk-patient-communication-application-opene.pdf](../docs/research/vidatak/shin-2021-vidatalk-patient-communication-application-opene.pdf) — **Shin 2021**. VidaTalk™ patient communication application “opened up” communication between nonvocal ICU patients and their family  
   [PMID 34127362](https://pubmed.ncbi.nlm.nih.gov/34127362/) · [PMC10833611](https://pmc.ncbi.nlm.nih.gov/articles/PMC10833611/) · [doi:10.1016/j.iccn.2021.103075](https://doi.org/10.1016/j.iccn.2021.103075)
 
 ### `docs/research/icu-communication/` (9)

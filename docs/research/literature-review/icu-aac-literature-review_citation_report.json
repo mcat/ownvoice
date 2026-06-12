@@ -1,0 +1,598 @@
+{
+  "total_dois": 59,
+  "verified": [
+    "10.1016/j.aucc.2024.04.006",
+    "10.1016/j.jcrc.2023.154351",
+    "10.1007/s00134-018-5093-0",
+    "10.23736/S0375-9393.22.16275-9",
+    "10.4037/ajcc2012752",
+    "10.23736/S0375-9393.25.18851-2",
+    "10.1016/j.iccn.2017.03.003",
+    "10.1111/1460-6984.12588",
+    "10.1080/07434618.2023.2181213",
+    "10.1016/j.hrtlng.2017.04.002",
+    "10.4037/ajcc2011243",
+    "10.1097/CCM.0b013e3182451c58",
+    "10.1016/j.ccc.2020.09.002",
+    "10.1016/j.jpainsymman.2013.09.018",
+    "10.1080/07434618.2021.2021554",
+    "10.1164/rccm.201505-0900OC",
+    "10.5005/jp-journals-10071-24019",
+    "10.4103/ijnmr.ijnmr_82_21",
+    "10.1097/CCM.0000000000001610",
+    "10.1016/j.surg.2015.08.012",
+    "10.1080/07434618.2021.2016958",
+    "10.1097/00044067-200105000-00008",
+    "10.1016/j.gerinurse.2010.03.004",
+    "10.1016/j.hrtlng.2013.11.010",
+    "10.1016/j.hrtlng.2003.12.005",
+    "10.1016/j.hrtlng.2006.07.002",
+    "10.4103/ijnmr.IJNMR_68_17",
+    "10.1080/07434618.2023.2262032",
+    "10.1186/s13643-019-1232-0",
+    "10.1111/nicc.70303",
+    "10.1016/j.iccn.2020.102948",
+    "10.1002/rnj.186",
+    "10.1097/CIN.0000000000000597",
+    "10.1136/bmjopen-2025-101227",
+    "10.3109/07434618.2014.924026",
+    "10.1080/07434618.2016.1235610",
+    "10.3928/00989134-20180808-07",
+    "10.1016/j.hrtlng.2004.02.002",
+    "10.1016/j.apnr.2005.09.006",
+    "10.34197/ats-scholar.2019-0006OC",
+    "10.1016/j.jvoice.2025.10.018",
+    "10.1038/s41598-024-84728-y",
+    "10.3233/THC-2012-0695",
+    "10.4037/ajcc2016217",
+    "10.1016/j.iccn.2020.102896",
+    "10.1002/14651858.CD013379.pub2",
+    "10.1016/j.iccn.2021.103075",
+    "10.1016/j.cnc.2020.02.013",
+    "10.1016/j.hrtlng.2024.11.001",
+    "10.4103/ijabmr.ijabmr_351_24",
+    "10.2218/resmedica.v23i1.1216",
+    "10.2196/81387",
+    "10.1016/j.iccn.2023.103562",
+    "10.1186/s13054-016-1483-2",
+    "10.1097/JHQ.0000000000000163",
+    "10.1111/aor.14082",
+    "10.1164/rccm.200604-493OC",
+    "10.1044/2019_AJSLP-19-0001",
+    "10.1177/1751143720963757"
+  ],
+  "failed": [],
+  "metadata": {
+    "10.1016/j.aucc.2024.04.006": {
+      "title": "Effectiveness, experience, and usability of low-technology augmentative and alternative communication in intensive care: A mixed-methods systematic review",
+      "authors": "Alodan, H., Sutt, A., Hill, R., et al.",
+      "year": "2025",
+      "journal": "Australian Critical Care",
+      "volume": "38",
+      "pages": "101061",
+      "doi": "10.1016/j.aucc.2024.04.006"
+    },
+    "10.1016/j.jcrc.2023.154351": {
+      "title": "The EyeControl-Med device, an alternative tool for communication in ventilated critically ill patients: A pilot study examining communication capabilities and delirium",
+      "authors": "Itai Bendavid, I., Assi, S., Sasson, N., et al.",
+      "year": "2023",
+      "journal": "Journal of Critical Care",
+      "volume": "78",
+      "pages": "154351",
+      "doi": "10.1016/j.jcrc.2023.154351"
+    },
+    "10.1007/s00134-018-5093-0": {
+      "title": "Eye-tracking and speech-generating technology to improve communication with intubated intensive care unit patients: initial experience",
+      "authors": "Bodet-Contentin, L., Gadrez, P., Ehrmann, S.",
+      "year": "2018",
+      "journal": "Intensive Care Medicine",
+      "volume": "44",
+      "pages": "676-677",
+      "doi": "10.1007/s00134-018-5093-0"
+    },
+    "10.23736/S0375-9393.22.16275-9": {
+      "title": "Eye tracking communication with intubated critically ill patients: a proof-of-concept multicenter pilot study",
+      "authors": "BODET-CONTENTIN, L., SZYMKOWICZ, E., DELPIERRE, E., et al.",
+      "year": "2022",
+      "journal": "Minerva Anestesiologica",
+      "volume": "88",
+      "pages": "",
+      "doi": "10.23736/S0375-9393.22.16275-9"
+    },
+    "10.4037/ajcc2012752": {
+      "title": "Use of Augmentative and Alternative Communication Strategies by Family Members in the Intensive Care Unit",
+      "authors": "Broyles, L., Tate, J., Happ, M.",
+      "year": "2012",
+      "journal": "American Journal of Critical Care",
+      "volume": "21",
+      "pages": "e21-e32",
+      "doi": "10.4037/ajcc2012752"
+    },
+    "10.23736/S0375-9393.25.18851-2": {
+      "title": "\"Giving voice\" to the voiceless: a systematic review of communication aids for ventilated patients in intensive care units",
+      "authors": "CABRINI, L., SPINAZZA, G., BAZZOTTI, C., et al.",
+      "year": "2025",
+      "journal": "Minerva Anestesiologica",
+      "volume": "91",
+      "pages": "",
+      "doi": "10.23736/S0375-9393.25.18851-2"
+    },
+    "10.1016/j.iccn.2017.03.003": {
+      "title": "Which alternative communication methods are effective for voiceless patients in Intensive Care Units? A systematic review",
+      "authors": "Carruthers, H., Astin, F., Munro, W.",
+      "year": "2017",
+      "journal": "Intensive and Critical Care Nursing",
+      "volume": "42",
+      "pages": "88-96",
+      "doi": "10.1016/j.iccn.2017.03.003"
+    },
+    "10.1111/1460-6984.12588": {
+      "title": "Voice banking for people living with motor neurone disease: Views and expectations",
+      "authors": "Cave, R., Bloch, S.",
+      "year": "2021",
+      "journal": "International Journal of Language &amp; Communication Disorders",
+      "volume": "56",
+      "pages": "116-129",
+      "doi": "10.1111/1460-6984.12588"
+    },
+    "10.1080/07434618.2023.2181213": {
+      "title": "Voice banking to support individuals who use speech-generating devices: development and evaluation of Singaporean-accented English synthetic voices and a Singapore Colloquial English recording inventory",
+      "authors": "Chen, M., Hyppa-Martin, J., Bunnell, H., et al.",
+      "year": "2023",
+      "journal": "Augmentative and Alternative Communication",
+      "volume": "39",
+      "pages": "208-218",
+      "doi": "10.1080/07434618.2023.2181213"
+    },
+    "10.1016/j.hrtlng.2017.04.002": {
+      "title": "Symptom assessment in non-vocal or cognitively impaired ICU patients: Implications for practice and future research",
+      "authors": "Choi, J., Campbell, M., G\u00e9linas, C., et al.",
+      "year": "2017",
+      "journal": "Heart &amp; Lung",
+      "volume": "46",
+      "pages": "239-245",
+      "doi": "10.1016/j.hrtlng.2017.04.002"
+    },
+    "10.4037/ajcc2011243": {
+      "title": "Caregivers of the Chronically Critically Ill After Discharge From the Intensive Care Unit: Six Months' Experience",
+      "authors": "Choi, J., Donahoe, M., Zullo, T., et al.",
+      "year": "2011",
+      "journal": "American Journal of Critical Care",
+      "volume": "20",
+      "pages": "12-23",
+      "doi": "10.4037/ajcc2011243"
+    },
+    "10.1097/CCM.0b013e3182451c58": {
+      "title": "Patterns of depressive symptoms in caregivers of mechanically ventilated critically ill adults from intensive care unit admission to 2 months postintensive care unit discharge",
+      "authors": "Choi, J., Sherwood, P., Schulz, R., et al.",
+      "year": "2012",
+      "journal": "Critical Care Medicine",
+      "volume": "40",
+      "pages": "1546-1553",
+      "doi": "10.1097/CCM.0b013e3182451c58"
+    },
+    "10.1016/j.ccc.2020.09.002": {
+      "title": "Evidence-Based Communication with Critically Ill Older Adults",
+      "authors": "Choi, J., Tate, J.",
+      "year": "2021",
+      "journal": "Critical Care Clinics",
+      "volume": "37",
+      "pages": "233-249",
+      "doi": "10.1016/j.ccc.2020.09.002"
+    },
+    "10.1016/j.jpainsymman.2013.09.018": {
+      "title": "Fatigue in Family Caregivers of Adult Intensive Care Unit Survivors",
+      "authors": "Choi, J., Tate, J., Hoffman, L., et al.",
+      "year": "2014",
+      "journal": "Journal of Pain and Symptom Management",
+      "volume": "48",
+      "pages": "353-363",
+      "doi": "10.1016/j.jpainsymman.2013.09.018"
+    },
+    "10.1080/07434618.2021.2021554": {
+      "title": "The BCH message banking process, voice banking, and double-dipping",
+      "authors": "Costello, J., Smith, M.",
+      "year": "2021",
+      "journal": "Augmentative and Alternative Communication",
+      "volume": "37",
+      "pages": "241-250",
+      "doi": "10.1080/07434618.2021.2021554"
+    },
+    "10.1164/rccm.201505-0900OC": {
+      "title": "Randomized Trial of Communication Facilitators to Reduce Family Distress and Intensity of End-of-Life Care",
+      "authors": "Curtis, J., Treece, P., Nielsen, E., et al.",
+      "year": "2016",
+      "journal": "American Journal of Respiratory and Critical Care Medicine",
+      "volume": "193",
+      "pages": "154-162",
+      "doi": "10.1164/rccm.201505-0900OC"
+    },
+    "10.5005/jp-journals-10071-24019": {
+      "title": "iPad-based Apps to Facilitate Communication in Critically Ill Patients with Impaired Ability to Communicate: A Preclinical Analysis",
+      "authors": "Dind, A.",
+      "year": "2021",
+      "journal": "Indian Journal of Critical Care Medicine",
+      "volume": "25",
+      "pages": "1232-1240",
+      "doi": "10.5005/jp-journals-10071-24019"
+    },
+    "10.4103/ijnmr.ijnmr_82_21": {
+      "title": "Evaluating the Use of Communication Board on Cortisol Level and Physiological Parameters in Mechanically Ventilated Patients",
+      "authors": "Divani, A., Manookian, A., Haghani, S., et al.",
+      "year": "2022",
+      "journal": "Iranian Journal of Nursing and Midwifery Research",
+      "volume": "27",
+      "pages": "198-203",
+      "doi": "10.4103/ijnmr.ijnmr_82_21"
+    },
+    "10.1097/CCM.0000000000001610": {
+      "title": "Return of Voice for Ventilated Tracheostomy Patients in ICU: A Randomized Controlled Trial of Early-Targeted Intervention*",
+      "authors": "Freeman-Sanderson, A., Togher, L., Elkins, M., et al.",
+      "year": "2016",
+      "journal": "Critical Care Medicine",
+      "volume": "44",
+      "pages": "1075-1081",
+      "doi": "10.1097/CCM.0000000000001610"
+    },
+    "10.1016/j.surg.2015.08.012": {
+      "title": "A pilot study of eye-tracking devices in\u00a0intensive care",
+      "authors": "Garry, J., Casey, K., Cole, T., et al.",
+      "year": "2016",
+      "journal": "Surgery",
+      "volume": "159",
+      "pages": "938-944",
+      "doi": "10.1016/j.surg.2015.08.012"
+    },
+    "10.1080/07434618.2021.2016958": {
+      "title": "Development of a Manually Operated Communication System (MOCS) for patients in intensive care units",
+      "authors": "Goldberg, M., Hochberg, L., Carpenter, D., et al.",
+      "year": "2021",
+      "journal": "Augmentative and Alternative Communication",
+      "volume": "37",
+      "pages": "261-273",
+      "doi": "10.1080/07434618.2021.2016958"
+    },
+    "10.1097/00044067-200105000-00008": {
+      "title": "Communicating With Mechanically Ventilated Patients: State of the Science",
+      "authors": "Happ, M.",
+      "year": "2001",
+      "journal": "AACN Clinical Issues: Advanced Practice in Acute and Critical Care",
+      "volume": "12",
+      "pages": "247-258",
+      "doi": "10.1097/00044067-200105000-00008"
+    },
+    "10.1016/j.gerinurse.2010.03.004": {
+      "title": "SPEACS-2: Intensive Care Unit \u201cCommunication Rounds\u201d with Speech Language Pathology",
+      "authors": "Happ, M., Baumann, B., Sawicki, J., et al.",
+      "year": "2010",
+      "journal": "Geriatric Nursing",
+      "volume": "31",
+      "pages": "170-177",
+      "doi": "10.1016/j.gerinurse.2010.03.004"
+    },
+    "10.1016/j.hrtlng.2013.11.010": {
+      "title": "Effect of a multi-level intervention on nurse\u2013patient communication in the intensive care unit: Results of the SPEACS trial",
+      "authors": "Happ, M., Garrett, K., Tate, J., et al.",
+      "year": "2014",
+      "journal": "Heart &amp; Lung",
+      "volume": "43",
+      "pages": "89-98",
+      "doi": "10.1016/j.hrtlng.2013.11.010"
+    },
+    "10.1016/j.hrtlng.2003.12.005": {
+      "title": "Electronic voice-output communication aids for temporarily nonspeaking patients in a medical intensive care unit: a feasibility study",
+      "authors": "Happ, M., Roesch, T., Garrett, K.",
+      "year": "2004",
+      "journal": "Heart &amp; Lung",
+      "volume": "33",
+      "pages": "92-101",
+      "doi": "10.1016/j.hrtlng.2003.12.005"
+    },
+    "10.1016/j.hrtlng.2006.07.002": {
+      "title": "Family presence and surveillance during weaning from prolonged mechanical ventilation",
+      "authors": "Happ, M., Swigart, V., Tate, J., et al.",
+      "year": "2007",
+      "journal": "Heart &amp; Lung",
+      "volume": "36",
+      "pages": "47-57",
+      "doi": "10.1016/j.hrtlng.2006.07.002"
+    },
+    "10.4103/ijnmr.IJNMR_68_17": {
+      "title": "The effect of using communication boards on ease of communication and anxiety in mechanically ventilated conscious patients admitted to intensive care units",
+      "authors": "Feizi, A., Hosseini, S., Valizad-hasanloei, M.",
+      "year": "2018",
+      "journal": "Iranian Journal of Nursing and Midwifery Research",
+      "volume": "23",
+      "pages": "358",
+      "doi": "10.4103/ijnmr.IJNMR_68_17"
+    },
+    "10.1080/07434618.2023.2262032": {
+      "title": "A large-scale comparison of two voice synthesis techniques on intelligibility, naturalness, preferences, and attitudes toward voices banked by individuals with amyotrophic lateral sclerosis",
+      "authors": "Hyppa-Martin, J., Lilley, J., Chen, M., et al.",
+      "year": "2024",
+      "journal": "Augmentative and Alternative Communication",
+      "volume": "40",
+      "pages": "31-45",
+      "doi": "10.1080/07434618.2023.2262032"
+    },
+    "10.1186/s13643-019-1232-0": {
+      "title": "Barriers to and facilitators for use of augmentative and alternative communication and voice restorative devices in the adult intensive care unit: a scoping review protocol",
+      "authors": "Istanboulian, L., Rose, L., Yunusova, Y., et al.",
+      "year": "2019",
+      "journal": "Systematic Reviews",
+      "volume": "8",
+      "pages": "",
+      "doi": "10.1186/s13643-019-1232-0"
+    },
+    "10.1111/nicc.70303": {
+      "title": "Eye\u2010Tracking in Communication Use for Mechanically Ventilated\n                    <scp>ICU</scp>\n                    Patients: A Scoping Review",
+      "authors": "Jin, H., Jing, M., Xu, X., et al.",
+      "year": "2026",
+      "journal": "Nursing in Critical Care",
+      "volume": "31",
+      "pages": "",
+      "doi": "10.1111/nicc.70303"
+    },
+    "10.1016/j.iccn.2020.102948": {
+      "title": "A systematic review on voiceless patients\u2019 willingness to adopt high-technology augmentative and alternative communication in intensive care units",
+      "authors": "Ju, X., Yang, J., Liu, X.",
+      "year": "2021",
+      "journal": "Intensive and Critical Care Nursing",
+      "volume": "63",
+      "pages": "102948",
+      "doi": "10.1016/j.iccn.2020.102948"
+    },
+    "10.1002/rnj.186": {
+      "title": "Evaluation of Speak for Myself with Patients Who Are Voiceless",
+      "authors": "Koszalinski, R., Tappen, R., Viggiano, D.",
+      "year": "2015",
+      "journal": "Rehabilitation Nursing",
+      "volume": "40",
+      "pages": "235-242",
+      "doi": "10.1002/rnj.186"
+    },
+    "10.1097/CIN.0000000000000597": {
+      "title": "The Use of Communication Technology to Affect Patient Outcomes in the Intensive Care Unit",
+      "authors": "Koszalinski, R., Heidel, R., Hutson, S., et al.",
+      "year": "2020",
+      "journal": "CIN: Computers, Informatics, Nursing",
+      "volume": "38",
+      "pages": "183-189",
+      "doi": "10.1097/CIN.0000000000000597"
+    },
+    "10.1136/bmjopen-2025-101227": {
+      "title": "Speech-to-Speech Voice-Cloning Care (SVCC) for improving ICU-acquired anxiety for critically ill patients in a tertiary hospital in Beijing, China: protocol of a randomised, controlled trial",
+      "authors": "Li, M., Yang, Y., Hao, J., et al.",
+      "year": "2026",
+      "journal": "BMJ Open",
+      "volume": "16",
+      "pages": "e101227",
+      "doi": "10.1136/bmjopen-2025-101227"
+    },
+    "10.3109/07434618.2014.924026": {
+      "title": "Towards Personalized Speech Synthesis for Augmentative and Alternative Communication",
+      "authors": "Mills, T., Bunnell, H., Patel, R.",
+      "year": "2014",
+      "journal": "Augmentative and Alternative Communication",
+      "volume": "30",
+      "pages": "226-236",
+      "doi": "10.3109/07434618.2014.924026"
+    },
+    "10.1080/07434618.2016.1235610": {
+      "title": "Communication aid requirements of intensive care unit patients with transient speech loss",
+      "authors": "Mobasheri, M., King, D., Judge, S., et al.",
+      "year": "2016",
+      "journal": "Augmentative and Alternative Communication",
+      "volume": "32",
+      "pages": "261-271",
+      "doi": "10.1080/07434618.2016.1235610"
+    },
+    "10.3928/00989134-20180808-07": {
+      "title": "Evaluating the Usability and Acceptability of Communication Tools Among Older Adults",
+      "authors": "Nilsen, M., Morrison, A., Lingler, J., et al.",
+      "year": "2018",
+      "journal": "Journal of Gerontological Nursing",
+      "volume": "44",
+      "pages": "30-39",
+      "doi": "10.3928/00989134-20180808-07"
+    },
+    "10.1016/j.hrtlng.2004.02.002": {
+      "title": "Patients\u2019 reports of health care practitioner interventions that are related to communication during mechanical ventilation",
+      "authors": "Patak, L., Gawlinski, A., Fung, N., et al.",
+      "year": "2004",
+      "journal": "Heart &amp; Lung",
+      "volume": "33",
+      "pages": "308-320",
+      "doi": "10.1016/j.hrtlng.2004.02.002"
+    },
+    "10.1016/j.apnr.2005.09.006": {
+      "title": "Communication boards in critical care: patients' views",
+      "authors": "Patak, L., Gawlinski, A., Fung, N., et al.",
+      "year": "2006",
+      "journal": "Applied Nursing Research",
+      "volume": "19",
+      "pages": "182-190",
+      "doi": "10.1016/j.apnr.2005.09.006"
+    },
+    "10.34197/ats-scholar.2019-0006OC": {
+      "title": "Use of the Serious Illness Conversation Guide to Improve Communication with Surrogates of Critically Ill Patients. A Pilot Study",
+      "authors": "Pasricha, V., Gorman, D., Laothamatas, K., et al.",
+      "year": "2020",
+      "journal": "ATS Scholar",
+      "volume": "1",
+      "pages": "119-133",
+      "doi": "10.34197/ats-scholar.2019-0006OC"
+    },
+    "10.1016/j.jvoice.2025.10.018": {
+      "title": "Exploring Voice Banking as an Alternative Augmentative Communication Strategy for Individuals with Dysphonia, Aphonia, and Dysarthria: A Scoping Review",
+      "authors": "Pu, S., Sawyer, A., Levinson, C., et al.",
+      "year": "2025",
+      "journal": "Journal of Voice",
+      "volume": "",
+      "pages": "",
+      "doi": "10.1016/j.jvoice.2025.10.018"
+    },
+    "10.1038/s41598-024-84728-y": {
+      "title": "Artificial intelligence empowered voice generation for amyotrophic lateral sclerosis patients",
+      "authors": "Regondi, S., Donvito, G., Frontoni, E., et al.",
+      "year": "2025",
+      "journal": "Scientific Reports",
+      "volume": "15",
+      "pages": "",
+      "doi": "10.1038/s41598-024-84728-y"
+    },
+    "10.3233/THC-2012-0695": {
+      "title": "Development of a communication intervention to assist hospitalized suddenly speechless patients",
+      "authors": "Rodriguez, C., Rowe, M., Koeppel, B., et al.",
+      "year": "2012",
+      "journal": "Technology and Health Care",
+      "volume": "20",
+      "pages": "519-530",
+      "doi": "10.3233/THC-2012-0695"
+    },
+    "10.4037/ajcc2016217": {
+      "title": "Enhancing the Communication of Suddenly Speechless Critical Care Patients",
+      "authors": "Rodriguez, C., Rowe, M., Thomas, L., et al.",
+      "year": "2016",
+      "journal": "American Journal of Critical Care",
+      "volume": "25",
+      "pages": "e40-e47",
+      "doi": "10.4037/ajcc2016217"
+    },
+    "10.1016/j.iccn.2020.102896": {
+      "title": "Restricted family visiting in intensive care during COVID-19",
+      "authors": "Rose, L., Cook, A., Casey, J., et al.",
+      "year": "2020",
+      "journal": "Intensive and Critical Care Nursing",
+      "volume": "60",
+      "pages": "102896",
+      "doi": "10.1016/j.iccn.2020.102896"
+    },
+    "10.1002/14651858.CD013379.pub2": {
+      "title": "Interventions to enable communication for adult patients requiring an artificial airway with or without mechanical ventilator support",
+      "authors": "Rose, L., Sutt, A., Amaral, A., et al.",
+      "year": "2021",
+      "journal": "Cochrane Database of Systematic Reviews",
+      "volume": "2021",
+      "pages": "",
+      "doi": "10.1002/14651858.CD013379.pub2"
+    },
+    "10.1016/j.iccn.2021.103075": {
+      "title": "VidaTalk\u2122 patient communication application \u201copened up\u201d communication between nonvocal ICU patients and their family",
+      "authors": "Shin, J., Happ, M., Tate, J.",
+      "year": "2021",
+      "journal": "Intensive and Critical Care Nursing",
+      "volume": "66",
+      "pages": "103075",
+      "doi": "10.1016/j.iccn.2021.103075"
+    },
+    "10.1016/j.cnc.2020.02.013": {
+      "title": "The Facilitated Sensemaking Model as a Framework for Family-Patient Communication During Mechanical Ventilation in the Intensive Care Unit",
+      "authors": "Shin, J., Tate, J., Happ, M.",
+      "year": "2020",
+      "journal": "Critical Care Nursing Clinics of North America",
+      "volume": "32",
+      "pages": "335-348",
+      "doi": "10.1016/j.cnc.2020.02.013"
+    },
+    "10.1016/j.hrtlng.2024.11.001": {
+      "title": "Preliminary efficacy of the vidatalkTM communication application on family psychological symptoms in the intensive care unit: A pilot study",
+      "authors": "Shin, J., Tan, A., Tate, J., et al.",
+      "year": "2025",
+      "journal": "Heart &amp; Lung",
+      "volume": "70",
+      "pages": "14-22",
+      "doi": "10.1016/j.hrtlng.2024.11.001"
+    },
+    "10.4103/ijabmr.ijabmr_351_24": {
+      "title": "Effectiveness of Communication Board on Level of Satisfaction among Mechanically Ventilated Patients at Intensive Care Unit in a Tertiary Hospital",
+      "authors": "Sidhu, S., Kaur, K., Kaur, A., et al.",
+      "year": "2024",
+      "journal": "International Journal of Applied &amp; Basic Medical Research",
+      "volume": "14",
+      "pages": "284-289",
+      "doi": "10.4103/ijabmr.ijabmr_351_24"
+    },
+    "10.2218/resmedica.v23i1.1216": {
+      "title": "Communication With Ventilated Patients In ICU: Perceptions On Existing Communication Methods And Needs",
+      "authors": "Sii, S., Swann, D.",
+      "year": "2015",
+      "journal": "Res Medica",
+      "volume": "23",
+      "pages": "2",
+      "doi": "10.2218/resmedica.v23i1.1216"
+    },
+    "10.2196/81387": {
+      "title": "Effectiveness of Al-Assisted Patient Health Education Using Voice Cloning and ChatGPT: Prospective Randomized Controlled Trial",
+      "authors": "Sun, Y., Xu, S., Jin, H., et al.",
+      "year": "2026",
+      "journal": "Journal of Medical Internet Research",
+      "volume": "28",
+      "pages": "e81387-e81387",
+      "doi": "10.2196/81387"
+    },
+    "10.1016/j.iccn.2023.103562": {
+      "title": "Comparison of communication interfaces for mechanically ventilated patients in intensive care",
+      "authors": "Szymkowicz, E., Bodet-Contentin, L., Marechal, Y., et al.",
+      "year": "2024",
+      "journal": "Intensive and Critical Care Nursing",
+      "volume": "80",
+      "pages": "103562",
+      "doi": "10.1016/j.iccn.2023.103562"
+    },
+    "10.1186/s13054-016-1483-2": {
+      "title": "Communicating with conscious and mechanically ventilated critically ill patients: a systematic review",
+      "authors": "ten Hoorn, S., Elbers, P., Girbes, A., et al.",
+      "year": "2016",
+      "journal": "Critical Care",
+      "volume": "20",
+      "pages": "",
+      "doi": "10.1186/s13054-016-1483-2"
+    },
+    "10.1097/JHQ.0000000000000163": {
+      "title": "Improving Nonvocal Critical Care Patients' Ease of Communication Using a Modified SPEACS-2 Program",
+      "authors": "Trotta, R., Hermann, R., Polomano, R., et al.",
+      "year": "2020",
+      "journal": "Journal for Healthcare Quality",
+      "volume": "42",
+      "pages": "e1-e9",
+      "doi": "10.1097/JHQ.0000000000000163"
+    },
+    "10.1111/aor.14082": {
+      "title": "Approach to the basic needs in patients on invasive ventilation using eye\u2010tracking devices for non\u2010verbal communication",
+      "authors": "Ull, C., Hamsen, U., Weckwerth, C., et al.",
+      "year": "2022",
+      "journal": "Artificial Organs",
+      "volume": "46",
+      "pages": "439-450",
+      "doi": "10.1111/aor.14082"
+    },
+    "10.1164/rccm.200604-493OC": {
+      "title": "Informal Caregiver Burden among Survivors of Prolonged Mechanical Ventilation",
+      "authors": "Van Pelt, D., Milbrandt, E., Qin, L., et al.",
+      "year": "2007",
+      "journal": "American Journal of Respiratory and Critical Care Medicine",
+      "volume": "175",
+      "pages": "167-173",
+      "doi": "10.1164/rccm.200604-493OC"
+    },
+    "10.1044/2019_AJSLP-19-0001": {
+      "title": "The Feasibility, Utility, and Safety of Communication Interventions With Mechanically Ventilated Intensive Care Unit Patients: A Systematic Review",
+      "authors": "Zaga, C., Berney, S., Vogel, A.",
+      "year": "2019",
+      "journal": "American Journal of Speech-Language Pathology",
+      "volume": "28",
+      "pages": "1335-1355",
+      "doi": "10.1044/2019_AJSLP-19-0001"
+    },
+    "10.1177/1751143720963757": {
+      "title": "Outcome measurement tools for communication, voice and speech intelligibility in the ICU and their clinimetric properties: A systematic review",
+      "authors": "Zaga, C., Cigognini, B., Vogel, A., et al.",
+      "year": "2022",
+      "journal": "Journal of the Intensive Care Society",
+      "volume": "23",
+      "pages": "459-472",
+      "doi": "10.1177/1751143720963757"
+    }
+  }
+}
