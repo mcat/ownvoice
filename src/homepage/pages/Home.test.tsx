@@ -3,15 +3,12 @@ import { describe, it, expect } from "vitest";
 import { Home } from "./Home";
 
 describe("Home page", () => {
-  it("renders the hero headline with the ICU stats", () => {
+  it("renders the hero headline with the ICU stat", () => {
     render(<Home />);
-    // Happ et al. 2015 (53.9% of MV patients meet communication criteria)
+    // Happ et al. 2015 (53.9% of MV patients meet communication criteria:
+    // awake, alert, responsive)
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
-      /Half of ventilated ICU patients/,
-    );
-    // Freeman-Sanderson et al. 2019 (staff difficulty on 35% of bed-days)
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
-      /a third of ICU days/,
+      /Half of ventilated ICU patients are awake, alert, and unable to speak/,
     );
   });
 
