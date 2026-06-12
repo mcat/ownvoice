@@ -8,7 +8,7 @@
 
 ## 1. Abstract
 
-This document describes the research plan for a clinical validation study of OwnVoice, a Progressive Web Application that provides augmentative and alternative communication (AAC) for ICU patients without functional speech, using on-device voice cloning, a validated emoji pain scale, contextual sentence building powered by on-device language models, and structured goals-of-care conversations based on the Serious Illness Conversation Guide (SICG). The study is a prospective, mixed-methods clinical trial conducted in a single-center ICU. The primary aim is to evaluate whether OwnVoice improves patient-reported communication satisfaction compared to standard-of-care communication methods. Secondary aims assess the impact of voice cloning on patient identity and emotional wellbeing, the feasibility and clinical utility of tablet-based SICG conversations with patients without functional speech, on-device inference latency and reliability in the clinical environment, and nursing workflow integration.
+This document describes the research plan for a clinical validation study of OwnVoice, a Progressive Web Application that provides augmentative and alternative communication (AAC) for ICU patients without functional speech, using on-device voice cloning, a validated emoji pain scale, contextual sentence building powered by on-device language models, and structured goals-of-care conversations based on the Serious Illness Conversation Guide (SICG). The study is a prospective, mixed-methods clinical trial conducted in a single-center ICU. The primary aim is to evaluate whether OwnVoice reduces patient-reported communication difficulty compared to standard-of-care communication methods. Secondary aims assess the impact of voice cloning on patient identity and emotional wellbeing, the feasibility and clinical utility of tablet-based SICG conversations with patients without functional speech, on-device inference latency and reliability in the clinical environment, and nursing workflow integration.
 
 ---
 
@@ -40,9 +40,9 @@ OwnVoice runs entirely on-device using WebGPU-accelerated neural inference (ONNX
 
 ### 3.1 Primary Aim
 
-Evaluate whether OwnVoice improves patient-reported communication satisfaction compared to standard-of-care AAC methods in ICU patients without functional speech.
+Evaluate whether OwnVoice reduces patient-reported communication difficulty compared to standard-of-care AAC methods in ICU patients without functional speech.
 
-**H1:** Patients using OwnVoice will report significantly higher communication satisfaction scores (CSRI) than patients using standard-of-care communication methods.
+**H1:** Patients using OwnVoice will report significantly lower communication difficulty (Ease of Communication Scale scores) than patients using standard-of-care communication methods.
 
 ### 3.2 Secondary Aims
 
@@ -117,7 +117,7 @@ Total study duration: 6 months (1 month setup/training, 1 month Phase 1, 4 month
 
 **Phase 1:** 10–15 patients (usability convention for iterative design; Nielsen, 2000).
 
-**Phase 2:** Based on prior AAC studies in ICU populations (Happ et al., 2014), we estimate a medium effect size (Cohen's d = 0.5) for the primary outcome (CSRI communication satisfaction). With alpha = 0.05, power = 0.80, and accounting for the stepped-wedge design effect and expected 20% attrition (extubation, transfer, death, withdrawal), we require approximately 60–80 patients across 4–6 clusters.
+**Phase 2:** Based on prior AAC studies in ICU populations that used the same instrument (Happ et al., 2004; Happ et al., 2014; Trotta et al., 2020), we estimate a medium effect size (Cohen's d = 0.5) for the primary outcome (ECS communication difficulty). With alpha = 0.05, power = 0.80, and accounting for the stepped-wedge design effect and expected 20% attrition (extubation, transfer, death, withdrawal), we require approximately 60–80 patients across 4–6 clusters.
 
 ### 5.4 Recruitment and Consent
 
@@ -149,9 +149,13 @@ For patients with an anticipated ICU stay ≥72 hours and a serious illness traj
 
 ### 7.1 Primary Outcome
 
-**Communication Satisfaction:** Patient-reported communication satisfaction measured using the Communication Satisfaction Rating Instrument (CSRI; Happ et al., 2014), a validated 16-item instrument for ICU patients without functional speech. Administered at 24 hours post-enrollment and at ICU discharge or return of speech (whichever is first). The CSRI is designed for administration to patients who cannot speak, using a visual analog response format.
+**Communication Difficulty:** Patient-reported difficulty communicating, measured with the Ease of Communication Scale (ECS; Happ, Roesch, & Garrett, 2004; Happ et al., 2014) — the patient-reported instrument used in the SPEACS trial and in a five-ICU implementation study (Trotta et al., 2020), and the most widely used patient-reported communication outcome in this population. Lower scores indicate easier communication. Administered at 24 hours post-enrollment and at ICU discharge or return of speech (whichever is first); the ECS is designed for self-administration by patients who cannot speak.
 
 ### 7.2 Secondary Outcomes
+
+**Communication Satisfaction**
+
+- Satisfaction with Communication Method Tool (Rodriguez et al., 2016): satisfaction with the current communication method, adapted from QUEST 2.0 and previously used with suddenly speechless critical care patients; 5-point scale. Administered at the same time points as the ECS.
 
 **Voice Identity and Emotional Wellbeing**
 
@@ -178,7 +182,7 @@ For patients with an anticipated ICU stay ≥72 hours and a serious illness traj
 
 **Nursing Outcomes**
 
-- Ease of Communication Scale (ECS; Happ et al., 2014): Nurse-reported communication difficulty, rated per shift
+- Nurse-perceived communication difficulty: single-item per-shift rating (study-specific item; the patient-reported ECS is the primary outcome, §7.1)
 - Communication frequency: Number of patient-initiated interactions per shift, by category (aggregate count from research metrics, no content)
 - Time-to-respond: Time between patient communication and nurse acknowledgment (observational subsample, not app-logged)
 - Nurse Satisfaction Questionnaire: Custom 10-item instrument assessing perceived utility, workflow impact, and training adequacy
@@ -243,7 +247,8 @@ These metrics are logged on-device in a separate storage partition from the clin
 |---|---|---|
 | Demographics and clinical characteristics | Enrollment | Coordinator |
 | RASS and CAM-ICU | Daily, each shift | Bedside nurse |
-| CSRI | 24h post-enrollment; discharge | Coordinator |
+| ECS | 24h post-enrollment; discharge | Coordinator |
+| Satisfaction with Communication Method Tool | 24h post-enrollment; discharge | Coordinator |
 | HADS | Enrollment; discharge | Coordinator |
 | Voice Identity Scale (VIS) | 48h post-enrollment | Coordinator |
 | Emoji-FPS / NRS preference | 48h post-enrollment | Coordinator |
@@ -273,7 +278,7 @@ These metrics are logged on-device in a separate storage partition from the clin
 
 ### 9.1 Primary Analysis
 
-We will analyze the primary outcome (CSRI score) using a generalized linear mixed model (GLMM) with fixed effects for intervention condition (OwnVoice vs. standard-of-care), time period, and cluster, and random effects for patient nested within cluster. The stepped-wedge design requires adjustment for time trends. The model will control for patient age, APACHE III severity score, cause of impaired speech (intubation vs. tracheostomy vs. neurological), and ICU length of stay at enrollment. Analysis will follow intention-to-treat principles.
+We will analyze the primary outcome (ECS score) using a generalized linear mixed model (GLMM) with fixed effects for intervention condition (OwnVoice vs. standard-of-care), time period, and cluster, and random effects for patient nested within cluster. The stepped-wedge design requires adjustment for time trends. The model will control for patient age, APACHE III severity score, cause of impaired speech (intubation vs. tracheostomy vs. neurological), and ICU length of stay at enrollment. Analysis will follow intention-to-treat principles.
 
 ### 9.2 Secondary Analyses
 
@@ -291,7 +296,7 @@ Semi-structured interview transcripts (patient, family, clinician) analyzed usin
 
 ### 9.4 Missing Data
 
-We will use multiple imputation for missing CSRI and HADS data (expected sources: patient discharge, death, withdrawal, or inability to complete from clinical deterioration). Sensitivity analyses will compare results under complete-case, last-observation-carried-forward, and worst-case imputation assumptions.
+We will use multiple imputation for missing ECS and HADS data (expected sources: patient discharge, death, withdrawal, or inability to complete from clinical deterioration). Sensitivity analyses will compare results under complete-case, last-observation-carried-forward, and worst-case imputation assumptions.
 
 ---
 
@@ -402,7 +407,7 @@ This study would contribute:
 
 ### 15.1 Publications
 
-- **Primary manuscript:** Clinical outcomes (CSRI, HADS, nursing outcomes). Target: Critical Care Medicine or American Journal of Respiratory and Critical Care Medicine.
+- **Primary manuscript:** Clinical outcomes (ECS, HADS, nursing outcomes). Target: Critical Care Medicine or American Journal of Respiratory and Critical Care Medicine.
 - **Technical manuscript:** On-device inference performance, architecture, and open-source implementation. Target: arXiv (cs.HC), then JMIR or CHI.
 - **Goals-of-care manuscript:** My Wishes feasibility, SICG adaptation for patients who cannot speak, and care plan impact. Target: Journal of Palliative Medicine or JAMA Internal Medicine.
 - **Voice identity manuscript:** Voice cloning impact on patient identity and family experience. Target: Patient Education and Counseling or Annals of Internal Medicine.
@@ -436,6 +441,8 @@ Carroll, S. M. (2007). Silent, slow lifeworld: The communication experience of n
 
 Freeman-Sanderson, A., Morris, K., & Elkins, M. (2019). Characteristics of patient communication and prevalence of communication difficulty in the intensive care unit: An observational study. Australian Critical Care, 32(5), 373–377. https://doi.org/10.1016/j.aucc.2018.09.002
 
+Happ, M. B., Roesch, T. K., & Garrett, K. (2004). Electronic voice-output communication aids for temporarily nonspeaking patients in a medical intensive care unit: A feasibility study. Heart & Lung, 33(2), 92–101. https://doi.org/10.1016/j.hrtlng.2003.12.005
+
 Happ, M. B., et al. (2011). Nurse-patient communication interactions in the ICU. American Journal of Critical Care, 20(2), e28–e40.
 
 Happ, M. B., et al. (2014). Effect of a multi-level intervention on nurse-patient communication in the ICU: Results of the SPEACS trial. Heart & Lung, 43(2), 89–98.
@@ -447,6 +454,10 @@ Khalaila, R., et al. (2011). Communication difficulties and psychoemotional dist
 Li, L., et al. (2023). Development of the Emoji Faces Pain Scale and its validation on mobile devices in adult surgery patients. Journal of Medical Internet Research, 25, e41189.
 
 Paladino, J., Bernacki, R., Neville, B. A., et al. (2019). Evaluating an intervention to improve communication between oncology clinicians and patients with life-limiting cancer: A cluster randomized clinical trial of the Serious Illness Care Program. JAMA Oncology, 5(6), 801–809. https://doi.org/10.1001/jamaoncol.2019.0292
+
+Rodriguez, C. S., Rowe, M., Thomas, L., Shuster, J., Koeppel, B., & Cairns, P. (2016). Enhancing the communication of suddenly speechless critical care patients. American Journal of Critical Care, 25(3), e40–e47. https://doi.org/10.4037/ajcc2016217
+
+Trotta, R. L., Hermann, R. M., Polomano, R. C., & Happ, M. B. (2020). Improving nonvocal critical care patients' ease of communication using a modified SPEACS-2 program. Journal for Healthcare Quality, 42(1), e1–e9. https://doi.org/10.1097/JHQ.0000000000000163
 
 Zubow, L., & Hurtig, R. (2013). A demographic study of AAC/AT needs in hospitalized patients. Perspectives on Augmentative and Alternative Communication, 22(2), 79–90. https://doi.org/10.1044/aac22.2.79
 

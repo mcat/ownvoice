@@ -111,7 +111,7 @@ Research that shaped the phrase library, communication categories, and emotional
 | "I Need" subcategories: Comfort, Medical, People | `src/data/phraseRegistry.ts:77-110` — maps to physical needs from SPEACS-2 |
 | Two-way conversation model with provider responses | `src/components/provider/ProviderPanel.tsx` — structured provider responses |
 | Conversation thread preserves exchange history across shifts | `src/stores/conversationStore.ts` — IndexedDB-backed persistent store |
-| CSRI planned as primary outcome measure | `docs/ownvoice-research-plan.md:149` |
+| ECS planned as primary outcome measure | `docs/ownvoice-research-plan.md:149` |
 
 ---
 

@@ -49,7 +49,7 @@ export function StudyAtAGlance() {
           }}
         >
           <li>
-            <strong>Aim 1</strong> &mdash; Communication satisfaction (CSRI) vs. standard of care
+            <strong>Aim 1</strong> &mdash; Communication ease (ECS) vs. standard of care
           </li>
           <li>
             <strong>Aim 2</strong> &mdash; Voice identity and emotional wellbeing
