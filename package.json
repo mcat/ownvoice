@@ -27,13 +27,13 @@
   },
   "dependencies": {
     "@opentelemetry/api": "^1.9.1",
-    "@tanstack/virtual-core": "^3.14.0",
+    "@tanstack/virtual-core": "^3.17.2",
     "markdown-to-jsx": "^7.7.17",
     "onnxruntime-web": "^1.25.1",
-    "preact": "^10.29.2",
+    "preact": "^10.29.3",
     "preact-iso": "^2.12.0",
     "superjson": "^2.2.6",
-    "zustand": "^5.0.13"
+    "zustand": "^5.0.14"
   },
   "devDependencies": {
     "@aws-sdk/client-s3": "^3.1048.0",
