@@ -15,20 +15,26 @@ import { homepageTheme as t } from "../theme";
  * hero → problem → stakes → system → study → privacy → references →
  * commercial opportunity → CTA → footer.
  * No layout logic of its own — each section owns its padding and width.
+ *
+ * <Footer /> sits outside <main> deliberately: a <footer> scoped to main
+ * maps to `sectionfooter`, not the `contentinfo` landmark, so nesting it
+ * would drop the footer out of screen-reader landmark navigation.
  */
 export function Home() {
   return (
-    <main style={{ fontFamily: t.font, color: t.color.text, background: t.color.bg }}>
-      <Hero />
-      <TheProblem />
-      <TheStakes />
-      <TheSystem />
-      <StudyAtAGlance />
-      <OnDeviceAndPrivacy />
-      <References />
-      <CommercialOpportunity />
-      <CTA />
+    <>
+      <main style={{ fontFamily: t.font, color: t.color.text, background: t.color.bg }}>
+        <Hero />
+        <TheProblem />
+        <TheStakes />
+        <TheSystem />
+        <StudyAtAGlance />
+        <OnDeviceAndPrivacy />
+        <References />
+        <CommercialOpportunity />
+        <CTA />
+      </main>
       <Footer />
-    </main>
+    </>
   );
 }

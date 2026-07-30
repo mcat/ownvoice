@@ -52,4 +52,20 @@ describe("Home page", () => {
     render(<Home />);
     expect(screen.getByText(/@misc\{ownvoice2026/)).toBeInTheDocument();
   });
+
+  // A <footer> scoped to <main> maps to `sectionfooter`, not `contentinfo`,
+  // so nesting it drops the footer out of screen-reader landmark navigation.
+  //
+  // Asserted structurally rather than via getByRole("contentinfo"): jsdom's
+  // role computation does not implement the main-scoping rule and returns
+  // contentinfo either way, so a role-based assertion passes even when the
+  // footer is nested and would not catch a regression.
+  it("renders the footer as a sibling of <main>, not inside it", () => {
+    const { container } = render(<Home />);
+    const main = container.querySelector("main");
+    const footer = container.querySelector("footer");
+    expect(main).not.toBeNull();
+    expect(footer).not.toBeNull();
+    expect(main!.contains(footer!)).toBe(false);
+  });
 });
