@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 OwnVoice is an in-patient AAC (Augmentative and Alternative Communication) web app that helps hospitalized patients who cannot speak communicate using their own voice. It runs entirely on-device as a PWA on iPads — no data leaves the tablet after initial load.
 
-**Status:** v0.1 prototype (not for clinical use). Production target is TypeScript + Preact.
+**Status:** v0.1 prototype (not for clinical use). Built with TypeScript + Preact + Vite + Vitest.
 
 ## Commands
 
@@ -28,12 +28,13 @@ The app is decomposed into focused modules. Colocated `*.test.ts(x)` files live 
 ### File layout
 - `index.html` — Homepage entry (`/`); minimal head, no PWA registration
 - `app/index.html` — App entry (`/app/`); PWA manifest link + service-worker registration with scope `/app/`
-- `src/main-homepage.tsx` — Preact mount point for the homepage at `/`; loads the placeholder/research surfaces (built as a separate Vite entry to keep ML deps out of the homepage bundle)
-- `src/homepage/` — Homepage components (currently `PlaceholderApp.tsx`; expanded by Plan C)
+- `src/main-homepage.tsx` — Preact mount point for the homepage at `/`; renders `HomepageApp` (built as a separate Vite entry to keep ML deps out of the homepage bundle)
+- `src/homepage/` — Everything served at `/`. `HomepageApp.tsx` routes `/`, `/research`, and `/bibliography` via `preact-iso`, with a router scope that excludes `/app/*` so the app link is a real cross-document navigation. `pages/` holds the three routes plus `MarkdownPage.tsx` (shared long-form wrapper for the two `docs/*.md` surfaces); `sections/` holds the homepage's scroll-order sections; `theme.ts` is a separate token set from `src/theme/`. `<Footer />` must sit outside `<main>` — a `footer` scoped to `main` maps to `sectionfooter`, not the `contentinfo` landmark.
 - `src/speak.ts` — Single audio pathway. Priority: cloned-TTS (GPU → WASM) → Web Speech → confirmation tone. Owns the Web Audio post-processing pipeline (DC removal, biquads, spectral denoise, gate, normalize, limiter, fade).
 - `src/store.ts` — Legacy IndexedDB helper (`clearAll()` only). State lives in Zustand stores below.
 - `src/data/phraseRegistry.ts` — Single source of truth for all speakable text. `t(key, locale)` resolves a phrase; `getCategories`, `getProviderCategories`, `getEmojiFPS`, `getWishTopics`, `composePainSentence`, `composeWishSentence`, `getAllSpeakablePhrases` expose structure.
-- `src/data/locales/` — Per-locale string tables (currently `en.ts`). Statically imported so language switching works offline.
+- `src/data/locales/` — Per-locale string tables, 24 languages (`en.ts`, `es.ts`, `ar.ts`, `zh.ts`, …). Statically imported so language switching works offline.
+- `src/data/suggestion-trees.ts` — Curated next-phrase suggestions behind the sentence builder. Hand-authored trees, not model output.
 - `src/models/` — On-device inference: `modelManager.ts` (worker lifecycle, OPFS model storage), `ttsEngine.ts` (WebGPU main-thread Chatterbox Multilingual), `ttsWorker.ts` / `sttWorker.ts` (WASM fallbacks), `denoiserWorker.ts` (DeepFilterNet3 enrollment cleanup), `audioCache.ts` (OPFS-backed pre-generated phrase audio), `bootModels.ts`, `multilingualTokenizer.ts` (BPE + per-language preprocessors)
 - `src/dev/logSink.ts` — Dev-only sink that mirrors `console.*` and uncaught errors to `logs/dev.log` via the `logSinkPlugin` middleware in `vite.config.ts`. Imported as a side effect from both Preact entry points and from each bundled worker (`ttsWorker`, `sttWorker`, `denoiserWorker`), so logs from every JS context end up in a single tail-able file. Tree-shaken in prod.
 - `docs/PRD.md` — Full product requirements (voice cloning, SICG, latency tiers, 4-phase roadmap)
@@ -102,7 +103,7 @@ These are non-negotiable for this project:
 
 ## Target Platform
 
-iPad Pro (M5, 2025) with iPadOS 26+ and Safari 26. WebGPU via Metal is required for planned ONNX Runtime inference. Desktop/other browsers are not primary targets.
+iPad Pro (M5, 2025) with iPadOS 26+ and Safari 26. ONNX Runtime inference ships today and uses WebGPU via Metal where available, falling back to WASM. Desktop/other browsers are not primary targets.
 
 ## Known issues — do not chase
 
