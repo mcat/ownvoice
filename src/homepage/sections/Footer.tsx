@@ -9,6 +9,10 @@ export function Footer() {
   return (
     <footer
       style={{
+        // Set explicitly rather than inherited: this footer mounts as a
+        // sibling of <main>, not a child, so there is no ancestor carrying
+        // the homepage font.
+        fontFamily: t.font,
         padding: "24px 32px",
         background: "#1c1917",
         color: "#d6d3d1",
