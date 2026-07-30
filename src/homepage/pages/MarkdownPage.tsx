@@ -1,4 +1,5 @@
 import Markdown from "markdown-to-jsx";
+import { Footer } from "../sections/Footer";
 import { homepageTheme as t } from "../theme";
 
 /**
@@ -8,6 +9,9 @@ import { homepageTheme as t } from "../theme";
  * markdown-to-jsx parses the markdown AST and emits real Preact
  * VNodes — no string-to-DOM shortcut, so the security model is the
  * same as ordinary JSX.
+ *
+ * Closes with the shared <Footer /> so every non-app route carries the
+ * same disclaimer, cross-links, and author attribution.
  */
 
 const inlineCodeStyle = {
@@ -140,64 +144,65 @@ export function MarkdownPage({
   breadcrumbCurrent?: string;
 }) {
   return (
-    <main
-      style={{
-        fontFamily: t.font,
-        color: t.color.body,
-        background: t.color.bg,
-        padding: "48px 32px 96px",
-      }}
-    >
-      <div
+    <div style={{ fontFamily: t.font, background: t.color.bg }}>
+      <main
         style={{
-          maxWidth: t.bodyMaxWidth,
-          margin: "0 auto",
+          color: t.color.body,
+          padding: "48px 32px 96px",
         }}
       >
-        {breadcrumbCurrent ? (
-          <nav
-            aria-label="Breadcrumb"
-            style={{ marginBottom: 24, fontSize: 13 }}
-          >
-            <ol
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: 8,
-                listStyle: "none",
-                padding: 0,
-                margin: 0,
-                color: t.color.muted,
-              }}
-            >
-              <li>
-                <a
-                  href="/"
-                  style={{
-                    color: t.color.muted,
-                    textDecoration: "underline",
-                    textUnderlineOffset: 2,
-                  }}
-                >
-                  Home
-                </a>
-              </li>
-              <li aria-hidden="true">/</li>
-              <li aria-current="page" style={{ color: t.color.body }}>
-                {breadcrumbCurrent}
-              </li>
-            </ol>
-          </nav>
-        ) : null}
-        <article
+        <div
           style={{
-            fontSize: t.bodyFontSize,
-            lineHeight: t.bodyLineHeight,
+            maxWidth: t.bodyMaxWidth,
+            margin: "0 auto",
           }}
         >
-          <Markdown options={{ overrides }}>{content}</Markdown>
-        </article>
-      </div>
-    </main>
+          {breadcrumbCurrent ? (
+            <nav
+              aria-label="Breadcrumb"
+              style={{ marginBottom: 24, fontSize: 13 }}
+            >
+              <ol
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: 8,
+                  listStyle: "none",
+                  padding: 0,
+                  margin: 0,
+                  color: t.color.muted,
+                }}
+              >
+                <li>
+                  <a
+                    href="/"
+                    style={{
+                      color: t.color.muted,
+                      textDecoration: "underline",
+                      textUnderlineOffset: 2,
+                    }}
+                  >
+                    Home
+                  </a>
+                </li>
+                <li aria-hidden="true">/</li>
+                <li aria-current="page" style={{ color: t.color.body }}>
+                  {breadcrumbCurrent}
+                </li>
+              </ol>
+            </nav>
+          ) : null}
+          <article
+            style={{
+              fontSize: t.bodyFontSize,
+              lineHeight: t.bodyLineHeight,
+            }}
+          >
+            <Markdown options={{ overrides }}>{content}</Markdown>
+          </article>
+        </div>
+      </main>
+      <Footer />
+    </div>
   );
 }
