@@ -8,12 +8,12 @@ OwnVoice gives hospitalized patients who cannot speak the ability to communicate
 
 ### Key Features
 
-- **Voice Cloning** — Recreates the patient's actual voice from a 3–10 second audio sample
+- **Voice Cloning** — Recreates the patient's actual voice from a 15-second recording or an uploaded audio file
 - **Pre-Generated Audio** — Instant playback for common phrases (<50ms)
 - **Pain Assessment** — Emoji-FPS validated pain scale (Li et al., JMIR 2023)
 - **My Wishes** — Goals-of-care conversations powered by the Serious Illness Conversation Guide (Ariadne Labs)
 - **Listen** — On-device speech-to-text captures what providers say to the patient
-- **Progressive Sentence Builder** — Context-aware phrase completion powered by on-device LLM
+- **Progressive Sentence Builder** — Tap-to-build sentences from curated, context-aware suggestion trees (`src/data/suggestion-trees.ts`)
 - **Multi-Provider** — Multiple care team members with individual voice profiles and emoji
 
 ### Target Device
@@ -27,7 +27,7 @@ npm install
 npm run dev
 ```
 
-Opens at `http://localhost:3000`.
+Opens at `http://localhost:3000`. The homepage is served at `/`; the app itself is at `/app/`.
 
 ## Performance benchmarking (`?bench=true`)
 
@@ -148,12 +148,23 @@ Doing it in the other order risks a window where the new Pages bundle 404s on `/
 
 ```
 ownvoice/
-├── index.html              # Entry point
-├── package.json
-├── vite.config.js
+├── index.html              # Homepage entry (/)
+├── app/index.html          # App entry (/app/) — PWA manifest + service-worker registration
+├── vite.config.ts
+├── functions/              # Cloudflare Pages Functions — R2 proxies for /ort/* and /models/*
+├── public/                 # sw.js, models-manifest.json, static assets
 ├── src/
-│   ├── main.jsx            # React mount
-│   └── OwnVoice.jsx        # Full prototype (~1630 lines)
+│   ├── main-app.tsx        # Preact mount for /app/
+│   ├── main-homepage.tsx   # Preact mount for / (separate entry, keeps ML deps off the homepage)
+│   ├── App.tsx             # Root component: setup gate, tab routing, overlay orchestration
+│   ├── speak.ts            # Single audio pathway + Web Audio post-processing
+│   ├── components/         # UI grouped by feature (builder, conversation, pain, wishes, …)
+│   ├── data/               # phraseRegistry, per-locale strings, suggestion trees
+│   ├── homepage/           # Marketing + research surfaces served at /
+│   ├── hooks/
+│   ├── models/             # On-device inference: TTS, STT, denoiser, OPFS model storage
+│   ├── stores/             # Zustand: settings, conversation, UI
+│   └── theme/
 └── docs/
     ├── PRD.md               # Product Requirements Document
     └── DESIGN_GUIDELINES.md # Accessibility & design system
@@ -168,11 +179,12 @@ ownvoice/
 
 | Layer | Technology |
 |---|---|
-| UI | React (prototype) → TypeScript + Preact (production) |
+| UI | TypeScript + Preact |
 | Build | Vite |
-| TTS | ONNX Runtime Web (WebGPU EP) |
-| Suggestions | On-device LLM (1–2B, q4) |
-| STT | Whisper (small/medium, on-device) |
+| TTS | Chatterbox Multilingual (23 languages) on ONNX Runtime Web (WebGPU EP) |
+| STT | Whisper small.en (on-device) |
+| Enrollment denoise | DeepFilterNet3 (on-device ONNX) |
+| Suggestions | Curated suggestion trees — no model |
 | Pain Scale | Emoji-FPS (CC-BY 4.0) |
 | Goals of Care | SICG Framework (CC-BY-NC-SA 4.0) |
 | Font | Atkinson Hyperlegible (Braille Institute) |
