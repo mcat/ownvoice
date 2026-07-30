@@ -71,7 +71,17 @@ __pycache__/
 # Local-only Claude harness extras (skill bundles installed per-machine,
 # working notes, reference PDFs). These are not project source and must
 # never be committed — `git add -A` would otherwise sweep them in.
-.claude/skills/
+#
+# Skills are opt-in per skill: ignore the directory contents, then negate the
+# handful we deliberately share with collaborators. Note the `/*` — a bare
+# `.claude/skills/` excludes the directory itself and git will not descend
+# into it, so no `!` negation below it can ever match.
+.claude/skills/*
+!.claude/skills/a11y/
+!.claude/skills/mutation-audit/
+!.claude/skills/claude-for-safari/
+!.claude/skills/ownvoice-logsink/
+!.claude/skills/voice-quality-recalibration/
 .claude/*.lock
 aac-icu-candidacy.md
 # sample-voices/ is gitignored except for the calibration fixture used by
