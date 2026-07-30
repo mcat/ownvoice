@@ -3,7 +3,8 @@ import { homepageTheme as t } from "../theme";
 
 /**
  * §7 — Commercial opportunity. Abbreviated market context for prospective
- * clinical co-founders, advisors, and partners. The strategy memo at
+ * clinical co-founders, advisors, and partners, closing with an open call
+ * for collaborators rather than a job posting. The strategy memo at
  * docs/strategy/2026-05-06-business-strategy.md carries the full GTM
  * scaling table, pricing detail, acquirer thesis, and risk inventory;
  * this section is the public-facing summary.
@@ -93,26 +94,31 @@ export function CommercialOpportunity() {
           </ul>
         </Block>
 
-        <Block title="Open positions">
+        <Block title="Collaborators wanted">
+          <p style={{ margin: 0 }}>
+            Getting from a working prototype to a validated ICU study takes
+            people this project does not have yet:
+          </p>
           <ul
             style={{
-              marginTop: 0,
+              marginTop: 8,
               marginBottom: 0,
               paddingLeft: 20,
               lineHeight: 1.55,
             }}
           >
             <li>
-              <strong>Clinical co-founder</strong> &mdash; palliative care or critical
-              care, Boston-area academic medical center affiliation preferred
+              <strong>A clinical co-founder</strong> in palliative or critical
+              care, ideally affiliated with a Boston-area academic medical
+              center
             </li>
             <li>
-              <strong>Clinical advisory board members</strong> &mdash; palliative
-              care, critical care nursing, ICU SLP
+              <strong>Clinical advisors</strong> in palliative care, critical
+              care nursing, and ICU speech-language pathology
             </li>
             <li>
-              <strong>Software engineer</strong> (TypeScript, Preact, on-device ML)
-              &mdash; late 2026
+              <strong>Engineers</strong> who work in TypeScript, Preact, or
+              on-device ML
             </li>
           </ul>
         </Block>
