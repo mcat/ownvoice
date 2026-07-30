@@ -6,27 +6,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 OwnVoice is an in-patient AAC (Augmentative and Alternative Communication) web app that helps hospitalized patients who cannot speak communicate using their own voice. It runs entirely on-device as a PWA on iPads — no data leaves the tablet after initial load.
 
-**Status:** v0.1 prototype (not for clinical use). Production target is TypeScript + Preact.
+**Status:** v0.1 prototype (not for clinical use). Built with TypeScript + Preact + Vite + Vitest.
 
 ## Commands
 
+`npm run dev` serves at http://localhost:3000 and auto-opens the browser. The rest are standard `package.json` scripts; these are the ones with non-obvious behavior:
+
 ```bash
-npm run dev            # Start Vite dev server at http://localhost:3000 (auto-opens browser)
-npm run build          # Type-check then production build → dist/
-npm run preview        # Preview production build locally
-npm run lint           # ESLint (typescript-eslint + jsx-a11y); runs in CI
+npm run lint                # ESLint (typescript-eslint + jsx-a11y); runs in CI
 npm run typecheck:functions # Typecheck Cloudflare Pages Functions (own tsconfig); runs in CI
-npm test               # Run Vitest once
-npm run test:watch     # Vitest in watch mode
-npm run test:coverage  # Vitest with coverage
-npm run manifest:regen # Refresh public/models-manifest.json from disk sizes
-npm run manifest:check # Verify manifest is in sync with disk (needs model bundle on disk)
-tail -f logs/dev.log   # Live browser-console mirror (Loguru format) — see "Debugging from the terminal"
+npm run manifest:check      # Verify manifest is in sync with disk (needs model bundle on disk)
+tail -f logs/dev.log        # Live browser-console mirror — see "Debugging from the terminal"
 ```
 
 **After adding/replacing any file under `public/models/**`:** run `npm run manifest:regen` and commit the diff. The `manifestIntegrity` vitest covers drift on any machine that has the model bundle; in CI (no bundle — it's gitignored) the test reports as *skipped*, so the drift check is a local/dev-machine responsibility.
-
-Stack: TypeScript + Preact + Vite + Vitest. ESLint flat config (`eslint.config.js`) with `typescript-eslint` and `eslint-plugin-jsx-a11y`.
 
 ## Architecture
 
@@ -35,21 +28,15 @@ The app is decomposed into focused modules. Colocated `*.test.ts(x)` files live 
 ### File layout
 - `index.html` — Homepage entry (`/`); minimal head, no PWA registration
 - `app/index.html` — App entry (`/app/`); PWA manifest link + service-worker registration with scope `/app/`
-- `src/main-app.tsx` — Preact mount point for the app at `/app/`; wires theme side effects
-- `src/main-homepage.tsx` — Preact mount point for the homepage at `/`; loads the placeholder/research surfaces (built as a separate Vite entry to keep ML deps out of the homepage bundle)
-- `src/homepage/` — Homepage components (currently `PlaceholderApp.tsx`; expanded by Plan C)
-- `src/App.tsx` — Root component for the app: setup gate, tab routing, overlay orchestration
+- `src/main-homepage.tsx` — Preact mount point for the homepage at `/`; renders `HomepageApp` (built as a separate Vite entry to keep ML deps out of the homepage bundle)
+- `src/homepage/` — Everything served at `/`. `HomepageApp.tsx` routes `/`, `/research`, and `/bibliography` via `preact-iso`, with a router scope that excludes `/app/*` so the app link is a real cross-document navigation. `pages/` holds the three routes plus `MarkdownPage.tsx` (shared long-form wrapper for the two `docs/*.md` surfaces); `sections/` holds the homepage's scroll-order sections; `theme.ts` is a separate token set from `src/theme/`. `<Footer />` must sit outside `<main>` — a `footer` scoped to `main` maps to `sectionfooter`, not the `contentinfo` landmark.
 - `src/speak.ts` — Single audio pathway. Priority: cloned-TTS (GPU → WASM) → Web Speech → confirmation tone. Owns the Web Audio post-processing pipeline (DC removal, biquads, spectral denoise, gate, normalize, limiter, fade).
 - `src/store.ts` — Legacy IndexedDB helper (`clearAll()` only). State lives in Zustand stores below.
-- `src/types.ts` — Shared TypeScript types (`Speaker`, `AppSettings`, `Category`, etc.)
-- `src/components/**` — UI components grouped by feature (builder, conversation, layout, pain, phrases, provider, settings, shared, wishes)
 - `src/data/phraseRegistry.ts` — Single source of truth for all speakable text. `t(key, locale)` resolves a phrase; `getCategories`, `getProviderCategories`, `getEmojiFPS`, `getWishTopics`, `composePainSentence`, `composeWishSentence`, `getAllSpeakablePhrases` expose structure.
-- `src/data/locales/` — Per-locale string tables (currently `en.ts`). Statically imported so language switching works offline.
-- `src/hooks/` — `useTheme`, `useSpeakActions`, `useMicrophone`, `useModels`, `useDebouncedTap`
+- `src/data/locales/` — Per-locale string tables, 24 languages (`en.ts`, `es.ts`, `ar.ts`, `zh.ts`, …). Statically imported so language switching works offline.
+- `src/data/suggestion-trees.ts` — Curated next-phrase suggestions behind the sentence builder. Hand-authored trees, not model output.
 - `src/models/` — On-device inference: `modelManager.ts` (worker lifecycle, OPFS model storage), `ttsEngine.ts` (WebGPU main-thread Chatterbox Multilingual), `ttsWorker.ts` / `sttWorker.ts` (WASM fallbacks), `denoiserWorker.ts` (DeepFilterNet3 enrollment cleanup), `audioCache.ts` (OPFS-backed pre-generated phrase audio), `bootModels.ts`, `multilingualTokenizer.ts` (BPE + per-language preprocessors)
 - `src/dev/logSink.ts` — Dev-only sink that mirrors `console.*` and uncaught errors to `logs/dev.log` via the `logSinkPlugin` middleware in `vite.config.ts`. Imported as a side effect from both Preact entry points and from each bundled worker (`ttsWorker`, `sttWorker`, `denoiserWorker`), so logs from every JS context end up in a single tail-able file. Tree-shaken in prod.
-- `src/stores/` — Zustand stores: `settingsStore`, `conversationStore`, `uiStore`; plus `idbStorage.ts` (Zustand IDB adapter) and `resetAll.ts` (wipes every persistent layer)
-- `src/theme/` — Theme tokens and palette
 - `docs/PRD.md` — Full product requirements (voice cloning, SICG, latency tiers, 4-phase roadmap)
 - `docs/DESIGN_GUIDELINES.md` — Accessibility standards, touch targets, contrast, cognitive load
 
@@ -96,32 +83,7 @@ Components use inline style objects with tokens from the `theme` module. This ke
 
 **When investigating any runtime bug — failed boot, worker error, unexpected console output — read `logs/dev.log` first.** It's the source of truth Claude can actually see; the DevTools console is invisible from here.
 
-`npm run dev` truncates `logs/dev.log` on each start and then appends every browser `console.log/info/warn/error/debug/dir` call, plus uncaught errors and unhandled rejections, from the main thread *and* from each bundled worker. Each line is **Loguru-formatted** (one of IntelliJ's built-in log highlighters, recognized with zero per-developer setup):
-
-```
-2026-05-19 17:33:30.935 | WARN     | main:1arfvm2t | [OwnVoice:WebGPU] requestAdapter returned null; degrading to WASM
-```
-
-Fields, pipe-separated: local timestamp (`YYYY-MM-DD HH:mm:ss.SSS`, no timezone — matches your terminal's `date`), level (padded to 8 chars: `LOG|INFO|WARN|ERROR|DEBUG|DIR|UNCAUGHT|UNHANDLEDREJECTION`), `origin:tabId` (`main` or `worker:<name>` plus a per-tab id, omitted for the session-start marker), and the verbatim console message. Multi-line stack traces are flattened with `⏎` so every record stays on one line.
-
-Typical workflow:
-
-```bash
-# In one terminal:
-npm run dev
-
-# In another (or via Claude's Read/Bash):
-tail -f logs/dev.log                           # follow live
-grep -E "WARN |ERROR |UNCAUGHT" logs/dev.log   # surface non-info severities
-grep "OwnVoice:TTS" logs/dev.log               # filter by module prefix in body
-awk -F' \\| ' '$2 ~ /ERROR/' logs/dev.log      # field-aware filter on level column
-```
-
-**IntelliJ:** open `logs/dev.log` — the editor recognizes Loguru automatically. Severity coloring (red ERROR, amber WARN, green INFO) and the scrollbar heatmap work out of the box; no custom format needed.
-
-**For iPad capture:** run `npm run dev -- --host`, point the iPad at `http://<laptop-ip>:3000/app/`, and the same file fills up with its logs. This is currently the only Claude-visible surface for iPad-Safari-only bugs (e.g. the unresolved boot race in PRs #254/#255/#257).
-
-The endpoint is dev-only — production builds tree-shake the sink and `/__log` doesn't exist on Pages. Plain JS workers in `public/` (e.g. `public/stt-gpu-worker.js`) bypass Vite and are NOT captured — their logs stay in the worker DevTools console.
+The log format, filtering recipes, iPad capture setup, and IntelliJ integration all live in the `ownvoice-logsink` skill (`.claude/skills/ownvoice-logsink/SKILL.md`), which loads on demand.
 
 ## Accessibility Requirements
 
@@ -141,7 +103,7 @@ These are non-negotiable for this project:
 
 ## Target Platform
 
-iPad Pro (M5, 2025) with iPadOS 26+ and Safari 26. WebGPU via Metal is required for planned ONNX Runtime inference. Desktop/other browsers are not primary targets.
+iPad Pro (M5, 2025) with iPadOS 26+ and Safari 26. ONNX Runtime inference ships today and uses WebGPU via Metal where available, falling back to WASM. Desktop/other browsers are not primary targets.
 
 ## Known issues — do not chase
 
