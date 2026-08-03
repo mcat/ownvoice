@@ -48,7 +48,7 @@
     "eslint": "^9.39.4",
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "fake-indexeddb": "^6.2.5",
-    "jsdom": "^29.1.1",
+    "jsdom": "^30.0.1",
     "onnxruntime-node": "^1.27.0",
     "opentype.js": "^2.0.0",
     "sharp": "^0.35.3",
