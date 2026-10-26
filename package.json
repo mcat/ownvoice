@@ -26,14 +26,14 @@
     "assets:prune:dry": "node scripts/prune-r2.mjs --dry-run"
   },
   "dependencies": {
-    "@opentelemetry/api": "^1.9.1",
-    "@tanstack/virtual-core": "^3.17.6",
+    "@opentelemetry/api": "^1.10.0",
+    "@tanstack/virtual-core": "^3.19.7",
     "markdown-to-jsx": "^7.7.17",
     "onnxruntime-web": "^1.25.1",
     "preact": "^10.29.7",
-    "preact-iso": "^2.12.1",
+    "preact-iso": "^2.12.2",
     "superjson": "^2.2.6",
-    "zustand": "^5.0.14"
+    "zustand": "^5.0.16"
   },
   "devDependencies": {
     "@aws-sdk/client-s3": "^3.1090.0",
